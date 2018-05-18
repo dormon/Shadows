@@ -441,13 +441,13 @@ RSSVTilingSizes::RSSVTilingSizes(
   borderTileDivisibilityIntoFullTiles.resize(nofLevels);
 
 
-  ssize_t const lastLevel  = nofLevels - 1;
-  ssize_t const firstLevel = 0            ;
+  int64_t const lastLevel  = nofLevels - 1;
+  int64_t const firstLevel = 0            ;
 
 
   auto exponentCounter = glm::uvec2(0u);
   bool oddLevel = false;
-  for(ssize_t level = lastLevel; level >= firstLevel; --level){
+  for(int64_t level = lastLevel; level >= firstLevel; --level){
 
     glm::uvec2 currentExponent;
     currentExponent.x = threadsExponentPart[  static_cast<size_t>(oddLevel)];

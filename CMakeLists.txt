@@ -19,9 +19,11 @@ find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
 find_package(geGL 1.0 CONFIG REQUIRED)
 find_package(SDL2CPP 1.0 CONFIG REQUIRED)
 find_package(BasicCamera 1.0 CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
 #find_package(SDL2 CONFIG REQUIRED)
 
 set(SOURCES
+  src/Application.cpp
   src/main.cpp
   src/Model.cpp
   src/CameraPath.cpp
@@ -43,6 +45,7 @@ set(SOURCES
   )
 
 set(INCLUDES
+  src/Application.h
   src/CameraPath.h
   src/CSV.h
   src/Deferred.h

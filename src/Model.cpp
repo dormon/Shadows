@@ -3,7 +3,7 @@
 Model::Model(std::string const&name){
   this->model = aiImportFile(name.c_str(),aiProcess_Triangulate|aiProcess_GenNormals|aiProcess_SortByPType);
   if(this->model==nullptr)
-    ge::core::printError(GE_CORE_FCENAME,"Can't open file",name);
+    std::cerr <<"Can't open file: " << name << std::endl;
 }
 
 Model::~Model(){
@@ -28,7 +28,7 @@ void Model::getVertices(std::vector<float>&vertices){
 RenderModel::RenderModel(std::shared_ptr<Model>const&mdl){
   assert(this!=nullptr);
   if(mdl==nullptr)
-    ge::core::printError(GE_CORE_FCENAME,"mdl is nullptr!");
+    std::cerr << "mdl is nullptr!" << std::endl;
 
   this->nofVertices = 0;
   auto model = mdl->model;

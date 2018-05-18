@@ -199,7 +199,7 @@ void RSSV::_copyDepthToLastLevelOfHDT(){
 void RSSV::_computeAllLevelsOfHDTExceptLast(){
   this->_generateHDTProgram->use();
 
-  for(ssize_t l=_nofLevels-2;l>=0;--l){
+  for(int64_t l=_nofLevels-2;l>=0;--l){
     _generateHDTProgram->set2uiv("inputSize",glm::value_ptr(_tiling.hdtSize.at(l+1)));
     _HDT[l+1]->bindImage(HIERARCHICALDEPTHTEXTURE_BINDING_HDTINPUT );
     _HDT[l  ]->bindImage(HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT);

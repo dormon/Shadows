@@ -4,7 +4,6 @@
 #include<assimp/scene.h>
 #include<assimp/postprocess.h>
 
-#include<geCore/ErrorPrinter.h>
 #include<geGL/geGL.h>
 
 #include<glm/glm.hpp>

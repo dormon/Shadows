@@ -1,7 +1,6 @@
 #include<Sintorn.h>
 #include<SintornTiles.h>
 #include<FastAdjacency.h>
-#include<geCore/Dtemplates.h>
 #include<sstream>
 #include<iomanip>
 #include<util.h>

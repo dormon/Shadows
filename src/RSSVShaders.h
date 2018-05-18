@@ -33,7 +33,7 @@ layout(      binding=HIERARCHICALDEPTHTEXTURE_BINDING_DEPTH)uniform sampler2DRec
 layout(rg32f,binding=HIERARCHICALDEPTHTEXTURE_BINDING_HDT  )uniform image2D       lastLevelOfHierarchicalDepthTexture;
 
 uniform uvec2 windowSize = uvec2(512,512);
-
+)." R".(
 /////////////////////////////////////////////
 // Orientations:
 // This represents arrow
@@ -124,6 +124,7 @@ uniform uvec2 windowSize = uvec2(512,512);
 // ┃ ▁▁▁▁▁▁▁▁▁▁▁╱ ┃  ┊     ┊ ┃ ▁▁▁▁▁▁▁▁▁▁▁╱ ┃  ┊     ┊ ┃▁▁▁▁▁▁▁▁▁▁▁▁│┃   ┊     ┊ ┃│         │▁│┃   ┊     ┊
 // ┗━━━━━┷━━━━━┷━━┹┄┄┴┄┄┄┄┄┘ ┗━━━━━┷━━━━━┷━━┹┄┄┴┄┄┄┄┄┘ ┗━━━━━┷━━━━━┷━┹┄┄┄┴┄┄┄┄┄┘ ┗━━━━━┷━━━━━┷━┹┄┄┄┴┄┄┄┄┄┘
 //
+)." R".(
 //
 //
 //
@@ -820,7 +821,7 @@ bool doesDiagonalIntersectShadowVolumeSide(in vec4 A,in vec4 B,in vec4 L,in uint
   if(l < 0.f || l > 1.f)return false;
   return true;
 }
-
+)." R".(
 /**
  * @brief This function tests if shadow volume side intersects frustum.
  *
