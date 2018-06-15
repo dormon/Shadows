@@ -12,9 +12,7 @@
 
 class RSSV: public ShadowMethod{
   public:
-    RSSV(
-        RSSVParams                      const&params         ,
-        vars::Vars                      const&vars           );
+    RSSV(vars::Vars&vars);
     virtual ~RSSV();
     virtual void create(
         glm::vec4 const&lightPosition,
@@ -36,9 +34,8 @@ class RSSV: public ShadowMethod{
     std::vector<std::shared_ptr<ge::gl::Texture>>_HDT;
     std::shared_ptr<ge::gl::Texture>_screenSpaceMultiplicity   = nullptr            ;
     std::shared_ptr<ge::gl::Program>_rasterizeProgram          = nullptr            ;
-    RSSVParams                      _params                                         ;
     RSSVTilingSizes                 _tiling                                         ;
-    vars::Vars const&vars;
+    vars::Vars&vars;
     void _generateHDT();
     void _copyDepthToLastLevelOfHDT();
     void _computeAllLevelsOfHDTExceptLast();

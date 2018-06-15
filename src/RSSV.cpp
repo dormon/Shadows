@@ -27,10 +27,7 @@ void RSSV::_allocateHDT(){
   }
 }
 
-RSSV::RSSV(
-    RSSVParams                      const&params         ,
-    vars::Vars                      const&vars           ):
-  _params      (params                  ),
+RSSV::RSSV(vars::Vars&vars           ):
   _tiling      (*vars.get<glm::uvec2>("windowSize"),vars.getSizeT("wavefrontSize")),
   vars(vars)
 {
@@ -75,11 +72,11 @@ RSSV::RSSV(
 
 
   this->_computeSilhouettesProgram = makeComputeProgram(
-      defineComputeShaderHeader(this->_params.computeSilhouetteWGS,WAVEFRONT_SIZE),
+      defineComputeShaderHeader(vars.getSizeT("rssv.computeSilhouetteWGS"),WAVEFRONT_SIZE),
       ge::gl::Shader::define("MAX_MULTIPLICITY",int(vars.getSizeT("maxMultiplicity"))),
-      ge::gl::Shader::define("LOCAL_ATOMIC"    ,int(this->_params.localAtomic       )),
-      ge::gl::Shader::define("CULL_SIDES"      ,int(this->_params.cullSides         )),
-      ge::gl::Shader::define("USE_PLANES"      ,int(this->_params.usePlanes         )),
+      ge::gl::Shader::define("LOCAL_ATOMIC"    ,int(vars.getBool("rssv.localAtomic"))),
+      ge::gl::Shader::define("CULL_SIDES"      ,int(vars.getBool("rssv.cullSides"  ))),
+      ge::gl::Shader::define("USE_PLANES"      ,int(vars.getBool("rssv.usePlanes"  ))),
       silhouetteFunctions,
       _computeSilhouettesSrc);
 
@@ -113,7 +110,7 @@ RSSV::RSSV(
 
     for(size_t o=0;o<adj->getNofOpposite(e);++o){
       auto dstOppositeVertexPtr = dstOppositeVerticesPtr + o*componentsPerVertex4D;
-      if(this->_params.usePlanes){
+      if(vars.getBool("rssv.usePlanes")){
         auto const plane = computePlane(toVec3(srcPtr+adj->getEdgeVertexA(e)),toVec3(srcPtr+adj->getEdgeVertexB(e)),toVec3(srcPtr+adj->getOpposite(e,o)));
         std::memcpy(dstOppositeVertexPtr,&plane,sizeof(plane));
       }else{
@@ -147,10 +144,10 @@ RSSV::RSSV(
   this->_dispatchIndirectBuffer=std::make_shared<ge::gl::Buffer>(sizeof(DispatchIndirectCommand),&cmd);
 
   this->_rasterizeProgram = makeComputeProgram(
-      defineComputeShaderHeader(glm::uvec2(WAVEFRONT_SIZE,this->_params.silhouettesPerWorkgroup),WAVEFRONT_SIZE),
+      defineComputeShaderHeader(glm::uvec2(WAVEFRONT_SIZE,vars.getSizeT("rssv.silhouettesPerWorkgroup")),WAVEFRONT_SIZE),
       ge::gl::Shader::define("NUMBER_OF_LEVELS"             ,(int)this->_nofLevels               ),
       ge::gl::Shader::define("NUMBER_OF_LEVELS_MINUS_ONE"   ,(int)this->_nofLevels-1             ),
-      ge::gl::Shader::define("SILHOUETTES_PER_WORKGROUP"    ,(int)this->_params.silhouettesPerWorkgroup ),
+      ge::gl::Shader::define("SILHOUETTES_PER_WORKGROUP"    ,(int)vars.getSizeT("rssv.silhouettesPerWorkgroup") ),
       ge::gl::Shader::define("RASTERIZE_BINDING_SSM"        ,(int)RASTERIZE_BINDING_SSM          ),
       ge::gl::Shader::define("RASTERIZE_BINDING_HDT"        ,(int)RASTERIZE_BINDING_HDT          ),
       ge::gl::Shader::define("RASTERIZE_BINDING_SILHOUETTES",(int)RASTERIZE_BINDING_SILHOUETTES  ),
@@ -184,7 +181,7 @@ void RSSV::_copyDepthToLastLevelOfHDT(){
   this->_generateHDT0Program->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
   vars.get<GBuffer>("gBuffer")->depth->bind(HIERARCHICALDEPTHTEXTURE_BINDING_DEPTH);
   this->_HDT.back()->bindImage(HIERARCHICALDEPTHTEXTURE_BINDING_HDT);
-  glm::uvec2 nofWorkGroups = divRoundUp(_tiling.hdtSize.back(),_params.copyDepthToLastLevelOfHDTWGS);
+  glm::uvec2 nofWorkGroups = divRoundUp(_tiling.hdtSize.back(),*vars.get<glm::uvec2>("rssv.copyDepthToLastLevelOfHDTWGS"));
     
   glDispatchCompute(nofWorkGroups.x,nofWorkGroups.y,1);
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -218,7 +215,7 @@ void RSSV::_computeSilhouettes(glm::vec4 const&lightPosition){
     ->bindBuffer("edges"                 ,this->_edges                 )
     ->bindBuffer("silhouettes"           ,this->_silhouettes           )
     ->bindBuffer("dispatchIndirectBuffer",this->_dispatchIndirectBuffer)
-    ->dispatch(GLuint(getDispatchSize(this->_nofEdges,this->_params.computeSilhouetteWGS)));
+    ->dispatch(GLuint(getDispatchSize(this->_nofEdges,vars.getSizeT("rssv.computeSilhouetteWGS"))));
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   /*
   auto ptr = (float*)this->_silhouettes->map();

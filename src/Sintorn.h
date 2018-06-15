@@ -4,14 +4,11 @@
 #include<ShadowMethod.h>
 #include<Model.h>
 
-#include<SintornParam.h>
 #include<Vars.h>
 
 class Sintorn: public ShadowMethod{
   public:
-    Sintorn(
-        SintornParams                   const&params       ,
-        vars::Vars                      const&vars         );
+    Sintorn(vars::Vars&vars);
     virtual ~Sintorn();
     virtual void create(
         glm::vec4 const&lightPosition   ,
@@ -25,7 +22,7 @@ class Sintorn: public ShadowMethod{
     size_t     _nofTriangles = 0;
     size_t     _wavefrontSize = 64;
 
-    vars::Vars const&vars;
+    vars::Vars&vars;
     std::shared_ptr<ge::gl::Texture>_finalStencilMask;
     std::shared_ptr<ge::gl::Buffer>_shadowFrusta = nullptr;
     std::shared_ptr<ge::gl::VertexArray>_emptyVao;
@@ -54,7 +51,6 @@ class Sintorn: public ShadowMethod{
     std::shared_ptr<ge::gl::Program>_drawHSTProgram;
     void drawHST(size_t l);
     std::shared_ptr<ge::gl::Program>_drawFinalStencilMask;
-    SintornParams                   _params;
     void drawFinalStencilMask();
 
     void GenerateHierarchyTexture(glm::vec4 const&lightPosition);

@@ -105,11 +105,9 @@ void CSSVSOE::_createCapsData (std::shared_ptr<Adjacency const>const&adj){
 
 
 
-CSSVSOE::CSSVSOE(
-    vars::Vars                      const&vars           ,
-    CSSVSOEParams                   const&params         ):
+CSSVSOE::CSSVSOE(vars::Vars&vars):
   ShadowVolumes(vars  ),
-  _params      (params)
+  vars(vars)
 {
   assert(this!=nullptr);
 
@@ -131,7 +129,7 @@ CSSVSOE::CSSVSOE(
   this->_computeSidesProgram = std::make_shared<ge::gl::Program>(
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
         "#version 450 core\n",
-        ge::gl::Shader::define("WORKGROUP_SIZE_X",int32_t(this->_params.computeSidesWGS)),
+        ge::gl::Shader::define("WORKGROUP_SIZE_X",int32_t(vars.getSizeT("cssvsoe.computeSidesWGS"))),
         ge::gl::Shader::define("MAX_MULTIPLICITY",int32_t(this->_maxMultiplicity       )),
         silhouetteFunctions,
         computeSrc));
@@ -168,7 +166,7 @@ void CSSVSOE::_computeSides(glm::vec4 const&lightPosition){
     ->bindBuffer("edges"             ,this->_edges                 )
     ->bindBuffer("silhouettes"       ,this->_silhouettes           )
     ->bindBuffer("drawIndirectBuffer",this->_dibo                  )
-    ->dispatch((GLuint)getDispatchSize(this->_nofEdges,this->_params.computeSidesWGS));
+    ->dispatch((GLuint)getDispatchSize(this->_nofEdges,vars.getSizeT("cssvsoe.computeSidesWGS")));
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   glFinish();

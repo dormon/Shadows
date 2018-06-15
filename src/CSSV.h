@@ -11,9 +11,7 @@
 class Adjacency;
 class CSSV: public ShadowVolumes{
   public:
-    CSSV(
-        vars::Vars                      const&vars           ,
-        CSSVParams                      const&params         );
+    CSSV(vars::Vars&vars);
     virtual ~CSSV();
     virtual void drawSides(
         glm::vec4 const&lightPosition   ,
@@ -32,12 +30,11 @@ class CSSV: public ShadowVolumes{
     std::shared_ptr<ge::gl::VertexArray>_sidesVao            = nullptr;
     size_t                              _nofEdges            = 0      ;
     size_t                              _nofTriangles        = 0      ;
-    CSSVParams                          _params                       ;
 
     std::shared_ptr<ge::gl::Program>    _drawCapsProgram  = nullptr;
     std::shared_ptr<ge::gl::VertexArray>_capsVao          = nullptr;
     std::shared_ptr<ge::gl::Buffer>     _caps             = nullptr;
-    vars::Vars const&vars;
+    vars::Vars&vars;
 
     void _computeSides(glm::vec4 const&lightPosition);
 

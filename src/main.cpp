@@ -37,6 +37,7 @@
 #include <Shading.h>
 #include <ShadowMethod.h>
 #include <Sintorn.h>
+#include <SintornParam.h>
 #include <SintornTiles.h>
 #include <TimeStamp.h>
 #include <VSSV.h>
@@ -55,11 +56,6 @@ class Shadows : public simple3DApp::Application {
 
   CameraParam cameraParam;
   TestParam   testParam;
-
-  CSSVParams              cssvParams;
-  CSSVSOEParams           cssvsoeParams;
-  SintornParams           sintornParams;
-  RSSVParams              rssvParams;
 
   vars::Vars vars;
 
@@ -89,12 +85,12 @@ void Shadows::parseArguments() {
   vars.addBool  ("zfail"          ) = arg->getu32("--zfail", 1, "shadow volumes zfail 0/1");
 
   loadCubeShadowMappingParams(vars,arg);
-  cssvParams    = loadCSSVParams(arg);
+  loadCSSVParams(vars,arg);
   loadVSSVParams(vars,arg);
-  sintornParams = loadSintornParams(arg);
-  rssvParams    = loadRSSVParams(arg);
+  loadSintornParams(vars,arg);
+  loadRSSVParams(vars,arg);
 
-  cssvsoeParams.computeSidesWGS = arg->getu32(
+  vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");
 
   testParam = TestParam(arg);
@@ -149,10 +145,10 @@ void Shadows::init() {
   vars.add<Shading>("shading",vars);
 
   if      (vars.getString("methodName") == "cubeShadowMapping")shadowMethod = std::make_shared<CubeShadowMapping>(vars);
-  else if (vars.getString("methodName") == "cssv"             )shadowMethod = std::make_shared<CSSV>(vars, cssvParams);
-  else if (vars.getString("methodName") == "cssvsoe"          )shadowMethod = std::make_shared<CSSVSOE>(vars, cssvsoeParams);
-  else if (vars.getString("methodName") == "sintorn"          )shadowMethod = std::make_shared<Sintorn>(sintornParams, vars);
-  else if (vars.getString("methodName") == "rssv"             )shadowMethod = std::make_shared<RSSV>(rssvParams, vars);
+  else if (vars.getString("methodName") == "cssv"             )shadowMethod = std::make_shared<CSSV>(vars);
+  else if (vars.getString("methodName") == "cssvsoe"          )shadowMethod = std::make_shared<CSSVSOE>(vars);
+  else if (vars.getString("methodName") == "sintorn"          )shadowMethod = std::make_shared<Sintorn>(vars);
+  else if (vars.getString("methodName") == "rssv"             )shadowMethod = std::make_shared<RSSV>(vars);
   else if (vars.getString("methodName") == "vssv"             )shadowMethod = std::make_shared<VSSV>(vars);
   else vars.getBool("useShadows") = false;
 

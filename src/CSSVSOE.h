@@ -16,9 +16,7 @@ struct CSSVSOEParams{
 class Adjacency;
 class CSSVSOE: public ShadowVolumes{
   public:
-    CSSVSOE(
-        vars::Vars                      const&vars           ,
-        CSSVSOEParams                   const&params         );
+    CSSVSOE(vars::Vars&vars);
     virtual ~CSSVSOE();
     virtual void drawSides(
         glm::vec4 const&lightPosition   ,
@@ -38,11 +36,11 @@ class CSSVSOE: public ShadowVolumes{
     size_t                              _nofEdges                     ;
     size_t                              _nofTriangles        = 0      ;
     size_t                              _maxMultiplicity     = 0      ;
-    CSSVSOEParams                       _params                       ;
 
     std::shared_ptr<ge::gl::Program>    _drawCapsProgram     = nullptr;
     std::shared_ptr<ge::gl::VertexArray>_capsVao             = nullptr;
     std::shared_ptr<ge::gl::Buffer>     _caps                = nullptr;
+    vars::Vars&vars;
 
     void _computeSides(glm::vec4 const&lightPosition);
 

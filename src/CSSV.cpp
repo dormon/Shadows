@@ -160,11 +160,8 @@ void CSSV::_createCapsData (std::shared_ptr<Adjacency const>const&adj){
 
 
 
-CSSV::CSSV(
-    vars::Vars                      const&vars           ,
-    CSSVParams                      const&params         ):
+CSSV::CSSV(vars::Vars&vars):
   ShadowVolumes(vars  ),
-  _params      (params),
   vars(vars           )
 {
   assert(this!=nullptr);
@@ -177,8 +174,8 @@ CSSV::CSSV(
 
   this->_nofTriangles=adj->getNofTriangles();
 
-  if(this->_params.usePlanes){
-    if(this->_params.useInterleaving)
+  if(vars.getBool("cssv.usePlanes")){
+    if(vars.getBool("cssv.useInterleaving"))
       this->_createSidesDataUsingPlanesWithInterleaving(adj);
     else
       this->_createSidesDataUsingPlanes(adj);
@@ -203,12 +200,12 @@ CSSV::CSSV(
   this->_computeSidesProgram = std::make_shared<ge::gl::Program>(
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
         "#version 450 core\n",
-        ge::gl::Shader::define("WORKGROUP_SIZE_X",int32_t(this->_params.computeSidesWGS)),
-        ge::gl::Shader::define("MAX_MULTIPLICITY",int32_t(adj->getMaxMultiplicity()    )),
-        ge::gl::Shader::define("LOCAL_ATOMIC"    ,int32_t(this->_params.localAtomic    )),
-        ge::gl::Shader::define("CULL_SIDES"      ,int32_t(this->_params.cullSides      )),
-        ge::gl::Shader::define("USE_PLANES"      ,int32_t(this->_params.usePlanes      )),
-        ge::gl::Shader::define("USE_INTERLEAVING",int32_t(this->_params.useInterleaving)),
+        ge::gl::Shader::define("WORKGROUP_SIZE_X",int32_t(vars.getBool("cssv.computeSidesWGS"))),
+        ge::gl::Shader::define("MAX_MULTIPLICITY",int32_t(adj->getMaxMultiplicity()           )),
+        ge::gl::Shader::define("LOCAL_ATOMIC"    ,int32_t(vars.getBool("cssv.localAtomic"    ))),
+        ge::gl::Shader::define("CULL_SIDES"      ,int32_t(vars.getBool("cssv.cullSides"      ))),
+        ge::gl::Shader::define("USE_PLANES"      ,int32_t(vars.getBool("cssv.usePlanes"      ))),
+        ge::gl::Shader::define("USE_INTERLEAVING",int32_t(vars.getBool("cssv.useInterleaving"))),
         silhouetteFunctions,
         computeSrc));
 
@@ -242,7 +239,7 @@ void CSSV::_computeSides(glm::vec4 const&lightPosition){
     ->bindBuffer("edges"             ,this->_edges                 )
     ->bindBuffer("silhouettes"       ,this->_sillhouettes          )
     ->bindBuffer("drawIndirectBuffer",this->_dibo                  )
-    ->dispatch((GLuint)getDispatchSize(this->_nofEdges,this->_params.computeSidesWGS));
+    ->dispatch((GLuint)getDispatchSize(this->_nofEdges,vars.getUint32("cssv.computeSidesWGS")));
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   glFinish();

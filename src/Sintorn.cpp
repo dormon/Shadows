@@ -31,10 +31,7 @@ const size_t MERGETEXTURE_BINDING_HSTOUTPUT = 1;
 const size_t WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK = 0;
 const size_t WRITESTENCILTEXTURE_BINDING_HSTINPUT         = 1;
 
-Sintorn::Sintorn(
-    SintornParams                   const&params       ,
-    vars::Vars                      const&vars         ):
-  _params           (params           ),
+Sintorn::Sintorn(vars::Vars&vars):
   vars(vars)
 {
   assert(this!=nullptr);
@@ -117,7 +114,7 @@ Sintorn::Sintorn(
         ge::gl::Shader::define("WRITEDEPTHTEXTURE_BINDING_DEPTH" ,int(WRITEDEPTHTEXTURE_BINDING_DEPTH              )),
         ge::gl::Shader::define("WRITEDEPTHTEXTURE_BINDING_HDT"   ,int(WRITEDEPTHTEXTURE_BINDING_HDT                )),
         ge::gl::Shader::define("WRITEDEPTHTEXTURE_BINDING_NORMAL",int(WRITEDEPTHTEXTURE_BINDING_NORMAL             )),
-        ge::gl::Shader::define("DISCARD_BACK_FACING"             ,int(this->_params.discardBackFacing              )),
+        ge::gl::Shader::define("DISCARD_BACK_FACING"             ,int(vars.getBool("sintorn.discardBackFacing")    )),
         writeDepthTextureCompSrc));
 
   this->HierarchicalDepthTextureProgram=std::make_shared<ge::gl::Program>(
@@ -160,8 +157,8 @@ Sintorn::Sintorn(
       std::make_shared<ge::gl::Shader>(
         GL_COMPUTE_SHADER,
         "#version 450 core\n",
-        ge::gl::Shader::define("BIAS"          ,float   (this->_params.bias           )),
-        ge::gl::Shader::define("WAVEFRONT_SIZE",uint32_t(this->_params.shadowFrustaWGS)),
+        ge::gl::Shader::define("BIAS"          ,float   (vars.getFloat("sintorn.bias")           )),
+        ge::gl::Shader::define("WAVEFRONT_SIZE",uint32_t(vars.getUint32("sintorn.shadowFrustaWGS"))),
         shadowFrustumCompSrc));
 
   RASTERIZETEXTURE_BINDING_HDT=RASTERIZETEXTURE_BINDING_HST+this->_nofLevels;
@@ -193,7 +190,7 @@ Sintorn::Sintorn(
         ge::gl::Shader::define("NUMBER_OF_LEVELS"            ,int(this->_nofLevels                      )),
         ge::gl::Shader::define("NUMBER_OF_LEVELS_MINUS_ONE"  ,int(this->_nofLevels-1                    )),
         ge::gl::Shader::define("WAVEFRONT_SIZE"              ,int(this->_wavefrontSize                  )),
-        ge::gl::Shader::define("SHADOWFRUSTUMS_PER_WORKGROUP",int(this->_params.shadowFrustaPerWorkGroup)),
+        ge::gl::Shader::define("SHADOWFRUSTUMS_PER_WORKGROUP",int(vars.getUint32("sintorn.shadowFrustaPerWorkGroup"))),
         TileSizeInClipSpaceDefines,
         TileDivisibilityDefines,
         ge::gl::Shader::define("RASTERIZETEXTURE_BINDING_FINALSTENCILMASK",int(RASTERIZETEXTURE_BINDING_FINALSTENCILMASK)),
@@ -253,7 +250,7 @@ void Sintorn::GenerateHierarchyTexture(glm::vec4 const&lightPosition){
   this->WriteDepthTextureProgram->use();
   this->WriteDepthTextureProgram->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
   vars.get<GBuffer>("gBuffer")->depth->bind(WRITEDEPTHTEXTURE_BINDING_DEPTH);
-  if(this->_params.discardBackFacing){
+  if(vars.getBool("sintorn.discardBackFacing")){
     vars.get<GBuffer>("gBuffer")->normal->bind(WRITEDEPTHTEXTURE_BINDING_NORMAL);
     this->WriteDepthTextureProgram->set4fv("lightPosition",glm::value_ptr(lightPosition));
   }
@@ -335,7 +332,7 @@ void Sintorn::ComputeShadowFrusta(glm::vec4 const&lightPosition,glm::mat4 mvp){
     ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp))))
     ->bindBuffer  ("triangles"                          ,this->_triangles                                 )
     ->bindBuffer  ("shadowFrusta"                       ,this->_shadowFrusta                              )
-    ->dispatch    (getDispatchSize(this->_nofTriangles,this->_params.shadowFrustaWGS));
+    ->dispatch    (getDispatchSize(this->_nofTriangles,vars.getUint32("sintorn.shadowFrustaWGS")));
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
   //auto ptr = static_cast<float*>(this->_shadowFrusta->map());
@@ -386,7 +383,7 @@ void Sintorn::RasterizeTexture(){
 
   
   size_t maxSize = 65536/2;
-  size_t workgroups = getDispatchSize(this->_nofTriangles,this->_params.shadowFrustaPerWorkGroup);
+  size_t workgroups = getDispatchSize(this->_nofTriangles,vars.getUint32("sintorn.shadowFrustaPerWorkGroup"));
   size_t offset = 0;
   while(offset+maxSize<=workgroups){
     this->RasterizeTextureProgram->set1ui("triangleOffset",(uint32_t)offset);
