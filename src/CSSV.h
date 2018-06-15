@@ -5,24 +5,14 @@
 #include<ShadowVolumes.h>
 #include<Model.h>
 #include<TimeStamp.h>
-
-struct CSSVParams{
-  size_t computeSidesWGS = 64   ;
-  bool   localAtomic     = true ;
-  bool   cullSides       = false;
-  bool   usePlanes       = false;
-  bool   useInterleaving = false;
-};
+#include<Vars.h>
+#include <CSSVParam.h>
 
 class Adjacency;
 class CSSV: public ShadowVolumes{
   public:
     CSSV(
-        std::shared_ptr<ge::gl::Texture>const&shadowMask     ,
-        std::shared_ptr<Model>          const&model          ,
-        std::shared_ptr<ge::gl::Texture>const&depth          ,
-        ShadowVolumesParams             const&svParams       ,
-        size_t                          const&maxMultiplicity,
+        vars::Vars                      const&vars           ,
         CSSVParams                      const&params         );
     virtual ~CSSV();
     virtual void drawSides(
@@ -47,6 +37,7 @@ class CSSV: public ShadowVolumes{
     std::shared_ptr<ge::gl::Program>    _drawCapsProgram  = nullptr;
     std::shared_ptr<ge::gl::VertexArray>_capsVao          = nullptr;
     std::shared_ptr<ge::gl::Buffer>     _caps             = nullptr;
+    vars::Vars const&vars;
 
     void _computeSides(glm::vec4 const&lightPosition);
 

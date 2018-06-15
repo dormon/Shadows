@@ -1,5 +1,6 @@
 #include<CSV.h>
 #include<sstream>
+#include<stdexcept>
 
 std::vector<std::vector<std::string>>loadCSV(std::string const&fileName){
   std::ifstream f(fileName.c_str());

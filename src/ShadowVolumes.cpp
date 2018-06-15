@@ -1,12 +1,10 @@
 #include<ShadowVolumes.h>
+#include<Deferred.h>
 
-ShadowVolumes::ShadowVolumes(
-    std::shared_ptr<ge::gl::Texture>const&shadowMask,
-    std::shared_ptr<ge::gl::Texture>const&depth     ,
-    ShadowVolumesParams             const&params    ):
-  _params(params)
+ShadowVolumes::ShadowVolumes(vars::Vars const&vars):vars(vars)
 {
   assert(this!=nullptr);
+  auto depth = vars.get<GBuffer>("gBuffer")->depth;
   this->_fbo = std::make_shared<ge::gl::Framebuffer>();
   this->_fbo->attachTexture(GL_DEPTH_ATTACHMENT,depth);
   this->_fbo->attachTexture(GL_STENCIL_ATTACHMENT,depth);
@@ -14,7 +12,7 @@ ShadowVolumes::ShadowVolumes(
 
   this->_maskFbo = std::make_shared<ge::gl::Framebuffer>();
   this->_maskFbo->attachTexture(GL_STENCIL_ATTACHMENT,depth);
-  this->_maskFbo->attachTexture(GL_COLOR_ATTACHMENT0,shadowMask);
+  this->_maskFbo->attachTexture(GL_COLOR_ATTACHMENT0,vars.get<ge::gl::Texture>("shadowMask"));
   this->_maskFbo->drawBuffers(1,GL_COLOR_ATTACHMENT0);
   assert(this->_maskFbo->check());
 
@@ -62,7 +60,7 @@ void ShadowVolumes::create(
   glEnable(GL_STENCIL_TEST);
   glStencilFunc(GL_ALWAYS,0,0);
 
-  if(this->_params.zfail){
+  if(vars.getBool("zfail")){
     glStencilOpSeparate(GL_FRONT,GL_KEEP,GL_INCR_WRAP,GL_KEEP);
     glStencilOpSeparate(GL_BACK ,GL_KEEP,GL_DECR_WRAP,GL_KEEP);
   }else{
@@ -76,7 +74,7 @@ void ShadowVolumes::create(
   this->drawSides(lightPosition,viewMatrix,projectionMatrix);
   if(this->timeStamp)this->timeStamp->stamp("drawSides");
 
-  if(this->_params.zfail){
+  if(vars.getBool("zfail")){
     this->drawCaps(lightPosition,viewMatrix,projectionMatrix);
     if(this->timeStamp)this->timeStamp->stamp("drawCaps");
   }

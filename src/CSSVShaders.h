@@ -58,6 +58,7 @@ void main(){
 #else
   vec4 P[2];
 #endif
+
 #if     USE_PLANES == 1
   gid*=3+3+4*MAX_MULTIPLICITY;
 #else //USE_PLANES == 1

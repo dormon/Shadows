@@ -7,6 +7,7 @@
 #include<ShadowVolumes.h>
 #include<Model.h>
 #include<TimeStamp.h>
+#include<Vars.h>
 
 struct CSSVSOEParams{
   size_t computeSidesWGS = 64   ;
@@ -16,11 +17,7 @@ class Adjacency;
 class CSSVSOE: public ShadowVolumes{
   public:
     CSSVSOE(
-        std::shared_ptr<ge::gl::Texture>const&shadowMask     ,
-        std::shared_ptr<Model>          const&model          ,
-        std::shared_ptr<ge::gl::Texture>const&depth          ,
-        ShadowVolumesParams             const&svParams       ,
-        size_t                          const&maxMultiplicity,
+        vars::Vars                      const&vars           ,
         CSSVSOEParams                   const&params         );
     virtual ~CSSVSOE();
     virtual void drawSides(

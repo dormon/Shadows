@@ -161,22 +161,19 @@ void CSSV::_createCapsData (std::shared_ptr<Adjacency const>const&adj){
 
 
 CSSV::CSSV(
-    std::shared_ptr<ge::gl::Texture>const&shadowMask     ,
-    std::shared_ptr<Model>          const&model          ,
-    std::shared_ptr<ge::gl::Texture>const&depth          ,
-    ShadowVolumesParams             const&svParams       ,
-    size_t                          const&maxMultiplicity,
+    vars::Vars                      const&vars           ,
     CSSVParams                      const&params         ):
-  ShadowVolumes(shadowMask,depth,svParams),
-  _params      (params                   )
+  ShadowVolumes(vars  ),
+  _params      (params),
+  vars(vars           )
 {
   assert(this!=nullptr);
 
   std::vector<float>vertices;
-  model->getVertices(vertices);
+  vars.get<Model>("model")->getVertices(vertices);
 
   size_t const nofTriangles = vertices.size() / (verticesPerTriangle*componentsPerVertex3D);
-  auto const adj = std::make_shared<Adjacency const>(vertices.data(),nofTriangles,maxMultiplicity);
+  auto const adj = std::make_shared<Adjacency const>(vertices.data(),nofTriangles,vars.getSizeT("maxMultiplicity"));
 
   this->_nofTriangles=adj->getNofTriangles();
 

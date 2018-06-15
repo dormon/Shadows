@@ -7,25 +7,14 @@
 #include<TimeStamp.h>
 #include<RSSVTiles.h>
 
-struct RSSVParams{
-    size_t     computeSilhouetteWGS         = 64             ;
-    bool       localAtomic                  = true           ;
-    bool       cullSides                    = false          ;
-    size_t     silhouettesPerWorkgroup      = 1              ;
-    bool       usePlanes                    = 0              ;
-    glm::uvec2 copyDepthToLastLevelOfHDTWGS = glm::uvec2(8,8);
-};
+#include<RSSVParam.h>
+#include<Vars.h>
 
 class RSSV: public ShadowMethod{
   public:
     RSSV(
-        std::shared_ptr<ge::gl::Texture>const&shadowMask     ,
-        glm::uvec2                      const&windowSize     ,
-        std::shared_ptr<ge::gl::Texture>const&depthTexture   ,
-        std::shared_ptr<Model>          const&model          ,
-        size_t                          const&maxMultiplicity,
         RSSVParams                      const&params         ,
-        size_t                          const&wavefrontSize  );
+        vars::Vars                      const&vars           );
     virtual ~RSSV();
     virtual void create(
         glm::vec4 const&lightPosition,
@@ -33,9 +22,6 @@ class RSSV: public ShadowMethod{
         glm::mat4 const&projection   )override;
   protected:
   public:
-    glm::uvec2                      _windowSize                = glm::uvec2(512,512);
-    std::shared_ptr<ge::gl::Texture>_shadowMask                = nullptr            ;
-    std::shared_ptr<ge::gl::Texture>_depthTexture              = nullptr            ;
     size_t                          _wavefrontSize             = 64                 ;
     std::shared_ptr<ge::gl::Buffer> _triangles                 = nullptr            ;
     std::shared_ptr<ge::gl::Buffer> _edges                     = nullptr            ;
@@ -52,6 +38,7 @@ class RSSV: public ShadowMethod{
     std::shared_ptr<ge::gl::Program>_rasterizeProgram          = nullptr            ;
     RSSVParams                      _params                                         ;
     RSSVTilingSizes                 _tiling                                         ;
+    vars::Vars const&vars;
     void _generateHDT();
     void _copyDepthToLastLevelOfHDT();
     void _computeAllLevelsOfHDTExceptLast();

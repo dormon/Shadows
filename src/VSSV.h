@@ -5,23 +5,12 @@
 #include<Model.h>
 #include<TimeStamp.h>
 
-struct VSSVParams{
-  bool usePlanes              = false;
-  bool useStrips              = false;
-  bool useAllOppositeVertices = false;
-  bool drawCapsSeparately     = false;
-};
+#include<Vars.h>
 
 class Adjacency;
 class VSSV: public ShadowVolumes{
   public:
-    VSSV(
-        std::shared_ptr<ge::gl::Texture>const&shadowMask     ,
-        std::shared_ptr<Model>          const&model          ,
-        std::shared_ptr<ge::gl::Texture>const&depth          ,
-        ShadowVolumesParams             const&svParams       ,
-        size_t                          const&maxMultiplicity,
-        VSSVParams                      const&param          );
+    VSSV(vars::Vars&vars);
     virtual ~VSSV();
     virtual void drawSides(
         glm::vec4 const&lightPosition   ,
@@ -38,11 +27,11 @@ class VSSV: public ShadowVolumes{
     size_t                              _nofEdges               = 0      ;
     size_t                              _maxMultiplicity        = 0      ;
     size_t                              _nofTriangles           = 0      ;
-    VSSVParams                          _params                          ;
 
     std::shared_ptr<ge::gl::Program>    _drawCapsProgram        = nullptr;
     std::shared_ptr<ge::gl::VertexArray>_capsVao                = nullptr;
     std::shared_ptr<ge::gl::Buffer>     _caps                   = nullptr;
+    vars::Vars&vars;
 
     void                                _createSideDataUsingPoints   (std::shared_ptr<Adjacency>const&adj);
     void                                _createSideDataUsingAllPlanes(std::shared_ptr<Adjacency>const&adj);

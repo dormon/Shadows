@@ -1,10 +1,7 @@
 #include<Shading.h>
+#include<Deferred.h>
 
-Shading::Shading(
-    std::shared_ptr<ge::gl::Texture>const&color     ,
-    std::shared_ptr<ge::gl::Texture>const&position  ,
-    std::shared_ptr<ge::gl::Texture>const&normal    ,
-    std::shared_ptr<ge::gl::Texture>const&shadowMask):_color(color),_position(position),_normal(normal),_shadowMask(shadowMask){
+Shading::Shading(vars::Vars const&vars):vars(vars){
   assert(this!=nullptr);
   const std::string vertSrc = R".(
 #version 450
@@ -83,10 +80,10 @@ Shading::~Shading(){
 }
 
 void Shading::draw(glm::vec4 const&lightPosition,glm::vec3 const&cameraPosition,bool useShadows){
-  this->_color->bind(0);
-  this->_position->bind(1);
-  this->_normal->bind(2);
-  this->_shadowMask->bind(3);
+  vars.get<GBuffer>("gBuffer")->color->bind(0);
+  vars.get<GBuffer>("gBuffer")->position->bind(1);
+  vars.get<GBuffer>("gBuffer")->normal->bind(2);
+  vars.get<ge::gl::Texture>("shadowMask")->bind(3);
   this->_program->use();
   this->_program->set4fv("lightPosition",glm::value_ptr(lightPosition));
   this->_program->set3fv("cameraPosition",glm::value_ptr(cameraPosition));

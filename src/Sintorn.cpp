@@ -4,6 +4,7 @@
 #include<sstream>
 #include<iomanip>
 #include<util.h>
+#include<Deferred.h>
 
 size_t const VEC4_PER_SHADOWFRUSTUM   = 6;
 size_t const FLOATS_PER_SHADOWFRUSTUM = VEC4_PER_SHADOWFRUSTUM*4;
@@ -31,30 +32,23 @@ const size_t WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK = 0;
 const size_t WRITESTENCILTEXTURE_BINDING_HSTINPUT         = 1;
 
 Sintorn::Sintorn(
-    std::shared_ptr<ge::gl::Texture>const&shadowMask   ,
-    glm::uvec2                      const&windowSize   ,
-    std::shared_ptr<ge::gl::Texture>const&depthTexture ,
-    std::shared_ptr<ge::gl::Texture>const&normalTexture,
-    std::shared_ptr<Model>          const&model        ,
-    size_t                          const&wavefrontSize,
-    SintornParams                   const&params       ):
-  _windowSize       (windowSize       ),
-  _depthTexture     (depthTexture     ),
-  _normalTexture    (normalTexture    ),
-  _params           (params           )
+    SintornParams                   const&params       ,
+    vars::Vars                      const&vars         ):
+  _params           (params           ),
+  vars(vars)
 {
   assert(this!=nullptr);
 
-  this->_shadowMask = shadowMask;
+  this->_shadowMask = vars.get<ge::gl::Texture>("shadowMask");
 
   this->_useUniformTileSizeInClipSpace=false;
   this->_useUniformTileDivisibility   =false;
 
   //set wavefront size
-  this->_wavefrontSize=wavefrontSize;
+  this->_wavefrontSize=vars.getSizeT("wavefrontSize");
 
   //compute tiles sizes in tiles
-  chooseTileSizes(this->_tileDivisibility,this->_windowSize,this->_wavefrontSize);
+  chooseTileSizes(this->_tileDivisibility,*vars.get<glm::uvec2>("windowSize"),this->_wavefrontSize);
   this->_nofLevels = this->_tileDivisibility.size();
 
   //compute tile size in pixels
@@ -65,7 +59,7 @@ Sintorn::Sintorn(
 
   //compute tiles sizes in clip space
   for(auto const&x:this->_tileSizeInPixels)
-    this->_tileSizeInClipSpace.push_back(glm::vec2(2.f)/glm::vec2(windowSize)*glm::vec2(x));
+    this->_tileSizeInClipSpace.push_back(glm::vec2(2.f)/glm::vec2(*vars.get<glm::uvec2>("windowSize"))*glm::vec2(x));
 
   //compute level size
   this->_tileCount.resize(this->_nofLevels,glm::uvec2(1u,1u));
@@ -75,7 +69,7 @@ Sintorn::Sintorn(
 
   auto divRoundUp = [](uint32_t x,uint32_t y)->uint32_t{return (x/y)+((x%y)?1:0);};
   this->_usedTiles.resize(this->_nofLevels,glm::uvec2(0u,0u));
-  this->_usedTiles.back() = this->_windowSize;
+  this->_usedTiles.back() = *vars.get<glm::uvec2>("windowSize");
   for(int l=(int)this->_nofLevels-2;l>=0;--l){
     this->_usedTiles[l].x = divRoundUp(this->_usedTiles[l+1].x,this->_tileDivisibility[l+1].x);
     this->_usedTiles[l].y = divRoundUp(this->_usedTiles[l+1].y,this->_tileDivisibility[l+1].y);
@@ -95,7 +89,7 @@ Sintorn::Sintorn(
   // */
   
   std::vector<float>vertices;
-  model->getVertices(vertices);
+  vars.get<Model>("model")->getVertices(vertices);
   this->_nofTriangles = vertices.size()/3/3;
   
   //allocate shadowfrustum buffer
@@ -224,7 +218,7 @@ Sintorn::Sintorn(
 
   this->_emptyVao=std::make_shared<ge::gl::VertexArray>();
 
-  this->_finalStencilMask = std::make_shared<ge::gl::Texture>(GL_TEXTURE_2D,GL_R32UI,1,this->_windowSize.x,this->_windowSize.y);
+  this->_finalStencilMask = std::make_shared<ge::gl::Texture>(GL_TEXTURE_2D,GL_R32UI,1,vars.get<glm::uvec2>("windowSize")->x,vars.get<glm::uvec2>("windowSize")->y);
   this->_finalStencilMask->texParameteri(GL_TEXTURE_MAG_FILTER,GL_NEAREST);
   this->_finalStencilMask->texParameteri(GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 
@@ -257,10 +251,10 @@ void Sintorn::GenerateHierarchyTexture(glm::vec4 const&lightPosition){
   if(this->_nofLevels<2)return;
 
   this->WriteDepthTextureProgram->use();
-  this->WriteDepthTextureProgram->set2uiv("windowSize",glm::value_ptr(this->_windowSize));
-  this->_depthTexture->bind(WRITEDEPTHTEXTURE_BINDING_DEPTH);
+  this->WriteDepthTextureProgram->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
+  vars.get<GBuffer>("gBuffer")->depth->bind(WRITEDEPTHTEXTURE_BINDING_DEPTH);
   if(this->_params.discardBackFacing){
-    this->_normalTexture->bind(WRITEDEPTHTEXTURE_BINDING_NORMAL);
+    vars.get<GBuffer>("gBuffer")->normal->bind(WRITEDEPTHTEXTURE_BINDING_NORMAL);
     this->WriteDepthTextureProgram->set4fv("lightPosition",glm::value_ptr(lightPosition));
   }
   this->_HDT[this->_nofLevels-1]->bindImage(WRITEDEPTHTEXTURE_BINDING_HDT);
@@ -272,7 +266,7 @@ void Sintorn::GenerateHierarchyTexture(glm::vec4 const&lightPosition){
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
   this->HierarchicalDepthTextureProgram->use();
-  this->HierarchicalDepthTextureProgram->set2uiv("WindowSize",glm::value_ptr(this->_windowSize));
+  this->HierarchicalDepthTextureProgram->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
 
   this->HierarchicalDepthTextureProgram->set2uiv("TileDivisibility",glm::value_ptr(this->_tileDivisibility.data()[0]),(GLsizei)this->_nofLevels);
   this->HierarchicalDepthTextureProgram->set2uiv("TileSizeInPixels",glm::value_ptr(this->_tileSizeInPixels.data()[0]),(GLsizei)this->_nofLevels);
@@ -409,7 +403,7 @@ void Sintorn::RasterizeTexture(){
 
 void Sintorn::MergeTexture(){
   this->MergeTextureProgram->use();
-  this->MergeTextureProgram->set2uiv("WindowSize",glm::value_ptr(this->_windowSize));
+  this->MergeTextureProgram->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
 
   GLsync Sync=0;
   for(size_t l=0;l<this->_nofLevels-1;++l){
@@ -435,7 +429,7 @@ void Sintorn::MergeTexture(){
   //glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   this->WriteStencilTextureProgram->use();
-  this->WriteStencilTextureProgram->set2uiv("WindowSize",glm::value_ptr(this->_windowSize));
+  this->WriteStencilTextureProgram->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
 
   this->_finalStencilMask->bindImage(WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK);
   this->_HST[this->_nofLevels-1]->bindImage(WRITESTENCILTEXTURE_BINDING_HSTINPUT);
@@ -498,8 +492,8 @@ void Sintorn::blit(){
   this->_blitProgram->use();
   this->_finalStencilMask->bindImage(0);
   this->_shadowMask->bindImage(1);
-  this->_blitProgram->set2uiv("windowSize",glm::value_ptr(this->_windowSize));
+  this->_blitProgram->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
   glDispatchCompute(
-      (GLuint)getDispatchSize(this->_windowSize.x,8),
-      (GLuint)getDispatchSize(this->_windowSize.y,8),1);
+      (GLuint)getDispatchSize(vars.get<glm::uvec2>("windowSize")->x,8),
+      (GLuint)getDispatchSize(vars.get<glm::uvec2>("windowSize")->y,8),1);
 }

@@ -22,7 +22,7 @@ class Model{
 
 class RenderModel: public ge::gl::Context{
   public:
-    RenderModel(std::shared_ptr<Model>const&mdl);
+    RenderModel(Model*mdl);
     ~RenderModel();
     void draw(glm::mat4 const&projectionView);
     std::shared_ptr<ge::gl::VertexArray>vao = nullptr;

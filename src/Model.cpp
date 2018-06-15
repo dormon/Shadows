@@ -25,7 +25,7 @@ void Model::getVertices(std::vector<float>&vertices){
   }
 }
 
-RenderModel::RenderModel(std::shared_ptr<Model>const&mdl){
+RenderModel::RenderModel(Model*mdl){
   assert(this!=nullptr);
   if(mdl==nullptr)
     std::cerr << "mdl is nullptr!" << std::endl;

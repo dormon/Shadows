@@ -2,6 +2,7 @@
 
 #include<ProgramExtension.h>
 #include<util.h>
+#include<Deferred.h>
 
 const size_t HIERARCHICALDEPTHTEXTURE_BINDING_DEPTH     = 0;
 const size_t HIERARCHICALDEPTHTEXTURE_BINDING_HDT       = 1;
@@ -27,26 +28,19 @@ void RSSV::_allocateHDT(){
 }
 
 RSSV::RSSV(
-    std::shared_ptr<ge::gl::Texture>const&shadowMask     ,
-    glm::uvec2                      const&windowSize     ,
-    std::shared_ptr<ge::gl::Texture>const&depthTexture   ,
-    std::shared_ptr<Model>          const&model          ,
-    size_t                          const&maxMultiplicity,
     RSSVParams                      const&params         ,
-    size_t                          const&wavefrontSize  ):
-  _windowSize  (windowSize              ),
-  _shadowMask  (shadowMask              ),
-  _depthTexture(depthTexture            ),
+    vars::Vars                      const&vars           ):
   _params      (params                  ),
-  _tiling      (windowSize,wavefrontSize)
+  _tiling      (*vars.get<glm::uvec2>("windowSize"),vars.getSizeT("wavefrontSize")),
+  vars(vars)
 {
+  auto windowSize = *vars.get<glm::uvec2>("windowSize");
   assert(this!=nullptr);
   assert(
       (windowSize.x==8    && windowSize.y==8   ) ||
       (windowSize.x==64   && windowSize.y==64  ) ||
       (windowSize.x==512  && windowSize.y==512 ) ||
       (windowSize.x==4096 && windowSize.y==4096) );
-  (void)model;
   if(windowSize.x == 8   )this->_nofLevels = 1;
   if(windowSize.x == 64  )this->_nofLevels = 2;
   if(windowSize.x == 512 )this->_nofLevels = 3;
@@ -82,17 +76,17 @@ RSSV::RSSV(
 
   this->_computeSilhouettesProgram = makeComputeProgram(
       defineComputeShaderHeader(this->_params.computeSilhouetteWGS,WAVEFRONT_SIZE),
-      ge::gl::Shader::define("MAX_MULTIPLICITY",int(maxMultiplicity              )),
-      ge::gl::Shader::define("LOCAL_ATOMIC"    ,int(this->_params.localAtomic    )),
-      ge::gl::Shader::define("CULL_SIDES"      ,int(this->_params.cullSides      )),
-      ge::gl::Shader::define("USE_PLANES"      ,int(this->_params.usePlanes      )),
+      ge::gl::Shader::define("MAX_MULTIPLICITY",int(vars.getSizeT("maxMultiplicity"))),
+      ge::gl::Shader::define("LOCAL_ATOMIC"    ,int(this->_params.localAtomic       )),
+      ge::gl::Shader::define("CULL_SIDES"      ,int(this->_params.cullSides         )),
+      ge::gl::Shader::define("USE_PLANES"      ,int(this->_params.usePlanes         )),
       silhouetteFunctions,
       _computeSilhouettesSrc);
 
   std::vector<float>vertices;
-  model->getVertices(vertices);
+  vars.get<Model>("model")->getVertices(vertices);
   size_t const nofTriangles = vertices.size()/(verticesPerTriangle*componentsPerVertex3D);
-  auto adj = std::make_shared<Adjacency>(vertices.data(),nofTriangles,maxMultiplicity);
+  auto adj = std::make_shared<Adjacency>(vertices.data(),nofTriangles,vars.getSizeT("maxMultiplicity"));
 
   size_t const nofVec4PerEdge = verticesPerEdge + adj->getMaxMultiplicity();
   this->_edges = std::make_shared<ge::gl::Buffer>(sizeof(float)*componentsPerVertex4D*nofVec4PerEdge*adj->getNofEdges());
@@ -187,8 +181,8 @@ void RSSV::create(
 void RSSV::_copyDepthToLastLevelOfHDT(){
   assert(this!=nullptr);
   this->_generateHDT0Program->use();
-  this->_generateHDT0Program->set2uiv("windowSize",glm::value_ptr(this->_windowSize));
-  this->_depthTexture->bind(HIERARCHICALDEPTHTEXTURE_BINDING_DEPTH);
+  this->_generateHDT0Program->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
+  vars.get<GBuffer>("gBuffer")->depth->bind(HIERARCHICALDEPTHTEXTURE_BINDING_DEPTH);
   this->_HDT.back()->bindImage(HIERARCHICALDEPTHTEXTURE_BINDING_HDT);
   glm::uvec2 nofWorkGroups = divRoundUp(_tiling.hdtSize.back(),_params.copyDepthToLastLevelOfHDTWGS);
     
