@@ -55,7 +55,6 @@ class Shadows : public simple3DApp::Application {
   std::shared_ptr<TimeStamp>                     timeStamper      = nullptr;
 
   CameraParam cameraParam;
-  TestParam   testParam;
 
   vars::Vars vars;
 
@@ -73,7 +72,6 @@ class Shadows : public simple3DApp::Application {
 void Shadows::parseArguments() {
   assert(this != nullptr);
   auto arg = std::make_shared<argumentViewer::ArgumentViewer>(argc, argv);
-  cameraParam = CameraParam(arg);
   *vars.add<glm::uvec2 >("windowSize"     ) = vector2uvec2(arg->getu32v("--window-size", {512, 512}, "window size"));
   *vars.add<glm::vec4  >("lightPosition"  ) = vector2vec4(arg->getf32v("--light", {0.f, 1000.f, 0.f, 1.f}, "light position"));
   vars.addString("modelName"      ) = arg->gets("--model", "/media/windata/ft/prace/models/2tri/2tri.3ds","model file name");
@@ -89,31 +87,27 @@ void Shadows::parseArguments() {
   loadVSSVParams(vars,arg);
   loadSintornParams(vars,arg);
   loadRSSVParams(vars,arg);
+  loadTestParams(vars,arg);
+  cameraParam = CameraParam(arg);
 
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");
 
-  testParam = TestParam(arg);
-
   bool printHelp = arg->isPresent("-h", "prints this help");
-
-  printHelp = printHelp || !arg->validate();
-  if (printHelp) {
+  if (printHelp || !arg->validate()) {
     std::cerr << arg->toStr();
     exit(0);
   }
 }
 
 void Shadows::initWavefrontSize() {
-  vars.getSizeT("wavefrontSize") =
-      getWavefrontSize(vars.getSizeT("wavefrontSize"));
+  vars.getSizeT("wavefrontSize") = getWavefrontSize(vars.getSizeT("wavefrontSize"));
 }
 
 void Shadows::initCamera() {
   assert(this != nullptr);
-  cameraTransform = createView(cameraParam);
-  cameraProjection =
-      createProjection(cameraParam, *vars.get<glm::uvec2>("windowSize"));
+  cameraTransform  = createView(cameraParam);
+  cameraProjection = createProjection(cameraParam, *vars.get<glm::uvec2>("windowSize"));
 }
 
 void Shadows::init() {
@@ -129,20 +123,16 @@ void Shadows::init() {
 
   initWavefrontSize();
 
-  if (testParam.name == "fly" || testParam.name == "grid")
+  if (vars.getString("test.name") == "fly" || vars.getString("test.name") == "grid")
     cameraParam.type = "free";
 
   initCamera();
 
-  vars.add<GBuffer>("gBuffer", windowSize.x, windowSize.y);
-
-  vars.add<Model>("model",*vars.get<std::string>("modelName"));
-  vars.add<RenderModel>("renderModel",vars.get<Model>("model"));
-
-  vars.add<ge::gl::Texture>("shadowMask", (GLenum)GL_TEXTURE_2D,
-                            (GLenum)GL_R32F, 1, (GLsizei)windowSize.x,
-                            (GLsizei)windowSize.y);
-  vars.add<Shading>("shading",vars);
+  vars.add<GBuffer        >("gBuffer"    ,windowSize.x, windowSize.y);
+  vars.add<Model          >("model"      ,*vars.get<std::string>("modelName"));
+  vars.add<RenderModel    >("renderModel",vars.get<Model>("model"));
+  vars.add<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
+  vars.add<Shading        >("shading"    ,vars);
 
   if      (vars.getString("methodName") == "cubeShadowMapping")shadowMethod = std::make_shared<CubeShadowMapping>(vars);
   else if (vars.getString("methodName") == "cssv"             )shadowMethod = std::make_shared<CSSV>(vars);
@@ -158,7 +148,7 @@ void Shadows::init() {
     timeStamper = nullptr;  // std::make_shared<TimeStamp>(nullptr);
   if (shadowMethod) shadowMethod->timeStamp = timeStamper;
 
-  if (testParam.name == "fly" || testParam.name == "grid") {
+  if (vars.getString("test.name") == "fly" || vars.getString("test.name") == "grid") {
     if (shadowMethod != nullptr) {
       shadowMethod->timeStamp = timeStamper;
     }
@@ -199,13 +189,13 @@ void Shadows::drawScene() {
 
 void Shadows::measure() {
   assert(this != nullptr);
-  if (testParam.flyKeyFileName == "") {
+  if (vars.getString("test.flyKeyFileName") == "") {
     std::cerr << "camera path file is empty" << std::endl;
     mainLoop->removeWindow(window->getId());
     return;
   }
   auto cameraPath =
-      std::make_shared<CameraPath>(false, testParam.flyKeyFileName);
+      std::make_shared<CameraPath>(false, vars.getString("test.flyKeyFileName"));
   std::map<std::string, float> measurement;
   timeStamper->setPrinter([&](std::vector<std::string> const& names,
                               std::vector<float> const&       values) {
@@ -217,15 +207,15 @@ void Shadows::measure() {
   });
 
   std::vector<std::vector<std::string>> csv;
-  for (size_t k = 0; k < testParam.flyLength; ++k) {
+  for (size_t k = 0; k < vars.getSizeT("test.flyLength"); ++k) {
     auto keypoint =
-        cameraPath->getKeypoint(float(k) / float(testParam.flyLength));
+        cameraPath->getKeypoint(float(k) / float(vars.getSizeT("test.flyLength")));
     auto flc =
         std::dynamic_pointer_cast<basicCamera::FreeLookCamera>(cameraTransform);
     flc->setPosition(keypoint.position);
     flc->setRotation(keypoint.viewVector, keypoint.upVector);
 
-    for (size_t f = 0; f < testParam.framesPerMeasurement; ++f) drawScene();
+    for (size_t f = 0; f < vars.getSizeT("test.framesPerMeasurement"); ++f) drawScene();
 
     std::vector<std::string> line;
     if (csv.size() == 0) {
@@ -239,12 +229,12 @@ void Shadows::measure() {
     for (auto const& x : measurement)
       if (x.first != "")
         line.push_back(txtUtils::valueToString(
-            x.second / float(testParam.framesPerMeasurement)));
+            x.second / float(vars.getSizeT("test.framesPerMeasurement"))));
     csv.push_back(line);
     measurement.clear();
     window->swap();
   }
-  std::string output = testParam.outputName + ".csv";
+  std::string output = vars.getString("test.outputName") + ".csv";
   saveCSV(output, csv);
   mainLoop->removeWindow(window->getId());
 }
@@ -252,7 +242,7 @@ void Shadows::measure() {
 void Shadows::draw() {
   assert(this != nullptr);
 
-  if (testParam.name == "fly") {
+  if (vars.getString("test.name") == "fly") {
     measure();
     return;
   }

@@ -4,6 +4,7 @@
 #include <ArgumentViewer/ArgumentViewer.h>
 #include <BasicCamera/Camera.h>
 #include <glm/glm.hpp>
+#include <Vars.h>
 
 struct CameraParam {
   std::string type            = "orbit";
