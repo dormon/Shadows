@@ -51,7 +51,6 @@ class Shadows : public simple3DApp::Application {
   std::shared_ptr<basicCamera::CameraTransform>  cameraTransform  = nullptr;
   std::shared_ptr<basicCamera::CameraProjection> cameraProjection = nullptr;
   std::shared_ptr<ShadowMethod>                  shadowMethod     = nullptr;
-  std::shared_ptr<DrawPrimitive>                 drawPrimitive    = nullptr;
 
   CameraParam cameraParam;
 
@@ -66,6 +65,9 @@ class Shadows : public simple3DApp::Application {
   virtual void                mouseMove(SDL_Event const& event) override;
   std::map<SDL_Keycode, bool> keyDown;
   virtual void                key(SDL_Event const& e, bool down) override;
+  void ifExistStamp(std::string const&n);
+  void ifExistBeginStamp();
+  void ifExistEndStamp(std::string const&n);
 };
 
 void Shadows::parseArguments() {
@@ -82,11 +84,11 @@ void Shadows::parseArguments() {
   vars.addBool  ("zfail"          ) = arg->getu32("--zfail", 1, "shadow volumes zfail 0/1");
 
   loadCubeShadowMappingParams(vars,arg);
-  loadCSSVParams(vars,arg);
-  loadVSSVParams(vars,arg);
-  loadSintornParams(vars,arg);
-  loadRSSVParams(vars,arg);
-  loadTestParams(vars,arg);
+  loadCSSVParams             (vars,arg);
+  loadVSSVParams             (vars,arg);
+  loadSintornParams          (vars,arg);
+  loadRSSVParams             (vars,arg);
+  loadTestParams             (vars,arg);
   cameraParam = CameraParam(arg);
 
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
@@ -145,12 +147,23 @@ void Shadows::init() {
   if (vars.getBool("verbose") || shadowMethod || isTest)
     vars.add<TimeStamp>("timeStamp");
 
-  drawPrimitive = std::make_shared<DrawPrimitive>(windowSize);
+  vars.add<DrawPrimitive>("drawPrimitive",windowSize);
+}
+
+void Shadows::ifExistStamp(std::string const&n){
+  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->stamp(n);
+}
+
+void Shadows::ifExistBeginStamp(){
+  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->begin();
+}
+
+void Shadows::ifExistEndStamp(std::string const&n){
+  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->end(n);
 }
 
 void Shadows::drawScene() {
-  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->begin();
-
+  ifExistBeginStamp();
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   ge::gl::glViewport(0, 0, windowSize.x, windowSize.y);
   ge::gl::glEnable(GL_DEPTH_TEST);
@@ -162,20 +175,19 @@ void Shadows::drawScene() {
                     cameraTransform->getView());
   vars.get<GBuffer>("gBuffer")->end();
 
-  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->stamp("gBuffer");
+  ifExistStamp("gBuffer");
 
   if (shadowMethod)
     shadowMethod->create(*vars.get<glm::vec4>("lightPosition"),
                          cameraTransform->getView(),
                          cameraProjection->getProjection());
 
-  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->stamp("");
   ge::gl::glDisable(GL_DEPTH_TEST);
   vars.get<Shading>("shading")->draw(*vars.get<glm::vec4>("lightPosition"),
                 glm::vec3(glm::inverse(cameraTransform->getView()) *
                           glm::vec4(0, 0, 0, 1)),
                 *vars.get<bool>("useShadows"));
-  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->end("shading");
+  ifExistEndStamp("shading");
 }
 
 void Shadows::measure() {
@@ -242,14 +254,13 @@ void Shadows::draw() {
 
   drawScene();
 
-  // drawPrimitive->drawTexture(gBuffer->normal);
   //*
   if (vars.getString("methodName") == "sintorn") {
     auto sintorn = std::dynamic_pointer_cast<Sintorn>(shadowMethod);
-    if (keyDown['h']) drawPrimitive->drawTexture(sintorn->_HDT[0]);
-    if (keyDown['j']) drawPrimitive->drawTexture(sintorn->_HDT[1]);
-    if (keyDown['k']) drawPrimitive->drawTexture(sintorn->_HDT[2]);
-    if (keyDown['l']) drawPrimitive->drawTexture(sintorn->_HDT[3]);
+    if (keyDown['h']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(sintorn->_HDT[0]);
+    if (keyDown['j']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(sintorn->_HDT[1]);
+    if (keyDown['k']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(sintorn->_HDT[2]);
+    if (keyDown['l']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(sintorn->_HDT[3]);
 
     if (keyDown['v']) sintorn->drawHST(0);
     if (keyDown['b']) sintorn->drawHST(1);
@@ -259,10 +270,10 @@ void Shadows::draw() {
   }
   if (vars.getString("methodName") == "rssv") {
     auto rssv = std::dynamic_pointer_cast<RSSV>(shadowMethod);
-    if (keyDown['h']) drawPrimitive->drawTexture(rssv->_HDT[0]);
-    if (keyDown['j']) drawPrimitive->drawTexture(rssv->_HDT[1]);
-    if (keyDown['k']) drawPrimitive->drawTexture(rssv->_HDT[2]);
-    if (keyDown['l']) drawPrimitive->drawTexture(rssv->_HDT[3]);
+    if (keyDown['h']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(rssv->_HDT[0]);
+    if (keyDown['j']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(rssv->_HDT[1]);
+    if (keyDown['k']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(rssv->_HDT[2]);
+    if (keyDown['l']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(rssv->_HDT[3]);
   }
 
   // */
