@@ -31,7 +31,6 @@ class VSSV: public ShadowVolumes{
     std::shared_ptr<ge::gl::Program>    _drawCapsProgram        = nullptr;
     std::shared_ptr<ge::gl::VertexArray>_capsVao                = nullptr;
     std::shared_ptr<ge::gl::Buffer>     _caps                   = nullptr;
-    vars::Vars&vars;
 
     void                                _createSideDataUsingPoints   (std::shared_ptr<Adjacency>const&adj);
     void                                _createSideDataUsingAllPlanes(std::shared_ptr<Adjacency>const&adj);

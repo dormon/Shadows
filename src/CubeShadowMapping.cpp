@@ -4,7 +4,7 @@
 
 CubeShadowMapping::CubeShadowMapping(
         vars::Vars&vars       ):
-  vars(vars)
+  ShadowMethod(vars)
 {
   assert(this!=nullptr);
   this->_shadowMap = std::make_shared<ge::gl::Texture>(GL_TEXTURE_CUBE_MAP,GL_DEPTH_COMPONENT24,1,vars.getUint32("csm.resolution"),vars.getUint32("csm.resolution"));
@@ -50,7 +50,7 @@ void CubeShadowMapping::create(
     glm::vec4 const&lightPosition,
     glm::mat4 const&             ,
     glm::mat4 const&             ){
-  if(this->timeStamp)this->timeStamp->stamp("");
+  ifExistStamp("");
   glEnable(GL_POLYGON_OFFSET_FILL);
   glPolygonOffset(2.5,10);
   auto const resolution = vars.getUint32("csm.resolution");
@@ -70,7 +70,7 @@ void CubeShadowMapping::create(
   glDrawArraysInstanced(GL_TRIANGLES,0,vars.get<RenderModel>("renderModel")->nofVertices,faces);
   this->_vao->unbind();
   this->_fbo->unbind();
-  if(this->timeStamp)this->timeStamp->stamp("createShadowMap");
+  ifExistStamp("createShadowMap");
   
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   glViewport(0,0,windowSize.x,windowSize.y);
@@ -86,6 +86,6 @@ void CubeShadowMapping::create(
   glDrawArrays(GL_TRIANGLE_STRIP,0,4);
   this->_maskVao->unbind();
   this->_maskFbo->unbind();
-  if(this->timeStamp)this->timeStamp->stamp("createShadowMask");
+  ifExistStamp("createShadowMask");
 }
 

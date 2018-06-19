@@ -106,8 +106,7 @@ void CSSVSOE::_createCapsData (std::shared_ptr<Adjacency const>const&adj){
 
 
 CSSVSOE::CSSVSOE(vars::Vars&vars):
-  ShadowVolumes(vars  ),
-  vars(vars)
+  ShadowVolumes(vars  )
 {
   assert(this!=nullptr);
 
@@ -209,7 +208,7 @@ void CSSVSOE::drawSides(
   assert(this->_dibo            !=nullptr);
 
   this->_computeSides(lightPosition);
-  if(this->timeStamp)this->timeStamp->stamp("compute");
+  ifExistStamp("compute");
 
   this->_sidesVao->bind();
   auto mvp = projectionMatrix * viewMatrix;

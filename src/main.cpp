@@ -52,7 +52,6 @@ class Shadows : public simple3DApp::Application {
   std::shared_ptr<basicCamera::CameraProjection> cameraProjection = nullptr;
   std::shared_ptr<ShadowMethod>                  shadowMethod     = nullptr;
   std::shared_ptr<DrawPrimitive>                 drawPrimitive    = nullptr;
-  std::shared_ptr<TimeStamp>                     timeStamper      = nullptr;
 
   CameraParam cameraParam;
 
@@ -142,23 +141,15 @@ void Shadows::init() {
   else if (vars.getString("methodName") == "vssv"             )shadowMethod = std::make_shared<VSSV>(vars);
   else vars.getBool("useShadows") = false;
 
-  if (vars.getBool("verbose"))
-    timeStamper = std::make_shared<TimeStamp>();
-  else
-    timeStamper = nullptr;  // std::make_shared<TimeStamp>(nullptr);
-  if (shadowMethod) shadowMethod->timeStamp = timeStamper;
-
-  if (vars.getString("test.name") == "fly" || vars.getString("test.name") == "grid") {
-    if (shadowMethod != nullptr) {
-      shadowMethod->timeStamp = timeStamper;
-    }
-  }
+  bool isTest = vars.getString("test.name") == "fly";
+  if (vars.getBool("verbose") || shadowMethod || isTest)
+    vars.add<TimeStamp>("timeStamp");
 
   drawPrimitive = std::make_shared<DrawPrimitive>(windowSize);
 }
 
 void Shadows::drawScene() {
-  if (timeStamper) timeStamper->begin();
+  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->begin();
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   ge::gl::glViewport(0, 0, windowSize.x, windowSize.y);
@@ -171,20 +162,20 @@ void Shadows::drawScene() {
                     cameraTransform->getView());
   vars.get<GBuffer>("gBuffer")->end();
 
-  if (timeStamper) timeStamper->stamp("gBuffer");
+  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->stamp("gBuffer");
 
   if (shadowMethod)
     shadowMethod->create(*vars.get<glm::vec4>("lightPosition"),
                          cameraTransform->getView(),
                          cameraProjection->getProjection());
 
-  if (timeStamper) timeStamper->stamp("");
+  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->stamp("");
   ge::gl::glDisable(GL_DEPTH_TEST);
   vars.get<Shading>("shading")->draw(*vars.get<glm::vec4>("lightPosition"),
                 glm::vec3(glm::inverse(cameraTransform->getView()) *
                           glm::vec4(0, 0, 0, 1)),
                 *vars.get<bool>("useShadows"));
-  if (timeStamper) timeStamper->end("shading");
+  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->end("shading");
 }
 
 void Shadows::measure() {
@@ -197,7 +188,7 @@ void Shadows::measure() {
   auto cameraPath =
       std::make_shared<CameraPath>(false, vars.getString("test.flyKeyFileName"));
   std::map<std::string, float> measurement;
-  timeStamper->setPrinter([&](std::vector<std::string> const& names,
+  vars.get<TimeStamp>("timeStamp")->setPrinter([&](std::vector<std::string> const& names,
                               std::vector<float> const&       values) {
     for (size_t i = 0; i < names.size(); ++i)
       if (names[i] != "") {

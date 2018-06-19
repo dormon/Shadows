@@ -1,6 +1,6 @@
 #include<ShadowMethod.h>
 
-ShadowMethod::ShadowMethod(){}
+ShadowMethod::ShadowMethod(vars::Vars&vars):vars(vars){}
 
 /**
  * @brief determine if vertex a is greater than vertex b
@@ -50,3 +50,6 @@ glm::vec4 computePlane(glm::vec3 A,glm::vec3 B,glm::vec3 C){
   return p;
 }
 
+void ShadowMethod::ifExistStamp(std::string const&n){
+  if(vars.has("timeStamp"))vars.get<TimeStamp>("timeStamp")->stamp(n);
+}

@@ -32,7 +32,7 @@ const size_t WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK = 0;
 const size_t WRITESTENCILTEXTURE_BINDING_HSTINPUT         = 1;
 
 Sintorn::Sintorn(vars::Vars&vars):
-  vars(vars)
+  ShadowMethod(vars)
 {
   assert(this!=nullptr);
 
@@ -447,17 +447,17 @@ void Sintorn::create(
     glm::mat4 const&view      ,
     glm::mat4 const&projection){
   assert(this!=nullptr);
-  if(this->timeStamp)this->timeStamp->stamp("");
+  ifExistStamp("");
   this->GenerateHierarchyTexture(lightPosition);
-  if(this->timeStamp)this->timeStamp->stamp("computeHDT");
+  ifExistStamp("computeHDT");
   this->ComputeShadowFrusta(lightPosition,projection*view);
-  if(this->timeStamp)this->timeStamp->stamp("computeShadowFrusta");
+  ifExistStamp("computeShadowFrusta");
   this->RasterizeTexture();
-  if(this->timeStamp)this->timeStamp->stamp("rasterize");
+  ifExistStamp("rasterize");
   this->MergeTexture();
-  if(this->timeStamp)this->timeStamp->stamp("merge");
+  ifExistStamp("merge");
   this->blit();
-  if(this->timeStamp)this->timeStamp->stamp("blit");
+  ifExistStamp("blit");
 }
 
 void Sintorn::drawHST(size_t l){

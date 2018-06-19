@@ -23,5 +23,4 @@ class CubeShadowMapping: public ShadowMethod{
     std::shared_ptr<ge::gl::Framebuffer>_maskFbo          = nullptr;
     std::shared_ptr<ge::gl::Program>    _createShadowMap  = nullptr;
     std::shared_ptr<ge::gl::Program>    _createShadowMask = nullptr;
-    vars::Vars&vars;
 };

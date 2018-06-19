@@ -28,8 +28,8 @@ void RSSV::_allocateHDT(){
 }
 
 RSSV::RSSV(vars::Vars&vars           ):
-  _tiling      (*vars.get<glm::uvec2>("windowSize"),vars.getSizeT("wavefrontSize")),
-  vars(vars)
+  ShadowMethod(vars),
+  _tiling      (*vars.get<glm::uvec2>("windowSize"),vars.getSizeT("wavefrontSize"))
 {
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   assert(this!=nullptr);
@@ -166,13 +166,13 @@ void RSSV::create(
   (void)lightPosition;
   (void)view;
   (void)projection;
-  if(this->timeStamp)this->timeStamp->stamp("");
+  ifExistStamp("");
   this->_generateHDT();
-  if(this->timeStamp)this->timeStamp->stamp("computeHDT");
+  ifExistStamp("computeHDT");
   this->_computeSilhouettes(lightPosition);
-  if(this->timeStamp)this->timeStamp->stamp("computeSilhouettes");
+  ifExistStamp("computeSilhouettes");
   this->_rasterize(lightPosition,view,projection);
-  if(this->timeStamp)this->timeStamp->stamp("rasterize");
+  ifExistStamp("rasterize");
 }
 
 void RSSV::_copyDepthToLastLevelOfHDT(){

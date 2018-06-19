@@ -1,7 +1,7 @@
 #include<ShadowVolumes.h>
 #include<Deferred.h>
 
-ShadowVolumes::ShadowVolumes(vars::Vars const&vars):vars(vars)
+ShadowVolumes::ShadowVolumes(vars::Vars&vars):ShadowMethod(vars)
 {
   assert(this!=nullptr);
   auto depth = vars.get<GBuffer>("gBuffer")->depth;
@@ -54,7 +54,7 @@ void ShadowVolumes::create(
   assert(this!=nullptr);
   assert(this->_fbo!=nullptr);
 
-  if(this->timeStamp)this->timeStamp->stamp("");
+  ifExistStamp("");
 
   this->_fbo->bind();
   glEnable(GL_STENCIL_TEST);
@@ -72,11 +72,11 @@ void ShadowVolumes::create(
   glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
 
   this->drawSides(lightPosition,viewMatrix,projectionMatrix);
-  if(this->timeStamp)this->timeStamp->stamp("drawSides");
+  ifExistStamp("drawSides");
 
   if(vars.getBool("zfail")){
     this->drawCaps(lightPosition,viewMatrix,projectionMatrix);
-    if(this->timeStamp)this->timeStamp->stamp("drawCaps");
+    ifExistStamp("drawCaps");
   }
   this->_fbo->unbind();
 
@@ -87,6 +87,6 @@ void ShadowVolumes::create(
   glEnable(GL_DEPTH_TEST);
   glDepthMask(GL_TRUE);
 
-  if(this->timeStamp)this->timeStamp->stamp("blit");
+  ifExistStamp("blit");
 }
 

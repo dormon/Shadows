@@ -2,11 +2,10 @@
 
 #include<geGL/geGL.h>
 #include<ShadowMethod.h>
-#include<Vars.h>
 
 class ShadowVolumes: public ShadowMethod{
   public:
-    ShadowVolumes(vars::Vars const&vars);
+    ShadowVolumes(vars::Vars&vars);
     virtual ~ShadowVolumes();
     virtual void create(
         glm::vec4 const&lightPosition   ,
@@ -25,6 +24,5 @@ class ShadowVolumes: public ShadowMethod{
     std::shared_ptr<ge::gl::Framebuffer>_maskFbo     = nullptr;
     std::shared_ptr<ge::gl::Program>    _blitProgram = nullptr;
     std::shared_ptr<ge::gl::VertexArray>_emptyVao    = nullptr;
-    vars::Vars const&vars;
     void _blit();
 };

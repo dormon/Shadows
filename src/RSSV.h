@@ -8,7 +8,6 @@
 #include<RSSVTiles.h>
 
 #include<RSSVParam.h>
-#include<Vars.h>
 
 class RSSV: public ShadowMethod{
   public:
@@ -35,7 +34,6 @@ class RSSV: public ShadowMethod{
     std::shared_ptr<ge::gl::Texture>_screenSpaceMultiplicity   = nullptr            ;
     std::shared_ptr<ge::gl::Program>_rasterizeProgram          = nullptr            ;
     RSSVTilingSizes                 _tiling                                         ;
-    vars::Vars&vars;
     void _generateHDT();
     void _copyDepthToLastLevelOfHDT();
     void _computeAllLevelsOfHDTExceptLast();

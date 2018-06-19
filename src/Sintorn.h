@@ -22,7 +22,6 @@ class Sintorn: public ShadowMethod{
     size_t     _nofTriangles = 0;
     size_t     _wavefrontSize = 64;
 
-    vars::Vars&vars;
     std::shared_ptr<ge::gl::Texture>_finalStencilMask;
     std::shared_ptr<ge::gl::Buffer>_shadowFrusta = nullptr;
     std::shared_ptr<ge::gl::VertexArray>_emptyVao;

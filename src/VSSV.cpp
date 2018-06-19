@@ -216,8 +216,7 @@ void VSSV::_createSideDataUsingPlanes(std::shared_ptr<Adjacency>const&adj){
 }
 
 VSSV::VSSV(vars::Vars&vars):
-  ShadowVolumes(vars       ),
-  vars(vars)
+  ShadowVolumes(vars       )
 {
   assert(this!=nullptr);
 
