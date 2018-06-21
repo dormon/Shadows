@@ -2,6 +2,8 @@
 #include<BasicCamera/FreeLookCamera.h>
 #include<ArgumentViewer/ArgumentViewer.h>
 #include<util.h>
+#include<TxtUtils/TxtUtils.h>
+#include<CameraPath.h>
 
 void loadBasicApplicationParameters(vars::Vars&vars,std::shared_ptr<argumentViewer::ArgumentViewer>const&args){
   *vars.add<glm::uvec2 >("windowSize"     ) = vector2uvec2(args->getu32v("--window-size", {512, 512}, "window size"));
@@ -25,5 +27,38 @@ void moveCameraWSAD(
   for (int a = 0; a < 3; ++a)
     freeLook->move(a, float(keyDown["d s"[a]] - keyDown["acw"[a]]) *
                           freeCameraSpeed);
+}
+
+void writeCSVHeaderIfFirstLine(
+    std::vector<std::vector<std::string>>&csv,
+    std::map<std::string,float>const&measurement){
+  if (csv.size() != 0) return;
+  std::vector<std::string>line;
+  line.push_back("frame");
+  for (auto const& x : measurement)
+    if (x.first != "") line.push_back(x.first);
+  csv.push_back(line);
+}
+
+void writeMeasurementIntoCSV(
+    vars::Vars&vars,
+    std::vector<std::vector<std::string>>&csv,
+    std::map<std::string,float>const&measurement,
+    size_t idOfMeasurement){
+  std::vector<std::string> line;
+  line.push_back(txtUtils::valueToString(idOfMeasurement));
+  for (auto const& x : measurement)
+    if (x.first != "")
+      line.push_back(txtUtils::valueToString(
+          x.second / float(vars.getSizeT("test.framesPerMeasurement"))));
+  csv.push_back(line);
+}
+
+void setCameraAccordingToKeyFrame(std::shared_ptr<CameraPath>const&cameraPath,vars::Vars&vars,size_t keyFrame){
+  auto keypoint =
+      cameraPath->getKeypoint(float(keyFrame) / float(vars.getSizeT("test.flyLength")));
+  auto flc = vars.getReinterpret<basicCamera::FreeLookCamera>("cameraTransform");
+  flc->setPosition(keypoint.position);
+  flc->setRotation(keypoint.viewVector, keypoint.upVector);
 }
 

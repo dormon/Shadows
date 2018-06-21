@@ -48,7 +48,7 @@ class Shadows : public simple3DApp::Application {
  public:
   Shadows(int argc, char* argv[]) : Application(argc, argv) {}
   virtual void draw() override;
-  std::shared_ptr<ShadowMethod>                  shadowMethod     = nullptr;
+  //std::shared_ptr<ShadowMethod>                  shadowMethod     = nullptr;
 
   vars::Vars vars;
 
@@ -116,16 +116,16 @@ void Shadows::init() {
   vars.add<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
   vars.add<Shading        >("shading"    ,vars);
 
-  if      (vars.getString("methodName") == "cubeShadowMapping")shadowMethod = std::make_shared<CubeShadowMapping>(vars);
-  else if (vars.getString("methodName") == "cssv"             )shadowMethod = std::make_shared<CSSV>(vars);
-  else if (vars.getString("methodName") == "cssvsoe"          )shadowMethod = std::make_shared<CSSVSOE>(vars);
-  else if (vars.getString("methodName") == "sintorn"          )shadowMethod = std::make_shared<Sintorn>(vars);
-  else if (vars.getString("methodName") == "rssv"             )shadowMethod = std::make_shared<RSSV>(vars);
-  else if (vars.getString("methodName") == "vssv"             )shadowMethod = std::make_shared<VSSV>(vars);
+  if      (vars.getString("methodName") == "cubeShadowMapping")vars.add<CubeShadowMapping>("shadowMethod",vars);
+  else if (vars.getString("methodName") == "cssv"             )vars.add<CSSV             >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "cssvsoe"          )vars.add<CSSVSOE          >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "sintorn"          )vars.add<Sintorn          >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "rssv"             )vars.add<RSSV             >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "vssv"             )vars.add<VSSV             >("shadowMethod",vars);
   else vars.getBool("useShadows") = false;
 
   bool isTest = vars.getString("test.name") == "fly";
-  if (vars.getBool("verbose") || (shadowMethod && isTest))
+  if (vars.getBool("verbose") || (vars.has("shadowMethod") && isTest))
     vars.add<TimeStamp>("timeStamp");
 
   vars.add<DrawPrimitive>("drawPrimitive",windowSize);
@@ -159,8 +159,8 @@ void Shadows::drawScene() {
 
   ifExistStamp("gBuffer");
 
-  if (shadowMethod)
-    shadowMethod->create(*vars.get<glm::vec4>("lightPosition"),
+  if (vars.has("shadowMethod"))
+    vars.getReinterpret<ShadowMethod>("shadowMethod")->create(*vars.get<glm::vec4>("lightPosition"),
                          cameraTransform->getView(),
                          cameraProjection->getProjection());
 
@@ -170,39 +170,6 @@ void Shadows::drawScene() {
                           glm::vec4(0, 0, 0, 1)),
                 *vars.get<bool>("useShadows"));
   ifExistEndStamp("shading");
-}
-
-void writeCSVHeaderIfFirstLine(
-    std::vector<std::vector<std::string>>&csv,
-    std::map<std::string,float>const&measurement){
-  if (csv.size() != 0) return;
-  std::vector<std::string>line;
-  line.push_back("frame");
-  for (auto const& x : measurement)
-    if (x.first != "") line.push_back(x.first);
-  csv.push_back(line);
-}
-
-void writeMeasurementIntoCSV(
-    vars::Vars&vars,
-    std::vector<std::vector<std::string>>&csv,
-    std::map<std::string,float>const&measurement,
-    size_t idOfMeasurement){
-  std::vector<std::string> line;
-  line.push_back(txtUtils::valueToString(idOfMeasurement));
-  for (auto const& x : measurement)
-    if (x.first != "")
-      line.push_back(txtUtils::valueToString(
-          x.second / float(vars.getSizeT("test.framesPerMeasurement"))));
-  csv.push_back(line);
-}
-
-void setCameraAccordingToKeyFrame(std::shared_ptr<CameraPath>const&cameraPath,vars::Vars&vars,size_t keyFrame){
-    auto keypoint =
-        cameraPath->getKeypoint(float(keyFrame) / float(vars.getSizeT("test.flyLength")));
-    auto flc = vars.getReinterpret<basicCamera::FreeLookCamera>("cameraTransform");
-    flc->setPosition(keypoint.position);
-    flc->setRotation(keypoint.viewVector, keypoint.upVector);
 }
 
 
@@ -256,7 +223,7 @@ void Shadows::draw() {
 
   //*
   if (vars.getString("methodName") == "sintorn") {
-    auto sintorn = std::dynamic_pointer_cast<Sintorn>(shadowMethod);
+    auto sintorn = vars.getReinterpret<Sintorn>("shadowMethod");
     auto dp = vars.get<DrawPrimitive>("drawPrimitive");
     auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(sintorn->_HDT[i]);};
     for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
@@ -267,7 +234,7 @@ void Shadows::draw() {
     if (keyDown[',']) sintorn->drawFinalStencilMask();
   }
   if (vars.getString("methodName") == "rssv") {
-    auto rssv = std::dynamic_pointer_cast<RSSV>(shadowMethod);
+    auto rssv = vars.getReinterpret<RSSV>("shadowMethod");
     auto dp = vars.get<DrawPrimitive>("drawPrimitive");
     auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(rssv->_HDT[i]);};
     for(int i=0;i<4;++i)drawTex("hjkl"[i],i);

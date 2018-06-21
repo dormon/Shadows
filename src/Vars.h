@@ -43,7 +43,7 @@ class vars::Vars {
   bool         has(std::string const& n) const;
   std::type_info const& getType(std::string const& n) const;
   template <typename CLASS, typename... ARGS>
-  CLASS* add(std::string const& n, ARGS const&... args);
+  CLASS* add(std::string const& n, ARGS &&... args);
   template <typename CLASS>
   CLASS* get(std::string const& n) const;
   template <typename CLASS>
@@ -56,7 +56,7 @@ class vars::Vars {
 };
 
 template <typename CLASS, typename... ARGS>
-CLASS* vars::Vars::add(std::string const& n, ARGS const&... args) {
+CLASS* vars::Vars::add(std::string const& n, ARGS &&... args) {
   void* data = new CLASS{args...};
   auto r = add(n, data, getDestructor<CLASS>(), typeid(CLASS));
   return reinterpret_cast<CLASS*>(r);
