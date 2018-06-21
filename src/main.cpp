@@ -172,6 +172,40 @@ void Shadows::drawScene() {
   ifExistEndStamp("shading");
 }
 
+void writeCSVHeaderIfFirstLine(
+    std::vector<std::vector<std::string>>&csv,
+    std::map<std::string,float>const&measurement){
+  if (csv.size() != 0) return;
+  std::vector<std::string>line;
+  line.push_back("frame");
+  for (auto const& x : measurement)
+    if (x.first != "") line.push_back(x.first);
+  csv.push_back(line);
+}
+
+void writeMeasurementIntoCSV(
+    vars::Vars&vars,
+    std::vector<std::vector<std::string>>&csv,
+    std::map<std::string,float>const&measurement,
+    size_t idOfMeasurement){
+  std::vector<std::string> line;
+  line.push_back(txtUtils::valueToString(idOfMeasurement));
+  for (auto const& x : measurement)
+    if (x.first != "")
+      line.push_back(txtUtils::valueToString(
+          x.second / float(vars.getSizeT("test.framesPerMeasurement"))));
+  csv.push_back(line);
+}
+
+void setCameraAccordingToKeyFrame(std::shared_ptr<CameraPath>const&cameraPath,vars::Vars&vars,size_t keyFrame){
+    auto keypoint =
+        cameraPath->getKeypoint(float(keyFrame) / float(vars.getSizeT("test.flyLength")));
+    auto flc = vars.getReinterpret<basicCamera::FreeLookCamera>("cameraTransform");
+    flc->setPosition(keypoint.position);
+    flc->setRotation(keypoint.viewVector, keypoint.upVector);
+}
+
+
 void Shadows::measure() {
   assert(this != nullptr);
   if (vars.getString("test.flyKeyFileName") == "") {
@@ -193,28 +227,13 @@ void Shadows::measure() {
 
   std::vector<std::vector<std::string>> csv;
   for (size_t k = 0; k < vars.getSizeT("test.flyLength"); ++k) {
-    auto keypoint =
-        cameraPath->getKeypoint(float(k) / float(vars.getSizeT("test.flyLength")));
-    auto flc = vars.getReinterpret<basicCamera::FreeLookCamera>("cameraTransform");
-    flc->setPosition(keypoint.position);
-    flc->setRotation(keypoint.viewVector, keypoint.upVector);
+    setCameraAccordingToKeyFrame(cameraPath,vars,k);
 
     for (size_t f = 0; f < vars.getSizeT("test.framesPerMeasurement"); ++f) drawScene();
 
-    std::vector<std::string> line;
-    if (csv.size() == 0) {
-      line.push_back("frame");
-      for (auto const& x : measurement)
-        if (x.first != "") line.push_back(x.first);
-      csv.push_back(line);
-      line.clear();
-    }
-    line.push_back(txtUtils::valueToString(k));
-    for (auto const& x : measurement)
-      if (x.first != "")
-        line.push_back(txtUtils::valueToString(
-            x.second / float(vars.getSizeT("test.framesPerMeasurement"))));
-    csv.push_back(line);
+    writeCSVHeaderIfFirstLine(csv,measurement);
+    writeMeasurementIntoCSV(vars,csv,measurement,k);
+
     measurement.clear();
     window->swap();
   }
