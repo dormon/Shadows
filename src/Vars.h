@@ -46,6 +46,8 @@ class vars::Vars {
   CLASS* add(std::string const& n, ARGS const&... args);
   template <typename CLASS>
   CLASS* get(std::string const& n) const;
+  template <typename CLASS>
+  CLASS* getReinterpret(std::string const& n) const;
 
  private:
   void checkTypes(std::string const& n, std::type_info const& t) const;
@@ -63,6 +65,11 @@ CLASS* vars::Vars::add(std::string const& n, ARGS const&... args) {
 template <typename CLASS>
 CLASS* vars::Vars::get(std::string const& n) const {
   checkTypes(n, typeid(CLASS));
+  return reinterpret_cast<CLASS*>(get(n));
+}
+
+template <typename CLASS>
+CLASS* vars::Vars::getReinterpret(std::string const& n) const{
   return reinterpret_cast<CLASS*>(get(n));
 }
 

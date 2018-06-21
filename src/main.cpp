@@ -48,18 +48,13 @@ class Shadows : public simple3DApp::Application {
  public:
   Shadows(int argc, char* argv[]) : Application(argc, argv) {}
   virtual void draw() override;
-  std::shared_ptr<basicCamera::CameraTransform>  cameraTransform  = nullptr;
-  std::shared_ptr<basicCamera::CameraProjection> cameraProjection = nullptr;
   std::shared_ptr<ShadowMethod>                  shadowMethod     = nullptr;
-
-  CameraParam cameraParam;
 
   vars::Vars vars;
 
   virtual void                init() override;
   void                        parseArguments();
   void                        initWavefrontSize();
-  void                        initCamera();
   void                        measure();
   void                        drawScene();
   virtual void                mouseMove(SDL_Event const& event) override;
@@ -89,7 +84,7 @@ void Shadows::parseArguments() {
   loadSintornParams          (vars,arg);
   loadRSSVParams             (vars,arg);
   loadTestParams             (vars,arg);
-  cameraParam = CameraParam(arg);
+  loadCameraParams           (vars,arg);
 
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");
@@ -103,12 +98,6 @@ void Shadows::parseArguments() {
 
 void Shadows::initWavefrontSize() {
   vars.getSizeT("wavefrontSize") = getWavefrontSize(vars.getSizeT("wavefrontSize"));
-}
-
-void Shadows::initCamera() {
-  assert(this != nullptr);
-  cameraTransform  = createView(cameraParam);
-  cameraProjection = createProjection(cameraParam, *vars.get<glm::uvec2>("windowSize"));
 }
 
 void Shadows::init() {
@@ -125,9 +114,10 @@ void Shadows::init() {
   initWavefrontSize();
 
   if (vars.getString("test.name") == "fly" || vars.getString("test.name") == "grid")
-    cameraParam.type = "free";
+    vars.getString("camera.type") = "free";
 
-  initCamera();
+  createView      (vars);
+  createProjection(vars);
 
   vars.add<GBuffer        >("gBuffer"    ,windowSize.x, windowSize.y);
   vars.add<Model          >("model"      ,*vars.get<std::string>("modelName"));
@@ -171,8 +161,9 @@ void Shadows::drawScene() {
   ge::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
                   GL_STENCIL_BUFFER_BIT);
   vars.get<ge::gl::Texture>("shadowMask")->clear(0, GL_RED, GL_FLOAT);
-  vars.get<RenderModel>("renderModel")->draw(cameraProjection->getProjection() *
-                    cameraTransform->getView());
+  auto const cameraProjection = vars.getReinterpret<basicCamera::CameraProjection>("cameraProjection");
+  auto const cameraTransform  = vars.getReinterpret<basicCamera::CameraTransform >("cameraTransform" );
+  vars.get<RenderModel>("renderModel")->draw(cameraProjection->getProjection() * cameraTransform->getView());
   vars.get<GBuffer>("gBuffer")->end();
 
   ifExistStamp("gBuffer");
@@ -213,8 +204,7 @@ void Shadows::measure() {
   for (size_t k = 0; k < vars.getSizeT("test.flyLength"); ++k) {
     auto keypoint =
         cameraPath->getKeypoint(float(k) / float(vars.getSizeT("test.flyLength")));
-    auto flc =
-        std::dynamic_pointer_cast<basicCamera::FreeLookCamera>(cameraTransform);
+    auto flc = vars.getReinterpret<basicCamera::FreeLookCamera>("cameraTransform");
     flc->setPosition(keypoint.position);
     flc->setRotation(keypoint.viewVector, keypoint.upVector);
 
@@ -250,18 +240,16 @@ void Shadows::draw() {
     return;
   }
 
-  moveCameraWSAD(cameraParam, cameraTransform, keyDown);
+  moveCameraWSAD(vars, keyDown);
 
   drawScene();
 
   //*
   if (vars.getString("methodName") == "sintorn") {
     auto sintorn = std::dynamic_pointer_cast<Sintorn>(shadowMethod);
-    if (keyDown['h']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(sintorn->_HDT[0]);
-    if (keyDown['j']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(sintorn->_HDT[1]);
-    if (keyDown['k']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(sintorn->_HDT[2]);
-    if (keyDown['l']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(sintorn->_HDT[3]);
-
+    auto dp = vars.get<DrawPrimitive>("drawPrimitive");
+    auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(sintorn->_HDT[i]);};
+    for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
     if (keyDown['v']) sintorn->drawHST(0);
     if (keyDown['b']) sintorn->drawHST(1);
     if (keyDown['n']) sintorn->drawHST(2);
@@ -270,10 +258,9 @@ void Shadows::draw() {
   }
   if (vars.getString("methodName") == "rssv") {
     auto rssv = std::dynamic_pointer_cast<RSSV>(shadowMethod);
-    if (keyDown['h']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(rssv->_HDT[0]);
-    if (keyDown['j']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(rssv->_HDT[1]);
-    if (keyDown['k']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(rssv->_HDT[2]);
-    if (keyDown['l']) vars.get<DrawPrimitive>("drawPrimitive")->drawTexture(rssv->_HDT[3]);
+    auto dp = vars.get<DrawPrimitive>("drawPrimitive");
+    auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(rssv->_HDT[i]);};
+    for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
   }
 
   // */
@@ -327,10 +314,9 @@ int main(int argc, char* argv[]) {
 
 void Shadows::key(SDL_Event const& event, bool DOWN) {
   keyDown[event.key.keysym.sym] = DOWN;
-  if (DOWN && event.key.keysym.sym == 'p') printCameraPosition(cameraTransform);
+  if (DOWN && event.key.keysym.sym == 'p') printCameraPosition(vars);
 }
 
 void Shadows::mouseMove(SDL_Event const& event) {
-  mouseMoveCamera(cameraTransform, event, cameraParam,
-                  *vars.get<glm::uvec2>("windowSize"));
+  mouseMoveCamera(vars, event);
 }
