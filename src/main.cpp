@@ -68,16 +68,7 @@ class Shadows : public simple3DApp::Application {
 void Shadows::parseArguments() {
   assert(this != nullptr);
   auto arg = std::make_shared<argumentViewer::ArgumentViewer>(argc, argv);
-  *vars.add<glm::uvec2 >("windowSize"     ) = vector2uvec2(arg->getu32v("--window-size", {512, 512}, "window size"));
-  *vars.add<glm::vec4  >("lightPosition"  ) = vector2vec4(arg->getf32v("--light", {0.f, 1000.f, 0.f, 1.f}, "light position"));
-  vars.addString("modelName"      ) = arg->gets("--model", "/media/windata/ft/prace/models/2tri/2tri.3ds","model file name");
-  vars.addBool  ("useShadows"     ) = !arg->isPresent("--no-shadows", "turns off shadows");
-  vars.addBool  ("verbose"        ) = arg->isPresent("--verbose", "toggle verbose mode");
-  vars.addString("methodName"     ) = arg->gets("--method", "","name of shadow method: ""cubeShadowMapping/cssv/sintorn/rssv/vssv/cssvsoe");
-  vars.addSizeT ("wavefrontSize"  ) = arg->getu32("--wavefrontSize", 0,"warp/wavefront size, usually 32 for NVidia and 64 for AMD");
-  vars.addSizeT ("maxMultiplicity") = arg->getu32("--maxMultiplicity", 2,"max number of triangles that share the same edge");
-  vars.addBool  ("zfail"          ) = arg->getu32("--zfail", 1, "shadow volumes zfail 0/1");
-
+  loadBasicApplicationParameters(vars,arg);
   loadCubeShadowMappingParams(vars,arg);
   loadCSSVParams             (vars,arg);
   loadVSSVParams             (vars,arg);
@@ -134,7 +125,7 @@ void Shadows::init() {
   else vars.getBool("useShadows") = false;
 
   bool isTest = vars.getString("test.name") == "fly";
-  if (vars.getBool("verbose") || shadowMethod || isTest)
+  if (vars.getBool("verbose") || (shadowMethod && isTest))
     vars.add<TimeStamp>("timeStamp");
 
   vars.add<DrawPrimitive>("drawPrimitive",windowSize);
