@@ -25,3 +25,9 @@ void writeMeasurementIntoCSV(
 
 class CameraPath;
 void setCameraAccordingToKeyFrame(std::shared_ptr<CameraPath>const&cameraPath,vars::Vars&vars,size_t keyFrame);
+
+void createGBuffer(vars::Vars&vars);
+
+void ifMethodExistCreateShadowMask(vars::Vars&vars);
+
+void doShading(vars::Vars&vars);

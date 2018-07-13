@@ -43,14 +43,19 @@
 #include <VSSV.h>
 #include <VSSVParam.h>
 #include <Vars.h>
+#include <createGBuffer.h>
+
+#include <imguiSDL2OpenGL/imgui.h>
 
 class Shadows : public simple3DApp::Application {
  public:
   Shadows(int argc, char* argv[]) : Application(argc, argv) {}
+  ~Shadows();
   virtual void draw() override;
-  //std::shared_ptr<ShadowMethod>                  shadowMethod     = nullptr;
 
   vars::Vars vars;
+  std::unique_ptr<imguiSDL2OpenGL::Imgui>imgui;
+  bool show_demo_window;
 
   virtual void                init() override;
   void                        parseArguments();
@@ -69,13 +74,13 @@ void Shadows::parseArguments() {
   assert(this != nullptr);
   auto arg = std::make_shared<argumentViewer::ArgumentViewer>(argc, argv);
   loadBasicApplicationParameters(vars,arg);
-  loadCubeShadowMappingParams(vars,arg);
-  loadCSSVParams             (vars,arg);
-  loadVSSVParams             (vars,arg);
-  loadSintornParams          (vars,arg);
-  loadRSSVParams             (vars,arg);
-  loadTestParams             (vars,arg);
-  loadCameraParams           (vars,arg);
+  loadCubeShadowMappingParams   (vars,arg);
+  loadCSSVParams                (vars,arg);
+  loadVSSVParams                (vars,arg);
+  loadSintornParams             (vars,arg);
+  loadRSSVParams                (vars,arg);
+  loadTestParams                (vars,arg);
+  loadCameraParams              (vars,arg);
 
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");
@@ -111,7 +116,7 @@ void Shadows::init() {
   createProjection(vars);
 
   vars.add<GBuffer        >("gBuffer"    ,windowSize.x, windowSize.y);
-  vars.add<Model          >("model"      ,*vars.get<std::string>("modelName"));
+  vars.add<Model          >("model"      ,vars.getString("modelName"));
   vars.add<RenderModel    >("renderModel",vars.get<Model>("model"));
   vars.add<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
   vars.add<Shading        >("shading"    ,vars);
@@ -129,6 +134,13 @@ void Shadows::init() {
     vars.add<TimeStamp>("timeStamp");
 
   vars.add<DrawPrimitive>("drawPrimitive",windowSize);
+
+
+  imgui = std::make_unique<imguiSDL2OpenGL::Imgui>(window->getWindow());
+
+  mainLoop->setEventHandler([&](SDL_Event const&event){
+    return imgui->processEvent((SDL_Event*)&event);
+  });
 }
 
 void Shadows::ifExistStamp(std::string const&n){
@@ -145,30 +157,15 @@ void Shadows::ifExistEndStamp(std::string const&n){
 
 void Shadows::drawScene() {
   ifExistBeginStamp();
-  auto windowSize = *vars.get<glm::uvec2>("windowSize");
-  ge::gl::glViewport(0, 0, windowSize.x, windowSize.y);
-  ge::gl::glEnable(GL_DEPTH_TEST);
-  vars.get<GBuffer>("gBuffer")->begin();
-  ge::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
-                  GL_STENCIL_BUFFER_BIT);
-  vars.get<ge::gl::Texture>("shadowMask")->clear(0, GL_RED, GL_FLOAT);
-  auto const cameraProjection = vars.getReinterpret<basicCamera::CameraProjection>("cameraProjection");
-  auto const cameraTransform  = vars.getReinterpret<basicCamera::CameraTransform >("cameraTransform" );
-  vars.get<RenderModel>("renderModel")->draw(cameraProjection->getProjection() * cameraTransform->getView());
-  vars.get<GBuffer>("gBuffer")->end();
+
+  createGBuffer(vars);
 
   ifExistStamp("gBuffer");
 
-  if (vars.has("shadowMethod"))
-    vars.getReinterpret<ShadowMethod>("shadowMethod")->create(*vars.get<glm::vec4>("lightPosition"),
-                         cameraTransform->getView(),
-                         cameraProjection->getProjection());
+  ifMethodExistCreateShadowMask(vars);
 
-  ge::gl::glDisable(GL_DEPTH_TEST);
-  vars.get<Shading>("shading")->draw(*vars.get<glm::vec4>("lightPosition"),
-                glm::vec3(glm::inverse(cameraTransform->getView()) *
-                          glm::vec4(0, 0, 0, 1)),
-                *vars.get<bool>("useShadows"));
+  doShading(vars);
+
   ifExistEndStamp("shading");
 }
 
@@ -210,6 +207,10 @@ void Shadows::measure() {
 }
 
 void Shadows::draw() {
+  ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+  imgui->newFrame(window->getWindow());
+
+#if 1
   assert(this != nullptr);
 
   if (vars.getString("test.name") == "fly") {
@@ -239,6 +240,18 @@ void Shadows::draw() {
     auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(rssv->_HDT[i]);};
     for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
   }
+#endif
+
+  //TODO imgui gui
+
+  if (show_demo_window)
+  {
+    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
+    ImGui::ShowDemoWindow(&show_demo_window);
+  }
+
+
+  imgui->render(window->getWindow(), window->getContext("rendering"));
 
   // */
   swap();
@@ -296,4 +309,8 @@ void Shadows::key(SDL_Event const& event, bool DOWN) {
 
 void Shadows::mouseMove(SDL_Event const& event) {
   mouseMoveCamera(vars, event);
+}
+
+Shadows::~Shadows(){
+  imgui = nullptr;
 }

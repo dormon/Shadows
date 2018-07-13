@@ -97,7 +97,10 @@ RenderModel::RenderModel(Model*mdl){
   out vec3 vPosition;
   out vec3 vNormal;
 
+  flat out uint vID;
+
   void main(){
+    vID = gl_VertexID/3;
     gl_Position = projectionView*vec4(position,1);
     vPosition = position;
     vNormal   = normal;
@@ -111,8 +114,19 @@ RenderModel::RenderModel(Model*mdl){
   in vec3 vPosition;
   in vec3 vNormal;
 
+  flat in uint vID;
+  vec3 hue(float t){
+    t = fract(t);
+    if(t<1/6.)return mix(vec3(1,0,0),vec3(1,1,0),(t-0/6.)*6);
+    if(t<2/6.)return mix(vec3(1,1,0),vec3(0,1,0),(t-1/6.)*6);
+    if(t<3/6.)return mix(vec3(0,1,0),vec3(0,1,1),(t-2/6.)*6);
+    if(t<4/6.)return mix(vec3(0,1,1),vec3(0,0,1),(t-3/6.)*6);
+    if(t<5/6.)return mix(vec3(0,0,1),vec3(1,0,1),(t-4/6.)*6);
+              return mix(vec3(1,0,1),vec3(1,0,0),(t-5/6.)*6);
+  }
+
   void main(){
-    vec3  diffuseColor   = vec3(0.5,0.5,0.5);
+    vec3  diffuseColor   = hue(vID*3.14159254);//vec3(0.5,0.5,0.5);
     vec3  specularColor  = vec3(1);
     vec3  normal         = vNormal;
     float specularFactor = 1;

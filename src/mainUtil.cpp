@@ -4,6 +4,9 @@
 #include<util.h>
 #include<TxtUtils/TxtUtils.h>
 #include<CameraPath.h>
+#include<geGL/StaticCalls.h>
+#include<ShadowMethod.h>
+#include<Shading.h>
 
 void loadBasicApplicationParameters(vars::Vars&vars,std::shared_ptr<argumentViewer::ArgumentViewer>const&args){
   *vars.add<glm::uvec2 >("windowSize"     ) = vector2uvec2(args->getu32v("--window-size", {512, 512}, "window size"));
@@ -61,4 +64,26 @@ void setCameraAccordingToKeyFrame(std::shared_ptr<CameraPath>const&cameraPath,va
   flc->setPosition(keypoint.position);
   flc->setRotation(keypoint.viewVector, keypoint.upVector);
 }
+
+void ifMethodExistCreateShadowMask(vars::Vars&vars){
+  if (!vars.has("shadowMethod"))return;
+  auto const cameraProjection = vars.getReinterpret<basicCamera::CameraProjection>("cameraProjection");
+  auto const cameraTransform  = vars.getReinterpret<basicCamera::CameraTransform >("cameraTransform" );
+  auto method = vars.getReinterpret<ShadowMethod>("shadowMethod");
+  auto const lightPosition = *vars.get<glm::vec4>("lightPosition");
+  method->create(lightPosition,cameraTransform->getView(),cameraProjection->getProjection());
+}
+
+void doShading(vars::Vars&vars){
+  ge::gl::glDisable(GL_DEPTH_TEST);
+  auto const cameraTransform  = vars.getReinterpret<basicCamera::CameraTransform >("cameraTransform" );
+  auto shading = vars.get<Shading>("shading");
+  auto lightPosition = *vars.get<glm::vec4>("lightPosition");
+  auto const cameraPositionInViewSpace = glm::vec4(0, 0, 0, 1);
+  auto const viewMatrix = cameraTransform->getView();
+  auto const viewSpaceToWorldSpace = glm::inverse(viewMatrix);
+  auto cameraPositionInWorldSpace = glm::vec3( viewSpaceToWorldSpace * cameraPositionInViewSpace);
+  shading->draw(lightPosition,cameraPositionInWorldSpace,*vars.get<bool>("useShadows"));
+}
+
 

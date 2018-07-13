@@ -20,6 +20,7 @@ find_package(geGL 1.0.4 CONFIG REQUIRED)
 find_package(SDL2CPP 1.0 CONFIG REQUIRED)
 find_package(BasicCamera 1.0 CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
+find_package(imguiSDL2OpenGL CONFIG REQUIRED)
 #find_package(SDL2 CONFIG REQUIRED)
 
 set(SOURCES
@@ -52,6 +53,7 @@ set(SOURCES
   src/SintornParam.cpp
   src/RSSVParam.cpp
   src/Vars.cpp
+  src/createGBuffer.cpp
   )
 
 set(INCLUDES
@@ -92,6 +94,7 @@ set(INCLUDES
   src/SintornParam.h
   src/RSSVParam.h
   src/Vars.h
+  src/createGBuffer.h
   )
 
 add_executable(${APP_NAME} ${SOURCES} ${INCLUDES})
@@ -99,5 +102,5 @@ add_executable(${APP_NAME} ${SOURCES} ${INCLUDES})
 target_include_directories(${APP_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${APP_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-target_link_libraries(${APP_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer assimp)
+target_link_libraries(${APP_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer assimp imguiSDL2OpenGL::imguiSDL2OpenGL)
 
