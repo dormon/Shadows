@@ -41,6 +41,8 @@ class vars::Vars {
   uint32_t&    getUint32(std::string const& n) const;
   void         erase(std::string const& n);
   bool         has(std::string const& n) const;
+  size_t       getNofVars() const;
+  std::string  getVarName(size_t i) const;
   std::type_info const& getType(std::string const& n) const;
   template <typename CLASS, typename... ARGS>
   CLASS* add(std::string const& n, ARGS &&... args);

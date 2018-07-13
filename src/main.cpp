@@ -139,7 +139,7 @@ void Shadows::init() {
   imgui = std::make_unique<imguiSDL2OpenGL::Imgui>(window->getWindow());
 
   mainLoop->setEventHandler([&](SDL_Event const&event){
-    return imgui->processEvent((SDL_Event*)&event);
+    return imgui->processEvent(&event);
   });
 }
 
@@ -246,9 +246,19 @@ void Shadows::draw() {
 
   if (show_demo_window)
   {
-    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
+    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
+    // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
     ImGui::ShowDemoWindow(&show_demo_window);
   }
+
+  ImGui::Begin("vars");
+  for(size_t i = 0;i<vars.getNofVars();++i){
+    auto const n = vars.getVarName(i);
+    if(vars.getType(n) == typeid(float)){
+      ImGui::DragFloat(n.c_str(),(float*)vars.get(n));
+    }
+  }
+  ImGui::End();
 
 
   imgui->render(window->getWindow(), window->getContext("rendering"));

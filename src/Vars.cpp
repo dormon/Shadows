@@ -15,6 +15,8 @@ class Element {
 class vars::VarsImpl {
  public:
   std::map<std::string, Element> data;
+  std::map<size_t,std::string>   idToName;
+  std::map<std::string,size_t>   nameToId;
   void*                          add(std::string const&    n,
                                      void*                 d,
                                      Destructor const&     dst,
@@ -22,8 +24,11 @@ class vars::VarsImpl {
     if (has(n))
       throw std::runtime_error(std::string("variable: ") + n +
                                " already exists!");
+    auto id = data.size();
     data.emplace(std::piecewise_construct, std::forward_as_tuple(n),
                  std::forward_as_tuple(d, dst, t));
+    idToName[id] = n;
+    nameToId[n ] = id;
     return d;
   }
   void* get(std::string const& n) const {
@@ -42,7 +47,7 @@ class vars::VarsImpl {
   T&get(std::string const&n)const{
     return reinterpret_cast<T&>(*reinterpret_cast<T*>(get(n)));
   }
-  void erase(std::string const& n) { data.erase(n); }
+  void erase(std::string const& n) { data.erase(n); auto id = nameToId[n];nameToId.erase(n);idToName.erase(id);}
   bool has(std::string const& n) const { return data.count(n) > 0; }
   std::type_info const& getType(std::string const& n) const {
     return data.at(n).type;
@@ -107,6 +112,14 @@ uint32_t&Vars::getUint32(std::string const& n) const{
 void Vars::erase(std::string const& n) { impl->erase(n); }
 
 bool Vars::has(std::string const& n) const { return impl->has(n); }
+
+size_t       Vars::getNofVars() const{
+  return impl->data.size();
+}
+
+std::string  Vars::getVarName(size_t i) const{
+  return impl->idToName.at(i);
+}
 
 std::type_info const& Vars::getType(std::string const& n) const {
   return impl->getType(n);
