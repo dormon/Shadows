@@ -46,6 +46,7 @@
 #include <createGBuffer.h>
 
 #include <imguiSDL2OpenGL/imgui.h>
+#include <imguiVars.h>
 
 class Shadows : public simple3DApp::Application {
  public:
@@ -251,14 +252,8 @@ void Shadows::draw() {
     ImGui::ShowDemoWindow(&show_demo_window);
   }
 
-  ImGui::Begin("vars");
-  for(size_t i = 0;i<vars.getNofVars();++i){
-    auto const n = vars.getVarName(i);
-    if(vars.getType(n) == typeid(float)){
-      ImGui::DragFloat(n.c_str(),(float*)vars.get(n));
-    }
-  }
-  ImGui::End();
+  drawImguiVars(vars);
+
 
 
   imgui->render(window->getWindow(), window->getContext("rendering"));

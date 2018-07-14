@@ -53,7 +53,11 @@ set(SOURCES
   src/SintornParam.cpp
   src/RSSVParam.cpp
   src/Vars.cpp
+  src/VarsImpl.cpp
+  src/Resource.cpp
+  src/Function.cpp
   src/createGBuffer.cpp
+  src/imguiVars.cpp
   )
 
 set(INCLUDES
@@ -94,7 +98,11 @@ set(INCLUDES
   src/SintornParam.h
   src/RSSVParam.h
   src/Vars.h
+  src/VarsImpl.h
+  src/Resource.h
+  src/Function.h
   src/createGBuffer.h
+  src/imguiVars.h
   )
 
 add_executable(${APP_NAME} ${SOURCES} ${INCLUDES})

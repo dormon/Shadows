@@ -1,111 +1,52 @@
 #include <Vars.h>
+#include <VarsImpl.h>
 
 using namespace vars;
 
-class Element {
- public:
-  Element(void* d, Destructor const& dst, std::type_info const& t)
-      : data(d), destructor(dst), type(t) {}
-  ~Element() { destructor(data); }
-  void*                 data;
-  Destructor            destructor;
-  std::type_info const& type;
-};
-
-class vars::VarsImpl {
- public:
-  std::map<std::string, Element> data;
-  std::map<size_t,std::string>   idToName;
-  std::map<std::string,size_t>   nameToId;
-  void*                          add(std::string const&    n,
-                                     void*                 d,
-                                     Destructor const&     dst,
-                                     std::type_info const& t) {
-    if (has(n))
-      throw std::runtime_error(std::string("variable: ") + n +
-                               " already exists!");
-    auto id = data.size();
-    data.emplace(std::piecewise_construct, std::forward_as_tuple(n),
-                 std::forward_as_tuple(d, dst, t));
-    idToName[id] = n;
-    nameToId[n ] = id;
-    return d;
-  }
-  void* get(std::string const& n) const {
-    if (!has(n))
-      throw std::runtime_error(std::string("variable: ") + n +
-                               " does not exist!");
-    return data.at(n).data;
-  }
-  template<typename T>
-  T&add(std::string const&n,T const&v){
-    auto d = new T(v);
-    auto dst = getDestructor<T>();
-    return reinterpret_cast<T&>(*reinterpret_cast<T*>(add(n,d,dst,typeid(T))));
-  }
-  template<typename T>
-  T&get(std::string const&n)const{
-    return reinterpret_cast<T&>(*reinterpret_cast<T*>(get(n)));
-  }
-  void erase(std::string const& n) { data.erase(n); auto id = nameToId[n];nameToId.erase(n);idToName.erase(id);}
-  bool has(std::string const& n) const { return data.count(n) > 0; }
-  std::type_info const& getType(std::string const& n) const {
-    return data.at(n).type;
-  }
-  void checkTypes(std::string const& n, std::type_info const& t) {
-    if (getType(n) == t) return;
-    throw std::runtime_error(std::string("variable: ") + n +
-                             " has different type");
-  }
-  ~VarsImpl() {}
-};
-
-void*Vars::add(std::string const&                n,
-               void*                             d,
-               std::function<void(void*)> const& dst,
-               std::type_info const&             t) {
+void* Vars::add(std::string const&                n,
+                void*                             d,
+                std::function<void(void*)> const& dst,
+                std::type_info const&             t) {
   return impl->add(n, d, dst, t);
 }
 
-bool& Vars::addBool(std::string const&n,bool v){
-  return impl->add<bool>(n,v);
+bool& Vars::addBool(std::string const& n, bool v) {
+  return impl->add<bool>(n, v);
 }
 
-std::string& Vars::addString(std::string const&n,std::string const&v){
-  return impl->add<std::string>(n,v);
+std::string& Vars::addString(std::string const& n, std::string const& v) {
+  return impl->add<std::string>(n, v);
 }
 
-size_t&Vars::addSizeT(std::string const&n,size_t v){
-  return impl->add<size_t>(n,v);
+size_t& Vars::addSizeT(std::string const& n, size_t v) {
+  return impl->add<size_t>(n, v);
 }
 
-float&Vars::addFloat(std::string const& n, float v){
-  return impl->add<float>(n,v);
+float& Vars::addFloat(std::string const& n, float v) {
+  return impl->add<float>(n, v);
 }
 
-uint32_t&Vars::addUint32(std::string const& n, uint32_t v){
-  return impl->add<uint32_t>(n,v);
+uint32_t& Vars::addUint32(std::string const& n, uint32_t v) {
+  return impl->add<uint32_t>(n, v);
 }
 
 void* Vars::get(std::string const& n) const { return impl->get(n); }
 
-std::string&Vars::getString(std::string const&n)const{
+std::string& Vars::getString(std::string const& n) const {
   return impl->get<std::string>(n);
 }
 
-bool&Vars::getBool(std::string const&n)const{
-  return impl->get<bool>(n);
-}
+bool& Vars::getBool(std::string const& n) const { return impl->get<bool>(n); }
 
-size_t&Vars::getSizeT(std::string const&n)const{
+size_t& Vars::getSizeT(std::string const& n) const {
   return impl->get<size_t>(n);
 }
 
-float&Vars::getFloat(std::string const& n) const{
+float& Vars::getFloat(std::string const& n) const {
   return impl->get<float>(n);
 }
 
-uint32_t&Vars::getUint32(std::string const& n) const{
+uint32_t& Vars::getUint32(std::string const& n) const {
   return impl->get<uint32_t>(n);
 }
 
@@ -113,13 +54,26 @@ void Vars::erase(std::string const& n) { impl->erase(n); }
 
 bool Vars::has(std::string const& n) const { return impl->has(n); }
 
-size_t       Vars::getNofVars() const{
-  return impl->data.size();
+void Vars::updateTicks(std::string const& n) {
+  auto& d = impl->data.at(n);
+  d->updateTicks();
 }
 
-std::string  Vars::getVarName(size_t i) const{
-  return impl->idToName.at(i);
+size_t Vars::getTicks(std::string const& n) const {
+  return impl->data.at(n)->getTicks();
 }
+
+void Vars::setChangeCallback(std::string const& n, OnChange const& clb) {
+  impl->data.at(n)->setChangeCallback(clb);
+}
+
+std::shared_ptr<vars::Resource> Vars::getResource(std::string const& n) const {
+  return impl->data.at(n);
+}
+
+size_t Vars::getNofVars() const { return impl->data.size(); }
+
+std::string Vars::getVarName(size_t i) const { return impl->idToName.at(i); }
 
 std::type_info const& Vars::getType(std::string const& n) const {
   return impl->getType(n);
