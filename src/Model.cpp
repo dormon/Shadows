@@ -1,5 +1,9 @@
 #include<Model.h>
 
+#define STRINGIZE_DETAIL(x) #x
+#define STRINGIZE(x) STRINGIZE_DETAIL(x)
+#define GLSL_LINE "#line " STRINGIZE(__LINE__) "\n"
+
 Model::Model(std::string const&name){
   this->model = aiImportFile(name.c_str(),aiProcess_Triangulate|aiProcess_GenNormals|aiProcess_SortByPType);
   if(this->model==nullptr)
@@ -87,8 +91,10 @@ RenderModel::RenderModel(Model*mdl){
   this->vao->addAttrib(this->normals,1,3,GL_FLOAT);
   // */
 
-  const std::string vertSrc = R".(
-#version 450
+  const std::string vertSrc =
+"#version 450 \n"
+GLSL_LINE
+R".(
     uniform mat4 projectionView = mat4(1);
 
   layout(location=0)in vec3 position;
@@ -105,8 +111,10 @@ RenderModel::RenderModel(Model*mdl){
     vPosition = position;
     vNormal   = normal;
   }).";
-  const std::string fragSrc = R".(
-#version 450
+  const std::string fragSrc = 
+"#version 450\n" 
+GLSL_LINE
+R".(
     layout(location=0)out uvec4 fColor;
   layout(location=1)out vec4  fPosition;
   layout(location=2)out vec4  fNormal; 
@@ -126,7 +134,8 @@ RenderModel::RenderModel(Model*mdl){
   }
 
   void main(){
-    vec3  diffuseColor   = hue(vID*3.14159254);//vec3(0.5,0.5,0.5);
+
+    vec3  diffuseColor   = hue(vID*3.14159254f);//vec3(0.5,0.5,0.5);
     vec3  specularColor  = vec3(1);
     vec3  normal         = vNormal;
     float specularFactor = 1;

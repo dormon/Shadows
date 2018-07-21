@@ -56,6 +56,7 @@ set(SOURCES
   src/VarsImpl.cpp
   src/Resource.cpp
   src/Function.cpp
+  src/FunctionImpl.cpp
   src/createGBuffer.cpp
   src/imguiVars.cpp
   )
@@ -101,6 +102,7 @@ set(INCLUDES
   src/VarsImpl.h
   src/Resource.h
   src/Function.h
+  src/FunctionImpl.h
   src/createGBuffer.h
   src/imguiVars.h
   )
