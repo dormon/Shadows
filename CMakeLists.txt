@@ -35,6 +35,10 @@ set(SOURCES
   src/FastAdjacency.cpp
   src/TimeStamp.cpp
   src/CSSV.cpp
+  src/CSSVExtractSilhouettes.cpp
+  src/CSSVBasicExtractSilhouettes.cpp
+  src/CSSVPlanesExtractSilhouettes.cpp
+  src/CSSVInterleavedPlanesExtractSilhouettes.cpp
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
@@ -76,6 +80,11 @@ set(INCLUDES
   src/CSSV.h
   src/CSSVShaders.h
   src/CSSVSOE.h
+  src/CSSVExtractSilhouetteShader.h
+  src/CSSVExtractSilhouettes.h
+  src/CSSVBasicExtractSilhouettes.h
+  src/CSSVPlanesExtractSilhouettes.h
+  src/CSSVInterleavedPlanesExtractSilhouettes.h
   src/Sintorn.h
   src/SintornTiles.h
   src/SintornShaders.h
