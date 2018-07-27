@@ -3,7 +3,7 @@
 #include<cstdint>
 #include<memory>
 #include<ArgumentViewer/Fwd.h>
-#include<Vars.h>
+#include<Vars/Vars.h>
 
 void loadCubeShadowMappingParams(
     vars::Vars&vars,

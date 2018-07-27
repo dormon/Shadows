@@ -5,7 +5,7 @@
 #include <ShadowVolumes.h>
 #include <Model.h>
 #include <TimeStamp.h>
-#include <Vars.h>
+#include <Vars/Vars.h>
 #include <CSSVParam.h>
 #include <CSSVExtractSilhouettes.h>
 

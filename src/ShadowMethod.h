@@ -8,7 +8,7 @@
 #include<geGL/geGL.h>
 
 #include<TimeStamp.h>
-#include<Vars.h>
+#include<Vars/Vars.h>
 
 size_t const componentsPerVertex2D   = 2;
 size_t const componentsPerVertex3D   = 3;

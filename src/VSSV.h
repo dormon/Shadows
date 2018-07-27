@@ -5,7 +5,7 @@
 #include<Model.h>
 #include<TimeStamp.h>
 
-#include<Vars.h>
+#include<Vars/Vars.h>
 
 class Adjacency;
 class VSSV: public ShadowVolumes{

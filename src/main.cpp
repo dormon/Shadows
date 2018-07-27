@@ -42,7 +42,7 @@
 #include <TimeStamp.h>
 #include <VSSV.h>
 #include <VSSVParam.h>
-#include <Vars.h>
+#include <Vars/Vars.h>
 #include <createGBuffer.h>
 
 #include <imguiSDL2OpenGL/imgui.h>

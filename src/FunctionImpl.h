@@ -1,8 +1,9 @@
 #pragma once
 
 #include<iostream>
-#include<Vars.h>
+#include<Vars/Vars.h>
 #include<vector>
+#include<map>
 
 struct UniquePinData{
   size_t cardinality = 0;

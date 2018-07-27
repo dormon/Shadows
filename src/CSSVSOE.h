@@ -7,7 +7,7 @@
 #include<ShadowVolumes.h>
 #include<Model.h>
 #include<TimeStamp.h>
-#include<Vars.h>
+#include<Vars/Vars.h>
 
 struct CSSVSOEParams{
   size_t computeSidesWGS = 64   ;

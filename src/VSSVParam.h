@@ -1,7 +1,7 @@
 #pragma once
 
 #include<ArgumentViewer/Fwd.h>
-#include<Vars.h>
+#include<Vars/Vars.h>
 #include<memory>
 
 void loadVSSVParams(
