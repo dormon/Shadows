@@ -83,6 +83,7 @@ set(INCLUDES
   src/CSSVBasicExtractSilhouettes.h
   src/CSSVPlanesExtractSilhouettes.h
   src/CSSVInterleavedPlanesExtractSilhouettes.h
+  src/CSSVInterleavedPlanesShader.h
   src/Sintorn.h
   src/SintornTiles.h
   src/SintornShaders.h

@@ -13,12 +13,12 @@ CSSVExtractSilhouettes::CSSVExtractSilhouettes(vars::Vars&vars,shared_ptr<Adjace
   program = make_shared<Program>(
       make_shared<Shader>(GL_COMPUTE_SHADER,
         "#version 450 core\n",
-        Shader::define("WORKGROUP_SIZE_X",int32_t(vars.getBool("cssv.computeSidesWGS"))),
-        Shader::define("MAX_MULTIPLICITY",int32_t(adj->getMaxMultiplicity()           )),
-        Shader::define("LOCAL_ATOMIC"    ,int32_t(vars.getBool("cssv.localAtomic"    ))),
-        Shader::define("CULL_SIDES"      ,int32_t(vars.getBool("cssv.cullSides"      ))),
-        Shader::define("USE_PLANES"      ,int32_t(vars.getBool("cssv.usePlanes"      ))),
-        Shader::define("USE_INTERLEAVING",int32_t(vars.getBool("cssv.useInterleaving"))),
+        Shader::define("WORKGROUP_SIZE_X",int32_t(vars.getUint32("cssv.computeSidesWGS"))),
+        Shader::define("MAX_MULTIPLICITY",int32_t(adj->getMaxMultiplicity()             )),
+        Shader::define("LOCAL_ATOMIC"    ,int32_t(vars.getBool("cssv.localAtomic"      ))),
+        Shader::define("CULL_SIDES"      ,int32_t(vars.getBool("cssv.cullSides"        ))),
+        Shader::define("USE_PLANES"      ,int32_t(vars.getBool("cssv.usePlanes"        ))),
+        Shader::define("USE_INTERLEAVING",int32_t(vars.getBool("cssv.useInterleaving"  ))),
         silhouetteFunctions,
         computeSrc));
 }
