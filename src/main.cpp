@@ -86,6 +86,10 @@ void Shadows::parseArguments() {
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");
 
+  vars.addSizeT("frameCounter");
+  vars.addSizeT("maxFrame") = arg->getu32("--maxFrame",0,"after this frame the app will stop");
+
+
   bool printHelp = arg->isPresent("-h", "prints this help");
   if (printHelp || !arg->validate()) {
     std::cerr << arg->toStr();
@@ -112,6 +116,7 @@ void Shadows::init() {
 
   if (vars.getString("test.name") == "fly" || vars.getString("test.name") == "grid")
     vars.getString("camera.type") = "free";
+
 
   createView      (vars);
   createProjection(vars);
@@ -208,6 +213,12 @@ void Shadows::measure() {
 }
 
 void Shadows::draw() {
+  if(vars.getSizeT("maxFrame") != 0){
+    if(vars.getSizeT("frameCounter") >= vars.getSizeT("maxFrame"))
+      mainLoop->removeWindow(window->getId());
+    vars.getSizeT("frameCounter")++;
+  }
+
   ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   imgui->newFrame(window->getWindow());
 
