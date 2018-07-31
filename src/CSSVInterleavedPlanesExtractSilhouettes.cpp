@@ -12,7 +12,6 @@ size_t align(size_t what,size_t alignment){
 }
 
 CSSVInterleavedPlanesExtractSilhouettes::CSSVInterleavedPlanesExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):CSSVExtractSilhouettes(vars,adj){
-
 #include<CSSVInterleavedPlanesShader.h>
 #include<SilhouetteShaders.h>
   program = make_shared<Program>(
@@ -40,9 +39,11 @@ CSSVInterleavedPlanesExtractSilhouettes::CSSVInterleavedPlanesExtractSilhouettes
 
   edges = std::make_shared<Buffer>(alignBufferSize);
 
-  auto const dstPtr = static_cast<float      *>(edges->map());
   auto const srcPtr = static_cast<float const*>(adj->getVertices() );
 
+  std::vector<float>dstPtr;
+  dstPtr.resize(alignBufferSize/sizeof(float));
+  //auto const dstPtr = static_cast<float      *>(edges->map());
   for(size_t e=0;e<adj->getNofEdges();++e)dstPtr[e+align(adj->getNofEdges()*0,floatAlign)] = srcPtr[adj->getEdgeVertexA(e)+0];
   for(size_t e=0;e<adj->getNofEdges();++e)dstPtr[e+align(adj->getNofEdges()*1,floatAlign)] = srcPtr[adj->getEdgeVertexA(e)+1];
   for(size_t e=0;e<adj->getNofEdges();++e)dstPtr[e+align(adj->getNofEdges()*2,floatAlign)] = srcPtr[adj->getEdgeVertexA(e)+2];
@@ -57,8 +58,10 @@ CSSVInterleavedPlanesExtractSilhouettes::CSSVInterleavedPlanesExtractSilhouettes
       for(size_t k=0;k<componentsPerPlane3D;++k)
         dstPtr[e+align(adj->getNofEdges()*(6+o*componentsPerPlane3D+k),floatAlign)] = plane[(uint32_t)k];
     }
+  //edges->unmap();
+  edges->setData(dstPtr.data());
 
-  edges->unmap();
+
   nofEdges = adj->getNofEdges();
 
   sillhouettes=std::make_shared<ge::gl::Buffer>(
@@ -68,6 +71,9 @@ CSSVInterleavedPlanesExtractSilhouettes::CSSVInterleavedPlanesExtractSilhouettes
 }
 
 void CSSVInterleavedPlanesExtractSilhouettes::compute(glm::vec4 const&lightPosition){
+  auto const bufferSize = edges->getSize();
+  auto const gigabyte = 1024*1024*1024;
+  auto const bufferSizeInGigabytes = static_cast<double>(bufferSize) / static_cast<double>(gigabyte);
   dibo->clear(GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT);
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -78,7 +84,6 @@ void CSSVInterleavedPlanesExtractSilhouettes::compute(glm::vec4 const&lightPosit
     ->bindBuffer("silhouettes"       ,sillhouettes          )
     ->bindBuffer("drawIndirectBuffer",dibo                  )
     ->dispatch((GLuint)getDispatchSize(nofEdges,vars.getUint32("cssv.computeSidesWGS")));
-
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   glFinish();
 

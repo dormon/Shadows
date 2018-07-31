@@ -78,7 +78,6 @@ void main(){
     Multiplicity += int(sign(dot(plane,lightPosition)));
   }
 
-
 #if LOCAL_ATOMIC == 1
   uint localOffset = atomicAdd(localCounter,uint(2*abs(Multiplicity)));
   barrier();
