@@ -1,11 +1,13 @@
-#include<CSSV.h>
+#include<CSSV/CSSV.h>
 #include<FastAdjacency.h>
 #include<util.h>
 #include<geGL/StaticCalls.h>
 
-#include<CSSVBasicExtractSilhouettes.h>
-#include<CSSVPlanesExtractSilhouettes.h>
-#include<CSSVInterleavedPlanesExtractSilhouettes.h>
+#include<CSSV/BasicExtractSilhouettes.h>
+#include<CSSV/PlanesExtractSilhouettes.h>
+#include<CSSV/InterleavedPlanesExtractSilhouettes.h>
+
+using namespace cssv;
 
 std::shared_ptr<ge::gl::VertexArray>createSidesVao(std::shared_ptr<ge::gl::Buffer>const&sillhouettes){
   auto sidesVao = std::make_shared<ge::gl::VertexArray>();
@@ -16,10 +18,12 @@ std::shared_ptr<ge::gl::VertexArray>createSidesVao(std::shared_ptr<ge::gl::Buffe
 void CSSV::_createCapsData (std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
-  _caps = std::make_shared<ge::gl::Buffer>(sizeof(float)*componentsPerVertex4D*verticesPerTriangle*_nofTriangles);
-  auto const dstPtr = static_cast<float      *>(_caps->map());
+  auto const nofTriangles = adj->getNofTriangles();
+  std::vector<float>dst(componentsPerVertex4D*verticesPerTriangle*nofTriangles);
+
+  auto const dstPtr = dst.data();
   auto const srcPtr = static_cast<float const*>(adj->getVertices());
-  for(size_t t=0;t<_nofTriangles;++t){
+  for(size_t t=0;t<nofTriangles;++t){
     auto const triangleDstPtr = dstPtr + t*componentsPerVertex4D*verticesPerTriangle;
     auto const triangleSrcPtr = srcPtr + t*componentsPerVertex3D*verticesPerTriangle;
     for(size_t p=0;p<verticesPerTriangle;++p){
@@ -30,7 +34,7 @@ void CSSV::_createCapsData (std::shared_ptr<Adjacency const>const&adj){
       vertexDstPtr[3] = 1.f;
     }
   }
-  _caps->unmap();
+  _caps    = std::make_shared<ge::gl::Buffer>(dst);
   _capsVao = std::make_shared<ge::gl::VertexArray>();
   _capsVao->addAttrib(_caps,0,4,GL_FLOAT);
 }
@@ -52,11 +56,11 @@ CSSV::CSSV(vars::Vars&vars):
 
   if(vars.getBool("cssv.usePlanes")){
     if(vars.getBool("cssv.useInterleaving"))
-      extractSilhouettes = std::make_unique<CSSVInterleavedPlanesExtractSilhouettes>(vars,adj);
+      extractSilhouettes = std::make_unique<InterleavedPlanesExtractSilhouettes>(vars,adj);
     else
-      extractSilhouettes = std::make_unique<CSSVPlanesExtractSilhouettes>(vars,adj);
+      extractSilhouettes = std::make_unique<PlanesExtractSilhouettes>(vars,adj);
   }else
-    extractSilhouettes = std::make_unique<CSSVBasicExtractSilhouettes>(vars,adj);
+    extractSilhouettes = std::make_unique<BasicExtractSilhouettes>(vars,adj);
 
   _sidesVao = createSidesVao(extractSilhouettes->sillhouettes);
 
@@ -72,7 +76,7 @@ CSSV::CSSV(vars::Vars&vars):
   cmd.nofInstances = 1;
   extractSilhouettes->dibo=std::make_shared<ge::gl::Buffer>(sizeof(DrawArraysIndirectCommand),&cmd);
 
-#include<CSSVShaders.h>
+#include<CSSV/Shaders.h>
 #include<SilhouetteShaders.h>
 
 

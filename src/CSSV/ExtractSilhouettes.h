@@ -3,12 +3,14 @@
 #include<Vars/Vars.h>
 #include<glm/glm.hpp>
 #include<geGL/geGL.h>
+#include<CSSV/Fwd.h>
+
 
 class Adjacency;
-class CSSVExtractSilhouettes{
+class cssv::ExtractSilhouettes{
   public:
-    CSSVExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj);
-    virtual ~CSSVExtractSilhouettes(){}
+    ExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj);
+    virtual ~ExtractSilhouettes(){}
     virtual void compute(glm::vec4 const&lightPosition);
     vars::Vars                      &vars        ;
     size_t                           nofEdges    ;

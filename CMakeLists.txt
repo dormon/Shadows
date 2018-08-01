@@ -16,7 +16,7 @@ set(REVISION_VERSION 0)
 set(APP_NAME Shadows)
 
 find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
-find_package(geGL 1.0.4 CONFIG REQUIRED)
+find_package(geGL 1.0.5 CONFIG REQUIRED)
 find_package(SDL2CPP 1.0 CONFIG REQUIRED)
 find_package(BasicCamera 1.0 CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
@@ -35,11 +35,12 @@ set(SOURCES
   src/CubeShadowMapping.cpp
   src/FastAdjacency.cpp
   src/TimeStamp.cpp
-  src/CSSV.cpp
-  src/CSSVExtractSilhouettes.cpp
-  src/CSSVBasicExtractSilhouettes.cpp
-  src/CSSVPlanesExtractSilhouettes.cpp
-  src/CSSVInterleavedPlanesExtractSilhouettes.cpp
+  src/CSSV/CSSV.cpp
+  src/CSSV/ExtractSilhouettes.cpp
+  src/CSSV/BasicExtractSilhouettes.cpp
+  src/CSSV/PlanesExtractSilhouettes.cpp
+  src/CSSV/InterleavedPlanesExtractSilhouettes.cpp
+  src/CSSV/Param.cpp
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
@@ -53,7 +54,6 @@ set(SOURCES
   src/CameraParam.cpp
   src/TestParam.cpp
   src/CubeSMParam.cpp
-  src/CSSVParam.cpp
   src/VSSVParam.cpp
   src/SintornParam.cpp
   src/RSSVParam.cpp
@@ -75,15 +75,17 @@ set(INCLUDES
   src/CubeShadowMappingShaders.h
   src/FastAdjacency.h
   src/TimeStamp.h
-  src/CSSV.h
-  src/CSSVShaders.h
+  src/CSSV/Fwd.h
+  src/CSSV/CSSV.h
+  src/CSSV/Shaders.h
+  src/CSSV/ExtractSilhouetteShader.h
+  src/CSSV/ExtractSilhouettes.h
+  src/CSSV/BasicExtractSilhouettes.h
+  src/CSSV/PlanesExtractSilhouettes.h
+  src/CSSV/InterleavedPlanesExtractSilhouettes.h
+  src/CSSV/InterleavedPlanesShader.h
+  src/CSSV/Param.h
   src/CSSVSOE.h
-  src/CSSVExtractSilhouetteShader.h
-  src/CSSVExtractSilhouettes.h
-  src/CSSVBasicExtractSilhouettes.h
-  src/CSSVPlanesExtractSilhouettes.h
-  src/CSSVInterleavedPlanesExtractSilhouettes.h
-  src/CSSVInterleavedPlanesShader.h
   src/Sintorn.h
   src/SintornTiles.h
   src/SintornShaders.h
@@ -102,7 +104,6 @@ set(INCLUDES
   src/CameraParam.h
   src/TestParam.h
   src/CubeSMParam.h
-  src/CSSVParam.h
   src/VSSVParam.h
   src/SintornParam.h
   src/RSSVParam.h

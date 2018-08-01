@@ -23,7 +23,7 @@
 #include <BasicCamera/FreeLookCamera.h>
 #include <BasicCamera/OrbitCamera.h>
 #include <BasicCamera/PerspectiveCamera.h>
-#include <CSSV.h>
+#include <CSSV/CSSV.h>
 #include <CSSVSOE.h>
 #include <CSV.h>
 #include <CameraPath.h>
@@ -56,7 +56,6 @@ class Shadows : public simple3DApp::Application {
 
   vars::Vars vars;
   std::unique_ptr<imguiSDL2OpenGL::Imgui>imgui;
-  bool show_demo_window;
 
   virtual void                init() override;
   void                        parseArguments();
@@ -76,7 +75,7 @@ void Shadows::parseArguments() {
   auto arg = std::make_shared<argumentViewer::ArgumentViewer>(argc, argv);
   loadBasicApplicationParameters(vars,arg);
   loadCubeShadowMappingParams   (vars,arg);
-  loadCSSVParams                (vars,arg);
+  cssv::loadParams              (vars,arg);
   loadVSSVParams                (vars,arg);
   loadSintornParams             (vars,arg);
   loadRSSVParams                (vars,arg);
@@ -128,7 +127,7 @@ void Shadows::init() {
   vars.add<Shading        >("shading"    ,vars);
 
   if      (vars.getString("methodName") == "cubeShadowMapping")vars.add<CubeShadowMapping>("shadowMethod",vars);
-  else if (vars.getString("methodName") == "cssv"             )vars.add<CSSV             >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "cssv"             )vars.add<cssv::CSSV       >("shadowMethod",vars);
   else if (vars.getString("methodName") == "cssvsoe"          )vars.add<CSSVSOE          >("shadowMethod",vars);
   else if (vars.getString("methodName") == "sintorn"          )vars.add<Sintorn          >("shadowMethod",vars);
   else if (vars.getString("methodName") == "rssv"             )vars.add<RSSV             >("shadowMethod",vars);
@@ -255,14 +254,6 @@ void Shadows::draw() {
 #endif
 
   //TODO imgui gui
-
-  if (show_demo_window)
-  {
-    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
-    // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
-    ImGui::ShowDemoWindow(&show_demo_window);
-  }
-
   drawImguiVars(vars);
 
 

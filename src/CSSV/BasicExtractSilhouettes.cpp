@@ -1,6 +1,8 @@
-#include <CSSVBasicExtractSilhouettes.h>
+#include <CSSV/BasicExtractSilhouettes.h>
 #include <FastAdjacency.h>
 #include <ShadowMethod.h>
+
+using namespace cssv;
 
 size_t getFloatsPerEdge(std::shared_ptr<Adjacency const>const&adj){
   size_t const verticesPerEdgeData = verticesPerEdge + adj->getMaxMultiplicity();
@@ -69,16 +71,10 @@ void writeEdges(float*dst,float const*src,std::shared_ptr<Adjacency const>const&
 
 std::shared_ptr<ge::gl::Buffer>createEdgeBuffer(std::shared_ptr<Adjacency const>const&adj){
   size_t const verticesPerEdgeData = verticesPerEdge+adj->getMaxMultiplicity();
-  size_t const bufferSize = sizeof(float)*componentsPerVertex4D*verticesPerEdgeData*adj->getNofEdges();
-  auto edges = std::make_shared<ge::gl::Buffer>(bufferSize);
-
-  auto const dst = static_cast<float      *>(edges->map());
+  std::vector<float>dst(componentsPerVertex4D*verticesPerEdgeData*adj->getNofEdges());
   auto const src = static_cast<float const*>(adj->getVertices() );
-
-  writeEdges(dst,src,adj);
-
-  edges->unmap();
-  return edges;
+  writeEdges(dst.data(),src,adj);
+  return std::make_shared<ge::gl::Buffer>(dst);
 }
 
 std::shared_ptr<ge::gl::Buffer>createSillouetteBuffer(std::shared_ptr<Adjacency const>const&adj){
@@ -88,7 +84,7 @@ std::shared_ptr<ge::gl::Buffer>createSillouetteBuffer(std::shared_ptr<Adjacency 
   return sillhouettes;
 }
 
-CSSVBasicExtractSilhouettes::CSSVBasicExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):CSSVExtractSilhouettes(vars,adj){
+BasicExtractSilhouettes::BasicExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):ExtractSilhouettes(vars,adj){
   nofEdges     = adj->getNofEdges();
   edges        = createEdgeBuffer(adj);
   sillhouettes = createSillouetteBuffer(adj);

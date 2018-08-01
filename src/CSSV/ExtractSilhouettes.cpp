@@ -1,4 +1,4 @@
-#include <CSSVExtractSilhouettes.h>
+#include <CSSV/ExtractSilhouettes.h>
 #include <FastAdjacency.h>
 #include <geGL/StaticCalls.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -6,9 +6,10 @@
 
 using namespace std;
 using namespace ge::gl;
+using namespace cssv;
 
-CSSVExtractSilhouettes::CSSVExtractSilhouettes(vars::Vars&vars,shared_ptr<Adjacency const>const&adj):vars(vars){
-#include<CSSVExtractSilhouetteShader.h>
+ExtractSilhouettes::ExtractSilhouettes(vars::Vars&vars,shared_ptr<Adjacency const>const&adj):vars(vars){
+#include<CSSV/ExtractSilhouetteShader.h>
 #include<SilhouetteShaders.h>
   program = make_shared<Program>(
       make_shared<Shader>(GL_COMPUTE_SHADER,
@@ -23,7 +24,7 @@ CSSVExtractSilhouettes::CSSVExtractSilhouettes(vars::Vars&vars,shared_ptr<Adjace
         computeSrc));
 }
 
-void CSSVExtractSilhouettes::compute(glm::vec4 const&lightPosition){
+void ExtractSilhouettes::compute(glm::vec4 const&lightPosition){
   assert(this                      !=nullptr);
   dibo->clear(GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT);
 

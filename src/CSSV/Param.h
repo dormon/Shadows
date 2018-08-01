@@ -4,7 +4,10 @@
 #include<ArgumentViewer/Fwd.h>
 #include<Vars/Vars.h>
 
-void loadCSSVParams(
+namespace cssv{
+
+void loadParams(
     vars::Vars&vars,
     std::shared_ptr<argumentViewer::ArgumentViewer>const&arg);
 
+}

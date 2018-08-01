@@ -6,12 +6,12 @@
 #include <Model.h>
 #include <TimeStamp.h>
 #include <Vars/Vars.h>
-#include <CSSVParam.h>
-#include <CSSVExtractSilhouettes.h>
+#include <CSSV/Param.h>
+#include <CSSV/ExtractSilhouettes.h>
 
 class Adjacency;
 
-class CSSV: public ShadowVolumes{
+class cssv::CSSV: public ShadowVolumes{
   public:
     CSSV(vars::Vars&vars);
     virtual ~CSSV();
@@ -25,7 +25,7 @@ class CSSV: public ShadowVolumes{
         glm::mat4 const&projectionMatrix)override;
   protected:
     std::shared_ptr<ge::gl::Program>       _drawSidesProgram  = nullptr;
-    std::unique_ptr<CSSVExtractSilhouettes>extractSilhouettes          ;
+    std::unique_ptr<cssv::ExtractSilhouettes>extractSilhouettes          ;
     std::shared_ptr<ge::gl::VertexArray>   _sidesVao                   ;
     size_t                                 _nofTriangles      = 0      ;
     std::shared_ptr<ge::gl::Program>       _drawCapsProgram   = nullptr;
@@ -33,3 +33,4 @@ class CSSV: public ShadowVolumes{
     std::shared_ptr<ge::gl::Buffer>        _caps              = nullptr;
     void _createCapsData(std::shared_ptr<Adjacency const>const&adj);
 };
+

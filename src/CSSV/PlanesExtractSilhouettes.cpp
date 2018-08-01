@@ -1,8 +1,10 @@
-#include <CSSVPlanesExtractSilhouettes.h>
+#include <CSSV/PlanesExtractSilhouettes.h>
 #include <FastAdjacency.h>
 #include <ShadowMethod.h>
 
-CSSVPlanesExtractSilhouettes::CSSVPlanesExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):CSSVExtractSilhouettes(vars,adj){
+using namespace cssv;
+
+PlanesExtractSilhouettes::PlanesExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):ExtractSilhouettes(vars,adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
