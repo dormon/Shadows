@@ -23,6 +23,7 @@ const size_t HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT = 1;
 size_t RASTERIZETEXTURE_BINDING_FINALSTENCILMASK = 0;
 size_t RASTERIZETEXTURE_BINDING_HST              = 1;
 size_t RASTERIZETEXTURE_BINDING_HDT              = 5;
+size_t RASTERIZETEXTURE_BINDING_TRIANGLE_ID      = 9;
 size_t RASTERIZETEXTURE_BINDING_SHADOWFRUSTA     = 0;
 
 const size_t MERGETEXTURE_BINDING_HSTINPUT  = 0;
@@ -161,7 +162,8 @@ Sintorn::Sintorn(vars::Vars&vars):
         ge::gl::Shader::define("WAVEFRONT_SIZE",uint32_t(vars.getUint32("sintorn.shadowFrustaWGS"))),
         shadowFrustumCompSrc));
 
-  RASTERIZETEXTURE_BINDING_HDT=RASTERIZETEXTURE_BINDING_HST+this->_nofLevels;
+  RASTERIZETEXTURE_BINDING_HDT         = RASTERIZETEXTURE_BINDING_HST+this->_nofLevels;
+  RASTERIZETEXTURE_BINDING_TRIANGLE_ID = RASTERIZETEXTURE_BINDING_HDT+this->_nofLevels;
 
   std::string TileSizeInClipSpaceDefines="";
   if(this->_useUniformTileSizeInClipSpace)
@@ -196,6 +198,7 @@ Sintorn::Sintorn(vars::Vars&vars):
         ge::gl::Shader::define("RASTERIZETEXTURE_BINDING_FINALSTENCILMASK",int(RASTERIZETEXTURE_BINDING_FINALSTENCILMASK)),
         ge::gl::Shader::define("RASTERIZETEXTURE_BINDING_HST"             ,int(RASTERIZETEXTURE_BINDING_HST             )),
         ge::gl::Shader::define("RASTERIZETEXTURE_BINDING_HDT"             ,int(RASTERIZETEXTURE_BINDING_HDT             )),
+        ge::gl::Shader::define("RASTERIZETEXTURE_BINDING_TRIANGLE_ID"     ,int(RASTERIZETEXTURE_BINDING_TRIANGLE_ID     )),
         ge::gl::Shader::define("RASTERIZETEXTURE_BINDING_SHADOWFRUSTA"    ,int(RASTERIZETEXTURE_BINDING_SHADOWFRUSTA    )),
         rasterizeTextureCompSrc));
 
@@ -380,6 +383,8 @@ void Sintorn::RasterizeTexture(){
     this->_HST[l]->bindImage(GLuint(RASTERIZETEXTURE_BINDING_HST+l));
 
   this->_finalStencilMask->bindImage(GLuint(RASTERIZETEXTURE_BINDING_FINALSTENCILMASK));
+
+  vars.get<GBuffer>("gBuffer")->triangleIds->bind(RASTERIZETEXTURE_BINDING_TRIANGLE_ID);
 
   
   size_t maxSize = 65536/2;

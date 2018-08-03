@@ -1,49 +1,52 @@
 #include<ShadowVolumes.h>
 #include<Deferred.h>
+#include<Model.h>
+
+using namespace std;
 
 ShadowVolumes::ShadowVolumes(vars::Vars&vars):ShadowMethod(vars)
 {
   assert(this!=nullptr);
   auto depth = vars.get<GBuffer>("gBuffer")->depth;
-  this->_fbo = std::make_shared<ge::gl::Framebuffer>();
-  this->_fbo->attachTexture(GL_DEPTH_ATTACHMENT,depth);
-  this->_fbo->attachTexture(GL_STENCIL_ATTACHMENT,depth);
-  assert(this->_fbo->check());
+  fbo = std::make_shared<ge::gl::Framebuffer>();
+  fbo->attachTexture(GL_DEPTH_ATTACHMENT,depth);
+  fbo->attachTexture(GL_STENCIL_ATTACHMENT,depth);
+  assert(fbo->check());
 
-  this->_maskFbo = std::make_shared<ge::gl::Framebuffer>();
-  this->_maskFbo->attachTexture(GL_STENCIL_ATTACHMENT,depth);
-  this->_maskFbo->attachTexture(GL_COLOR_ATTACHMENT0,vars.get<ge::gl::Texture>("shadowMask"));
-  this->_maskFbo->drawBuffers(1,GL_COLOR_ATTACHMENT0);
-  assert(this->_maskFbo->check());
+  maskFbo = std::make_shared<ge::gl::Framebuffer>();
+  maskFbo->attachTexture(GL_STENCIL_ATTACHMENT,depth);
+  maskFbo->attachTexture(GL_COLOR_ATTACHMENT0,vars.get<ge::gl::Texture>("shadowMask"));
+  maskFbo->drawBuffers(1,GL_COLOR_ATTACHMENT0);
+  assert(maskFbo->check());
 
-  this->_emptyVao = std::make_shared<ge::gl::VertexArray>();
+  emptyVao = std::make_shared<ge::gl::VertexArray>();
 
 #include"ShadowVolumesShaders.h"
-  this->_blitProgram = std::make_shared<ge::gl::Program>(
+  blitProgram = std::make_shared<ge::gl::Program>(
       std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER  ,blitVPSrc),
       std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER,blitFPSrc));
 }
 
 ShadowVolumes::~ShadowVolumes(){}
 
-void ShadowVolumes::_blit(){
+void ShadowVolumes::blit(){
   assert(this!=nullptr);
-  assert(this->_blitProgram!=nullptr);
-  assert(this->_maskFbo!=nullptr);
-  assert(this->_emptyVao!=nullptr);
+  assert(blitProgram!=nullptr);
+  assert(maskFbo!=nullptr);
+  assert(emptyVao!=nullptr);
   glDisable(GL_DEPTH_TEST);
-  this->_maskFbo->bind();
+  maskFbo->bind();
   glClear(GL_COLOR_BUFFER_BIT);
   glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
   glStencilFunc(GL_EQUAL,0,0xff);
   glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
   glDepthFunc(GL_ALWAYS);
   glDepthMask(GL_FALSE);
-  this->_blitProgram->use();
-  this->_emptyVao->bind();
+  blitProgram->use();
+  emptyVao->bind();
   glDrawArrays(GL_TRIANGLE_STRIP,0,4);
-  this->_emptyVao->unbind();
-  this->_maskFbo->unbind();
+  emptyVao->unbind();
+  maskFbo->unbind();
 }
 
 
@@ -52,11 +55,11 @@ void ShadowVolumes::create(
     glm::mat4 const&viewMatrix      ,
     glm::mat4 const&projectionMatrix){
   assert(this!=nullptr);
-  assert(this->_fbo!=nullptr);
+  assert(fbo!=nullptr);
 
   ifExistStamp("");
 
-  this->_fbo->bind();
+  fbo->bind();
   glEnable(GL_STENCIL_TEST);
   glStencilFunc(GL_ALWAYS,0,0);
 
@@ -71,16 +74,16 @@ void ShadowVolumes::create(
   glDepthMask(GL_FALSE);
   glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_FALSE);
 
-  this->drawSides(lightPosition,viewMatrix,projectionMatrix);
+  drawSides(lightPosition,viewMatrix,projectionMatrix);
   ifExistStamp("drawSides");
 
   if(vars.getBool("zfail")){
-    this->drawCaps(lightPosition,viewMatrix,projectionMatrix);
+    drawCaps(lightPosition,viewMatrix,projectionMatrix);
     ifExistStamp("drawCaps");
   }
-  this->_fbo->unbind();
+  fbo->unbind();
 
-  this->_blit();
+  blit();
 
   glDepthFunc(GL_LESS);
   glDisable(GL_STENCIL_TEST);
@@ -88,5 +91,13 @@ void ShadowVolumes::create(
   glDepthMask(GL_TRUE);
 
   ifExistStamp("blit");
+}
+
+shared_ptr<Adjacency const> createAdjacency(vars::Vars&vars){
+  vector<float>vertices;
+  vars.get<Model>("model")->getVertices(vertices);
+
+  size_t const nofTriangles = vertices.size() / (verticesPerTriangle*componentsPerVertex3D);
+  return  make_shared<Adjacency const>(vertices,vars.getSizeT("maxMultiplicity"));
 }
 

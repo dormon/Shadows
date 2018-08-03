@@ -6,7 +6,7 @@ size_t const floatsPerNofOppositeVertices = 1;
 size_t const sizeofVertex3DInBytes        = componentsPerVertex3D  *sizeof(float);
 size_t const sizeofPlane3DInBytes         = componentsPerPlane3D   *sizeof(float);
 
-void VSSV::_createSideDataUsingPoints(std::shared_ptr<Adjacency>const&adj){
+void VSSV::_createSideDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
@@ -22,7 +22,7 @@ void VSSV::_createSideDataUsingPoints(std::shared_ptr<Adjacency>const&adj){
 
   
   auto const dstPtr = static_cast<float      *>(this->_adjacency->map());
-  auto const srcPtr = static_cast<float const*>(adj->getVertices()     );
+  auto const srcPtr = adj->getVertices().data();
 
   for(size_t edgeIndex=0;edgeIndex<adj->getNofEdges();++edgeIndex){
     auto const edgeDstPtr             = dstPtr + edgeIndex*floatsPerEdge;
@@ -39,7 +39,7 @@ void VSSV::_createSideDataUsingPoints(std::shared_ptr<Adjacency>const&adj){
     for(size_t oppositeIndex=0;oppositeIndex<adj->getNofOpposite(edgeIndex);++oppositeIndex)
       std::memcpy(
           oppositeVerticesDstPtr+oppositeIndex*componentsPerVertex3D,
-          adj->getVertices()+adj->getOpposite(edgeIndex,oppositeIndex),
+          adj->getVertices().data()+adj->getOpposite(edgeIndex,oppositeIndex),
           sizeofVertex3DInBytes);
     size_t const nofEmptyOppositeVertices = maxNofOppositeVertices-adj->getNofOpposite(edgeIndex);
     auto const emptyOppositeVerticesDstPtr = oppositeVerticesDstPtr + adj->getNofOpposite(edgeIndex)*componentsPerVertex3D;
@@ -70,7 +70,7 @@ void VSSV::_createSideDataUsingPoints(std::shared_ptr<Adjacency>const&adj){
   }
 }
 
-void VSSV::_createCapDataUsingPoints(std::shared_ptr<Adjacency>const&adj){
+void VSSV::_createCapDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
   //create and fill adjacency buffer on GPU
@@ -80,7 +80,7 @@ void VSSV::_createCapDataUsingPoints(std::shared_ptr<Adjacency>const&adj){
   //C - vertex C of an triangle
 
   size_t const sizeofTriangleInBytes = componentsPerVertex3D*verticesPerTriangle*sizeof(float);
-  this->_caps = std::make_shared<ge::gl::Buffer>(adj->getNofTriangles()*sizeofTriangleInBytes,adj->getVertices());
+  this->_caps = std::make_shared<ge::gl::Buffer>(adj->getVertices());
 
   this->_capsVao = std::make_shared<ge::gl::VertexArray>();
   GLsizei const stride     = GLsizei(sizeofTriangleInBytes);
@@ -98,7 +98,7 @@ void VSSV::_createCapDataUsingPoints(std::shared_ptr<Adjacency>const&adj){
 
 
 
-void VSSV::_createSideDataUsingAllPlanes(std::shared_ptr<Adjacency>const&adj){
+void VSSV::_createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
@@ -117,15 +117,15 @@ void VSSV::_createSideDataUsingAllPlanes(std::shared_ptr<Adjacency>const&adj){
     auto edgeOppositeVerticesPtr = edgeVertexBPtr + componentsPerVertex3D;
     size_t const edgeVertexAIndex = 0;
     size_t const edgeVertexBIndex = 1;
-    std::memcpy(edgeVertexAPtr,adj->getVertices()+adj->getEdge(edgeIndex,edgeVertexAIndex),sizeofVertex3DInBytes);
-    std::memcpy(edgeVertexBPtr,adj->getVertices()+adj->getEdge(edgeIndex,edgeVertexBIndex),sizeofVertex3DInBytes);
+    std::memcpy(edgeVertexAPtr,adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexAIndex),sizeofVertex3DInBytes);
+    std::memcpy(edgeVertexBPtr,adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexBIndex),sizeofVertex3DInBytes);
     for(size_t oppositeIndex=0;oppositeIndex<adj->getNofOpposite(edgeIndex);++oppositeIndex)
       std::memcpy(
           edgeOppositeVerticesPtr+oppositeIndex*componentsPerPlane3D,
           glm::value_ptr(computePlane(
-              toVec3(adj->getVertices()+adj->getEdge(edgeIndex,edgeVertexAIndex) ),
-              toVec3(adj->getVertices()+adj->getEdge(edgeIndex,edgeVertexBIndex) ),
-              toVec3(adj->getVertices()+adj->getOpposite(edgeIndex,oppositeIndex))
+              toVec3(adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexAIndex) ),
+              toVec3(adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexBIndex) ),
+              toVec3(adj->getVertices().data()+adj->getOpposite(edgeIndex,oppositeIndex))
               )),
           sizeofPlane3DInBytes);
     size_t const nofEmptyOppositeVertices = maxNofOppositeVertices-adj->getNofOpposite(edgeIndex);
@@ -154,7 +154,7 @@ void VSSV::_createSideDataUsingAllPlanes(std::shared_ptr<Adjacency>const&adj){
   }
 }
 
-void VSSV::_createSideDataUsingPlanes(std::shared_ptr<Adjacency>const&adj){
+void VSSV::_createSideDataUsingPlanes(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
@@ -175,16 +175,16 @@ void VSSV::_createSideDataUsingPlanes(std::shared_ptr<Adjacency>const&adj){
     auto edgeOppositeVerticesPtr = edgeNofOppositePtr + floatsPerNofOppositeVertices;
     size_t const edgeVertexAIndex = 0;
     size_t const edgeVertexBIndex = 1;
-    std::memcpy(edgeVertexAPtr,adj->getVertices()+adj->getEdge(edgeIndex,edgeVertexAIndex),sizeofVertex3DInBytes);
-    std::memcpy(edgeVertexBPtr,adj->getVertices()+adj->getEdge(edgeIndex,edgeVertexBIndex),sizeofVertex3DInBytes);
+    std::memcpy(edgeVertexAPtr,adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexAIndex),sizeofVertex3DInBytes);
+    std::memcpy(edgeVertexBPtr,adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexBIndex),sizeofVertex3DInBytes);
     *edgeNofOppositePtr = float(adj->getNofOpposite(edgeIndex));
     for(size_t oppositeIndex=0;oppositeIndex<adj->getNofOpposite(edgeIndex);++oppositeIndex)
       std::memcpy(
           edgeOppositeVerticesPtr+oppositeIndex*componentsPerPlane3D,
           glm::value_ptr(computePlane(
-              toVec3(adj->getVertices()+adj->getEdge(edgeIndex,edgeVertexAIndex) ),
-              toVec3(adj->getVertices()+adj->getEdge(edgeIndex,edgeVertexBIndex) ),
-              toVec3(adj->getVertices()+adj->getOpposite(edgeIndex,oppositeIndex))
+              toVec3(adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexAIndex) ),
+              toVec3(adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexBIndex) ),
+              toVec3(adj->getVertices().data()+adj->getOpposite(edgeIndex,oppositeIndex))
               )),
           sizeofPlane3DInBytes);
     size_t const nofEmptyOppositeVertices = maxNofOppositeVertices-adj->getNofOpposite(edgeIndex);
@@ -221,10 +221,7 @@ VSSV::VSSV(vars::Vars&vars):
   assert(this!=nullptr);
 
   //compute adjacency of the model
-  std::vector<float>vertices;
-  vars.get<Model>("model")->getVertices(vertices);
-  size_t const nofTriangles = vertices.size()/(componentsPerVertex3D*verticesPerTriangle);
-  auto adj = std::make_shared<Adjacency>(vertices.data(),nofTriangles,vars.getSizeT("maxMultiplicity"));
+  auto const adj = createAdjacency(vars);
   this->_maxMultiplicity = adj->getMaxMultiplicity();
 
   //create and fill adjacency buffer for sides on GPU

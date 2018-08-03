@@ -39,7 +39,7 @@ InterleavedPlanesExtractSilhouettes::InterleavedPlanesExtractSilhouettes(vars::V
   
 
 
-  auto const src = static_cast<float const*const>(adj->getVertices() );
+  auto const src = adj->getVertices().data();
 
   std::vector<float>dst(bufferSize);
   for(size_t e=0;e<adj->getNofEdges();++e)dst[e+align(adj->getNofEdges(),floatAlign)*0] = src[adj->getEdgeVertexA(e)+0];

@@ -9,14 +9,12 @@ class Adjacency{
     /**
      * @brief constructor of adjacency information
      *
-     * @param points vertices, three consecutive vertices form triangle
-     * @param numTriangles number of triangles
+     * @param vertices three 3D consecutive vertices form a triangle
      * @param maxMultiplicity edges with larger nof opposite vertices will be split
      */
     Adjacency(
-        float  const*vertices       ,
-        size_t const&nofTriangles   ,
-        size_t const&maxMultiplicity);
+        std::vector<float>const&vertices       ,
+        size_t            const&maxMultiplicity);
     /**
      * @brief gets number of edges
      *
@@ -76,7 +74,7 @@ class Adjacency{
      *
      * @return array of vertices
      */
-    float const*getVertices()const;
+    std::vector<float>const&getVertices()const;
     /**
      * @brief gets nof triangles
      *
@@ -99,6 +97,5 @@ class Adjacency{
     std::vector<EdgeAdjacency>_edges                    ;
     std::vector<size_t>       _opposite                 ;///< list of all indices to opposite vertices
     size_t                    _maxMultiplicity = 0      ;///<max allowed multiplicity
-    float const*              _vertices        = nullptr;///<all vertices, with redundancies
-    size_t                    _nofTriangles    = 0      ;///<number of triangles
+    std::vector<float>        _vertices                 ;///all vertices, with redundancy  
 };

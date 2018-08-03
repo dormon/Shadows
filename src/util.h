@@ -22,3 +22,25 @@ glm::vec4 vector2vec4(std::vector<double> const& v);
 std::string uvec2ToStr(glm::uvec2 const& v);
 
 size_t getWavefrontSize(size_t w=0);
+
+template<typename RETURN,typename...ARGS>
+class Barrier{
+  public:
+    using PTR = RETURN(*)(ARGS...);
+    Barrier(PTR const&,RETURN && defRet,ARGS && ... defaults):returnValue(defRet),arguments{defaults...}{}
+    bool notChanged(ARGS const&... args){
+      auto newInputs = std::tuple<ARGS...>(args...);
+      auto same = arguments == newInputs;
+      if(same)return same;
+      arguments = newInputs;
+      return same;
+    }
+    RETURN             returnValue;
+    std::tuple<ARGS...>arguments  ;
+};
+
+template<typename RETURN,typename...ARGS,typename VRET,typename...VARGS>
+inline Barrier<RETURN,ARGS...>make_Barrier(RETURN(*ptr)(ARGS...),VRET && returnDef,VARGS && ...defaults){
+  return Barrier<RETURN,ARGS...>{ptr,static_cast<RETURN>(returnDef),static_cast<ARGS>(defaults)...};
+}
+

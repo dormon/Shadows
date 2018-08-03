@@ -70,16 +70,16 @@ class EdgeToTriangle{
 };
 
 
-Adjacency::Adjacency(float const*vertices,size_t const&nofTriangles,size_t const&maxMult){
+Adjacency::Adjacency(std::vector<float>const&vertices,size_t const&maxMult){
   this->_vertices        = vertices;
   this->_maxMultiplicity = maxMult;
-  this->_nofTriangles    = nofTriangles;
+  auto const nofTriangles   = vertices.size()/3/3;
   std::vector<EdgeToTriangle>edgeToTriangle;
   edgeToTriangle.reserve(3*nofTriangles);
   for(size_t t=0;t<nofTriangles;++t){//loop over triangles
-    Vertex<3>a(vertices,(t*3+0)*3);
-    Vertex<3>b(vertices,(t*3+1)*3);
-    Vertex<3>c(vertices,(t*3+2)*3);
+    Vertex<3>a(vertices.data(),(t*3+0)*3);
+    Vertex<3>b(vertices.data(),(t*3+1)*3);
+    Vertex<3>c(vertices.data(),(t*3+2)*3);
     int ab=a.compare(b);
     int ac=a.compare(c);
     int bc=b.compare(c);
@@ -139,12 +139,12 @@ size_t Adjacency::getMaxMultiplicity()const{
   assert(this!=nullptr);
   return this->_maxMultiplicity;
 }
-const float*Adjacency::getVertices()const{
+std::vector<float>const&Adjacency::getVertices()const{
   assert(this!=nullptr);
   return this->_vertices;
 }
 size_t Adjacency::getNofTriangles()const{
   assert(this!=nullptr);
-  return this->_nofTriangles;
+  return _vertices.size()/3/3;
 }
 

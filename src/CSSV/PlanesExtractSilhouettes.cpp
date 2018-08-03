@@ -12,7 +12,7 @@ PlanesExtractSilhouettes::PlanesExtractSilhouettes(vars::Vars&vars,std::shared_p
   edges = std::make_shared<ge::gl::Buffer>(adj->getNofEdges()*floatsPerEdge*sizeof(float));
 
   auto const dstPtr = static_cast<float      *>(edges->map());
-  auto const srcPtr = static_cast<float const*>(adj->getVertices() );
+  auto const srcPtr = adj->getVertices().data();
 
   size_t const sizeofVertex3DInBytes = componentsPerVertex3D * sizeof(float);
   for(size_t edgeIndex=0;edgeIndex<adj->getNofEdges();++edgeIndex){

@@ -18,7 +18,7 @@ void CSSVSOE::_createSidesData(std::shared_ptr<Adjacency const>const&adj){
   this->_edges = std::make_shared<ge::gl::Buffer>(sizeof(float)*componentsPerVertex4D*nofVec4PerEdge*adj->getNofEdges());
 
   auto const dstPtr = static_cast<float      *>(this->_edges->map());
-  auto const srcPtr = static_cast<float const*>(adj->getVertices() );
+  auto const srcPtr = adj->getVertices().data();
 
   std::vector<size_t>cardinality;
   cardinality.resize(adj->getMaxMultiplicity());
@@ -86,7 +86,7 @@ void CSSVSOE::_createCapsData (std::shared_ptr<Adjacency const>const&adj){
   assert(adj!=nullptr);
   this->_caps = std::make_shared<ge::gl::Buffer>(sizeof(float)*componentsPerVertex4D*verticesPerTriangle*this->_nofTriangles);
   auto const dstPtr = static_cast<float      *>(this->_caps->map());
-  auto const srcPtr = static_cast<float const*>(adj->getVertices());
+  auto const srcPtr = adj->getVertices().data();
   for(size_t t=0;t<this->_nofTriangles;++t){
     auto const triangleDstPtr = dstPtr + t*componentsPerVertex4D*verticesPerTriangle;
     auto const triangleSrcPtr = srcPtr + t*componentsPerVertex3D*verticesPerTriangle;
@@ -110,11 +110,7 @@ CSSVSOE::CSSVSOE(vars::Vars&vars):
 {
   assert(this!=nullptr);
 
-  std::vector<float>vertices;
-  vars.get<Model>("model")->getVertices(vertices);
-
-  size_t const nofTriangles = vertices.size() / (verticesPerTriangle*componentsPerVertex3D);
-  auto const adj = std::make_shared<Adjacency const>(vertices.data(),nofTriangles,vars.getSizeT("maxMultiplicity"));
+  auto const adj = createAdjacency(vars);
 
   this->_nofTriangles=adj->getNofTriangles();
 

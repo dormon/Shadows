@@ -8,6 +8,19 @@ using namespace std;
 using namespace ge::gl;
 using namespace cssv;
 
+shared_ptr<Buffer>createDIBO(){
+  struct DrawArraysIndirectCommand{
+    uint32_t nofVertices  = 0;
+    uint32_t nofInstances = 0;
+    uint32_t firstVertex  = 0;
+    uint32_t baseInstance = 0;
+  };
+  DrawArraysIndirectCommand cmd;
+  cmd.nofInstances = 1;
+  return make_shared<Buffer>(sizeof(DrawArraysIndirectCommand),&cmd);
+}
+
+
 ExtractSilhouettes::ExtractSilhouettes(vars::Vars&vars,shared_ptr<Adjacency const>const&adj):vars(vars){
 #include<CSSV/ExtractSilhouetteShader.h>
 #include<SilhouetteShaders.h>
@@ -22,6 +35,12 @@ ExtractSilhouettes::ExtractSilhouettes(vars::Vars&vars,shared_ptr<Adjacency cons
         Shader::define("USE_INTERLEAVING",int32_t(vars.getBool("cssv.useInterleaving"  ))),
         silhouetteFunctions,
         computeSrc));
+  dibo = createDIBO();
+
+  //std::cout << "ExtractSilhouettes" << std::endl;
+  //auto f = adj->getVertices();
+  //for(size_t i=0;i<adj->getNofTriangles()*3*3;++i)
+  //  std::cout << f[i] << std::endl;
 }
 
 void ExtractSilhouettes::compute(glm::vec4 const&lightPosition){

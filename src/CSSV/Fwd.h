@@ -6,4 +6,6 @@ namespace cssv{
   class BasicExtractSilhouettes;
   class InterleavedPlanesExtractSilhouettes;
   class PlanesExtractSilhouettes;
+  class DrawCaps;
+  class DrawSides;
 }

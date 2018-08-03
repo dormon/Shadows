@@ -3,6 +3,7 @@
 #include<ProgramExtension.h>
 #include<util.h>
 #include<Deferred.h>
+#include<ShadowVolumes.h>
 
 const size_t HIERARCHICALDEPTHTEXTURE_BINDING_DEPTH     = 0;
 const size_t HIERARCHICALDEPTHTEXTURE_BINDING_HDT       = 1;
@@ -80,16 +81,13 @@ RSSV::RSSV(vars::Vars&vars           ):
       silhouetteFunctions,
       _computeSilhouettesSrc);
 
-  std::vector<float>vertices;
-  vars.get<Model>("model")->getVertices(vertices);
-  size_t const nofTriangles = vertices.size()/(verticesPerTriangle*componentsPerVertex3D);
-  auto adj = std::make_shared<Adjacency>(vertices.data(),nofTriangles,vars.getSizeT("maxMultiplicity"));
+  auto adj = createAdjacency(vars);
 
   size_t const nofVec4PerEdge = verticesPerEdge + adj->getMaxMultiplicity();
   this->_edges = std::make_shared<ge::gl::Buffer>(sizeof(float)*componentsPerVertex4D*nofVec4PerEdge*adj->getNofEdges());
 
   float      *dstPtr = (float      *)this->_edges->map();
-  float const*srcPtr = (float const*)adj->getVertices();
+  auto const srcPtr = adj->getVertices().data();
 
   for(size_t e=0;e<adj->getNofEdges();++e){
     auto dstEdgePtr             = dstPtr + e*nofVec4PerEdge*componentsPerVertex4D;

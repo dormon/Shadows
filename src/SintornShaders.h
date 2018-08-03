@@ -375,6 +375,10 @@ const std::string rasterizeTextureCompSrc = R".(
   #define RASTERIZETEXTURE_BINDING_HDT 5
 #endif//RASTERIZETEXTURE_BINDING_HDT
 
+#ifndef RASTERIZETEXTURE_BINDING_TRIANGLE_ID
+  #define RASTERIZETEXTURE_BINDING_TRIANGLE_ID 9
+#endif//RASTERIZETEXTURE_BINDING_TRIANGLE_ID
+
 #ifndef WAVEFRONT_SIZE
   #define WAVEFRONT_SIZE 64
 #endif//WAVEFRONT_SIZE
@@ -491,9 +495,10 @@ const std::string rasterizeTextureCompSrc = R".(
 
 layout(local_size_x=WAVEFRONT_SIZE,local_size_y=SHADOWFRUSTUMS_PER_WORKGROUP)in;
 
-layout(r32ui ,binding=RASTERIZETEXTURE_BINDING_FINALSTENCILMASK)writeonly uniform uimage2D FinalStencilMask;
-layout(r32ui ,binding=RASTERIZETEXTURE_BINDING_HST             )          uniform uimage2D HST[NUMBER_OF_LEVELS];
+layout(r32ui ,binding=RASTERIZETEXTURE_BINDING_FINALSTENCILMASK)writeonly uniform   uimage2D FinalStencilMask;
+layout(r32ui ,binding=RASTERIZETEXTURE_BINDING_HST             )          uniform   uimage2D HST[NUMBER_OF_LEVELS];
 layout(       binding=RASTERIZETEXTURE_BINDING_HDT             )          uniform  sampler2D HDT[NUMBER_OF_LEVELS];
+layout(       binding=RASTERIZETEXTURE_BINDING_TRIANGLE_ID     )          uniform usampler2D triangleID;
 layout(std430,binding=RASTERIZETEXTURE_BINDING_SHADOWFRUSTA    ) readonly buffer SFData{float ShadowFrusta[];};
 
 shared vec4 SharedShadowFrusta[SHADOWFRUSTUMS_PER_WORKGROUP][VEC4_PER_SHADOWFRUSTUM];
@@ -549,6 +554,7 @@ void JOIN(TestShadowFrustumHDB,LEVEL)(uvec2 coord,vec2 clipCoord){\
   uvec2 localCoord             = getLocalCoords(LEVEL);\
   uvec2 globalCoord            = coord * JOIN(TILE_DIVISIBILITY,LEVEL) + localCoord;\
   vec2  globalClipCoord        = clipCoord + JOIN(TILE_SIZE_IN_CLIP_SPACE,LEVEL) * localCoord;\
+  if(texelFetch(triangleID,ivec2(globalCoord),0).x == SHADOWFRUSTUM_ID_IN_DISPATCH)return;\
   vec4  SampleCoordInClipSpace = vec4(\
     globalClipCoord + JOIN(TILE_SIZE_IN_CLIP_SPACE,LEVEL)*.5,\
     texelFetch(HDT[LEVEL],ivec2(globalCoord),0).x,1);\

@@ -41,6 +41,10 @@ set(SOURCES
   src/CSSV/PlanesExtractSilhouettes.cpp
   src/CSSV/InterleavedPlanesExtractSilhouettes.cpp
   src/CSSV/Param.cpp
+  src/CSSV/DrawSidesProgram.cpp
+  src/CSSV/DrawCapsProgram.cpp
+  src/CSSV/DrawCaps.cpp
+  src/CSSV/DrawSides.cpp
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
@@ -77,13 +81,18 @@ set(INCLUDES
   src/TimeStamp.h
   src/CSSV/Fwd.h
   src/CSSV/CSSV.h
-  src/CSSV/Shaders.h
+  src/CSSV/DrawSidesShaders.h
+  src/CSSV/DrawCapsShaders.h
   src/CSSV/ExtractSilhouetteShader.h
   src/CSSV/ExtractSilhouettes.h
   src/CSSV/BasicExtractSilhouettes.h
   src/CSSV/PlanesExtractSilhouettes.h
   src/CSSV/InterleavedPlanesExtractSilhouettes.h
   src/CSSV/InterleavedPlanesShader.h
+  src/CSSV/DrawSidesProgram.h
+  src/CSSV/DrawCapsProgram.h
+  src/CSSV/DrawCaps.h
+  src/CSSV/DrawSides.h
   src/CSSV/Param.h
   src/CSSVSOE.h
   src/Sintorn.h
