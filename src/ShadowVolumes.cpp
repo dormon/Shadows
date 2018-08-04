@@ -1,6 +1,8 @@
 #include<ShadowVolumes.h>
+
 #include<Deferred.h>
 #include<Model.h>
+#include<StencilBufferToShadowMaskProgram.h>
 
 using namespace std;
 
@@ -21,17 +23,13 @@ ShadowVolumes::ShadowVolumes(vars::Vars&vars):ShadowMethod(vars)
 
   emptyVao = std::make_shared<ge::gl::VertexArray>();
 
-#include"ShadowVolumesShaders.h"
-  blitProgram = std::make_shared<ge::gl::Program>(
-      std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER  ,blitVPSrc),
-      std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER,blitFPSrc));
+  stencilBufferToShadowMaskProgram = createStencilBufferToShadowMaskProgram();
 }
 
 ShadowVolumes::~ShadowVolumes(){}
 
-void ShadowVolumes::blit(){
+void ShadowVolumes::convertStencilBufferToShadowMask(){
   assert(this!=nullptr);
-  assert(blitProgram!=nullptr);
   assert(maskFbo!=nullptr);
   assert(emptyVao!=nullptr);
   glDisable(GL_DEPTH_TEST);
@@ -42,7 +40,7 @@ void ShadowVolumes::blit(){
   glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
   glDepthFunc(GL_ALWAYS);
   glDepthMask(GL_FALSE);
-  blitProgram->use();
+  stencilBufferToShadowMaskProgram->use();
   emptyVao->bind();
   glDrawArrays(GL_TRIANGLE_STRIP,0,4);
   emptyVao->unbind();
@@ -60,6 +58,7 @@ void ShadowVolumes::create(
   ifExistStamp("");
 
   fbo->bind();
+  glClear(GL_STENCIL_BUFFER_BIT);
   glEnable(GL_STENCIL_TEST);
   glStencilFunc(GL_ALWAYS,0,0);
 
@@ -83,14 +82,14 @@ void ShadowVolumes::create(
   }
   fbo->unbind();
 
-  blit();
+  convertStencilBufferToShadowMask();
 
   glDepthFunc(GL_LESS);
   glDisable(GL_STENCIL_TEST);
   glEnable(GL_DEPTH_TEST);
   glDepthMask(GL_TRUE);
 
-  ifExistStamp("blit");
+  ifExistStamp("convertStencilBufferToShadowMask");
 }
 
 shared_ptr<Adjacency const> createAdjacency(vars::Vars&vars){

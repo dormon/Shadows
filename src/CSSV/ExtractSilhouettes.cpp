@@ -36,11 +36,6 @@ ExtractSilhouettes::ExtractSilhouettes(vars::Vars&vars,shared_ptr<Adjacency cons
         silhouetteFunctions,
         computeSrc));
   dibo = createDIBO();
-
-  //std::cout << "ExtractSilhouettes" << std::endl;
-  //auto f = adj->getVertices();
-  //for(size_t i=0;i<adj->getNofTriangles()*3*3;++i)
-  //  std::cout << f[i] << std::endl;
 }
 
 void ExtractSilhouettes::compute(glm::vec4 const&lightPosition){

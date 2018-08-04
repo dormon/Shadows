@@ -4,8 +4,6 @@
 
 using namespace cssv;
 
-#define ___ std::cerr << __FILE__ << " " << __LINE__ << std::endl
-
 size_t getFloatsPerEdge(std::shared_ptr<Adjacency const>const&adj){
   size_t const verticesPerEdgeData = verticesPerEdge + adj->getMaxMultiplicity();
   return verticesPerEdgeData * componentsPerVertex4D;
@@ -42,87 +40,53 @@ void writeEmptyOppositeVertices(float*dstPtr,size_t e,std::shared_ptr<Adjacency 
 }
 
 void writeOppositeVertex(float*dstPtr,float const*srcPtr,size_t o,size_t e,std::shared_ptr<Adjacency const>const&adj){
-  ___;
   auto const oppositeVertexDstPtr = dstPtr + o*componentsPerVertex4D;
-  ___;
   auto const oppositeVertexSrcPtr = srcPtr + adj->getOpposite(e,o);
-  ___;
   copyVertex3D(oppositeVertexDstPtr,oppositeVertexSrcPtr);
-  ___;
   oppositeVertexDstPtr[3]=1.f;
-  ___;
 }
 
 void writeUsedOppositeVertices(float*dstPtr,float const*srcPtr,size_t e,std::shared_ptr<Adjacency const>const&adj){
-  ___;
   for(size_t o=0;o<adj->getNofOpposite(e);++o)
     writeOppositeVertex(dstPtr,srcPtr,o,e,adj);
-  ___;
 }
 
 void writeOppositeVertices(float*dstPtr,float const*srcPtr,size_t e,std::shared_ptr<Adjacency const>const&adj){
-  ___;
   auto const oppositeVerticesDstPtr = dstPtr + e*getFloatsPerEdge(adj) + componentsPerVertex4D * 2;
-  ___;
   writeUsedOppositeVertices(oppositeVerticesDstPtr,srcPtr,e,adj);
-  ___;
   writeEmptyOppositeVertices(oppositeVerticesDstPtr,e,adj);
-  ___;
 }
 
 void writeEdge(float*dst,float const*src,size_t e,std::shared_ptr<Adjacency const>const&adj){
-  ___;
   writeVertexA(dst,src,e,adj);
-  ___;
   writeVertexB(dst,src,e,adj);
-  ___;
   writeOppositeVertices(dst,src,e,adj);
-  ___;
 }
 
 void writeEdges(float*dst,float const*src,std::shared_ptr<Adjacency const>const&adj){
-  ___;
   for(size_t e=0;e<adj->getNofEdges();++e)
     writeEdge(dst,src,e,adj);
-  ___;
 }
 
 std::shared_ptr<ge::gl::Buffer>createEdgeBuffer(std::shared_ptr<Adjacency const>const&adj){
   size_t const verticesPerEdgeData = verticesPerEdge+adj->getMaxMultiplicity();
-  ___;
   std::vector<float>dst(componentsPerVertex4D*verticesPerEdgeData*adj->getNofEdges());
-  std::cerr << "dst size: " << dst.size() << std::endl;
-  ___;
   auto const srcData = adj->getVertices();
   auto const src = srcData.data();
-  ___;
   writeEdges(dst.data(),src,adj);
-  ___;
   return std::make_shared<ge::gl::Buffer>(dst);
 }
 
 std::shared_ptr<ge::gl::Buffer>createSillouetteBuffer(std::shared_ptr<Adjacency const>const&adj){
-  ___;
   size_t const bufferSize = sizeof(float)*componentsPerVertex4D*verticesPerQuad*adj->getNofEdges()*adj->getMaxMultiplicity();
-  ___;
   auto sillhouettes=std::make_shared<ge::gl::Buffer>(bufferSize,nullptr,GL_DYNAMIC_COPY);
-  ___;
   sillhouettes->clear(GL_R32F,GL_RED,GL_FLOAT);
-  ___;
   return sillhouettes;
 }
 
 BasicExtractSilhouettes::BasicExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):ExtractSilhouettes(vars,adj){
-  //std::cout << "BasicExtractSilhouettes" << std::endl;
-  //auto f = adj->getVertices();
-  //for(size_t i=0;i<adj->getNofTriangles()*3*3;++i)
-  //  std::cout << f[i] << std::endl;
-  ___;
   nofEdges     = adj->getNofEdges();
-  ___;
   edges        = createEdgeBuffer(adj);
-  ___;
   sillhouettes = createSillouetteBuffer(adj);
-  ___;
 }
 

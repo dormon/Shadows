@@ -2,15 +2,18 @@
 
 #include<iostream>
 
-const std::string blitVPSrc = R".(
+const std::string convertStencilBufferToShadowMaskVPSrc = R".(
 #version 450 core
 void main(){
   gl_Position = vec4(-1+2*(gl_VertexID/2),-1+2*(gl_VertexID%2),0,1);
-}).";
-const std::string blitFPSrc = R".(
+}
+).";
+
+const std::string convertStencilBufferToShadowMaskFPSrc = R".(
 #version 450 core
 layout(location=0)out float fColor;
 void main(){
   fColor = 1;
-}).";
+}
+).";
 

@@ -35,6 +35,7 @@ set(SOURCES
   src/CubeShadowMapping.cpp
   src/FastAdjacency.cpp
   src/TimeStamp.cpp
+  src/StencilBufferToShadowMaskProgram.cpp
   src/CSSV/CSSV.cpp
   src/CSSV/ExtractSilhouettes.cpp
   src/CSSV/BasicExtractSilhouettes.cpp
@@ -79,6 +80,7 @@ set(INCLUDES
   src/CubeShadowMappingShaders.h
   src/FastAdjacency.h
   src/TimeStamp.h
+  src/StencilBufferToShadowMaskProgram.h
   src/CSSV/Fwd.h
   src/CSSV/CSSV.h
   src/CSSV/DrawSidesShaders.h

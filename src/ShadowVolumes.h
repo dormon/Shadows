@@ -23,9 +23,9 @@ class ShadowVolumes: public ShadowMethod{
   protected:
     std::shared_ptr<ge::gl::Framebuffer>fbo         = nullptr;
     std::shared_ptr<ge::gl::Framebuffer>maskFbo     = nullptr;
-    std::shared_ptr<ge::gl::Program    >blitProgram = nullptr;
+    std::shared_ptr<ge::gl::Program    >stencilBufferToShadowMaskProgram;
     std::shared_ptr<ge::gl::VertexArray>emptyVao    = nullptr;
-    void blit();
+    void convertStencilBufferToShadowMask();
 };
 
 std::shared_ptr<Adjacency const> createAdjacency(vars::Vars&vars);

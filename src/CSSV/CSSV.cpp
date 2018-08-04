@@ -15,38 +15,23 @@ using namespace ge::gl;
 using namespace std;
 using namespace glm;
 
-#define ___ std::cerr << __FILE__ << " " << __LINE__ << std::endl
-
 unique_ptr<ExtractSilhouettes>createExtractSilhouetteMethod(vars::Vars&vars,shared_ptr<Adjacency const>const&adj){
-  ___;
   if(vars.getBool("cssv.usePlanes")){
     if(vars.getBool("cssv.useInterleaving"))
       return make_unique<InterleavedPlanesExtractSilhouettes>(vars,adj);
     else
       return make_unique<PlanesExtractSilhouettes>(vars,adj);
-  }else{
-    ___;
-    //std::cout << "createExtractSilhouetteMethod" << std::endl;
-    //auto f = adj->getVertices();
-    //for(size_t i=0;i<adj->getNofTriangles()*3*3;++i)
-    //  std::cout << f[i] << std::endl;
+  }else
     return make_unique<BasicExtractSilhouettes>(vars,adj);
-  }
-  ___;
 }
 
 CSSV::CSSV(vars::Vars&vars):
   ShadowVolumes(vars  )
 {
-  ___;
   auto const adj = createAdjacency(vars);
-  ___;
   extractSilhouettes = createExtractSilhouetteMethod(vars,adj);
-  ___;
   caps = make_unique<DrawCaps>(adj);
-  ___;
   sides = make_unique<DrawSides>(extractSilhouettes->sillhouettes,extractSilhouettes->dibo);
-  ___;
 }
 
 CSSV::~CSSV(){}
