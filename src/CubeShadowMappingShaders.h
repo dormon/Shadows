@@ -1,5 +1,4 @@
-#pragma once
-#include<iostream>
+#include<string>
 
 std::string const createShadowMapVertexShaderSource = R".(
 layout(location=0)in vec3 position;
