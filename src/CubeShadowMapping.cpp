@@ -5,101 +5,104 @@
 using namespace ge::gl;
 using namespace std;
 
-shared_ptr<Texture>createShadowMapTexture(vars::Vars&vars){
-  auto shadowMap = make_shared<Texture>(GL_TEXTURE_CUBE_MAP,GL_DEPTH_COMPONENT24,1,vars.getUint32("csm.resolution"),vars.getUint32("csm.resolution"));
+void createShadowMapTexture(vars::Vars&vars){
+  auto shadowMap = vars.reCreate<Texture>("csm.shadowMap",GL_TEXTURE_CUBE_MAP,GL_DEPTH_COMPONENT24,1,vars.getUint32("csm.resolution"),vars.getUint32("csm.resolution"));
   shadowMap->texParameteri(GL_TEXTURE_MIN_FILTER  ,GL_NEAREST             );
   shadowMap->texParameteri(GL_TEXTURE_MAG_FILTER  ,GL_NEAREST             );
   shadowMap->texParameteri(GL_TEXTURE_WRAP_S      ,GL_CLAMP_TO_EDGE       );
   shadowMap->texParameteri(GL_TEXTURE_WRAP_T      ,GL_CLAMP_TO_EDGE       );
   shadowMap->texParameteri(GL_TEXTURE_COMPARE_FUNC,GL_LEQUAL              );
   shadowMap->texParameteri(GL_TEXTURE_COMPARE_MODE,GL_COMPARE_R_TO_TEXTURE);
-  return shadowMap;
 }
 
-shared_ptr<Framebuffer>createMaskFBO(vars::Vars&vars){
-  auto fbo = make_shared<Framebuffer>();
-  fbo->attachTexture(GL_COLOR_ATTACHMENT0,vars.get<Texture>("shadowMask"));
-  fbo->drawBuffers(1,GL_COLOR_ATTACHMENT0);
-  return fbo;
+void createShadowMapFBO(vars::Vars&vars){
+  auto fbo = vars.reCreate<Framebuffer>("csv.shadowMapFBO");
+  fbo->attachTexture(GL_DEPTH_ATTACHMENT,vars.get<Texture>("csm.shadowMap"));
 }
 
-shared_ptr<Program>createShadowMapProgram(){
+void createShadowMapVAO(vars::Vars&vars){
+  auto vao = vars.reCreate<VertexArray>("csv.shadowMapVAO");
+  vao->addAttrib(vars.get<RenderModel>("renderModel")->vertices,0,3,GL_FLOAT);
+}
+
+void createShadowMapProgram(vars::Vars&vars){
 #include<CubeShadowMappingShaders.h>
-
-  auto program = make_shared<Program>(
+  vars.reCreate<Program>("csv.shadowMapProgram",
       make_shared<Shader>(GL_VERTEX_SHADER  ,
         "#version 450\n",
         createShadowMapVertexShaderSource  ),
       make_shared<Shader>(GL_GEOMETRY_SHADER,
         "#version 450\n",
         createShadowMapGeometryShaderSource));
-  return program;
 }
 
-shared_ptr<Program>createShadowMaskProgram(){
+void createMaskFBO(vars::Vars&vars){
+  auto fbo = vars.reCreate<Framebuffer>("csv.maskFBO");
+  fbo->attachTexture(GL_COLOR_ATTACHMENT0,vars.get<Texture>("shadowMask"));
+  fbo->drawBuffers(1,GL_COLOR_ATTACHMENT0);
+}
+
+void createShadowMaskProgram(vars::Vars&vars){
 #include<CubeShadowMappingShaders.h>
 
-  auto program = make_shared<Program>(
+  vars.reCreate<Program>("csv.shadowMaskProgram",
       make_shared<Shader>(GL_VERTEX_SHADER  ,
         "#version 450\n",
         createShadowMaskVertexShaderSource),
       make_shared<Shader>(GL_FRAGMENT_SHADER,
         "#version 450\n",
         createShadowMaskFragmentShaderSource));
-  return program;
 }
 
-shared_ptr<Framebuffer>createShadowMapFBO(shared_ptr<Texture>const&shadowMap){
-  auto fbo = make_shared<Framebuffer>();
-  fbo->attachTexture(GL_DEPTH_ATTACHMENT,shadowMap);
-  return fbo;
-}
-
-shared_ptr<VertexArray>createShadowMapVAO(vars::Vars&vars){
-  auto vao = make_shared<VertexArray>();
-  vao->addAttrib(vars.get<RenderModel>("renderModel")->vertices,0,3,GL_FLOAT);
-  return vao;
-}
-
-shared_ptr<VertexArray>createShadowMaskVAO(){
-  return make_shared<VertexArray>();
+void createShadowMaskVAO(vars::Vars&vars){
+  vars.reCreate<VertexArray>("csv.maskVAO");
 }
 
 CubeShadowMapping::CubeShadowMapping(
         vars::Vars&vars       ):
   ShadowMethod(vars)
 {
-  shadowMap        = createShadowMapTexture(vars);
-  shadowMapFBO     = createShadowMapFBO(shadowMap);
-  shadowMapVAO     = createShadowMapVAO(vars);
-  maskVao          = createShadowMaskVAO();
-  maskFbo          = createMaskFBO(vars);
-  createShadowMap  = createShadowMapProgram();
-  createShadowMask = createShadowMaskProgram();
+  createShadowMapTexture(vars);
+  createShadowMapFBO(vars);
+  createShadowMapVAO(vars);
+  createShadowMapProgram(vars);
+
+  createShadowMaskVAO(vars);
+  createMaskFBO(vars);
+  createShadowMaskProgram(vars);
 }
 
-CubeShadowMapping::~CubeShadowMapping(){}
+CubeShadowMapping::~CubeShadowMapping(){
+  vars.erase("csm.shadowMap");
+  vars.erase("csv.shadowMapFBO");
+  vars.erase("csv.shadowMapVAO");
+  vars.erase("csv.shadowMapProgram");
+
+  vars.erase("csv.maskFBO");
+  vars.erase("csv.maskVAO");
+  vars.erase("csv.shadowMaskProgram");
+}
 
 void CubeShadowMapping::fillShadowMap(glm::vec4 const&lightPosition){
   glEnable(GL_POLYGON_OFFSET_FILL);
   glPolygonOffset(2.5,10);
   auto const resolution = vars.getUint32("csm.resolution");
-  auto const near = vars.getFloat("csm.near");
-  auto const far = vars.getFloat("csm.far");
-  auto const faces = vars.getUint32("csm.faces");
+  auto const near       = vars.getFloat ("csm.near"      );
+  auto const far        = vars.getFloat ("csm.far"       );
+  auto const faces      = vars.getUint32("csm.faces"     );
   glViewport(0,0,resolution,resolution);
   glEnable(GL_DEPTH_TEST);
-  shadowMapFBO->bind();
+  vars.get<Framebuffer>("csv.shadowMapFBO")->bind();
   glClear(GL_DEPTH_BUFFER_BIT);
-  shadowMapVAO->bind();
-  createShadowMap
+  vars.get<VertexArray>("csv.shadowMapVAO")->bind();
+  vars.get<Program>("csv.shadowMapProgram")
     ->set4fv("lightPosition",glm::value_ptr(lightPosition))
     ->set1f ("near"         ,near           )
     ->set1f ("far"          ,far            )
     ->use();
   glDrawArraysInstanced(GL_TRIANGLES,0,vars.get<RenderModel>("renderModel")->nofVertices,faces);
-  shadowMapVAO->unbind();
-  shadowMapFBO->unbind();
+  vars.get<VertexArray>("csv.shadowMapVAO")->unbind();
+  vars.get<Framebuffer>("csv.shadowMapFBO")->unbind();
 }
 
 void CubeShadowMapping::fillShadowMask(glm::vec4 const&lightPosition){
@@ -107,18 +110,18 @@ void CubeShadowMapping::fillShadowMask(glm::vec4 const&lightPosition){
   auto const far = vars.getFloat("csm.far");
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   glViewport(0,0,windowSize.x,windowSize.y);
-  maskFbo->bind();
-  maskVao->bind();
-  createShadowMask
+  vars.get<Framebuffer>("csv.maskFBO")->bind();
+  vars.get<VertexArray>("csv.maskVAO")->bind();
+  vars.get<Program>("csv.shadowMaskProgram")
     ->set4fv("lightPosition",glm::value_ptr(lightPosition))
     ->set1f ("near"         ,near           )
     ->set1f ("far"          ,far            )
     ->use();
   vars.get<GBuffer>("gBuffer")->position->bind(0);
-  shadowMap->bind(1);
+  vars.get<Texture>("csm.shadowMap")->bind(1);
   glDrawArrays(GL_TRIANGLE_STRIP,0,4);
-  maskVao->unbind();
-  maskFbo->unbind();
+  vars.get<VertexArray>("csv.maskVAO")->unbind();
+  vars.get<Framebuffer>("csv.maskFBO")->unbind();
 }
 
 void CubeShadowMapping::create(
