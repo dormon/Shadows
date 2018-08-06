@@ -12,6 +12,7 @@ parser.add_argument('--dontBuildDebug',action='store_true')
 parser.add_argument('--dontBuildRelease',action='store_true')
 parser.add_argument('--installDir', type=str, default="install", help='where to install all repositories')
 parser.add_argument('--repoDir', type=str, default="repositories", help='where to download repositories')
+parser.add_argument('--dontPull', action='store_true')
 
 args = parser.parse_args()
 
@@ -21,6 +22,7 @@ buildRelease = not args.dontBuildRelease
 installDir   = args.installDir
 repoDir      = args.repoDir
 curDir       = os.path.abspath(".")
+dontPull     = args.dontPull
 
 def getGCC():
     GCCs = ["g++","g++-5","g++-6","g++-7"]
@@ -82,9 +84,6 @@ def getGCC():
 
 gcc = getGCC()
 
-
-
-
 if not os.path.isabs(installDir):
     installDir = os.path.join(os.path.abspath("."),installDir)
 
@@ -108,9 +107,10 @@ def clone(url):
         call(["git","clone",url])
     else:
         print "executing git pull on: "+gitDir
-        os.chdir(gitDir)
-        call(["git","pull"])
-        os.chdir("..")
+        if not dontPull:
+            os.chdir(gitDir)
+            call(["git","pull"])
+            os.chdir("..")
     os.chdir(curDir)
 
 gits = [

@@ -140,7 +140,6 @@ void Shadows::init() {
 
   vars.add<DrawPrimitive>("drawPrimitive",windowSize);
 
-
   imgui = std::make_unique<imguiSDL2OpenGL::Imgui>(window->getWindow());
 
   mainLoop->setEventHandler([&](SDL_Event const&event){
