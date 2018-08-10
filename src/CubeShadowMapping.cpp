@@ -8,7 +8,7 @@ using namespace std;
 #include<Vars/Resource.h>
 class Barrier{
   public:
-    Barrier(vars::Vars&vars,std::vector<std::string>const&inputs = {},std::vector<std::string>const&outputs = {}):vars(vars){
+    Barrier(vars::Vars&vars,std::vector<std::string>const&inputs = {}):vars(vars){
       for(auto const&i:inputs){
         if(!vars.has(i))
           throw std::runtime_error(std::string("cannot create Barrier, missing input variable: ")+i);
@@ -38,7 +38,6 @@ class Barrier{
 void createShadowMapTexture(vars::Vars&vars){
   static Barrier barrier(vars,{"csm.resolution"});
   if(barrier.notChange())return;
-  std::cerr << "createShadowMapTexture" << std::endl;
 
   auto shadowMap = vars.reCreate<Texture>("csm.shadowMap",GL_TEXTURE_CUBE_MAP,GL_DEPTH_COMPONENT24,1,vars.getUint32("csm.resolution"),vars.getUint32("csm.resolution"));
   shadowMap->texParameteri(GL_TEXTURE_MIN_FILTER  ,GL_NEAREST             );

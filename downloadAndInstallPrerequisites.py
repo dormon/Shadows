@@ -115,7 +115,7 @@ def clone(url):
 
 gits = [
 ("git@github.com:spurious/SDL-mirror.git"     ,[]),
-("git@github.com:assimp/assimp.git"           ,["-DASSIMP_BUILD_SAMPLES=OFF","-DASSIMP_BUILD_ASSIMP_TOOLS=OFF","DASSIMP_BUILD_TESTS=OFF"]),
+("git@github.com:assimp/assimp.git"           ,["-DASSIMP_BUILD_SAMPLES=OFF","-DASSIMP_BUILD_ASSIMP_TOOLS=OFF","-DASSIMP_BUILD_TESTS=OFF"]),
 ("git@github.com:g-truc/glm.git"              ,["-DGLM_TEST_ENABLE=OFF"]),
 ("git@github.com:dormon/SDL2CPP.git"          ,[]),
 ("git@github.com:dormon/imguiDormon.git"      ,[]),
@@ -146,14 +146,15 @@ def buildAndInstall(url,args = []):
     os.chdir("build/linux/")
     if buildDebug:
         os.chdir("debug")
-        if not os.path.isfile("Makefile"):
-            call(basicArgs+debugArg+args+dirArg)
+        #if not os.path.isfile("Makefile"):
+        #print basicArgs+debugArg+args+dirArg
+        call(basicArgs+debugArg+args+dirArg)
         call(["make","-j"+str(threads),"install"])
         os.chdir("..")
     if buildRelease:
         os.chdir("release")
-        if not os.path.isfile("Makefile"):
-            call(basicArgs+releaseArg+args+dirArg)
+        #if not os.path.isfile("Makefile"):
+        call(basicArgs+releaseArg+args+dirArg)
         call(["make","-j"+str(threads),"install"])
         os.chdir("..")
 
