@@ -19,7 +19,15 @@ find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
 find_package(geGL 1.0.5 CONFIG REQUIRED)
 find_package(SDL2CPP 1.0 CONFIG REQUIRED)
 find_package(BasicCamera 1.0 CONFIG REQUIRED)
+
 find_package(assimp CONFIG REQUIRED)
+if (assimp_FOUND)
+  set(ASSIMP_LIBRARY "assimp")
+  add_library(${ASSIMP_LIBRARY} SHARED IMPORTED)
+  set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_LOCATION "${ASSIMP_LIBRARY_DIRS}/libassimp.so")
+endif(assimp_FOUND)
+
+
 find_package(imguiSDL2OpenGL CONFIG REQUIRED)
 find_package(Vars CONFIG REQUIRED)
 #find_package(SDL2 CONFIG REQUIRED)
@@ -129,5 +137,5 @@ add_executable(${APP_NAME} ${SOURCES} ${INCLUDES})
 target_include_directories(${APP_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${APP_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-target_link_libraries(${APP_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer assimp imguiSDL2OpenGL::imguiSDL2OpenGL Vars::Vars)
+target_link_libraries(${APP_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer ${ASSIMP_LIBRARIES} imguiSDL2OpenGL::imguiSDL2OpenGL Vars::Vars)
 
