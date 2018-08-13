@@ -35,11 +35,63 @@ class Barrier{
 
 };
 
-void createShadowMapTexture(vars::Vars&vars){
-  static Barrier barrier(vars,{"csm.resolution"});
-  if(barrier.notChange())return;
+std::string getFullMethodName(std::string const&cls,std::string const&method){
+  return cls + "._methods." + method;
+}
 
-  auto shadowMap = vars.reCreate<Texture>("csm.shadowMap",GL_TEXTURE_CUBE_MAP,GL_DEPTH_COMPONENT24,1,vars.getUint32("csm.resolution"),vars.getUint32("csm.resolution"));
+std::string getMethodTableName(std::string const&cls){
+  return cls + "._methodNames";
+}
+
+void addMethodTable(vars::Vars&vars,std::string const&cls){
+  auto const methodTableName = getMethodTableName(cls);
+  if(!vars.has(methodTableName))
+    vars.add<std::set<std::string>>(methodTableName);
+}
+
+void registerMethod(vars::Vars&vars,std::string const&cls,std::string const&method){
+  auto const methodTableName = getMethodTableName(cls);
+  auto const fullMethodName  = getFullMethodName(cls,method);
+
+  addMethodTable(vars,cls);
+
+  auto methodTable = vars.get<std::set<std::string>>(methodTableName);
+  methodTable->insert(fullMethodName);
+}
+
+Barrier*createOrGetBarrier(
+    vars::Vars                   &vars  ,
+    std::string             const&cls   ,
+    std::string             const&method,
+    std::vector<std::string>const&v     ){
+  auto const fullName = getFullMethodName(cls,method);
+  if(!vars.has(fullName)){
+    registerMethod(vars,cls,method);
+    return vars.add<Barrier>(fullName,vars,v);
+  }
+  return vars.get<Barrier>(fullName);
+}
+
+void callDestructor(vars::Vars&vars,std::string const&cls){
+  auto const methodTableName = getMethodTableName(cls);
+  if(!vars.has(methodTableName))return;
+  auto methodNames = vars.get<std::set<std::string>>(methodTableName);
+  for(auto const&method:*methodNames){
+    auto const fullName = getFullMethodName(cls,method);
+    vars.erase(fullName);
+  }
+  vars.erase(methodTableName);
+}
+
+#define STRINGIZE_DETAIL(x) #x
+#define STRINGIZE(x) STRINGIZE_DETAIL(x)
+
+void createShadowMapTexture(vars::Vars&vars){
+  auto barrier = createOrGetBarrier(vars,"csm",STRINGIZE(__FUNCTION__),{"csm.resolution"});
+  if(barrier->notChange())return;
+
+  auto const resolution = vars.getUint32("csm.resolution");
+  auto shadowMap = vars.reCreate<Texture>("csm.shadowMap",GL_TEXTURE_CUBE_MAP,GL_DEPTH_COMPONENT24,1,resolution,resolution);
   shadowMap->texParameteri(GL_TEXTURE_MIN_FILTER  ,GL_NEAREST             );
   shadowMap->texParameteri(GL_TEXTURE_MAG_FILTER  ,GL_NEAREST             );
   shadowMap->texParameteri(GL_TEXTURE_WRAP_S      ,GL_CLAMP_TO_EDGE       );
@@ -49,16 +101,17 @@ void createShadowMapTexture(vars::Vars&vars){
 }
 
 void createShadowMapFBO(vars::Vars&vars){
-  static Barrier barrier(vars,{"csm.shadowMap"});
-  if(barrier.notChange())return;
+  auto barrier = createOrGetBarrier(vars,"csm",STRINGIZE(__FUNCTION__),{"csm.shadowMap"});
+  if(barrier->notChange())return;
 
   auto fbo = vars.reCreate<Framebuffer>("csv.shadowMapFBO");
   fbo->attachTexture(GL_DEPTH_ATTACHMENT,vars.get<Texture>("csm.shadowMap"));
 }
 
+
 void createShadowMapVAO(vars::Vars&vars){
-  static Barrier barrier(vars,{"renderModel"});
-  if(barrier.notChange())return;
+  auto barrier = createOrGetBarrier(vars,"csm",STRINGIZE(__FUNCTION__),{"csm.shadowMap"});
+  if(barrier->notChange())return;
 
   auto vao = vars.reCreate<VertexArray>("csv.shadowMapVAO");
   vao->addAttrib(vars.get<RenderModel>("renderModel")->vertices,0,3,GL_FLOAT);
@@ -117,14 +170,16 @@ CubeShadowMapping::CubeShadowMapping(
 }
 
 CubeShadowMapping::~CubeShadowMapping(){
-  vars.erase("csm.shadowMap");
-  vars.erase("csv.shadowMapFBO");
-  vars.erase("csv.shadowMapVAO");
-  vars.erase("csv.shadowMapProgram");
+  callDestructor(vars,"csm");
 
-  vars.erase("csv.maskFBO");
-  vars.erase("csv.maskVAO");
-  vars.erase("csv.shadowMaskProgram");
+  vars.erase("csm.shadowMap"       );
+  vars.erase("csm.shadowMapFBO"    );
+  vars.erase("csm.shadowMapVAO"    );
+  vars.erase("csm.shadowMapProgram");
+
+  vars.erase("csm.maskFBO"          );
+  vars.erase("csm.maskVAO"          );
+  vars.erase("csm.shadowMaskProgram");
 }
 
 void CubeShadowMapping::fillShadowMap(glm::vec4 const&lightPosition){
