@@ -99,7 +99,7 @@ if not os.path.isdir(repoDir):
 def getGitDirectory(url):
     return url[url.rfind("/")+1:url.rfind(".")]
 
-def clone(url):
+def clone(url,commit = ""):
     os.chdir(repoDir)
     gitDir = getGitDirectory(url)
     if not os.path.isdir(gitDir):
@@ -111,23 +111,30 @@ def clone(url):
             os.chdir(gitDir)
             call(["git","pull"])
             os.chdir("..")
+
+    if commit != "":
+        os.chdir(gitDir)
+        print "checkout: "+commit
+        call(["git","checkout",commit])
+        os.chdir("..")
+
     os.chdir(curDir)
 
 gits = [
-("git@github.com:spurious/SDL-mirror.git"     ,[]),
-("git@github.com:assimp/assimp.git"           ,["-DASSIMP_BUILD_SAMPLES=OFF","-DASSIMP_BUILD_ASSIMP_TOOLS=OFF","-DASSIMP_BUILD_TESTS=OFF"]),
-("git@github.com:g-truc/glm.git"              ,["-DGLM_TEST_ENABLE=OFF"]),
-("git@github.com:dormon/SDL2CPP.git"          ,[]),
-("git@github.com:dormon/imguiDormon.git"      ,[]),
-("git@github.com:dormon/imguiOpenGLDormon.git",[]),
-("git@github.com:dormon/imguiSDL2Dormon.git"  ,[]),
-("git@github.com:dormon/imguiSDL2OpenGL.git"  ,[]),
-("git@github.com:dormon/geGL.git"             ,[]),
-("git@github.com:dormon/BasicCamera.git"      ,[]),
-("git@github.com:dormon/MealyMachine.git"     ,[]),
-("git@github.com:dormon/TxtUtils.git"         ,[]),
-("git@github.com:dormon/ArgumentViewer.git"   ,[]),
-("git@github.com:dormon/Vars.git"             ,[]),
+("git@github.com:spurious/SDL-mirror.git"     ,"release-2.0.8",[]),
+("git@github.com:assimp/assimp.git"           ,""             ,["-DASSIMP_BUILD_SAMPLES=OFF","-DASSIMP_BUILD_ASSIMP_TOOLS=OFF","-DASSIMP_BUILD_TESTS=OFF"]),
+("git@github.com:g-truc/glm.git"              ,""             ,["-DGLM_TEST_ENABLE=OFF"]),
+("git@github.com:dormon/SDL2CPP.git"          ,""             ,[]),
+("git@github.com:dormon/imguiDormon.git"      ,""             ,[]),
+("git@github.com:dormon/imguiOpenGLDormon.git",""             ,[]),
+("git@github.com:dormon/imguiSDL2Dormon.git"  ,""             ,[]),
+("git@github.com:dormon/imguiSDL2OpenGL.git"  ,""             ,[]),
+("git@github.com:dormon/geGL.git"             ,""             ,[]),
+("git@github.com:dormon/BasicCamera.git"      ,""             ,[]),
+("git@github.com:dormon/MealyMachine.git"     ,""             ,[]),
+("git@github.com:dormon/TxtUtils.git"         ,""             ,[]),
+("git@github.com:dormon/ArgumentViewer.git"   ,""             ,[]),
+("git@github.com:dormon/Vars.git"             ,""             ,[]),
         ]
 
 def buildAndInstall(url,args = []):
@@ -159,7 +166,7 @@ def buildAndInstall(url,args = []):
         os.chdir("..")
 
 for i in gits:
-    clone(i[0])
+    clone(i[0],i[1])
 
 for i in gits:
-    buildAndInstall(i[0],i[1])
+    buildAndInstall(i[0],i[2])
