@@ -74,6 +74,7 @@ set(SOURCES
   src/FunctionImpl.cpp
   src/createGBuffer.cpp
   src/imguiVars.cpp
+  src/Barrier.cpp
   )
 
 set(INCLUDES
@@ -130,6 +131,7 @@ set(INCLUDES
   src/FunctionImpl.h
   src/createGBuffer.h
   src/imguiVars.h
+  src/Barrier.h
   )
 
 add_executable(${APP_NAME} ${SOURCES} ${INCLUDES})
