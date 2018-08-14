@@ -23,6 +23,7 @@ class Group{
     Group(std::string const&n,std::string const&fn = ""):name(n),fullName(fn){}
     std::string name;
     std::string fullName;
+    bool isVariable = false;
     std::map<std::string,std::unique_ptr<Group>>children;
 };
 
@@ -33,36 +34,29 @@ class VarNamesHierarchy{
     std::map<std::string,std::unique_ptr<Group>>groups;
     VarNamesHierarchy(std::vector<std::string>const&names){
       for(auto const&name:names)
-        insertName(name);
+        insertIntoChildren(groups,name,name);
     }
-    void insertName(std::string const&name){
+    void insertIntoChildren(std::map<std::string,std::unique_ptr<Group>>&children,std::string const&name,std::string const&fullName){
       if(hasSplit(name)){
-        auto const head = getHead(name);
-        auto const tail = getTail(name);
-        if(groups.count(head)==0)
-          groups[head] = std::make_unique<Group>(head);
-        insertToGroup(groups.at(head),tail,name);
+        auto const groupName  = getHead(name);
+        auto const subVarName = getTail(name);
+        createChildGroup(children,groupName);
+        insertIntoChildren(children.at(groupName)->children,subVarName,fullName);
       }else{
-        groups[name] = std::make_unique<Group>(name,name);
+        createChildGroup(children,name,fullName);
+        children[name]->isVariable = true;
+        children[name]->fullName   = fullName;
       }
-
     }
-    void insertToGroup(std::unique_ptr<Group>const&group,std::string const&name,std::string const&fullName){
-      if(hasSplit(name)){
-        auto const head = getHead(name);
-        auto const tail = getTail(name);
-        if(group->children.count(head)==0)
-          group->children[head] = std::make_unique<Group>(head);
-        insertToGroup(group->children.at(head),tail,fullName);
-      }else{
-        group->children[name] = std::make_unique<Group>(name,fullName);
-      }
+    void createChildGroup(std::map<std::string,std::unique_ptr<Group>>&children,std::string const&name,std::string const&fullName = ""){
+      if(children.count(name)!=0)return;
+      children[name] = std::make_unique<Group>(name,fullName);
     }
 };
 
 
 void drawGroup(std::unique_ptr<Group>const&group,vars::Vars &vars){
-  if(group->children.empty()){
+  if(group->isVariable){
     auto const n = group->name;
     auto const fn = group->fullName;
     bool change = false;
@@ -81,13 +75,14 @@ void drawGroup(std::unique_ptr<Group>const&group,vars::Vars &vars){
     //}
     if(change)
       vars.updateTicks(fn);
+  }
 
-  }else{
-    if(ImGui::TreeNode(group->name.c_str())){
-      for(auto const&x:group->children)
-        drawGroup(x.second,vars);
-      ImGui::TreePop();
-    }
+  if(group->children.empty())return;
+
+  if(ImGui::TreeNode(group->name.c_str())){
+    for(auto const&x:group->children)
+      drawGroup(x.second,vars);
+    ImGui::TreePop();
   }
 }
 
@@ -97,7 +92,7 @@ void drawImguiVars(vars::Vars &vars){
   for(size_t i = 0;i<vars.getNofVars();++i)
     names.push_back(vars.getVarName(i));
   
-  VarNamesHierarchy hierarchy{names};
+  VarNamesHierarchy hierarchy(names);
   
 
   ImGui::Begin("vars");
