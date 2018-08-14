@@ -1,4 +1,4 @@
-#include<CubeShadowMapping.h>
+#include<CubeShadowMapping/CubeShadowMapping.h>
 #include<Deferred.h>
 #include<Model.h>
 
@@ -40,7 +40,7 @@ void createShadowMapVAO(vars::Vars&vars){
 void createShadowMapProgram(vars::Vars&vars){
   if(notChanged(vars,"csm",__FUNCTION__))return;
 
-#include<CubeShadowMappingShaders.h>
+#include<CubeShadowMapping/CreateShadowMapShaders.h>
   vars.reCreate<Program>("csm.shadowMapProgram",
       make_shared<Shader>(GL_VERTEX_SHADER  ,
         "#version 450\n",
@@ -61,7 +61,7 @@ void createMaskFBO(vars::Vars&vars){
 void createShadowMaskProgram(vars::Vars&vars){
   if(notChanged(vars,"csm",__FUNCTION__))return;
 
-#include<CubeShadowMappingShaders.h>
+#include<CubeShadowMapping/ShadowMapToShadowMaskShaders.h>
 
   vars.reCreate<Program>("csm.shadowMaskProgram",
       make_shared<Shader>(GL_VERTEX_SHADER  ,

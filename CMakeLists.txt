@@ -40,7 +40,6 @@ set(SOURCES
   src/CSV.cpp
   src/Shading.cpp
   src/ShadowMethod.cpp
-  src/CubeShadowMapping.cpp
   src/FastAdjacency.cpp
   src/TimeStamp.cpp
   src/StencilBufferToShadowMaskProgram.cpp
@@ -54,6 +53,8 @@ set(SOURCES
   src/CSSV/DrawCapsProgram.cpp
   src/CSSV/DrawCaps.cpp
   src/CSSV/DrawSides.cpp
+  src/CubeShadowMapping/CubeShadowMapping.cpp
+  src/CubeShadowMapping/Params.cpp
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
@@ -66,7 +67,6 @@ set(SOURCES
   src/mainUtil.cpp
   src/CameraParam.cpp
   src/TestParam.cpp
-  src/CubeSMParam.cpp
   src/VSSVParam.cpp
   src/SintornParam.cpp
   src/RSSVParam.cpp
@@ -85,8 +85,6 @@ set(INCLUDES
   src/Model.h
   src/Shading.h
   src/ShadowMethod.h
-  src/CubeShadowMapping.h
-  src/CubeShadowMappingShaders.h
   src/FastAdjacency.h
   src/TimeStamp.h
   src/StencilBufferToShadowMaskProgram.h
@@ -105,6 +103,10 @@ set(INCLUDES
   src/CSSV/DrawCaps.h
   src/CSSV/DrawSides.h
   src/CSSV/Param.h
+  src/CubeShadowMapping/CubeShadowMapping.h
+  src/CubeShadowMapping/ShadowMapToShadowMaskShaders.h
+  src/CubeShadowMapping/CreateShadowMapShaders.h
+  src/CubeShadowMapping/Params.h
   src/CSSVSOE.h
   src/Sintorn.h
   src/SintornTiles.h
@@ -123,7 +125,6 @@ set(INCLUDES
   src/mainUtil.h
   src/CameraParam.h
   src/TestParam.h
-  src/CubeSMParam.h
   src/VSSVParam.h
   src/SintornParam.h
   src/RSSVParam.h

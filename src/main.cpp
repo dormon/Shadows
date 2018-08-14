@@ -27,8 +27,8 @@
 #include <CSSVSOE.h>
 #include <CSV.h>
 #include <CameraPath.h>
-#include <CubeShadowMapping.h>
-#include <CubeSMParam.h>
+#include <CubeShadowMapping/CubeShadowMapping.h>
+#include <CubeShadowMapping/Params.h>
 #include <Deferred.h>
 #include <DrawPrimitive.h>
 #include <Model.h>

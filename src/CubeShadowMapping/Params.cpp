@@ -1,4 +1,4 @@
-#include<CubeSMParam.h>
+#include<CubeShadowMapping/Params.h>
 
 #include<ArgumentViewer/ArgumentViewer.h>
 
