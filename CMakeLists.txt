@@ -133,6 +133,7 @@ set(INCLUDES
   src/createGBuffer.h
   src/imguiVars.h
   src/Barrier.h
+  src/Simplex.h
   )
 
 add_executable(${APP_NAME} ${SOURCES} ${INCLUDES})
