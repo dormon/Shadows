@@ -102,13 +102,13 @@ DrawSidesUsingPlanes::DrawSidesUsingPlanes(vars::Vars&vars,shared_ptr<Adjacency 
 }
 
 void DrawSidesUsingPlanes::draw(
-    vec4 const&lightPosition   ,
-    mat4 const&viewMatrix      ,
-    mat4 const&projectionMatrix){
-  program->use();
-  program->setMatrix4fv("viewMatrix"      ,value_ptr(viewMatrix      ));
-  program->setMatrix4fv("projectionMatrix",value_ptr(projectionMatrix));
-  program->set4fv      ("lightPosition"   ,value_ptr(lightPosition   ));
+    vec4 const&light     ,
+    mat4 const&view      ,
+    mat4 const&projection){
+  auto const mvp = projection * view;
+  program->setMatrix4fv("mvp"  ,value_ptr(mvp  ))
+         ->set4fv      ("light",value_ptr(light))
+         ->use();
   vao->bind();
   if(vars.getBool("vssv.useStrips"))
     glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,4,GLsizei(nofEdges*maxMultiplicity));
