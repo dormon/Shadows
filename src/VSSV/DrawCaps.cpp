@@ -5,19 +5,10 @@
 #include <Simplex.h>
 
 using namespace ge::gl;
+using namespace std;
 
-DrawCaps::DrawCaps(std::shared_ptr<Adjacency const>const&adj){
-#include"VSSV/Shaders.h"
-#include"SilhouetteShaders.h"
-  program = std::make_shared<Program>(
-      std::make_shared<Shader>(GL_VERTEX_SHADER,
-        "#version 450\n",
-        silhouetteFunctions,
-        _drawCapsVertexShaderSrc));
-
-  caps = std::make_shared<Buffer>(adj->getVertices());
-
-  vao = std::make_shared<VertexArray>();
+shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&caps){
+  auto vao = make_shared<VertexArray>();
   GLsizei const stride     = GLsizei(sizeof(Triangle3Df));
   GLenum  const normalized = GL_FALSE;
   size_t  const nofCapsPerTriangle = 2;
@@ -27,7 +18,24 @@ DrawCaps::DrawCaps(std::shared_ptr<Adjacency const>const&adj){
     GLuint   index = GLuint(i);
     vao->addAttrib(caps,index,3,GL_FLOAT,stride,offset,normalized,divisor);
   }
+  return vao;
+}
 
+shared_ptr<Program>createProgram(){
+#include"VSSV/Shaders.h"
+#include"SilhouetteShaders.h"
+  auto program = make_shared<Program>(
+      make_shared<Shader>(GL_VERTEX_SHADER,
+        "#version 450\n",
+        silhouetteFunctions,
+        _drawCapsVertexShaderSrc));
+  return program;
+}
+
+DrawCaps::DrawCaps(shared_ptr<Adjacency const>const&adj){
+  program      = createProgram();
+  caps         = make_shared<Buffer>(adj->getVertices());
+  vao          = createVAO(caps);
   nofTriangles = adj->getNofTriangles();
 }
 
@@ -35,10 +43,10 @@ void DrawCaps::draw(
     glm::vec4 const&lightPosition   ,
     glm::mat4 const&viewMatrix      ,
     glm::mat4 const&projectionMatrix){
-  program->use();
-  program->setMatrix4fv("viewMatrix"      ,glm::value_ptr(viewMatrix      ));
-  program->setMatrix4fv("projectionMatrix",glm::value_ptr(projectionMatrix));
-  program->set4fv      ("lightPosition"   ,glm::value_ptr(lightPosition   ));
+  program->setMatrix4fv("viewMatrix"      ,glm::value_ptr(viewMatrix      ))
+         ->setMatrix4fv("projectionMatrix",glm::value_ptr(projectionMatrix))
+         ->set4fv      ("lightPosition"   ,glm::value_ptr(lightPosition   ))
+         ->use();
   vao->bind();
   size_t  const nofCapsPerTriangle = 2;
   GLuint  const nofInstances = GLuint(nofCapsPerTriangle * nofTriangles);
