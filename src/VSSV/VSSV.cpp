@@ -56,34 +56,6 @@ void VSSV::createSideDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
   }
 }
 
-void VSSV::createCapDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
-  assert(this!=nullptr);
-  assert(adj!=nullptr);
-  //create and fill adjacency buffer on GPU
-  //(A,B,C)*
-  //A - vertex A of an triangle
-  //B - vertex B of an triangle
-  //C - vertex C of an triangle
-
-  size_t const sizeofTriangleInBytes = componentsPerVertex3D*verticesPerTriangle*sizeof(float);
-  caps = std::make_shared<ge::gl::Buffer>(adj->getVertices());
-
-  capsVao = std::make_shared<ge::gl::VertexArray>();
-  GLsizei const stride     = GLsizei(sizeofTriangleInBytes);
-  GLenum  const normalized = GL_FALSE;
-  size_t  const nofCapsPerTriangle = 2;
-  GLuint  const divisor    = GLuint(nofCapsPerTriangle);
-  for(size_t i=0;i<verticesPerTriangle;++i){
-    GLintptr offset = sizeofVertex3DInBytes * i;
-    GLuint   index = GLuint(i);
-    capsVao->addAttrib(caps,index,componentsPerVertex3D,GL_FLOAT,stride,offset,normalized,divisor);
-  }
-
-  nofTriangles = adj->getNofTriangles();
-}
-
-
-
 void VSSV::createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
@@ -233,13 +205,7 @@ VSSV::VSSV(vars::Vars&vars):
         silhouetteFunctions,
         _drawSidesVertexShaderSrc));
 
-  createCapDataUsingPoints(adj);
-
-  drawCapsProgram = std::make_shared<ge::gl::Program>(
-      std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER,
-        "#version 450\n",
-        silhouetteFunctions,
-        _drawCapsVertexShaderSrc));
+  caps = std::make_unique<DrawCaps>(adj);
 }
 
 VSSV::~VSSV(){}
@@ -267,19 +233,6 @@ void VSSV::drawCaps(
     glm::vec4 const&lightPosition,
     glm::mat4 const&viewMatrix         ,
     glm::mat4 const&projectionMatrix   ){
-  assert(this!=nullptr);
-  assert(drawCapsProgram!=nullptr);
-  assert(capsVao!=nullptr);
-  drawCapsProgram->use();
-  drawCapsProgram->setMatrix4fv("viewMatrix"      ,glm::value_ptr(viewMatrix      ));
-  drawCapsProgram->setMatrix4fv("projectionMatrix",glm::value_ptr(projectionMatrix));
-  drawCapsProgram->set4fv      ("lightPosition"   ,glm::value_ptr(lightPosition   ));
-  capsVao->bind();
-  size_t  const nofCapsPerTriangle = 2;
-  GLuint  const nofInstances = GLuint(nofCapsPerTriangle * nofTriangles);
-  GLsizei const nofVertices  = GLsizei(verticesPerTriangle);
-  GLint   const firstVertex  = 0;
-  glDrawArraysInstanced(GL_TRIANGLES,firstVertex,nofVertices,nofInstances);
-  capsVao->unbind();
+  caps->draw(lightPosition,viewMatrix,projectionMatrix);
 }
 

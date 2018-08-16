@@ -57,6 +57,7 @@ set(SOURCES
   src/CubeShadowMapping/Params.cpp
   src/VSSV/VSSV.cpp
   src/VSSV/Params.cpp
+  src/VSSV/DrawCaps.cpp
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
@@ -110,6 +111,7 @@ set(INCLUDES
   src/VSSV/VSSV.h
   src/VSSV/Shaders.h
   src/VSSV/Params.h
+  src/VSSV/DrawCaps.h
   src/CSSVSOE.h
   src/Sintorn.h
   src/SintornTiles.h
