@@ -112,6 +112,7 @@ set(INCLUDES
   src/VSSV/Shaders.h
   src/VSSV/Params.h
   src/VSSV/DrawCaps.h
+  src/VSSV/CapsShader.h
   src/CSSVSOE.h
   src/Sintorn.h
   src/SintornTiles.h

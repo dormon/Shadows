@@ -9,10 +9,10 @@ using namespace std;
 
 shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&caps){
   auto vao = make_shared<VertexArray>();
-  GLsizei const stride     = GLsizei(sizeof(Triangle3Df));
-  GLenum  const normalized = GL_FALSE;
+  GLsizei const stride             = GLsizei(sizeof(Triangle3Df));
+  GLenum  const normalized         = GL_FALSE;
   size_t  const nofCapsPerTriangle = 2;
-  GLuint  const divisor    = GLuint(nofCapsPerTriangle);
+  GLuint  const divisor            = GLuint(nofCapsPerTriangle);
   for(size_t i=0;i<3;++i){
     GLintptr offset = sizeof(Vertex3Df) * i;
     GLuint   index = GLuint(i);
@@ -22,13 +22,13 @@ shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&caps){
 }
 
 shared_ptr<Program>createProgram(){
-#include"VSSV/Shaders.h"
+#include <VSSV/CapsShader.h>
 #include"SilhouetteShaders.h"
   auto program = make_shared<Program>(
       make_shared<Shader>(GL_VERTEX_SHADER,
         "#version 450\n",
         silhouetteFunctions,
-        _drawCapsVertexShaderSrc));
+        vertexShaderSrc));
   return program;
 }
 
