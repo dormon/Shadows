@@ -1,87 +1,62 @@
 #include<VSSV.h>
 #include<FastAdjacency.h>
 #include<VSSVShaders.h>
+#include<Simplex.h>
 
 size_t const floatsPerNofOppositeVertices = 1;
 size_t const sizeofVertex3DInBytes        = componentsPerVertex3D  *sizeof(float);
 size_t const sizeofPlane3DInBytes         = componentsPerPlane3D   *sizeof(float);
 
-struct Vertex3D{
-  float data[3];
+template<size_t N=2>
+struct GPUEdgeData{
+  Vertex3Df vertexA;
+  Vertex3Df vertexB;
+  float     nofOpposite;
+  Vertex3Df oppositeVertices[N];
 };
 
-//void copyVertex3D(float*const output,float const*const input){
-//  std::memcpy(output,input,sizeofVertex3DInBytes);
-//}
+template<size_t N=2>
+void writeEdge(GPUEdgeData<N>&edge,Vertex3Df const*const vertices,size_t e,std::shared_ptr<Adjacency const>const&adj){
+  edge.vertexA     = vertices[adj->getEdgeVertexA(e)/3];
+  edge.vertexB     = vertices[adj->getEdgeVertexB(e)/3];
+  edge.nofOpposite = adj->getNofOpposite(e);
+  for(size_t o=0;o<adj->getNofOpposite(e);++o)
+    edge.oppositeVertices[o] = vertices[adj->getOpposite(e,o)/3];
+  for(size_t o=adj->getNofOpposite(e);o<2;++o)
+    edge.oppositeVertices[o].clear();
+}
 
-void VSSV::_createSideDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
+template<size_t N=2>
+void writeEdges(std::vector<GPUEdgeData<2>>&dst,Vertex3Df const*const src,std::shared_ptr<Adjacency const>const&adj){
+  for(size_t e=0;e<adj->getNofEdges();++e)
+    writeEdge(dst[e],src,e,adj);
+}
+
+void VSSV::createSideDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
-  size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
-  //create and fill adjacency buffer on GPU
-  //(A,B,M,O0,O1,...)*
-  //A - vertex A of an edge
-  //B - vertex B of an edge
-  //M - multiplicity of an edge
-  //On - opposite vertex of an edge
-  //n < maxMultiplicity
-  size_t const floatsPerEdge = verticesPerEdge*componentsPerVertex3D + floatsPerNofOppositeVertices + maxNofOppositeVertices*componentsPerVertex3D;
-  _adjacency = std::make_shared<ge::gl::Buffer>(adj->getNofEdges()*floatsPerEdge*sizeof(float));
+  std::vector<GPUEdgeData<2>>dst(adj->getNofEdges());
+  auto const src = reinterpret_cast<Vertex3Df const*>(adj->getVertices().data());
 
-  
-  auto const dstPtr = static_cast<float      *>(_adjacency->map());
-  auto const srcPtr = adj->getVertices().data();
-
-  std::cerr << "#####################xx" << std::endl;
-  for(size_t edgeIndex=0;edgeIndex<adj->getNofEdges();++edgeIndex){
-    auto const edgeDstPtr             = dstPtr + edgeIndex*floatsPerEdge;
-    auto const vertexADstPtr          = edgeDstPtr;
-    auto const vertexBDstPtr          = vertexADstPtr + componentsPerVertex3D;
-    auto const nofOppositeDstPtr      = vertexBDstPtr + componentsPerVertex3D;
-    auto const oppositeVerticesDstPtr = nofOppositeDstPtr + floatsPerNofOppositeVertices;
-
-    auto const vertexASrcPtr = srcPtr + adj->getEdgeVertexA(edgeIndex);
-    auto const vertexBSrcPtr = srcPtr + adj->getEdgeVertexB(edgeIndex);
-    //copyVertex3D(vertexADstPtr,vertexASrcPtr);
-    //copyVertex3D(vertexBDstPtr,vertexBSrcPtr);
-    std::memcpy(vertexADstPtr,vertexASrcPtr,sizeofVertex3DInBytes);
-    std::memcpy(vertexBDstPtr,vertexBSrcPtr,sizeofVertex3DInBytes);
-    *nofOppositeDstPtr = float(adj->getNofOpposite(edgeIndex));
-    for(size_t oppositeIndex=0;oppositeIndex<adj->getNofOpposite(edgeIndex);++oppositeIndex)
-      std::memcpy(
-          oppositeVerticesDstPtr+oppositeIndex*componentsPerVertex3D,
-          adj->getVertices().data()+adj->getOpposite(edgeIndex,oppositeIndex),
-          sizeofVertex3DInBytes);
-    auto const nofEmptyOppositeVertices    = maxNofOppositeVertices-adj->getNofOpposite(edgeIndex);
-    auto const emptyOppositeVerticesDstPtr = oppositeVerticesDstPtr + adj->getNofOpposite(edgeIndex)*componentsPerVertex3D;
-    std::memset(
-        emptyOppositeVerticesDstPtr,
-        0,
-        sizeofVertex3DInBytes*nofEmptyOppositeVertices);
-  }
-  _adjacency->unmap();
-  _nofEdges = adj->getNofEdges();
+  writeEdges(dst,src,adj);
+  adjacency = std::make_shared<ge::gl::Buffer>(dst);
+  nofEdges = adj->getNofEdges();
 
   //create vertex array for sides
   //divisor = maxMultiplicity -> attrib are modified once per edge
-  _sidesVao = std::make_shared<ge::gl::VertexArray>();
+  sidesVao = std::make_shared<ge::gl::VertexArray>();
   GLenum const normalized = GL_FALSE;
   GLuint const divisor = GLuint(adj->getMaxMultiplicity());
-  GLintptr offset = 0;
-  GLsizei const stride = GLsizei(floatsPerEdge*sizeof(float));
-  _sidesVao->addAttrib(_adjacency,0,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
-  offset += componentsPerVertex3D*sizeof(float);
-  _sidesVao->addAttrib(_adjacency,1,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
-  offset += componentsPerVertex3D*sizeof(float);
-  _sidesVao->addAttrib(_adjacency,2,floatsPerNofOppositeVertices,GL_FLOAT,stride,offset,normalized,divisor);
-  offset += floatsPerNofOppositeVertices*sizeof(float);
-  for(GLuint oppositeIndex=0;oppositeIndex<adj->getMaxMultiplicity();++oppositeIndex){
-    _sidesVao->addAttrib(_adjacency,3+oppositeIndex,componentsPerVertex3D,GL_FLOAT,stride,offset,normalized,divisor);
-    offset += componentsPerVertex3D*sizeof(float);
+  GLsizei const stride = GLsizei(sizeof(GPUEdgeData<2>));
+  sidesVao->addAttrib(adjacency,0,sizeof(GPUEdgeData<2>::vertexA    )/sizeof(float),GL_FLOAT,stride,offsetof(GPUEdgeData<2>,vertexA    ),normalized,divisor);
+  sidesVao->addAttrib(adjacency,1,sizeof(GPUEdgeData<2>::vertexB    )/sizeof(float),GL_FLOAT,stride,offsetof(GPUEdgeData<2>,vertexB    ),normalized,divisor);
+  sidesVao->addAttrib(adjacency,2,sizeof(GPUEdgeData<2>::nofOpposite)/sizeof(float),GL_FLOAT,stride,offsetof(GPUEdgeData<2>,nofOpposite),normalized,divisor);
+  for(GLuint o=0;o<adj->getMaxMultiplicity();++o){
+    sidesVao->addAttrib(adjacency,3+o,componentsPerVertex3D,GL_FLOAT,stride,offsetof(GPUEdgeData<2>,oppositeVertices)+o*sizeof(GPUEdgeData<2>::oppositeVertices[0]),normalized,divisor);
   }
 }
 
-void VSSV::_createCapDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
+void VSSV::createCapDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
   //create and fill adjacency buffer on GPU
@@ -91,9 +66,9 @@ void VSSV::_createCapDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
   //C - vertex C of an triangle
 
   size_t const sizeofTriangleInBytes = componentsPerVertex3D*verticesPerTriangle*sizeof(float);
-  _caps = std::make_shared<ge::gl::Buffer>(adj->getVertices());
+  caps = std::make_shared<ge::gl::Buffer>(adj->getVertices());
 
-  _capsVao = std::make_shared<ge::gl::VertexArray>();
+  capsVao = std::make_shared<ge::gl::VertexArray>();
   GLsizei const stride     = GLsizei(sizeofTriangleInBytes);
   GLenum  const normalized = GL_FALSE;
   size_t  const nofCapsPerTriangle = 2;
@@ -101,15 +76,15 @@ void VSSV::_createCapDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
   for(size_t i=0;i<verticesPerTriangle;++i){
     GLintptr offset = sizeofVertex3DInBytes * i;
     GLuint   index = GLuint(i);
-    _capsVao->addAttrib(_caps,index,componentsPerVertex3D,GL_FLOAT,stride,offset,normalized,divisor);
+    capsVao->addAttrib(caps,index,componentsPerVertex3D,GL_FLOAT,stride,offset,normalized,divisor);
   }
 
-  _nofTriangles = adj->getNofTriangles();
+  nofTriangles = adj->getNofTriangles();
 }
 
 
 
-void VSSV::_createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&adj){
+void VSSV::createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
@@ -119,8 +94,8 @@ void VSSV::_createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&a
   //Tn - triangle planes n*4*float
   //n < maxMultiplicity
   size_t const floatsPerEdge = verticesPerEdge*componentsPerVertex3D + maxNofOppositeVertices*componentsPerPlane3D;
-  _adjacency = std::make_shared<ge::gl::Buffer>(adj->getNofEdges()*floatsPerEdge*sizeof(float));
-  float*ptr=(float*)_adjacency->map();
+  adjacency = std::make_shared<ge::gl::Buffer>(adj->getNofEdges()*floatsPerEdge*sizeof(float));
+  float*ptr=(float*)adjacency->map();
   for(size_t edgeIndex=0;edgeIndex<adj->getNofEdges();++edgeIndex){
     auto edgePtr                 = ptr + edgeIndex*floatsPerEdge;
     auto edgeVertexAPtr          = edgePtr;
@@ -145,27 +120,27 @@ void VSSV::_createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&a
         0,
         sizeofPlane3DInBytes*nofEmptyOppositeVertices);
   }
-  _adjacency->unmap();
-  _nofEdges = adj->getNofEdges();
+  adjacency->unmap();
+  nofEdges = adj->getNofEdges();
 
   //create vertex array for sides
   //divisor = maxMultiplicity -> attrib are modified once per edge
-  _sidesVao = std::make_shared<ge::gl::VertexArray>();
+  sidesVao = std::make_shared<ge::gl::VertexArray>();
   GLenum const normalized = GL_FALSE;
   GLuint const divisor = GLuint(adj->getMaxMultiplicity());
   GLintptr offset = 0;
   GLsizei const stride = GLsizei(floatsPerEdge*sizeof(float));
-  _sidesVao->addAttrib(_adjacency,0,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
+  sidesVao->addAttrib(adjacency,0,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
   offset += componentsPerVertex3D*sizeof(float);
-  _sidesVao->addAttrib(_adjacency,1,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
+  sidesVao->addAttrib(adjacency,1,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
   offset += componentsPerVertex3D*sizeof(float);
   for(GLuint oppositeIndex=0;oppositeIndex<adj->getMaxMultiplicity();++oppositeIndex){
-    _sidesVao->addAttrib(_adjacency,3+oppositeIndex,componentsPerPlane3D,GL_FLOAT,stride,offset,normalized,divisor);
+    sidesVao->addAttrib(adjacency,3+oppositeIndex,componentsPerPlane3D,GL_FLOAT,stride,offset,normalized,divisor);
     offset += componentsPerPlane3D*sizeof(float);
   }
 }
 
-void VSSV::_createSideDataUsingPlanes(std::shared_ptr<Adjacency const>const&adj){
+void VSSV::createSideDataUsingPlanes(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
   assert(adj!=nullptr);
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
@@ -176,8 +151,8 @@ void VSSV::_createSideDataUsingPlanes(std::shared_ptr<Adjacency const>const&adj)
   //Tn - triangle planes n*4*float
   //n < maxMultiplicity
   size_t const floatsPerEdge = verticesPerEdge*componentsPerVertex3D + floatsPerNofOppositeVertices + maxNofOppositeVertices*componentsPerPlane3D;
-  _adjacency = std::make_shared<ge::gl::Buffer>(adj->getNofEdges()*floatsPerEdge*sizeof(float));
-  float*ptr=(float*)_adjacency->map();
+  adjacency = std::make_shared<ge::gl::Buffer>(adj->getNofEdges()*floatsPerEdge*sizeof(float));
+  float*ptr=(float*)adjacency->map();
   for(size_t edgeIndex=0;edgeIndex<adj->getNofEdges();++edgeIndex){
     auto edgePtr = ptr+edgeIndex*floatsPerEdge;
     auto edgeVertexAPtr = edgePtr;
@@ -204,24 +179,24 @@ void VSSV::_createSideDataUsingPlanes(std::shared_ptr<Adjacency const>const&adj)
         0,
         sizeofPlane3DInBytes*nofEmptyOppositeVertices);
   }
-  _adjacency->unmap();
-  _nofEdges = adj->getNofEdges();
+  adjacency->unmap();
+  nofEdges = adj->getNofEdges();
 
   //create vertex array for sides
   //divisor = maxMultiplicity -> attrib are modified once per edge
-  _sidesVao = std::make_shared<ge::gl::VertexArray>();
+  sidesVao = std::make_shared<ge::gl::VertexArray>();
   GLenum const normalized = GL_FALSE;
   GLuint const divisor = GLuint(adj->getMaxMultiplicity());
   GLintptr offset = 0;
   GLsizei const stride = GLsizei(floatsPerEdge*sizeof(float));
-  _sidesVao->addAttrib(_adjacency,0,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
+  sidesVao->addAttrib(adjacency,0,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
   offset += componentsPerVertex3D*sizeof(float);
-  _sidesVao->addAttrib(_adjacency,1,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
+  sidesVao->addAttrib(adjacency,1,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
   offset += componentsPerVertex3D*sizeof(float);
-  _sidesVao->addAttrib(_adjacency,2,floatsPerNofOppositeVertices,GL_FLOAT,stride,offset,normalized,divisor);
+  sidesVao->addAttrib(adjacency,2,floatsPerNofOppositeVertices,GL_FLOAT,stride,offset,normalized,divisor);
   offset += floatsPerNofOppositeVertices*sizeof(float);
   for(GLuint oppositeIndex=0;oppositeIndex<adj->getMaxMultiplicity();++oppositeIndex){
-    _sidesVao->addAttrib(_adjacency,3+oppositeIndex,componentsPerPlane3D,GL_FLOAT,stride,offset,normalized,divisor);
+    sidesVao->addAttrib(adjacency,3+oppositeIndex,componentsPerPlane3D,GL_FLOAT,stride,offset,normalized,divisor);
     offset += componentsPerPlane3D*sizeof(float);
   }
 }
@@ -233,23 +208,23 @@ VSSV::VSSV(vars::Vars&vars):
 
   //compute adjacency of the model
   auto const adj = createAdjacency(vars);
-  _maxMultiplicity = adj->getMaxMultiplicity();
+  maxMultiplicity = adj->getMaxMultiplicity();
 
   //create and fill adjacency buffer for sides on GPU
   if(vars.getBool("vssv.usePlanes")){
     if(vars.getBool("vssv.useAllOppositeVertices")){
-      _createSideDataUsingAllPlanes(adj);
+      createSideDataUsingAllPlanes(adj);
     }else{
-      _createSideDataUsingPlanes(adj);
+      createSideDataUsingPlanes(adj);
     }
   }else{
-    _createSideDataUsingPoints(adj);
+    createSideDataUsingPoints(adj);
   }
 
 #include"VSSVShaders.h"
 #include"SilhouetteShaders.h"
 
-  _drawSidesProgram = std::make_shared<ge::gl::Program>(
+  drawSidesProgram = std::make_shared<ge::gl::Program>(
       std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER,
         "#version 450\n",
         vars.getBool("vssv.usePlanes"             )?ge::gl::Shader::define("USE_PLANES"               ):"",
@@ -258,9 +233,9 @@ VSSV::VSSV(vars::Vars&vars):
         silhouetteFunctions,
         _drawSidesVertexShaderSrc));
 
-  _createCapDataUsingPoints(adj);
+  createCapDataUsingPoints(adj);
 
-  _drawCapsProgram = std::make_shared<ge::gl::Program>(
+  drawCapsProgram = std::make_shared<ge::gl::Program>(
       std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER,
         "#version 450\n",
         silhouetteFunctions,
@@ -274,18 +249,18 @@ void VSSV::drawSides(
     glm::mat4 const&viewMatrix      ,
     glm::mat4 const&projectionMatrix){
   assert(this!=nullptr);
-  assert(_drawSidesProgram!=nullptr);
-  assert(_sidesVao!=nullptr);
-  _drawSidesProgram->use();
-  _drawSidesProgram->setMatrix4fv("viewMatrix"      ,glm::value_ptr(viewMatrix      ));
-  _drawSidesProgram->setMatrix4fv("projectionMatrix",glm::value_ptr(projectionMatrix));
-  _drawSidesProgram->set4fv      ("lightPosition"   ,glm::value_ptr(lightPosition   ));
-  _sidesVao->bind();
+  assert(drawSidesProgram!=nullptr);
+  assert(sidesVao!=nullptr);
+  drawSidesProgram->use();
+  drawSidesProgram->setMatrix4fv("viewMatrix"      ,glm::value_ptr(viewMatrix      ));
+  drawSidesProgram->setMatrix4fv("projectionMatrix",glm::value_ptr(projectionMatrix));
+  drawSidesProgram->set4fv      ("lightPosition"   ,glm::value_ptr(lightPosition   ));
+  sidesVao->bind();
   if(vars.getBool("vssv.useStrips"))
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,4,GLsizei(_nofEdges*_maxMultiplicity));
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,4,GLsizei(nofEdges*maxMultiplicity));
   else
-    glDrawArraysInstanced(GL_TRIANGLES     ,0,6,GLsizei(_nofEdges*_maxMultiplicity));
-  _sidesVao->unbind();
+    glDrawArraysInstanced(GL_TRIANGLES     ,0,6,GLsizei(nofEdges*maxMultiplicity));
+  sidesVao->unbind();
 }
 
 void VSSV::drawCaps(
@@ -293,18 +268,18 @@ void VSSV::drawCaps(
     glm::mat4 const&viewMatrix         ,
     glm::mat4 const&projectionMatrix   ){
   assert(this!=nullptr);
-  assert(_drawCapsProgram!=nullptr);
-  assert(_capsVao!=nullptr);
-  _drawCapsProgram->use();
-  _drawCapsProgram->setMatrix4fv("viewMatrix"      ,glm::value_ptr(viewMatrix      ));
-  _drawCapsProgram->setMatrix4fv("projectionMatrix",glm::value_ptr(projectionMatrix));
-  _drawCapsProgram->set4fv      ("lightPosition"   ,glm::value_ptr(lightPosition   ));
-  _capsVao->bind();
+  assert(drawCapsProgram!=nullptr);
+  assert(capsVao!=nullptr);
+  drawCapsProgram->use();
+  drawCapsProgram->setMatrix4fv("viewMatrix"      ,glm::value_ptr(viewMatrix      ));
+  drawCapsProgram->setMatrix4fv("projectionMatrix",glm::value_ptr(projectionMatrix));
+  drawCapsProgram->set4fv      ("lightPosition"   ,glm::value_ptr(lightPosition   ));
+  capsVao->bind();
   size_t  const nofCapsPerTriangle = 2;
-  GLuint  const nofInstances = GLuint(nofCapsPerTriangle * _nofTriangles);
+  GLuint  const nofInstances = GLuint(nofCapsPerTriangle * nofTriangles);
   GLsizei const nofVertices  = GLsizei(verticesPerTriangle);
   GLint   const firstVertex  = 0;
   glDrawArraysInstanced(GL_TRIANGLES,firstVertex,nofVertices,nofInstances);
-  _capsVao->unbind();
+  capsVao->unbind();
 }
 
