@@ -59,6 +59,7 @@ set(SOURCES
   src/VSSV/Params.cpp
   src/VSSV/DrawCaps.cpp
   src/VSSV/DrawSidesUsingPoints.cpp
+  src/VSSV/DrawSidesUsingPlanes.cpp
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
@@ -117,6 +118,7 @@ set(INCLUDES
   src/VSSV/DrawSides.h
   src/VSSV/DrawSidesUsingPoints.h
   src/VSSV/DrawSidesUsingPointsShader.h
+  src/VSSV/DrawSidesUsingPlanes.h
   src/CSSVSOE.h
   src/Sintorn.h
   src/SintornTiles.h

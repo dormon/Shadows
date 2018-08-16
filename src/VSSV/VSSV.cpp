@@ -3,6 +3,7 @@
 #include<VSSV/Shaders.h>
 #include<Simplex.h>
 #include<VSSV/DrawSidesUsingPoints.h>
+#include<VSSV/DrawSidesUsingPlanes.h>
 
 /*
 size_t const floatsPerNofOppositeVertices = 1;
@@ -65,88 +66,25 @@ void VSSV::createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&ad
   }
 }
 
-void VSSV::createSideDataUsingPlanes(std::shared_ptr<Adjacency const>const&adj){
-  assert(this!=nullptr);
-  assert(adj!=nullptr);
-  size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
-  //(A,B,M,T0,T1,...)*
-  //A - vertex A of an edge 3*float
-  //B - vertex B of an edge 3*float
-  //M - multiplicity of an edge 1*float
-  //Tn - triangle planes n*4*float
-  //n < maxMultiplicity
-  size_t const floatsPerEdge = verticesPerEdge*componentsPerVertex3D + floatsPerNofOppositeVertices + maxNofOppositeVertices*componentsPerPlane3D;
-  adjacency = std::make_shared<ge::gl::Buffer>(adj->getNofEdges()*floatsPerEdge*sizeof(float));
-  float*ptr=(float*)adjacency->map();
-  for(size_t edgeIndex=0;edgeIndex<adj->getNofEdges();++edgeIndex){
-    auto edgePtr = ptr+edgeIndex*floatsPerEdge;
-    auto edgeVertexAPtr = edgePtr;
-    auto edgeVertexBPtr = edgeVertexAPtr + componentsPerVertex3D;
-    auto edgeNofOppositePtr = edgeVertexBPtr + componentsPerVertex3D;
-    auto edgeOppositeVerticesPtr = edgeNofOppositePtr + floatsPerNofOppositeVertices;
-    size_t const edgeVertexAIndex = 0;
-    size_t const edgeVertexBIndex = 1;
-    std::memcpy(edgeVertexAPtr,adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexAIndex),sizeofVertex3DInBytes);
-    std::memcpy(edgeVertexBPtr,adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexBIndex),sizeofVertex3DInBytes);
-    *edgeNofOppositePtr = float(adj->getNofOpposite(edgeIndex));
-    for(size_t oppositeIndex=0;oppositeIndex<adj->getNofOpposite(edgeIndex);++oppositeIndex)
-      std::memcpy(
-          edgeOppositeVerticesPtr+oppositeIndex*componentsPerPlane3D,
-          glm::value_ptr(computePlane(
-              toVec3(adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexAIndex) ),
-              toVec3(adj->getVertices().data()+adj->getEdge(edgeIndex,edgeVertexBIndex) ),
-              toVec3(adj->getVertices().data()+adj->getOpposite(edgeIndex,oppositeIndex))
-              )),
-          sizeofPlane3DInBytes);
-    size_t const nofEmptyOppositeVertices = maxNofOppositeVertices-adj->getNofOpposite(edgeIndex);
-    std::memset(
-        edgeOppositeVerticesPtr+adj->getNofOpposite(edgeIndex)*componentsPerPlane3D,
-        0,
-        sizeofPlane3DInBytes*nofEmptyOppositeVertices);
-  }
-  adjacency->unmap();
-  nofEdges = adj->getNofEdges();
-
-  //create vertex array for sides
-  //divisor = maxMultiplicity -> attrib are modified once per edge
-  sidesVao = std::make_shared<ge::gl::VertexArray>();
-  GLenum const normalized = GL_FALSE;
-  GLuint const divisor = GLuint(adj->getMaxMultiplicity());
-  GLintptr offset = 0;
-  GLsizei const stride = GLsizei(floatsPerEdge*sizeof(float));
-  sidesVao->addAttrib(adjacency,0,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
-  offset += componentsPerVertex3D*sizeof(float);
-  sidesVao->addAttrib(adjacency,1,componentsPerVertex3D ,GL_FLOAT,stride,offset,normalized,divisor);
-  offset += componentsPerVertex3D*sizeof(float);
-  sidesVao->addAttrib(adjacency,2,floatsPerNofOppositeVertices,GL_FLOAT,stride,offset,normalized,divisor);
-  offset += floatsPerNofOppositeVertices*sizeof(float);
-  for(GLuint oppositeIndex=0;oppositeIndex<adj->getMaxMultiplicity();++oppositeIndex){
-    sidesVao->addAttrib(adjacency,3+oppositeIndex,componentsPerPlane3D,GL_FLOAT,stride,offset,normalized,divisor);
-    offset += componentsPerPlane3D*sizeof(float);
-  }
-}
 */
 VSSV::VSSV(vars::Vars&vars):
   ShadowVolumes(vars       )
 {
-  assert(this!=nullptr);
-
-  //compute adjacency of the model
   auto const adj = createAdjacency(vars);
-  /*
-  maxMultiplicity = adj->getMaxMultiplicity();
 
-  //create and fill adjacency buffer for sides on GPU
   if(vars.getBool("vssv.usePlanes")){
     if(vars.getBool("vssv.useAllOppositeVertices")){
-      createSideDataUsingAllPlanes(adj);
+      throw std::runtime_error("unsupported yet");
+      //createSideDataUsingAllPlanes(adj);
     }else{
-      createSideDataUsingPlanes(adj);
+      sides = std::make_unique<DrawSidesUsingPlanes>(vars,adj);
     }
   }else{
-    createSideDataUsingPoints(adj);
+    sides = std::make_unique<DrawSidesUsingPoints>(vars,adj);
   }
+  caps = std::make_unique<DrawCaps>(adj);
 
+  /*
 #include"VSSV/Shaders.h"
 #include"SilhouetteShaders.h"
 
@@ -159,8 +97,6 @@ VSSV::VSSV(vars::Vars&vars):
         silhouetteFunctions,
         _drawSidesVertexShaderSrc));
 */
-  caps = std::make_unique<DrawCaps>(adj);
-  sides = std::make_unique<DrawSidesUsingPoints>(vars,adj);
 }
 
 VSSV::~VSSV(){}
