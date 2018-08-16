@@ -55,19 +55,19 @@ set(SOURCES
   src/CSSV/DrawSides.cpp
   src/CubeShadowMapping/CubeShadowMapping.cpp
   src/CubeShadowMapping/Params.cpp
+  src/VSSV/VSSV.cpp
+  src/VSSV/Params.cpp
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
   src/RSSV.cpp
   src/RSSVTiles.cpp
-  src/VSSV.cpp
   src/DrawPrimitive.cpp
   src/ShadowVolumes.cpp
   src/util.cpp
   src/mainUtil.cpp
   src/CameraParam.cpp
   src/TestParam.cpp
-  src/VSSVParam.cpp
   src/SintornParam.cpp
   src/RSSVParam.cpp
   src/Function.cpp
@@ -107,6 +107,9 @@ set(INCLUDES
   src/CubeShadowMapping/ShadowMapToShadowMaskShaders.h
   src/CubeShadowMapping/CreateShadowMapShaders.h
   src/CubeShadowMapping/Params.h
+  src/VSSV/VSSV.h
+  src/VSSV/Shaders.h
+  src/VSSV/Params.h
   src/CSSVSOE.h
   src/Sintorn.h
   src/SintornTiles.h
@@ -114,8 +117,6 @@ set(INCLUDES
   src/RSSV.h
   src/RSSVTiles.h
   src/RSSVShaders.h
-  src/VSSV.h
-  src/VSSVShaders.h
   src/DrawPrimitive.h
   src/ProgramExtension.h
   src/ShadowVolumes.h
@@ -125,7 +126,6 @@ set(INCLUDES
   src/mainUtil.h
   src/CameraParam.h
   src/TestParam.h
-  src/VSSVParam.h
   src/SintornParam.h
   src/RSSVParam.h
   src/Function.h

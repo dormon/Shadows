@@ -40,8 +40,8 @@
 #include <SintornParam.h>
 #include <SintornTiles.h>
 #include <TimeStamp.h>
-#include <VSSV.h>
-#include <VSSVParam.h>
+#include <VSSV/VSSV.h>
+#include <VSSV/Params.h>
 #include <Vars/Vars.h>
 #include <createGBuffer.h>
 

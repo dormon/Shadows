@@ -1,6 +1,6 @@
-#include<VSSV.h>
+#include<VSSV/VSSV.h>
 #include<FastAdjacency.h>
-#include<VSSVShaders.h>
+#include<VSSV/Shaders.h>
 #include<Simplex.h>
 
 size_t const floatsPerNofOppositeVertices = 1;
@@ -221,7 +221,7 @@ VSSV::VSSV(vars::Vars&vars):
     createSideDataUsingPoints(adj);
   }
 
-#include"VSSVShaders.h"
+#include"VSSV/Shaders.h"
 #include"SilhouetteShaders.h"
 
   drawSidesProgram = std::make_shared<ge::gl::Program>(
