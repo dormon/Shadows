@@ -11,12 +11,10 @@ using namespace glm;
 shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&caps){
   auto vao = make_shared<VertexArray>();
   auto   const stride             = static_cast<GLsizei>(sizeof(Triangle3Df));
-  GLenum const normalized         = GL_FALSE;
-  size_t const nofCapsPerTriangle = 2;
-  auto   const divisor            = static_cast<GLuint> (nofCapsPerTriangle);
+  GLuint const nofCapsPerTriangle = 2;
   for(GLuint i=0;i<3;++i){
     GLintptr const offset = sizeof(Vertex3Df) * i;
-    vao->addAttrib(caps,i,3,GL_FLOAT,stride,offset,normalized,divisor);
+    vao->addAttrib(caps,i,3,GL_FLOAT,stride,offset,GL_FALSE,nofCapsPerTriangle);
   }
   return vao;
 }
@@ -48,10 +46,7 @@ void DrawCaps::draw(
          ->set4fv      ("light",value_ptr(lightPosition))
          ->use();
   vao->bind();
-  size_t  const nofCapsPerTriangle = 2;
-  auto    const nofInstances = static_cast<GLuint>(nofCapsPerTriangle * nofTriangles);
-  GLsizei const nofVertices  = 3;
-  GLint   const firstVertex  = 0;
-  glDrawArraysInstanced(GL_TRIANGLES,firstVertex,nofVertices,nofInstances);
+  auto const nofCaps = static_cast<GLuint>(2 * nofTriangles);
+  glDrawArraysInstanced(GL_TRIANGLES,0,3,nofCaps);
   vao->unbind();
 }
