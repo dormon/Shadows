@@ -2,59 +2,12 @@
 #include<FastAdjacency.h>
 #include<VSSV/Shaders.h>
 #include<Simplex.h>
+#include<VSSV/DrawSidesUsingPoints.h>
 
+/*
 size_t const floatsPerNofOppositeVertices = 1;
 size_t const sizeofVertex3DInBytes        = componentsPerVertex3D  *sizeof(float);
 size_t const sizeofPlane3DInBytes         = componentsPerPlane3D   *sizeof(float);
-
-template<size_t N=2>
-struct GPUEdgeData{
-  Vertex3Df vertexA;
-  Vertex3Df vertexB;
-  float     nofOpposite;
-  Vertex3Df oppositeVertices[N];
-};
-
-template<size_t N=2>
-void writeEdge(GPUEdgeData<N>&edge,Vertex3Df const*const vertices,size_t e,std::shared_ptr<Adjacency const>const&adj){
-  edge.vertexA     = vertices[adj->getEdgeVertexA(e)/3];
-  edge.vertexB     = vertices[adj->getEdgeVertexB(e)/3];
-  edge.nofOpposite = adj->getNofOpposite(e);
-  for(size_t o=0;o<adj->getNofOpposite(e);++o)
-    edge.oppositeVertices[o] = vertices[adj->getOpposite(e,o)/3];
-  for(size_t o=adj->getNofOpposite(e);o<2;++o)
-    edge.oppositeVertices[o].clear();
-}
-
-template<size_t N=2>
-void writeEdges(std::vector<GPUEdgeData<2>>&dst,Vertex3Df const*const src,std::shared_ptr<Adjacency const>const&adj){
-  for(size_t e=0;e<adj->getNofEdges();++e)
-    writeEdge(dst[e],src,e,adj);
-}
-
-void VSSV::createSideDataUsingPoints(std::shared_ptr<Adjacency const>const&adj){
-  assert(this!=nullptr);
-  assert(adj!=nullptr);
-  std::vector<GPUEdgeData<2>>dst(adj->getNofEdges());
-  auto const src = reinterpret_cast<Vertex3Df const*>(adj->getVertices().data());
-
-  writeEdges(dst,src,adj);
-  adjacency = std::make_shared<ge::gl::Buffer>(dst);
-  nofEdges = adj->getNofEdges();
-
-  //create vertex array for sides
-  //divisor = maxMultiplicity -> attrib are modified once per edge
-  sidesVao = std::make_shared<ge::gl::VertexArray>();
-  GLenum const normalized = GL_FALSE;
-  GLuint const divisor = GLuint(adj->getMaxMultiplicity());
-  GLsizei const stride = GLsizei(sizeof(GPUEdgeData<2>));
-  sidesVao->addAttrib(adjacency,0,sizeof(GPUEdgeData<2>::vertexA    )/sizeof(float),GL_FLOAT,stride,offsetof(GPUEdgeData<2>,vertexA    ),normalized,divisor);
-  sidesVao->addAttrib(adjacency,1,sizeof(GPUEdgeData<2>::vertexB    )/sizeof(float),GL_FLOAT,stride,offsetof(GPUEdgeData<2>,vertexB    ),normalized,divisor);
-  sidesVao->addAttrib(adjacency,2,sizeof(GPUEdgeData<2>::nofOpposite)/sizeof(float),GL_FLOAT,stride,offsetof(GPUEdgeData<2>,nofOpposite),normalized,divisor);
-  for(GLuint o=0;o<adj->getMaxMultiplicity();++o){
-    sidesVao->addAttrib(adjacency,3+o,componentsPerVertex3D,GL_FLOAT,stride,offsetof(GPUEdgeData<2>,oppositeVertices)+o*sizeof(GPUEdgeData<2>::oppositeVertices[0]),normalized,divisor);
-  }
-}
 
 void VSSV::createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&adj){
   assert(this!=nullptr);
@@ -172,7 +125,7 @@ void VSSV::createSideDataUsingPlanes(std::shared_ptr<Adjacency const>const&adj){
     offset += componentsPerPlane3D*sizeof(float);
   }
 }
-
+*/
 VSSV::VSSV(vars::Vars&vars):
   ShadowVolumes(vars       )
 {
@@ -180,6 +133,7 @@ VSSV::VSSV(vars::Vars&vars):
 
   //compute adjacency of the model
   auto const adj = createAdjacency(vars);
+  /*
   maxMultiplicity = adj->getMaxMultiplicity();
 
   //create and fill adjacency buffer for sides on GPU
@@ -204,8 +158,9 @@ VSSV::VSSV(vars::Vars&vars):
         vars.getBool("vssv.useAllOppositeVertices")?ge::gl::Shader::define("USE_ALL_OPPOSITE_VERTICES"):"",
         silhouetteFunctions,
         _drawSidesVertexShaderSrc));
-
+*/
   caps = std::make_unique<DrawCaps>(adj);
+  sides = std::make_unique<DrawSidesUsingPoints>(vars,adj);
 }
 
 VSSV::~VSSV(){}
@@ -214,6 +169,8 @@ void VSSV::drawSides(
     glm::vec4 const&lightPosition   ,
     glm::mat4 const&viewMatrix      ,
     glm::mat4 const&projectionMatrix){
+  sides->draw(lightPosition,viewMatrix,projectionMatrix);
+  /*
   assert(this!=nullptr);
   assert(drawSidesProgram!=nullptr);
   assert(sidesVao!=nullptr);
@@ -227,6 +184,7 @@ void VSSV::drawSides(
   else
     glDrawArraysInstanced(GL_TRIANGLES     ,0,6,GLsizei(nofEdges*maxMultiplicity));
   sidesVao->unbind();
+  */
 }
 
 void VSSV::drawCaps(

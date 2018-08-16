@@ -7,6 +7,7 @@
 
 #include<Vars/Vars.h>
 #include<VSSV/DrawCaps.h>
+#include<VSSV/DrawSides.h>
 
 class Adjacency;
 class VSSV: public ShadowVolumes{
@@ -23,14 +24,15 @@ class VSSV: public ShadowVolumes{
         glm::mat4 const&projectionMatrix)override;
   protected:
     std::unique_ptr<DrawCaps>caps;
-    std::shared_ptr<ge::gl::Program>    drawSidesProgram       = nullptr;
-    std::shared_ptr<ge::gl::Buffer>     adjacency              = nullptr;
-    std::shared_ptr<ge::gl::VertexArray>sidesVao               = nullptr;
-    size_t                              nofEdges               = 0      ;
-    size_t                              maxMultiplicity        = 0      ;
-    size_t                              nofTriangles           = 0      ;
+    std::unique_ptr<DrawSides>sides;
+    //std::shared_ptr<ge::gl::Program>    drawSidesProgram       = nullptr;
+    //std::shared_ptr<ge::gl::Buffer>     adjacency              = nullptr;
+    //std::shared_ptr<ge::gl::VertexArray>sidesVao               = nullptr;
+    //size_t                              nofEdges               = 0      ;
+    //size_t                              maxMultiplicity        = 0      ;
+    //size_t                              nofTriangles           = 0      ;
 
-    void                                createSideDataUsingPoints   (std::shared_ptr<Adjacency const>const&adj);
-    void                                createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&adj);
-    void                                createSideDataUsingPlanes   (std::shared_ptr<Adjacency const>const&adj);
+    //void                                createSideDataUsingPoints   (std::shared_ptr<Adjacency const>const&adj);
+    //void                                createSideDataUsingAllPlanes(std::shared_ptr<Adjacency const>const&adj);
+    //void                                createSideDataUsingPlanes   (std::shared_ptr<Adjacency const>const&adj);
 };
