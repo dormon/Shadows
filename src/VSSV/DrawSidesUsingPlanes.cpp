@@ -19,7 +19,7 @@ struct GPUEdgeData{
   Vertex4Df planes[N];
 };
 
-void writePlane(Vertex4Df&plane,Vertex3Df const*const src,size_t e,size_t o,std::shared_ptr<Adjacency const>const&adj){
+void writePlane(Vertex4Df&plane,Vertex3Df const*const src,size_t e,size_t o,shared_ptr<Adjacency const>const&adj){
   auto const glmPlane = computePlane(
           toVec3(src[adj->getEdge(e,0)/3].elements    ),
           toVec3(src[adj->getEdge(e,1)/3].elements    ),
@@ -28,13 +28,13 @@ void writePlane(Vertex4Df&plane,Vertex3Df const*const src,size_t e,size_t o,std:
     plane.elements[i] = glmPlane[i];
 }
 
-void writePlanes(Vertex4Df *const planes,Vertex3Df const*const src,size_t e,std::shared_ptr<Adjacency const>const&adj){
+void writePlanes(Vertex4Df *const planes,Vertex3Df const*const src,size_t e,shared_ptr<Adjacency const>const&adj){
   for(size_t o=0;o<adj->getNofOpposite(e);++o)
     writePlane(planes[o],src,e,o,adj);
 }
 
 template<size_t N>
-void writeEdge(GPUEdgeData<N>&edge,Vertex3Df const*const src,size_t e,std::shared_ptr<Adjacency const>const&adj){
+void writeEdge(GPUEdgeData<N>&edge,Vertex3Df const*const src,size_t e,shared_ptr<Adjacency const>const&adj){
   edge.vertexA = src[adj->getEdge(e,0)/3];
   edge.vertexB = src[adj->getEdge(e,1)/3];
   edge.nofOpposite = adj->getNofOpposite(e);
@@ -43,22 +43,22 @@ void writeEdge(GPUEdgeData<N>&edge,Vertex3Df const*const src,size_t e,std::share
 }
 
 template<size_t N>
-void writeEdges(std::vector<GPUEdgeData<N>>&dst,Vertex3Df const*const src,std::shared_ptr<Adjacency const>const&adj){
+void writeEdges(vector<GPUEdgeData<N>>&dst,Vertex3Df const*const src,shared_ptr<Adjacency const>const&adj){
   for(size_t e=0;e<adj->getNofEdges();++e)
     writeEdge(dst[e],src,e,adj);
 }
 
 template<size_t N>
-shared_ptr<Buffer>createSidesBuffer(std::shared_ptr<Adjacency const>const&adj){
+shared_ptr<Buffer>createSidesBuffer(shared_ptr<Adjacency const>const&adj){
   auto const src = reinterpret_cast<Vertex3Df const*>(adj->getVertices().data());
-  std::vector<GPUEdgeData<N>>dst(adj->getNofEdges());
+  vector<GPUEdgeData<N>>dst(adj->getNofEdges());
   writeEdges(dst,src,adj);
   return make_shared<Buffer>(dst);
 }
 
 template<size_t N>
 shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&sides){
-  auto vao = std::make_shared<ge::gl::VertexArray>();
+  auto vao = make_shared<VertexArray>();
   GLenum const normalized = GL_FALSE;
   GLuint const divisor = N;
   GLintptr offset = 0;
@@ -77,23 +77,23 @@ shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&sides){
 }
 
 shared_ptr<Program>createProgram(vars::Vars const&vars){
-#include"VSSV/Shaders.h"
-#include"SilhouetteShaders.h"
+#include<VSSV/DrawSidesUsingPlanesShader.h>
+#include<SilhouetteShaders.h>
 
-  auto program = std::make_shared<ge::gl::Program>(
-      std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER,
+  auto program = make_shared<Program>(
+      make_shared<Shader>(GL_VERTEX_SHADER,
         "#version 450\n",
-        vars.getBool("vssv.usePlanes"             )?ge::gl::Shader::define("USE_PLANES"               ):"",
-        vars.getBool("vssv.useStrips"             )?ge::gl::Shader::define("USE_TRIANGLE_STRIPS"      ):"",
-        vars.getBool("vssv.useAllOppositeVertices")?ge::gl::Shader::define("USE_ALL_OPPOSITE_VERTICES"):"",
+        vars.getBool("vssv.usePlanes"             )?Shader::define("USE_PLANES"               ):"",
+        vars.getBool("vssv.useStrips"             )?Shader::define("USE_TRIANGLE_STRIPS"      ):"",
+        vars.getBool("vssv.useAllOppositeVertices")?Shader::define("USE_ALL_OPPOSITE_VERTICES"):"",
         silhouetteFunctions,
-        _drawSidesVertexShaderSrc));
+        vertexShaderSrc));
   return program;
 }
 
 }
 
-DrawSidesUsingPlanes::DrawSidesUsingPlanes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):vars(vars){
+DrawSidesUsingPlanes::DrawSidesUsingPlanes(vars::Vars&vars,shared_ptr<Adjacency const>const&adj):vars(vars){
   sides    = vssvUsingPlanes::createSidesBuffer<2>(adj);
   vao      = vssvUsingPlanes::createVAO<2>(sides);
   program  = vssvUsingPlanes::createProgram(vars);
@@ -102,13 +102,13 @@ DrawSidesUsingPlanes::DrawSidesUsingPlanes(vars::Vars&vars,std::shared_ptr<Adjac
 }
 
 void DrawSidesUsingPlanes::draw(
-    glm::vec4 const&lightPosition   ,
-    glm::mat4 const&viewMatrix      ,
-    glm::mat4 const&projectionMatrix){
+    vec4 const&lightPosition   ,
+    mat4 const&viewMatrix      ,
+    mat4 const&projectionMatrix){
   program->use();
-  program->setMatrix4fv("viewMatrix"      ,glm::value_ptr(viewMatrix      ));
-  program->setMatrix4fv("projectionMatrix",glm::value_ptr(projectionMatrix));
-  program->set4fv      ("lightPosition"   ,glm::value_ptr(lightPosition   ));
+  program->setMatrix4fv("viewMatrix"      ,value_ptr(viewMatrix      ));
+  program->setMatrix4fv("projectionMatrix",value_ptr(projectionMatrix));
+  program->set4fv      ("lightPosition"   ,value_ptr(lightPosition   ));
   vao->bind();
   if(vars.getBool("vssv.useStrips"))
     glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,4,GLsizei(nofEdges*maxMultiplicity));
