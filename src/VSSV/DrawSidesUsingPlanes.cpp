@@ -60,19 +60,12 @@ template<size_t N>
 shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&sides){
   auto vao = make_shared<VertexArray>();
   GLenum const normalized = GL_FALSE;
-  GLuint const divisor = N;
-  GLintptr offset = 0;
-  GLsizei const stride = static_cast<GLsizei>(sizeof(GPUEdgeData<N>));
-  vao->addAttrib(sides,0,3,GL_FLOAT,stride,offset,normalized,divisor);
-  offset += 3*sizeof(float);
-  vao->addAttrib(sides,1,3,GL_FLOAT,stride,offset,normalized,divisor);
-  offset += 3*sizeof(float);
-  vao->addAttrib(sides,2,1,GL_FLOAT,stride,offset,normalized,divisor);
-  offset += sizeof(float);
-  for(GLuint o=0;o<N;++o){
-    vao->addAttrib(sides,3+o,4,GL_FLOAT,stride,offset,normalized,divisor);
-    offset += 4*sizeof(float);
-  }
+  auto   const stride = static_cast<GLsizei>(sizeof(GPUEdgeData<N>));
+  vao->addAttrib(sides,0,sizeof(GPUEdgeData<N>::vertexA    )/sizeof(float),GL_FLOAT,stride,offsetof(GPUEdgeData<N>,vertexA    ),normalized,N);
+  vao->addAttrib(sides,1,sizeof(GPUEdgeData<N>::vertexB    )/sizeof(float),GL_FLOAT,stride,offsetof(GPUEdgeData<N>,vertexB    ),normalized,N);
+  vao->addAttrib(sides,2,sizeof(GPUEdgeData<N>::nofOpposite)/sizeof(float),GL_FLOAT,stride,offsetof(GPUEdgeData<N>,nofOpposite),normalized,N);
+  for(GLuint o=0;o<N;++o)
+    vao->addAttrib(sides,3+o,4,GL_FLOAT,stride,offsetof(GPUEdgeData<N>,planes)+sizeof(Vertex4Df)*o,normalized,N);
   return vao;
 }
 
@@ -83,9 +76,7 @@ shared_ptr<Program>createProgram(vars::Vars const&vars){
   auto program = make_shared<Program>(
       make_shared<Shader>(GL_VERTEX_SHADER,
         "#version 450\n",
-        vars.getBool("vssv.usePlanes"             )?Shader::define("USE_PLANES"               ):"",
-        vars.getBool("vssv.useStrips"             )?Shader::define("USE_TRIANGLE_STRIPS"      ):"",
-        vars.getBool("vssv.useAllOppositeVertices")?Shader::define("USE_ALL_OPPOSITE_VERTICES"):"",
+        vars.getBool("vssv.useStrips")?Shader::define("USE_TRIANGLE_STRIPS"):"",
         silhouetteFunctions,
         vertexShaderSrc));
   return program;
