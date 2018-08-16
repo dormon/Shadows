@@ -57,6 +57,7 @@ shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&sides){
   return vao;
 }
 
+template<size_t N>
 shared_ptr<Program>createProgram(vars::Vars&vars){
 #include<VSSV/DrawSidesUsingPointsShader.h>
 #include<SilhouetteShaders.h>
@@ -64,9 +65,8 @@ shared_ptr<Program>createProgram(vars::Vars&vars){
   auto program = make_shared<ge::gl::Program>(
       make_shared<Shader>(GL_VERTEX_SHADER,
         "#version 450\n",
-        vars.getBool("vssv.usePlanes"             )?Shader::define("USE_PLANES"               ):"",
-        vars.getBool("vssv.useStrips"             )?Shader::define("USE_TRIANGLE_STRIPS"      ):"",
-        vars.getBool("vssv.useAllOppositeVertices")?Shader::define("USE_ALL_OPPOSITE_VERTICES"):"",
+        vars.getBool("vssv.useStrips")?Shader::define("USE_TRIANGLE_STRIPS"):"",
+        Shader::define("MAX_MULTIPLICITY",static_cast<uint32_t>(N)),
         silhouetteFunctions,
         vertexShaderSrc));
 
@@ -77,12 +77,12 @@ DrawSidesUsingPoints::DrawSidesUsingPoints(vars::Vars&vars,shared_ptr<Adjacency 
   maxMultiplicity = adj->getMaxMultiplicity();
   nofEdges        = adj->getNofEdges();
   if(maxMultiplicity == 2){
-    sides    = createSidesBuffer<2>(adj);
-    vao      = createVAO<2>(sides);
+    sides    = createSidesBuffer<2>(adj  );
+    vao      = createVAO        <2>(sides);
+    program  = createProgram    <2>(vars );
   }else{
     throw runtime_error("VSSV - unsupported max multiplicity");
   }
-  program  = createProgram(vars);
 }
 
 void DrawSidesUsingPoints::draw(
