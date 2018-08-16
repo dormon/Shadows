@@ -58,7 +58,7 @@ shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&sides){
 }
 
 shared_ptr<Program>createProgram(vars::Vars&vars){
-#include<VSSV/Shaders.h>
+#include<VSSV/DrawSidesUsingPointsShader.h>
 #include<SilhouetteShaders.h>
 
   auto program = make_shared<ge::gl::Program>(
@@ -68,7 +68,7 @@ shared_ptr<Program>createProgram(vars::Vars&vars){
         vars.getBool("vssv.useStrips"             )?Shader::define("USE_TRIANGLE_STRIPS"      ):"",
         vars.getBool("vssv.useAllOppositeVertices")?Shader::define("USE_ALL_OPPOSITE_VERTICES"):"",
         silhouetteFunctions,
-        _drawSidesVertexShaderSrc));
+        vertexShaderSrc));
 
   return program;
 }

@@ -116,6 +116,7 @@ set(INCLUDES
   src/VSSV/CapsShader.h
   src/VSSV/DrawSides.h
   src/VSSV/DrawSidesUsingPoints.h
+  src/VSSV/DrawSidesUsingPointsShader.h
   src/CSSVSOE.h
   src/Sintorn.h
   src/SintornTiles.h
