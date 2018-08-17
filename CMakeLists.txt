@@ -60,6 +60,7 @@ set(SOURCES
   src/VSSV/DrawCaps.cpp
   src/VSSV/DrawSidesUsingPoints.cpp
   src/VSSV/DrawSidesUsingPlanes.cpp
+  src/VSSV/DrawSidesUsingAllPlanes.cpp
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
@@ -111,7 +112,6 @@ set(INCLUDES
   src/CubeShadowMapping/CreateShadowMapShaders.h
   src/CubeShadowMapping/Params.h
   src/VSSV/VSSV.h
-  src/VSSV/Shaders.h
   src/VSSV/Params.h
   src/VSSV/DrawCaps.h
   src/VSSV/CapsShader.h
@@ -120,6 +120,8 @@ set(INCLUDES
   src/VSSV/DrawSidesUsingPointsShader.h
   src/VSSV/DrawSidesUsingPlanes.h
   src/VSSV/DrawSidesUsingPlanesShader.h
+  src/VSSV/DrawSidesUsingAllPlanes.h
+  src/VSSV/DrawSidesUsingAllPlanesShader.h
   src/CSSVSOE.h
   src/Sintorn.h
   src/SintornTiles.h
