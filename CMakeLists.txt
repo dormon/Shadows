@@ -58,6 +58,7 @@ set(SOURCES
   src/VSSV/VSSV.cpp
   src/VSSV/Params.cpp
   src/VSSV/DrawCaps.cpp
+  src/VSSV/DrawSides.cpp
   src/VSSV/DrawSidesUsingPoints.cpp
   src/VSSV/DrawSidesUsingPlanes.cpp
   src/VSSV/DrawSidesUsingAllPlanes.cpp

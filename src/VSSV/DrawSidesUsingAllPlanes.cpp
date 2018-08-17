@@ -82,7 +82,7 @@ shared_ptr<Program>createProgram(vars::Vars const&vars,shared_ptr<Adjacency cons
 }
 }
 
-DrawSidesUsingAllPlanes::DrawSidesUsingAllPlanes(vars::Vars&vars,shared_ptr<Adjacency const>const&adj):vars(vars){
+DrawSidesUsingAllPlanes::DrawSidesUsingAllPlanes(vars::Vars&vars,shared_ptr<Adjacency const>const&adj):DrawSides(vars){
   maxMultiplicity = adj->getMaxMultiplicity();
   if(maxMultiplicity == 2){
     sides = vssvUsingAllPlanes::createSidesBuffer<2>(adj  );
@@ -94,18 +94,3 @@ DrawSidesUsingAllPlanes::DrawSidesUsingAllPlanes(vars::Vars&vars,shared_ptr<Adja
   nofEdges = adj->getNofEdges();
 }
 
-void DrawSidesUsingAllPlanes::draw(
-    vec4 const&light     ,
-    mat4 const&view      ,
-    mat4 const&projection){
-  auto const mvp = projection * view;
-  program->setMatrix4fv("mvp"  ,value_ptr(mvp  ))
-         ->set4fv      ("light",value_ptr(light))
-         ->use();
-  vao->bind();
-  if(vars.getBool("vssv.useStrips"))
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,4,GLsizei(nofEdges*maxMultiplicity));
-  else
-    glDrawArraysInstanced(GL_TRIANGLES     ,0,6,GLsizei(nofEdges*maxMultiplicity));
-  vao->unbind();
-}

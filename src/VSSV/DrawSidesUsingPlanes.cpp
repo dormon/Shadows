@@ -84,7 +84,7 @@ shared_ptr<Program>createProgram(vars::Vars const&vars){
 
 }
 
-DrawSidesUsingPlanes::DrawSidesUsingPlanes(vars::Vars&vars,shared_ptr<Adjacency const>const&adj):vars(vars){
+DrawSidesUsingPlanes::DrawSidesUsingPlanes(vars::Vars&vars,shared_ptr<Adjacency const>const&adj):DrawSides(vars){
   sides    = vssvUsingPlanes::createSidesBuffer<2>(adj);
   vao      = vssvUsingPlanes::createVAO<2>(sides);
   program  = vssvUsingPlanes::createProgram(vars);
@@ -92,18 +92,3 @@ DrawSidesUsingPlanes::DrawSidesUsingPlanes(vars::Vars&vars,shared_ptr<Adjacency 
   maxMultiplicity = 2;
 }
 
-void DrawSidesUsingPlanes::draw(
-    vec4 const&light     ,
-    mat4 const&view      ,
-    mat4 const&projection){
-  auto const mvp = projection * view;
-  program->setMatrix4fv("mvp"  ,value_ptr(mvp  ))
-         ->set4fv      ("light",value_ptr(light))
-         ->use();
-  vao->bind();
-  if(vars.getBool("vssv.useStrips"))
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP,0,4,GLsizei(nofEdges*maxMultiplicity));
-  else
-    glDrawArraysInstanced(GL_TRIANGLES     ,0,6,GLsizei(nofEdges*maxMultiplicity));
-  vao->unbind();
-}

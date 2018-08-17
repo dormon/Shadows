@@ -17,15 +17,6 @@ uniform vec4 light = vec4(10,10,10,1);
 uniform mat4 mvp   = mat4(1.f);
 
 void main(){
-#ifdef USE_TRIANGLE_STRIPS
-  uint vertexIDCCW = gl_VertexID;
-  uint vertexIDCW  = gl_VertexID^0x1;
-#else
-  uint vertexIDCCW = uint(gl_VertexID>2?6-gl_VertexID:gl_VertexID);
-  uint vertexIDCW  = uint(gl_VertexID>2?gl_VertexID-2:2-gl_VertexID);
-#endif//USE_TRIANGLE_STRIPS
-
-  uint sideID = gl_InstanceID%MAX_MULTIPLICITY;
   vec4 P[4];
   P[0] = vec4(vertexA.xyz,1);
   P[1] = vec4(vertexB.xyz,1);
@@ -36,9 +27,21 @@ void main(){
 
   for(uint m=0;m<MAX_MULTIPLICITY;++m)
     multiplicity += int(sign(dot(planes[m],light)));
-  
+ 
+
+
+  uint sideID = gl_InstanceID%MAX_MULTIPLICITY;
+
   if(sideID >= abs(multiplicity))
     return;
+
+#ifdef USE_TRIANGLE_STRIPS
+  uint vertexIDCCW = gl_VertexID;
+  uint vertexIDCW  = gl_VertexID^0x1;
+#else
+  uint vertexIDCCW = uint(gl_VertexID>2?6-gl_VertexID:gl_VertexID);
+  uint vertexIDCW  = uint(gl_VertexID>2?gl_VertexID-2:2-gl_VertexID);
+#endif//USE_TRIANGLE_STRIPS
 
   if(multiplicity>0)
     gl_Position = mvp*P[vertexIDCCW];
