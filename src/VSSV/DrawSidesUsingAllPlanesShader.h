@@ -28,8 +28,6 @@ void main(){
   for(uint m=0;m<MAX_MULTIPLICITY;++m)
     multiplicity += int(sign(dot(planes[m],light)));
  
-
-
   uint sideID = gl_InstanceID%MAX_MULTIPLICITY;
 
   if(sideID >= abs(multiplicity))
