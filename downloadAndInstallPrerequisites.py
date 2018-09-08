@@ -6,6 +6,7 @@ from subprocess import call
 from subprocess import Popen, PIPE
 import argparse
 import re
+import shutil
 
 parser = argparse.ArgumentParser(description='Download/pull all Shadows dependencies, compile and install them.')
 parser.add_argument('--threads', type=int, default=4,  help='number of threads for compilation')
@@ -14,6 +15,7 @@ parser.add_argument('--dontBuildRelease',action='store_true')
 parser.add_argument('--installDir', type=str, default="install", help='where to install all repositories')
 parser.add_argument('--repoDir', type=str, default="repositories", help='where to download repositories')
 parser.add_argument('--dontPull', action='store_true')
+parser.add_argument('--clearBuild', action='store_true')
 
 args = parser.parse_args()
 
@@ -24,6 +26,7 @@ installDir   = args.installDir
 repoDir      = args.repoDir
 curDir       = os.path.abspath(".")
 dontPull     = args.dontPull
+clearBuild   = args.clearBuild
 
 def getGCC():
     GCCs = ["g++","g++-5","g++-6","g++-7"]
@@ -147,12 +150,15 @@ gits = [
 debugBuildDir = "build/"+system+"/debug"
 releaseBuildDir = "build/"+system+"/release"
 
-systemSpecificBuildOptions = []
+systemSpecificDebugBuildOptions = []
+systemSpecificReleaseBuildOptions = []
 
 if system.find("linux") >= 0:
-    systemSpecificBuildOptions = ["-j"+str(threads),"install"]
+    systemSpecificDebugBuildOptions   = ["-j"+str(threads),"install"]
+    systemSpecificReleaseBuildOptions = ["-j"+str(threads),"install"]
 else:
-    systemSpecificBuildOptions = ["/p:CL_MPCount="+str(threads)]
+    systemSpecificDebugBuildOptions = ["/p:CL_MPCount="+str(threads),"/p:Configuration=Debug"]
+    systemSpecificReleaseBuildOptions = ["/p:CL_MPCount="+str(threads),"/p:Configuration=Release"]
 
 
 
@@ -161,23 +167,32 @@ def buildAndInstall(url,args = []):
     os.chdir(repoDir)
     dirName = getGitDirectory(url)
     os.chdir(dirName)
+    if clearBuild:
+       shutil.rmtree(debugBuildDir)
+       shutil.rmtree(releaseBuildDir)
+       #if os.path.isfile(debugBuildDir+"/CMakeCache.txt"):
+       #    os.remove(debugBuildDir+"/CMakeCache.txt")
+       #if os.path.isfile(releaseBuildDir+"/CMakeCache.txt"):
+       #    os.remove(releaseBuildDir+"/CMakeCache.txt")
     if not os.path.isdir(debugBuildDir):
        os.makedirs(debugBuildDir)
     if not os.path.isdir(releaseBuildDir):
-        os.makedirs(releaseBuildDir)
+       os.makedirs(releaseBuildDir)
 
     basicArgs  = ["cmake","-DCMAKE_INSTALL_PREFIX="+installDir,"-DBUILD_SHARED_LIBS=ON"] 
 
     if system.find("linux") >= 0:
         basicArgs += ["-DCMAKE_CXX_COMPILER="+gcc[0],"-DCMAKE_CXX_FLAGS="+gcc[1]]
+    else:
+        basicArgs += ["-GVisual Studio 15 2017 Win64"]
 
     if buildDebug:
         call(basicArgs+args+["-H.","-B"+debugBuildDir,"-DCMAKE_BUILD_TYPE=Debug"])
-        call(["cmake","--build",debugBuildDir,"--target","install","--"] + systemSpecificBuildOptions)
+        call(["cmake","--build",debugBuildDir,"--target","install","--"] + systemSpecificDebugBuildOptions)
     
     if buildRelease:
         call(basicArgs+args+["-H.","-B"+releaseBuildDir,"-DCMAKE_BUILD_TYPE=Release"])
-        call(["cmake","--build",releaseBuildDir,"--target","install","--"] + systemSpecificBuildOptions)
+        call(["cmake","--build",releaseBuildDir,"--target","install","--"] + systemSpecificReleaseBuildOptions)
 
 for i in gits:
     clone(i[0],i[1])
