@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import sys
 import os
 from subprocess import call
 from subprocess import Popen, PIPE
@@ -36,7 +37,7 @@ def getGCC():
     hasGCCs = map(lambda x:hasGCC(x),GCCs)
     
     if not reduce(lambda x,y:x or y,hasGCCs):
-        print "there is no g++"
+        print ("there is no g++")
         exit(0)
     
     def getVersion(whatGCC):
@@ -73,7 +74,7 @@ def getGCC():
     supportedStandards = map(lambda x:supportStandard(x),standards)
     
     if not reduce(lambda x,y:x or y,supportedStandards):
-        print "your g++ is too old and does not support required C++ standard: ",standards[0]
+        print ("your g++ is too old and does not support required C++ standard: ",standards[0])
         exit(0)
     
     def getNewestStandard():
@@ -82,7 +83,12 @@ def getGCC():
     standard = getNewestStandard();
     return (gcc,standard)
 
-gcc = getGCC()
+
+system = sys.platform
+
+gcc = ("","")
+if system.find("linux") >= 0:
+    gcc = getGCC()
 
 if not os.path.isabs(installDir):
     installDir = os.path.join(os.path.abspath("."),installDir)
@@ -103,10 +109,10 @@ def clone(url,commit = ""):
     os.chdir(repoDir)
     gitDir = getGitDirectory(url)
     if not os.path.isdir(gitDir):
-        print "cloning: "+gitDir
+        print ("cloning: "+gitDir)
         call(["git","clone",url])
     else:
-        print "executing git pull on: "+gitDir
+        print ("executing git pull on: "+gitDir)
         if not dontPull:
             os.chdir(gitDir)
             call(["git","pull"])
@@ -114,7 +120,7 @@ def clone(url,commit = ""):
 
     if commit != "":
         os.chdir(gitDir)
-        print "checkout: "+commit
+        print ("checkout: "+commit)
         call(["git","checkout",commit])
         os.chdir("..")
 
@@ -137,33 +143,41 @@ gits = [
 ("git@github.com:dormon/Vars.git"             ,""             ,[]),
         ]
 
+
+debugBuildDir = "build/"+system+"/debug"
+releaseBuildDir = "build/"+system+"/release"
+
+systemSpecificBuildOptions = []
+
+if system.find("linux") >= 0:
+    systemSpecificBuildOptions = ["-j"+str(threads),"install"]
+else:
+    systemSpecificBuildOptions = ["/p:CL_MPCount="+str(threads)]
+
+
+
+
 def buildAndInstall(url,args = []):
     os.chdir(repoDir)
     dirName = getGitDirectory(url)
     os.chdir(dirName)
-    if not os.path.isdir("build/linux/debug"):
-       os.makedirs("build/linux/debug")
-    if not os.path.isdir("build/linux/release"):
-        os.makedirs("build/linux/release")
+    if not os.path.isdir(debugBuildDir):
+       os.makedirs(debugBuildDir)
+    if not os.path.isdir(releaseBuildDir):
+        os.makedirs(releaseBuildDir)
 
-    basicArgs  = ["cmake","-DCMAKE_INSTALL_PREFIX="+installDir,"-DBUILD_SHARED_LIBS=ON","-DCMAKE_CXX_COMPILER="+gcc[0],"-DCMAKE_CXX_FLAGS="+gcc[1]] 
-    debugArg   = ["-DCMAKE_BUILD_TYPE=Debug"]
-    releaseArg = ["-DCMAKE_BUILD_TYPE=Release"]
-    dirArg     = ["../../.."]
-    os.chdir("build/linux/")
+    basicArgs  = ["cmake","-DCMAKE_INSTALL_PREFIX="+installDir,"-DBUILD_SHARED_LIBS=ON"] 
+
+    if system.find("linux") >= 0:
+        basicArgs += ["-DCMAKE_CXX_COMPILER="+gcc[0],"-DCMAKE_CXX_FLAGS="+gcc[1]]
+
     if buildDebug:
-        os.chdir("debug")
-        #if not os.path.isfile("Makefile"):
-        #print basicArgs+debugArg+args+dirArg
-        call(basicArgs+debugArg+args+dirArg)
-        call(["make","-j"+str(threads),"install"])
-        os.chdir("..")
+        call(basicArgs+args+["-H.","-B"+debugBuildDir,"-DCMAKE_BUILD_TYPE=Debug"])
+        call(["cmake","--build",debugBuildDir,"--target","install","--"] + systemSpecificBuildOptions)
+    
     if buildRelease:
-        os.chdir("release")
-        #if not os.path.isfile("Makefile"):
-        call(basicArgs+releaseArg+args+dirArg)
-        call(["make","-j"+str(threads),"install"])
-        os.chdir("..")
+        call(basicArgs+args+["-H.","-B"+releaseBuildDir,"-DCMAKE_BUILD_TYPE=Release"])
+        call(["cmake","--build",releaseBuildDir,"--target","install","--"] + systemSpecificBuildOptions)
 
 for i in gits:
     clone(i[0],i[1])
