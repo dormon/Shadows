@@ -96,6 +96,8 @@ if system.find("linux") >= 0:
 if not os.path.isabs(installDir):
     installDir = os.path.join(os.path.abspath("."),installDir)
 
+installDir = os.path.join(installDir,system)
+
 if not os.path.isdir(installDir):
     os.makedirs(installDir)
 
