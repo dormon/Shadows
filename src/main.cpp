@@ -32,8 +32,8 @@
 #include <Deferred.h>
 #include <DrawPrimitive.h>
 #include <Model.h>
-#include <RSSV.h>
-#include <RSSVTiles.h>
+#include <RSSV/RSSV.h>
+#include <RSSV/Tiles.h>
 #include <Shading.h>
 #include <ShadowMethod.h>
 #include <Sintorn.h>
@@ -78,7 +78,7 @@ void Shadows::parseArguments() {
   cssv::loadParams              (vars,arg);
   loadVSSVParams                (vars,arg);
   loadSintornParams             (vars,arg);
-  loadRSSVParams                (vars,arg);
+  rssv::loadParams              (vars,arg);
   loadTestParams                (vars,arg);
   loadCameraParams              (vars,arg);
 
@@ -130,7 +130,7 @@ void Shadows::init() {
   else if (vars.getString("methodName") == "cssv"             )vars.add<cssv::CSSV       >("shadowMethod",vars);
   else if (vars.getString("methodName") == "cssvsoe"          )vars.add<CSSVSOE          >("shadowMethod",vars);
   else if (vars.getString("methodName") == "sintorn"          )vars.add<Sintorn          >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "rssv"             )vars.add<RSSV             >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "rssv"             )vars.add<rssv::RSSV       >("shadowMethod",vars);
   else if (vars.getString("methodName") == "vssv"             )vars.add<VSSV             >("shadowMethod",vars);
   else vars.getBool("useShadows") = false;
 
@@ -245,7 +245,7 @@ void Shadows::draw() {
     if (keyDown[',']) sintorn->drawFinalStencilMask();
   }
   if (vars.getString("methodName") == "rssv") {
-    auto rssv = vars.getReinterpret<RSSV>("shadowMethod");
+    auto rssv = vars.getReinterpret<rssv::RSSV>("shadowMethod");
     auto dp = vars.get<DrawPrimitive>("drawPrimitive");
     auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(rssv->_HDT[i]);};
     for(int i=0;i<4;++i)drawTex("hjkl"[i],i);

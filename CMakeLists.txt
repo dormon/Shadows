@@ -65,8 +65,12 @@ set(SOURCES
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
-  src/RSSV.cpp
-  src/RSSVTiles.cpp
+  src/RSSV/RSSV.cpp
+  src/RSSV/Tiles.cpp
+  src/RSSV/BuildStupidHierarchy.cpp
+  src/RSSV/ExtractSilhouettes.cpp
+  src/RSSV/Params.cpp
+  src/RSSV/StupidHierarchyShaders.cpp
   src/DrawPrimitive.cpp
   src/ShadowVolumes.cpp
   src/util.cpp
@@ -74,7 +78,6 @@ set(SOURCES
   src/CameraParam.cpp
   src/TestParam.cpp
   src/SintornParam.cpp
-  src/RSSVParam.cpp
   src/Function.cpp
   src/FunctionImpl.cpp
   src/createGBuffer.cpp
@@ -127,9 +130,16 @@ set(INCLUDES
   src/Sintorn.h
   src/SintornTiles.h
   src/SintornShaders.h
-  src/RSSV.h
-  src/RSSVTiles.h
-  src/RSSVShaders.h
+  src/RSSV/RSSV.h
+  src/RSSV/Tiles.h
+  src/RSSV/Shaders.h
+  src/RSSV/BuildHierarchy.h
+  src/RSSV/BuildStupidHierarchy.h
+  src/RSSV/StupidHierarchyShaders.h
+  src/RSSV/ExtractSilhouettes.h
+  src/RSSV/ExtractSilhouettesShader.h
+  src/RSSV/Params.h
+  src/BallotShader.h
   src/DrawPrimitive.h
   src/ProgramExtension.h
   src/ShadowVolumes.h
@@ -140,13 +150,13 @@ set(INCLUDES
   src/CameraParam.h
   src/TestParam.h
   src/SintornParam.h
-  src/RSSVParam.h
   src/Function.h
   src/FunctionImpl.h
   src/createGBuffer.h
   src/imguiVars.h
   src/Barrier.h
   src/Simplex.h
+  src/GLSLLine.h
   )
 
 add_executable(${APP_NAME} ${SOURCES} ${INCLUDES})

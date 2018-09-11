@@ -88,3 +88,6 @@ std::string uvec2ToStr(glm::uvec2 const& v)
   return ss.str();
 }
 
+size_t align(size_t what,size_t alignment){
+  return (what / alignment) * alignment + (size_t)((what % alignment)!=0)*alignment;
+}

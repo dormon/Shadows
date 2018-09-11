@@ -1,9 +1,12 @@
-#include<RSSV.h>
+#include<RSSV/RSSV.h>
 
 #include<ProgramExtension.h>
 #include<util.h>
 #include<Deferred.h>
 #include<ShadowVolumes.h>
+#include<RSSV/BuildStupidHierarchy.h>
+
+using namespace rssv;
 
 const size_t HIERARCHICALDEPTHTEXTURE_BINDING_DEPTH     = 0;
 const size_t HIERARCHICALDEPTHTEXTURE_BINDING_HDT       = 1;
@@ -32,6 +35,9 @@ RSSV::RSSV(vars::Vars&vars           ):
   ShadowMethod(vars),
   _tiling      (*vars.get<glm::uvec2>("windowSize"),vars.getSizeT("wavefrontSize"))
 {
+  buildHierarchy = std::make_shared<BuildStupidHierarchy>(vars);
+  //extractSilhouettes = std::make_shared<RSSVExtractSilhouettes>(vars);
+#if 0
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   assert(this!=nullptr);
   assert(
@@ -151,7 +157,7 @@ RSSV::RSSV(vars::Vars&vars           ):
       ge::gl::Shader::define("RASTERIZE_BINDING_SILHOUETTES",(int)RASTERIZE_BINDING_SILHOUETTES  ),
       _rasterizeSrc);
 
-
+#endif
 }
 
 RSSV::~RSSV(){}
@@ -160,6 +166,11 @@ void RSSV::create(
     glm::vec4 const&lightPosition,
     glm::mat4 const&view         ,
     glm::mat4 const&projection   ){
+  buildHierarchy->build();
+  ifExistStamp("buildHierarchy");
+  //extractSilhouettes->extract(lightPosition);
+  //ifExistStamp("extractSilhouettes");
+#if 0
   assert(this!=nullptr);
   (void)lightPosition;
   (void)view;
@@ -171,9 +182,11 @@ void RSSV::create(
   ifExistStamp("computeSilhouettes");
   this->_rasterize(lightPosition,view,projection);
   ifExistStamp("rasterize");
+#endif
 }
 
 void RSSV::_copyDepthToLastLevelOfHDT(){
+#if 0
   assert(this!=nullptr);
   this->_generateHDT0Program->use();
   this->_generateHDT0Program->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
@@ -183,9 +196,11 @@ void RSSV::_copyDepthToLastLevelOfHDT(){
     
   glDispatchCompute(nofWorkGroups.x,nofWorkGroups.y,1);
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+#endif
 }
 
 void RSSV::_computeAllLevelsOfHDTExceptLast(){
+#if 0
   this->_generateHDTProgram->use();
 
   for(int64_t l=_nofLevels-2;l>=0;--l){
@@ -196,14 +211,18 @@ void RSSV::_computeAllLevelsOfHDTExceptLast(){
     glDispatchCompute(nofWorkGroups.x,nofWorkGroups.y,1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
   }
+#endif
 }
 
 void RSSV::_generateHDT(){
+#if 0
   _copyDepthToLastLevelOfHDT();
   _computeAllLevelsOfHDTExceptLast();
+#endif
 }
 
 void RSSV::_computeSilhouettes(glm::vec4 const&lightPosition){
+#if 0
   assert(this!=nullptr);
   this->_dispatchIndirectBuffer->clear(GL_R32UI,0,sizeof(unsigned),GL_RED_INTEGER,GL_UNSIGNED_INT);
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -236,7 +255,7 @@ void RSSV::_computeSilhouettes(glm::vec4 const&lightPosition){
   }
   this->_edges->unmap();
   // */
-
+#endif
 }
 
 void RSSV::_rasterize(glm::vec4 const&lightPosition,glm::mat4 const&view,glm::mat4 const&projection){
