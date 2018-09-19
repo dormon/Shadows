@@ -4,6 +4,7 @@
 #include<Vars/Vars.h>
 #include<vector>
 #include<map>
+#include<array>
 
 struct UniquePinData{
   size_t cardinality = 0;

@@ -4,6 +4,7 @@
 #include <FastAdjacency.h>
 #include <Simplex.h>
 #include <ShadowMethod.h>
+#include<SilhouetteShaders.h>
 
 using namespace std;
 using namespace ge::gl;
@@ -71,7 +72,6 @@ shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&sides){
 
 shared_ptr<Program>createProgram(vars::Vars const&vars){
 #include<VSSV/DrawSidesUsingPlanesShader.h>
-#include<SilhouetteShaders.h>
 
   auto program = make_shared<Program>(
       make_shared<Shader>(GL_VERTEX_SHADER,

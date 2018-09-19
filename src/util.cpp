@@ -68,7 +68,9 @@ size_t getWavefrontSize(size_t w) {
   std::cout << renderer << std::endl;
   std::cout << vendor << std::endl;
   if (vendor.find("AMD") != std::string::npos ||
-      renderer.find("AMD") != std::string::npos)
+      renderer.find("AMD") != std::string::npos || 
+	  vendor.find("ATI") != std::string::npos ||
+	  renderer.find("ATI") != std::string::npos)
     return 64;
   else if (vendor.find("NVIDIA") != std::string::npos ||
            renderer.find("NVIDIA") != std::string::npos)

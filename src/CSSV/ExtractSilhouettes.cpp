@@ -3,6 +3,7 @@
 #include <geGL/StaticCalls.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <util.h>
+#include<SilhouetteShaders.h>
 
 using namespace std;
 using namespace ge::gl;
@@ -23,7 +24,6 @@ shared_ptr<Buffer>createDIBO(){
 
 ExtractSilhouettes::ExtractSilhouettes(vars::Vars&vars,shared_ptr<Adjacency const>const&adj):vars(vars){
 #include<CSSV/ExtractSilhouetteShader.h>
-#include<SilhouetteShaders.h>
   program = make_shared<Program>(
       make_shared<Shader>(GL_COMPUTE_SHADER,
         "#version 450 core\n",

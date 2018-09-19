@@ -5,6 +5,7 @@
 #include <FastAdjacency.h>
 #include <util.h>
 #include <ShadowVolumes.h>
+#include<SilhouetteShaders.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -12,7 +13,6 @@ using namespace glm;
 using namespace rssv;
 
 void ExtractSilhouettes::createProgram(){
-#include<SilhouetteShaders.h>
 #include<RSSV/ExtractSilhouettesShader.h>
 #include<BallotShader.h>
   program = make_shared<Program>(

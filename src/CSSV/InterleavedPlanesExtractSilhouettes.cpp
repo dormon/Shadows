@@ -3,6 +3,7 @@
 #include <util.h>
 #include <FastAdjacency.h>
 #include <ShadowMethod.h>
+#include<SilhouetteShaders.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -10,7 +11,6 @@ using namespace cssv;
 
 InterleavedPlanesExtractSilhouettes::InterleavedPlanesExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):ExtractSilhouettes(vars,adj){
 #include<CSSV/InterleavedPlanesShader.h>
-#include<SilhouetteShaders.h>
 
   program = make_shared<Program>(
       make_shared<Shader>(GL_COMPUTE_SHADER,

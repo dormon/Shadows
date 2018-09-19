@@ -53,6 +53,8 @@ set(SOURCES
   src/CSSV/DrawCapsProgram.cpp
   src/CSSV/DrawCaps.cpp
   src/CSSV/DrawSides.cpp
+  src/CSSV/DrawSidesShaders.cpp
+  src/CSSV/DrawCapsShaders.cpp
   src/CubeShadowMapping/CubeShadowMapping.cpp
   src/CubeShadowMapping/Params.cpp
   src/VSSV/VSSV.cpp
@@ -78,6 +80,7 @@ set(SOURCES
   src/CameraParam.cpp
   src/TestParam.cpp
   src/SintornParam.cpp
+  src/SilhouetteShaders.cpp
   src/Function.cpp
   src/FunctionImpl.cpp
   src/createGBuffer.cpp
