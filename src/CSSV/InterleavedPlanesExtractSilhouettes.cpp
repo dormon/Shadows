@@ -6,14 +6,9 @@
 #include<CSSV/InterleavedPlanesShader.h>
 #include<SilhouetteShaders.h>
 
-
 using namespace ge::gl;
 using namespace std;
 using namespace cssv;
-
-size_t align(size_t what,size_t alignment){
-  return (what / alignment) * alignment + (size_t)((what % alignment)!=0)*alignment;
-}
 
 InterleavedPlanesExtractSilhouettes::InterleavedPlanesExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):ExtractSilhouettes(vars,adj){
   program = make_shared<Program>(

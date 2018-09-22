@@ -24,3 +24,5 @@ std::string uvec2ToStr(glm::uvec2 const& v);
 
 size_t getWavefrontSize(size_t w=0);
 
+size_t align(size_t size,size_t alignment);
+

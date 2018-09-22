@@ -5,9 +5,13 @@
 #include<Model.h>
 #include<FastAdjacency.h>
 #include<TimeStamp.h>
-#include<RSSVTiles.h>
+#include<RSSV/Tiles.h>
 
-#include<RSSVParam.h>
+#include<RSSV/Params.h>
+#include<RSSV/BuildHierarchy.h>
+#include<RSSV/ExtractSilhouettes.h>
+
+namespace rssv{
 
 class RSSV: public ShadowMethod{
   public:
@@ -19,6 +23,8 @@ class RSSV: public ShadowMethod{
         glm::mat4 const&projection   )override;
   protected:
   public:
+    std::shared_ptr<BuildHierarchy>buildHierarchy;
+    std::shared_ptr<ExtractSilhouettes>extractSilhouettes;
     size_t                          _wavefrontSize             = 64                 ;
     std::shared_ptr<ge::gl::Buffer> _triangles                 = nullptr            ;
     std::shared_ptr<ge::gl::Buffer> _edges                     = nullptr            ;
@@ -41,3 +47,5 @@ class RSSV: public ShadowMethod{
     void _rasterize(glm::vec4 const&lightPosition,glm::mat4 const&view,glm::mat4 const&projection);
     void _allocateHDT();
 };
+
+}

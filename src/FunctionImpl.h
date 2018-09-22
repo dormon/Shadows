@@ -5,6 +5,7 @@
 #include<vector>
 #include<array>
 #include<map>
+#include<array>
 
 struct UniquePinData{
   size_t cardinality = 0;

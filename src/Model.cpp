@@ -1,8 +1,6 @@
 #include<Model.h>
 
-#define STRINGIZE_DETAIL(x) #x
-#define STRINGIZE(x) STRINGIZE_DETAIL(x)
-#define GLSL_LINE "#line " STRINGIZE(__LINE__) "\n"
+#include<GLSLLine.h>
 
 Model::Model(std::string const&name){
   this->model = aiImportFile(name.c_str(),aiProcess_Triangulate|aiProcess_GenNormals|aiProcess_SortByPType);

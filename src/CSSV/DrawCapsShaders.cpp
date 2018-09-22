@@ -1,15 +1,13 @@
-#pragma once
+#include<CSSV/DrawCapsShaders.h>
 
-#include <CSSV/DrawCapsShaders.h>
-
-std::string const capsVPSrc = R".(
+std::string const cssv::capsVPSrc = R".(
 #version 450 core
 layout(location=0)in vec4 Position;
 void main(){
   gl_Position=Position;
 }).";
 
-std::string const capsGPSrc = R".(
+std::string const cssv::capsGPSrc = R".(
 
 #define SHIFT_TRIANGLE_TO_INFINITY
 
