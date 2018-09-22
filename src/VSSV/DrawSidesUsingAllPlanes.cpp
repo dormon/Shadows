@@ -6,6 +6,8 @@
 #include <Simplex.h>
 #include <ShadowMethod.h>
 #include <array>
+#include <VSSV/DrawSidesUsingAllPlanesShader.h>
+#include <SilhouetteShaders.h>
 
 
 using namespace std;
@@ -70,9 +72,6 @@ shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&sides){
 }
 
 shared_ptr<Program>createProgram(vars::Vars const&vars,shared_ptr<Adjacency const>const&adj){
-#include<VSSV/DrawSidesUsingAllPlanesShader.h>
-#include<SilhouetteShaders.h>
-
   auto program = make_shared<Program>(
       make_shared<Shader>(GL_VERTEX_SHADER,
         "#version 450\n",

@@ -4,6 +4,8 @@
 #include <FastAdjacency.h>
 #include <Simplex.h>
 #include <ShadowMethod.h>
+#include <VSSV/DrawSidesUsingPlanesShader.h>
+#include <SilhouetteShaders.h>
 
 using namespace std;
 using namespace ge::gl;
@@ -37,7 +39,7 @@ template<size_t N>
 void writeEdge(GPUEdgeData<N>&edge,Vertex3Df const*const src,size_t e,shared_ptr<Adjacency const>const&adj){
   edge.vertexA = src[adj->getEdge(e,0)/3];
   edge.vertexB = src[adj->getEdge(e,1)/3];
-  edge.nofOpposite = adj->getNofOpposite(e);
+  edge.nofOpposite = static_cast<float>(adj->getNofOpposite(e));
 
   writePlanes(edge.planes,src,e,adj);
 }
@@ -70,9 +72,6 @@ shared_ptr<VertexArray>createVAO(shared_ptr<Buffer>const&sides){
 }
 
 shared_ptr<Program>createProgram(vars::Vars const&vars){
-#include<VSSV/DrawSidesUsingPlanesShader.h>
-#include<SilhouetteShaders.h>
-
   auto program = make_shared<Program>(
       make_shared<Shader>(GL_VERTEX_SHADER,
         "#version 450\n",

@@ -20,7 +20,7 @@ template<size_t N>
 void writeEdge(GPUEdgeData<N>&edge,Vertex3Df const*const vertices,size_t e,shared_ptr<Adjacency const>const&adj){
   edge.vertexA     = vertices[adj->getEdgeVertexA(e)/3];
   edge.vertexB     = vertices[adj->getEdgeVertexB(e)/3];
-  edge.nofOpposite = adj->getNofOpposite(e);
+  edge.nofOpposite = static_cast<float>(adj->getNofOpposite(e));
   for(size_t o=0;o<adj->getNofOpposite(e);++o)
     edge.oppositeVertices[o] = vertices[adj->getOpposite(e,o)/3];
   for(size_t o=adj->getNofOpposite(e);o<N;++o)

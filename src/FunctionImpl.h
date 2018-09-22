@@ -3,6 +3,7 @@
 #include<iostream>
 #include<Vars/Vars.h>
 #include<vector>
+#include<array>
 #include<map>
 
 struct UniquePinData{

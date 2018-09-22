@@ -144,8 +144,8 @@
 class RSSVTilingImpl{
   public:
     RSSVTilingImpl(size_t windowWidth,size_t windowHeight,size_t threadsPerTile){
-      windowSize.x = windowWidth ;
-      windowSize.y = windowHeight;
+      windowSize.x = static_cast<uint32_t>(windowWidth);
+      windowSize.y = static_cast<uint32_t>(windowHeight);
 
       windowExponent.x = log2RoundUp(windowSize.x  );
       windowExponent.y = log2RoundUp(windowSize.y  );
@@ -167,15 +167,15 @@ class RSSVTilingImpl{
       bool oddLevel = false;
       for(auto&x:fullTileSizeInTiles){
         glm::uvec2 currentExponent;
-        currentExponent.x = threadsExponentPart[  oddLevel];
-        currentExponent.y = threadsExponentPart[1-oddLevel];
+        currentExponent.x = static_cast<uint32_t>(threadsExponentPart[  oddLevel]);
+        currentExponent.y = static_cast<uint32_t>(threadsExponentPart[1-oddLevel]);
 
         if      (exponentCounter[0] + currentExponent[0] > windowExponent[0]){
           currentExponent[0] = windowExponent[0] - exponentCounter[0];
-          currentExponent[1] = threadsExponent   - currentExponent[0];
+          currentExponent[1] = static_cast<uint32_t>(threadsExponent   - currentExponent[0]);
         }else if(exponentCounter[1] + currentExponent[1] > windowExponent[1]){
           currentExponent[1] = windowExponent[1] - exponentCounter[1];
-          currentExponent[0] = threadsExponent   - currentExponent[1];
+          currentExponent[0] = static_cast<uint32_t>(threadsExponent   - currentExponent[1]);
         }
 
         x.x = 1 << currentExponent.x;
@@ -256,13 +256,13 @@ std::vector<glm::uvec2>rssvGetMaxUpperTileDivisibility(
   bool oddLevel = false;
   for(auto&x:result){
     glm::uvec2 currentExponent;
-    currentExponent.x = threadsExponentPart[  oddLevel];
-    currentExponent.y = threadsExponentPart[1-oddLevel];
+    currentExponent.x = static_cast<uint32_t>(threadsExponentPart[  oddLevel]);
+    currentExponent.y = static_cast<uint32_t>(threadsExponentPart[1-oddLevel]);
 
-    for(size_t i=0;i<2;++i)
+    for(uint32_t i=0;i<2;++i)
       if(exponentCounter[i] + currentExponent[i] > windowExponent[i]){
         currentExponent[  i] = windowExponent[i] - exponentCounter[i];
-        currentExponent[1-i] = threadsExponent - currentExponent[i];
+        currentExponent[1-i] = static_cast<uint32_t>(threadsExponent - currentExponent[i]);
         if(exponentCounter[1-i] + currentExponent[1-i] > windowExponent[1-i])
           currentExponent[1-i] = windowExponent[1-i] - exponentCounter[1-i];
       }
@@ -450,16 +450,16 @@ RSSVTilingSizes::RSSVTilingSizes(
   for(int64_t level = lastLevel; level >= firstLevel; --level){
 
     glm::uvec2 currentExponent;
-    currentExponent.x = threadsExponentPart[  static_cast<size_t>(oddLevel)];
-    currentExponent.y = threadsExponentPart[1-static_cast<size_t>(oddLevel)];
+    currentExponent.x = static_cast<uint32_t>(threadsExponentPart[  static_cast<size_t>(oddLevel)]);
+    currentExponent.y = static_cast<uint32_t>(threadsExponentPart[1-static_cast<size_t>(oddLevel)]);
 
     if(exponentCounter[0] + currentExponent[0] > windowExponent[0]){
       currentExponent[0] = windowExponent[0] - exponentCounter[0];
-      currentExponent[1] = threadsExponent - currentExponent[0];
+      currentExponent[1] = static_cast<uint32_t>(threadsExponent - currentExponent[0]);
     }else{
       if(exponentCounter[1] + currentExponent[1] > windowExponent[1]){
         currentExponent[1] = windowExponent[1] - exponentCounter[1];
-        currentExponent[0] = threadsExponent - currentExponent[1];
+        currentExponent[0] = static_cast<uint32_t>(threadsExponent - currentExponent[1]);
       }
     }
 

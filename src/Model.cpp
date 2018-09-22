@@ -145,13 +145,13 @@ R".(
     color.xyz   += uvec3(specularColor *0xff)<<8;
     color.w      = uint (specularFactor*0xff);
 
-    fColor    = color;
+    fColor    = color;	
     fPosition = vec4(vPosition,1);
     fNormal   = vec4(normal,-dot(vPosition,normal));
   }).";
-  this->program = std::make_shared<ge::gl::Program>(
-      std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER,vertSrc),
-      std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER,fragSrc));
+  auto vs = std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, vertSrc);
+  auto fs = std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, fragSrc);
+  this->program = std::make_shared<ge::gl::Program>(vs,fs);
 }
 
 RenderModel::~RenderModel(){

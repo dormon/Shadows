@@ -70,8 +70,8 @@ T divRoundUp(T const&dividend,T const&divisor){
 
 inline glm::uvec2 divRoundUp(glm::uvec2 const&divident,glm::uvec2 const&divisor){
   glm::uvec2 result;
-  for(size_t i=0;i<2;++i)
-    result[i] = divRoundUp(divident[i],divisor[i]);
+  for(uint32_t i=0;i<2;++i)
+    result[i] = static_cast<uint32_t>(divRoundUp<size_t>(divident[i],divisor[i]));
   return result;
 }
 

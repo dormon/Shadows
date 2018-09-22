@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.1)
+cmake_minimum_required(VERSION 3.12.1)
 
 project(Shadows)
 
@@ -19,18 +19,25 @@ find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
 find_package(geGL 1.0.5 CONFIG REQUIRED)
 find_package(SDL2CPP 1.0 CONFIG REQUIRED)
 find_package(BasicCamera 1.0 CONFIG REQUIRED)
+find_package(imguiSDL2OpenGL CONFIG REQUIRED)
+find_package(Vars CONFIG REQUIRED)
 
+#assimp's cmake is BAAAD
 find_package(assimp CONFIG REQUIRED)
 if (assimp_FOUND)
   set(ASSIMP_LIBRARY "assimp")
-  add_library(${ASSIMP_LIBRARY} SHARED IMPORTED)
-  set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_LOCATION "${ASSIMP_LIBRARY_DIRS}/libassimp.so")
+  add_library(${ASSIMP_LIBRARY} SHARED IMPORTED GLOBAL)
+  add_library(assimp::assimp ALIAS ${ASSIMP_LIBRARY})
+  if(MSVC)
+    set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_IMPLIB_DEBUG     "${ASSIMP_LIBRARY_DIRS}/assimp-vc140-mtd.lib")
+    set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_IMPLIB_RELEASE   "${ASSIMP_LIBRARY_DIRS}/assimp-vc140-mt.lib")
+    set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_LOCATION_DEBUG   "${ASSIMP_ROOT_DIR}/bin/assimp-vc140-mtd.dll")
+    set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_LOCATION_RELEASE "${ASSIMP_ROOT_DIR}/bin/assimp-vc140-mt.dll")
+  else()
+    set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_LOCATION_DEBUG   "${ASSIMP_ROOT_DIR}/lib/libassimpd.so")
+    set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_LOCATION_RELEASE "${ASSIMP_ROOT_DIR}/lib/libassimp.so")
+  endif()
 endif(assimp_FOUND)
-
-
-find_package(imguiSDL2OpenGL CONFIG REQUIRED)
-find_package(Vars CONFIG REQUIRED)
-#find_package(SDL2 CONFIG REQUIRED)
 
 set(SOURCES
   src/Application.cpp
@@ -43,7 +50,10 @@ set(SOURCES
   src/FastAdjacency.cpp
   src/TimeStamp.cpp
   src/StencilBufferToShadowMaskProgram.cpp
+  src/SilhouetteShaders.cpp
   src/CSSV/CSSV.cpp
+  src/CSSV/DrawSidesShaders.cpp
+  src/CSSV/DrawCapsShaders.cpp
   src/CSSV/ExtractSilhouettes.cpp
   src/CSSV/BasicExtractSilhouettes.cpp
   src/CSSV/PlanesExtractSilhouettes.cpp
@@ -154,5 +164,64 @@ add_executable(${APP_NAME} ${SOURCES} ${INCLUDES})
 target_include_directories(${APP_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${APP_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-target_link_libraries(${APP_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer ${ASSIMP_LIBRARIES} imguiSDL2OpenGL::imguiSDL2OpenGL Vars::Vars)
+target_link_libraries(${APP_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer assimp::assimp imguiSDL2OpenGL::imguiSDL2OpenGL Vars::Vars)
 
+#include(print_target_properties.cmake)
+#print_target_properties(SDL2::SDL2)
+
+
+function(getSharedLibraries out lib cfg)
+  #message("getSharedLibraries(${lib} ${cfg})")
+
+  if(TARGET ${lib})
+    get_target_property(target_type ${lib} TYPE)
+    if(${target_type} STREQUAL "INTERFACE_LIBRARY")
+      #message("${lib} JE ${target_type}")
+      return()
+    endif()
+  else()
+    #message("${lib} NENI TARGET")
+    return()
+  endif()
+
+
+  get_target_property(dll ${lib} IMPORTED_LOCATION_${cfg})
+  list(APPEND dlls ${dll})
+
+  get_target_property(interfaceLibs ${lib} INTERFACE_LINK_LIBRARIES)
+  if(NOT "${interfaceLibs}" STREQUAL "interfaceLibs-NOTFOUND")
+    foreach(interfaceLib ${interfaceLibs})
+      getSharedLibraries(ilibs ${interfaceLib} ${cfg})
+      list(APPEND dlls ${ilibs})
+    endforeach()
+  endif()
+  list(REMOVE_DUPLICATES dlls)
+  set(${out} ${dlls} PARENT_SCOPE)
+endfunction()
+
+
+function(getAllSharedLibraries allLibraries app cfg)
+  get_target_property(libs ${app} LINK_LIBRARIES)
+  foreach(lib ${libs})
+    getSharedLibraries(libList ${lib} ${cfg})
+    #message("${lib} ###### ${libList}")
+    list(APPEND allLibs ${libList})
+  endforeach()
+  list(REMOVE_DUPLICATES allLibs)
+  set(${allLibraries} ${allLibs} PARENT_SCOPE)
+endfunction()
+
+getAllSharedLibraries(allDebugSharedLibraries ${APP_NAME} DEBUG)
+getAllSharedLibraries(allReleaseSharedLibraries ${APP_NAME} RELEASE)
+
+#message("SharedDebug  : ${allDebugSharedLibraries}")
+#message("SharedRelease: ${allReleaseSharedLibraries}")
+
+if(MSVC)
+  foreach(lib ${allDebugSharedLibraries})
+    file(COPY ${lib} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Debug)
+  endforeach()
+  foreach(lib ${allReleaseSharedLibraries})
+    file(COPY ${lib} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Release)
+  endforeach()
+endif() 

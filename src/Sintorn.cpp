@@ -329,7 +329,7 @@ class ComputePipeline{
 
 void Sintorn::ComputeShadowFrusta(glm::vec4 const&lightPosition,glm::mat4 mvp){
   this->SFProgram
-    ->set1ui      ("nofTriangles"                       ,this->_nofTriangles                              )
+    ->set1ui      ("nofTriangles"                       ,static_cast<uint32_t>(this->_nofTriangles)                              )
     ->setMatrix4fv("modelViewProjection"                ,glm::value_ptr(mvp)                              )
     ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                    )
     ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp))))
@@ -384,7 +384,7 @@ void Sintorn::RasterizeTexture(){
 
   this->_finalStencilMask->bindImage(GLuint(RASTERIZETEXTURE_BINDING_FINALSTENCILMASK));
 
-  vars.get<GBuffer>("gBuffer")->triangleIds->bind(RASTERIZETEXTURE_BINDING_TRIANGLE_ID);
+  vars.get<GBuffer>("gBuffer")->triangleIds->bind(static_cast<GLuint>(RASTERIZETEXTURE_BINDING_TRIANGLE_ID));
 
   
   size_t maxSize = 65536/2;
