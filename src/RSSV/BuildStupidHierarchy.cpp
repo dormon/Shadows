@@ -53,9 +53,9 @@ BuildStupidHierarchy::BuildStupidHierarchy(vars::Vars&vars):BuildHierarchy(vars)
 
 
 void BuildStupidHierarchy::copyLevel0(){
-  auto&depth      = vars.get<GBuffer>("gBuffer")->depth;
-  auto windowSize = vars.get<uvec2>("windowSize");
-  auto const nofPixels = windowSize->x * windowSize->y;
+  auto&      depth         = vars.get<GBuffer>("gBuffer")->depth;
+  auto const windowSize    = vars.get<uvec2>("windowSize");
+  auto const nofPixels     = windowSize->x * windowSize->y;
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
   depth->bind(0);
   copyLevel0Program
@@ -68,9 +68,9 @@ void BuildStupidHierarchy::copyLevel0(){
 }
 
 void BuildStupidHierarchy::buildNextLevel(size_t i){
-  auto const windowSize = vars.get<uvec2>("windowSize");
+  auto const windowSize    = vars.get<uvec2>("windowSize");
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
-  auto const nofPixels = nofPixelsPerLevel.at(i);
+  auto const nofPixels     = nofPixelsPerLevel.at(i);
 
   buildNextLevelProgram
     ->bindBuffer("inputLevel"            ,hierarchy.at(i  )               )

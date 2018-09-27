@@ -13,7 +13,11 @@ set(REVISION_VERSION 0)
 
 #include(GenerateExportHeader)
 
-set(APP_NAME Shadows)
+#SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+#SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+#SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_INSTALL_RPATH ".")
+
 
 find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
 find_package(geGL 1.0.5 CONFIG REQUIRED)
@@ -172,12 +176,12 @@ set(INCLUDES
   src/GLSLLine.h
   )
 
-add_executable(${APP_NAME} ${SOURCES} ${INCLUDES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})
 
-target_include_directories(${APP_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
-target_include_directories(${APP_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
+target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-target_link_libraries(${APP_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer assimp::assimp imguiSDL2OpenGL::imguiSDL2OpenGL Vars::Vars)
+target_link_libraries(${PROJECT_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer assimp::assimp imguiSDL2OpenGL::imguiSDL2OpenGL Vars::Vars)
 
 #include(print_target_properties.cmake)
 #print_target_properties(SDL2::SDL2)
@@ -224,8 +228,8 @@ function(getAllSharedLibraries allLibraries app cfg)
   set(${allLibraries} ${allLibs} PARENT_SCOPE)
 endfunction()
 
-getAllSharedLibraries(allDebugSharedLibraries ${APP_NAME} DEBUG)
-getAllSharedLibraries(allReleaseSharedLibraries ${APP_NAME} RELEASE)
+getAllSharedLibraries(allDebugSharedLibraries ${PROJECT_NAME} DEBUG)
+getAllSharedLibraries(allReleaseSharedLibraries ${PROJECT_NAME} RELEASE)
 
 #message("SharedDebug  : ${allDebugSharedLibraries}")
 #message("SharedRelease: ${allReleaseSharedLibraries}")
@@ -238,3 +242,6 @@ if(MSVC)
     file(COPY ${lib} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Release)
   endforeach()
 endif() 
+
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION .)
+install(FILES ${allDebugSharedLibraries} DESTINATION .)
