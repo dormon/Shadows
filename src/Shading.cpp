@@ -60,6 +60,7 @@ void main(){
   sum+=Ks*Ls*specularFactor;
 
   fColor=vec4(sum,1);//output color
+  //fColor = vec4(distance(lightPosition.xyz,position)/1000.f)+vec4(sum,1)*0.00001;
   //fColor = vec4(angleDifference)+vec4(sum,1)*0;
   return;
   float yrot = float(mod(degrees(atan(L.x,L.z         ))/360*64,2)>1);

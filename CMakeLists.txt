@@ -18,6 +18,8 @@ set(REVISION_VERSION 0)
 #SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_INSTALL_RPATH ".")
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules")
+
 
 find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
 find_package(geGL 1.0.5 CONFIG REQUIRED)
@@ -26,6 +28,9 @@ find_package(BasicCamera 1.0 CONFIG REQUIRED)
 find_package(imguiSDL2OpenGL CONFIG REQUIRED)
 find_package(Vars CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
+
+find_package(FreeImage REQUIRED)
+find_package(FreeImagePlus REQUIRED)
 
 set(SOURCES
   src/Application.cpp
@@ -165,7 +170,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})
 target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer assimp::assimp imguiSDL2OpenGL::imguiSDL2OpenGL Vars::Vars)
+target_link_libraries(${PROJECT_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer assimp::assimp FreeImage::FreeImage FreeImagePlus::FreeImagePlus imguiSDL2OpenGL::imguiSDL2OpenGL Vars::Vars)
 
 #include(print_target_properties.cmake)
 #print_target_properties(SDL2::SDL2)

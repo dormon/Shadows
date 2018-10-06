@@ -13,6 +13,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include<FreeImagePlus.h>
+
 #include <Application.h>
 #include <CameraParam.h>
 #include <TestParam.h>
@@ -44,6 +46,7 @@
 #include <VSSV/Params.h>
 #include <Vars/Vars.h>
 #include <createGBuffer.h>
+
 
 #include <imguiSDL2OpenGL/imgui.h>
 #include <imguiVars.h>
@@ -254,6 +257,25 @@ void Shadows::draw() {
 
   //TODO imgui gui
   drawImguiVars(vars);
+
+  if(ImGui::Button("screenshot"))
+  {
+    fipImage img;
+    auto windowSize = *vars.get<glm::uvec2>("windowSize");
+    //img.setSize(FIT_BITMAP,->x,vars.get<glm::uvec2>("windowSize")->y,24);
+    auto id = vars.get<ge::gl::Texture>("shadowMask")->getId();
+
+    std::vector<float>buf(windowSize.x * windowSize.y);
+    ge::gl::glGetTextureImage(id,0,GL_RED,GL_FLOAT,buf.size()*sizeof(float),buf.data());
+    img.setSize(FIT_FLOAT,windowSize.x,windowSize.y,32);
+    for(size_t y=0;y<windowSize.y;++y){
+      auto ptr = (float*)FreeImage_GetScanLine(img,y);
+      for(size_t x=0;x<windowSize.x;++x)
+        ptr[x] = buf.at(y*windowSize.x + x);
+    }
+    img.save("/home/dormon/Desktop/test.exr");
+    std::cerr << "take a screenshot" << std::endl;
+  }
 
 
 
