@@ -44,6 +44,7 @@
 #include <TimeStamp.h>
 #include <VSSV/VSSV.h>
 #include <VSSV/Params.h>
+#include <RayTracing/RayTracing.h>
 #include <Vars/Vars.h>
 #include <createGBuffer.h>
 
@@ -135,6 +136,7 @@ void Shadows::init() {
   else if (vars.getString("methodName") == "sintorn"          )vars.add<Sintorn          >("shadowMethod",vars);
   else if (vars.getString("methodName") == "rssv"             )vars.add<rssv::RSSV       >("shadowMethod",vars);
   else if (vars.getString("methodName") == "vssv"             )vars.add<VSSV             >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "rayTracing"       )vars.add<RayTracing       >("shadowMethod",vars);
   else vars.getBool("useShadows") = false;
 
   bool isTest = vars.getString("test.name") == "fly";

@@ -76,6 +76,8 @@ set(SOURCES
   src/RSSV/ExtractSilhouettes.cpp
   src/RSSV/Params.cpp
   src/RSSV/StupidHierarchyShaders.cpp
+  src/RayTracing/nanort.cc
+  src/RayTracing/RayTracing.cpp
   src/DrawPrimitive.cpp
   src/ShadowVolumes.cpp
   src/util.cpp
@@ -145,6 +147,8 @@ set(INCLUDES
   src/RSSV/ExtractSilhouettes.h
   src/RSSV/ExtractSilhouettesShader.h
   src/RSSV/Params.h
+  src/RayTracing/nanort.h
+  src/RayTracing/RayTracing.h
   src/BallotShader.h
   src/DrawPrimitive.h
   src/ProgramExtension.h
