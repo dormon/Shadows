@@ -10,9 +10,9 @@ using namespace std;
 #include<Barrier.h>
 
 void createShadowMapTexture(vars::Vars&vars){
-  if(notChanged(vars,"csm",__FUNCTION__,{"csm.resolution"}))return;
+  if(notChanged(vars,"csm",__FUNCTION__,{"args.csm.resolution"}))return;
 
-  auto const resolution = vars.getUint32("csm.resolution");
+  auto const resolution = vars.getUint32("args.csm.resolution");
   auto shadowMap = vars.reCreate<Texture>("csm.shadowMap",GL_TEXTURE_CUBE_MAP,GL_DEPTH_COMPONENT24,1,resolution,resolution);
   shadowMap->texParameteri(GL_TEXTURE_MIN_FILTER  ,GL_NEAREST             );
   shadowMap->texParameteri(GL_TEXTURE_MAG_FILTER  ,GL_NEAREST             );
@@ -105,10 +105,10 @@ void CubeShadowMapping::fillShadowMap(glm::vec4 const&lightPosition){
 
   glEnable(GL_POLYGON_OFFSET_FILL);
   glPolygonOffset(2.5,10);
-  auto const resolution = vars.getUint32("csm.resolution");
-  auto const near       = vars.getFloat ("csm.near"      );
-  auto const far        = vars.getFloat ("csm.far"       );
-  auto const faces      = vars.getUint32("csm.faces"     );
+  auto const resolution = vars.getUint32("args.csm.resolution");
+  auto const near       = vars.getFloat ("args.csm.near"      );
+  auto const far        = vars.getFloat ("args.csm.far"       );
+  auto const faces      = vars.getUint32("args.csm.faces"     );
   glViewport(0,0,resolution,resolution);
   glEnable(GL_DEPTH_TEST);
   vars.get<Framebuffer>("csm.shadowMapFBO")->bind();
@@ -129,8 +129,8 @@ void CubeShadowMapping::fillShadowMask(glm::vec4 const&lightPosition){
   createMaskFBO(vars);
   createShadowMaskProgram(vars);
 
-  auto const near = vars.getFloat("csm.near");
-  auto const far = vars.getFloat("csm.far");
+  auto const near = vars.getFloat("args.csm.near");
+  auto const far = vars.getFloat("args.csm.far");
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   glViewport(0,0,windowSize.x,windowSize.y);
   vars.get<Framebuffer>("csm.maskFBO")->bind();
