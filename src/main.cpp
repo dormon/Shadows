@@ -109,7 +109,6 @@ void Shadows::initWavefrontSize() {
 
 void createGeometryBuffer(vars::Vars&vars){
   if(notChanged(vars,"all",__FUNCTION__,{"windowSize"}))return;
-  std::cerr << "createGeometryBuffer" << std::endl;
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   vars.reCreate<GBuffer>("gBuffer",windowSize.x, windowSize.y);
@@ -117,7 +116,6 @@ void createGeometryBuffer(vars::Vars&vars){
 
 void createShadowMask(vars::Vars&vars){
   if(notChanged(vars,"all",__FUNCTION__,{"windowSize"}))return;
-  std::cerr << "createGeometryBuffer" << std::endl;
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   vars.reCreate<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
