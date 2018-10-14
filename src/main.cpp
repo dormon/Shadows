@@ -52,6 +52,8 @@
 #include <imguiSDL2OpenGL/imgui.h>
 #include <imguiVars.h>
 
+#include<Barrier.h>
+
 class Shadows : public simple3DApp::Application {
  public:
   Shadows(int argc, char* argv[]) : Application(argc, argv) {}
@@ -69,6 +71,7 @@ class Shadows : public simple3DApp::Application {
   virtual void                mouseMove(SDL_Event const& event) override;
   std::map<SDL_Keycode, bool> keyDown;
   virtual void                key(SDL_Event const& e, bool down) override;
+  virtual void                resize(uint32_t x,uint32_t y) override;
   void ifExistStamp(std::string const&n);
   void ifExistBeginStamp();
   void ifExistEndStamp(std::string const&n);
@@ -104,6 +107,22 @@ void Shadows::initWavefrontSize() {
   vars.getSizeT("wavefrontSize") = getWavefrontSize(vars.getSizeT("wavefrontSize"));
 }
 
+void createGeometryBuffer(vars::Vars&vars){
+  if(notChanged(vars,"all",__FUNCTION__,{"windowSize"}))return;
+  std::cerr << "createGeometryBuffer" << std::endl;
+
+  auto windowSize = *vars.get<glm::uvec2>("windowSize");
+  vars.reCreate<GBuffer>("gBuffer",windowSize.x, windowSize.y);
+}
+
+void createShadowMask(vars::Vars&vars){
+  if(notChanged(vars,"all",__FUNCTION__,{"windowSize"}))return;
+  std::cerr << "createGeometryBuffer" << std::endl;
+
+  auto windowSize = *vars.get<glm::uvec2>("windowSize");
+  vars.reCreate<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
+}
+
 void Shadows::init() {
   parseArguments();
 
@@ -124,10 +143,11 @@ void Shadows::init() {
   createView      (vars);
   createProjection(vars);
 
-  vars.add<GBuffer        >("gBuffer"    ,windowSize.x, windowSize.y);
+  //vars.add<GBuffer        >("gBuffer"    ,windowSize.x, windowSize.y);
+  createGeometryBuffer(vars);
+  createShadowMask(vars);
   vars.add<Model          >("model"      ,vars.getString("modelName"));
   vars.add<RenderModel    >("renderModel",vars.get<Model>("model"));
-  vars.add<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
   vars.add<Shading        >("shading"    ,vars);
 
   if      (vars.getString("methodName") == "cubeShadowMapping")vars.add<CubeShadowMapping>("shadowMethod",vars);
@@ -216,6 +236,9 @@ void Shadows::measure() {
 }
 
 void Shadows::draw() {
+  createGeometryBuffer(vars);
+  createShadowMask(vars);
+
   if(vars.getSizeT("maxFrame") != 0){
     if(vars.getSizeT("frameCounter") >= vars.getSizeT("maxFrame"))
       mainLoop->removeWindow(window->getId());
@@ -287,45 +310,6 @@ void Shadows::draw() {
   swap();
 }
 
-void testRSSVTiler(size_t w, size_t h, size_t warp) {
-  auto win = glm::uvec2(w, h);
-  std::cout << "window: " << win.x << "x" << win.y << "warp: " << warp
-            << std::endl;
-  auto d = rssvGetMaxUpperTileDivisibility(win, warp);
-  for (auto const& x : d) std::cout << x.x << "x" << x.y << std::endl;
-  auto dd = d;
-  for (size_t i = 1; i < dd.size(); ++i)
-    dd[dd.size() - 1 - i] *= dd[dd.size() - i];
-  for (auto const& x : dd)
-    std::cout << "pix: " << x.x << "x" << x.y << std::endl;
-  std::cout << std::endl;
-}
-
-void printTiling(size_t w, size_t h, size_t t) {
-  RSSVTilingSizes tiling(glm::uvec2(w, h), t);
-  std::cout << w << " x " << h << " : " << t << std::endl;
-  for (size_t i = 0; i < tiling.borderTileDivisibilityIntoTiles.size(); ++i) {
-    std::cout << "FULL___TILE_DIVISIBILITY_INTO_PIXELS    ("
-              << uvec2ToStr(tiling.full__TileDivisibilityIntoPixels.at(i))
-              << ")" << std::endl;
-    std::cout << "FULL___TILE_DIVISIBILITY_INTO_TILES     ("
-              << uvec2ToStr(tiling.full__TileDivisibilityIntoTiles.at(i)) << ")"
-              << std::endl;
-    std::cout << "BORDER_TILE_DIVISIBILITY_INTO_PIXELS    ("
-              << uvec2ToStr(tiling.borderTileDivisibilityIntoPixels.at(i))
-              << ")" << std::endl;
-    std::cout << "BORDER_TILE_DIVISIBILITY_INTO_TILES     ("
-              << uvec2ToStr(tiling.borderTileDivisibilityIntoTiles.at(i)) << ")"
-              << std::endl;
-    std::cout << "BORDER_TILE_DIVISIBILITY_INTO_FULL_TILES("
-              << uvec2ToStr(tiling.borderTileDivisibilityIntoFullTiles.at(i))
-              << ")" << std::endl;
-    std::cout << "HDT_SIZE                                ("
-              << uvec2ToStr(tiling.hdtSize.at(i)) << ")" << std::endl;
-    std::cout << std::endl;
-  }
-}
-
 int main(int argc, char* argv[]) {
   Shadows app{argc, argv};
   app.start();
@@ -335,6 +319,14 @@ int main(int argc, char* argv[]) {
 void Shadows::key(SDL_Event const& event, bool DOWN) {
   keyDown[event.key.keysym.sym] = DOWN;
   if (DOWN && event.key.keysym.sym == 'p') printCameraPosition(vars);
+}
+
+void Shadows::resize(uint32_t x,uint32_t y){
+  auto windowSize = vars.get<glm::uvec2>("windowSize");
+  windowSize->x = x;
+  windowSize->y = y;
+  vars.updateTicks("windowSize");
+  ge::gl::glViewport(0,0,x,y);
 }
 
 void Shadows::mouseMove(SDL_Event const& event) {

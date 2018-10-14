@@ -11,6 +11,7 @@ class Application{
     void swap();
     virtual void mouseMove(SDL_Event const&e);
     virtual void key(SDL_Event const&e,bool down);
+    virtual void resize(uint32_t x,uint32_t y);
     virtual void draw();
     virtual void init();
     virtual void deinit();

@@ -20,6 +20,10 @@ namespace simple3DApp {
       key(e, false);
       return true;
     });
+    window->setWindowEventCallback(SDL_WINDOWEVENT_RESIZED,[&](SDL_Event const& e){
+      resize(e.window.data1,e.window.data2);
+      return true;
+    });
     window->createContext("rendering", 450u, sdl2cpp::Window::CORE,
                           sdl2cpp::Window::DEBUG);
     mainLoop->addWindow("primaryWindow", window);
@@ -40,6 +44,8 @@ namespace simple3DApp {
   void Application::mouseMove(SDL_Event const&) {}
 
   void Application::key(SDL_Event const&, bool) {}
+  
+  void Application::resize(uint32_t,uint32_t){}
 
   void Application::draw() {}
 

@@ -86,15 +86,6 @@ CubeShadowMapping::CubeShadowMapping(
 
 CubeShadowMapping::~CubeShadowMapping(){
   vars.erase("csm");
-
-  vars.erase("csm.shadowMap"       );
-  vars.erase("csm.shadowMapFBO"    );
-  vars.erase("csm.shadowMapVAO"    );
-  vars.erase("csm.shadowMapProgram");
-
-  vars.erase("csm.maskFBO"          );
-  vars.erase("csm.maskVAO"          );
-  vars.erase("csm.shadowMaskProgram");
 }
 
 void CubeShadowMapping::fillShadowMap(glm::vec4 const&lightPosition){
