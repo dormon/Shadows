@@ -22,10 +22,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules")
 
 
 find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
-find_package(geGL 1.0.5 CONFIG REQUIRED)
-find_package(SDL2CPP 1.0 CONFIG REQUIRED)
 find_package(BasicCamera 1.0 CONFIG REQUIRED)
-find_package(imguiSDL2OpenGL CONFIG REQUIRED)
+find_package(Simple3DApp 1.0.0 CONFIG REQUIRED)
 find_package(Vars CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 
@@ -33,7 +31,6 @@ find_package(FreeImage REQUIRED)
 find_package(FreeImagePlus REQUIRED)
 
 set(SOURCES
-  src/Application.cpp
   src/main.cpp
   src/Model.cpp
   src/CameraPath.cpp
@@ -94,7 +91,6 @@ set(SOURCES
   )
 
 set(INCLUDES
-  src/Application.h
   src/CameraPath.h
   src/CSV.h
   src/Deferred.h
@@ -174,7 +170,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})
 target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC SDL2CPP::SDL2CPP BasicCamera::BasicCamera geGL::geGL ArgumentViewer::ArgumentViewer assimp::assimp FreeImage::FreeImage FreeImagePlus::FreeImagePlus imguiSDL2OpenGL::imguiSDL2OpenGL Vars::Vars)
+target_link_libraries(${PROJECT_NAME} PUBLIC Simple3DApp::Simple3DApp BasicCamera::BasicCamera ArgumentViewer::ArgumentViewer assimp::assimp FreeImage::FreeImage FreeImagePlus::FreeImagePlus Vars::Vars)
 
 #include(print_target_properties.cmake)
 #print_target_properties(SDL2::SDL2)

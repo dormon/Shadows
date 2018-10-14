@@ -23,8 +23,8 @@ void loadBasicApplicationParameters(vars::Vars&vars,std::shared_ptr<argumentView
 void moveCameraWSAD(
     vars::Vars&vars,
     std::map<SDL_Keycode, bool>                          keyDown) {
-  auto const type = vars.getString("camera.type");
-  auto const freeCameraSpeed = vars.getFloat("camera.freeCameraSpeed");
+  auto const type = vars.getString("args.camera.type");
+  auto const freeCameraSpeed = vars.getFloat("args.camera.freeCameraSpeed");
   if (type != "free") return;
   auto const freeLook = vars.getReinterpret<basicCamera::FreeLookCamera>("cameraTransform");
   for (int a = 0; a < 3; ++a)
@@ -69,21 +69,21 @@ void ifMethodExistCreateShadowMask(vars::Vars&vars){
   if (!vars.has("shadowMethod"))return;
   auto const cameraProjection = vars.getReinterpret<basicCamera::CameraProjection>("cameraProjection");
   auto const cameraTransform  = vars.getReinterpret<basicCamera::CameraTransform >("cameraTransform" );
-  auto method = vars.getReinterpret<ShadowMethod>("shadowMethod");
-  auto const lightPosition = *vars.get<glm::vec4>("lightPosition");
+  auto       method           = vars.getReinterpret<ShadowMethod>("shadowMethod");
+  auto const lightPosition    = *vars.get<glm::vec4>("lightPosition");
   vars.get<ge::gl::Texture>("shadowMask")->clear(0,GL_RED,GL_FLOAT);
   method->create(lightPosition,cameraTransform->getView(),cameraProjection->getProjection());
 }
 
 void doShading(vars::Vars&vars){
   ge::gl::glDisable(GL_DEPTH_TEST);
-  auto const cameraTransform  = vars.getReinterpret<basicCamera::CameraTransform >("cameraTransform" );
-  auto shading = vars.get<Shading>("shading");
-  auto lightPosition = *vars.get<glm::vec4>("lightPosition");
-  auto const cameraPositionInViewSpace = glm::vec4(0, 0, 0, 1);
-  auto const viewMatrix = cameraTransform->getView();
-  auto const viewSpaceToWorldSpace = glm::inverse(viewMatrix);
-  auto cameraPositionInWorldSpace = glm::vec3( viewSpaceToWorldSpace * cameraPositionInViewSpace);
+  auto const cameraTransform            = vars.getReinterpret<basicCamera::CameraTransform >("cameraTransform" );
+  auto       shading                    = vars.get<Shading>("shading");
+  auto       lightPosition              = *vars.get<glm::vec4>("lightPosition");
+  auto const cameraPositionInViewSpace  = glm::vec4(0, 0, 0, 1);
+  auto const viewMatrix                 = cameraTransform->getView();
+  auto const viewSpaceToWorldSpace      = glm::inverse(viewMatrix);
+  auto       cameraPositionInWorldSpace = glm::vec3( viewSpaceToWorldSpace * cameraPositionInViewSpace);
   shading->draw(lightPosition,cameraPositionInWorldSpace,*vars.get<bool>("useShadows"));
 }
 

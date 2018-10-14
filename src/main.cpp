@@ -15,7 +15,7 @@
 
 #include<FreeImagePlus.h>
 
-#include <Application.h>
+#include <Simple3DApp/Application.h>
 #include <CameraParam.h>
 #include <TestParam.h>
 #include <mainUtil.h>
@@ -48,8 +48,6 @@
 #include <Vars/Vars.h>
 #include <createGBuffer.h>
 
-
-#include <imguiSDL2OpenGL/imgui.h>
 #include <imguiVars.h>
 
 #include<Barrier.h>
@@ -57,11 +55,9 @@
 class Shadows : public simple3DApp::Application {
  public:
   Shadows(int argc, char* argv[]) : Application(argc, argv) {}
-  ~Shadows();
   virtual void draw() override;
 
   vars::Vars vars;
-  std::unique_ptr<imguiSDL2OpenGL::Imgui>imgui;
 
   virtual void                init() override;
   void                        parseArguments();
@@ -135,13 +131,12 @@ void Shadows::init() {
   initWavefrontSize();
 
   if (vars.getString("test.name") == "fly" || vars.getString("test.name") == "grid")
-    vars.getString("camera.type") = "free";
+    vars.getString("args.camera.type") = "free";
 
 
   createView      (vars);
   createProjection(vars);
 
-  //vars.add<GBuffer        >("gBuffer"    ,windowSize.x, windowSize.y);
   createGeometryBuffer(vars);
   createShadowMask(vars);
   vars.add<Model          >("model"      ,vars.getString("modelName"));
@@ -163,11 +158,6 @@ void Shadows::init() {
 
   vars.add<DrawPrimitive>("drawPrimitive",windowSize);
 
-  imgui = std::make_unique<imguiSDL2OpenGL::Imgui>(window->getWindow());
-
-  mainLoop->setEventHandler([&](SDL_Event const&event){
-    return imgui->processEvent(&event);
-  });
 }
 
 void Shadows::ifExistStamp(std::string const&n){
@@ -236,6 +226,7 @@ void Shadows::measure() {
 void Shadows::draw() {
   createGeometryBuffer(vars);
   createShadowMask(vars);
+  createProjection(vars);
 
   if(vars.getSizeT("maxFrame") != 0){
     if(vars.getSizeT("frameCounter") >= vars.getSizeT("maxFrame"))
@@ -244,7 +235,6 @@ void Shadows::draw() {
   }
 
   ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-  imgui->newFrame(window->getWindow());
 
 #if 1
   assert(this != nullptr);
@@ -302,8 +292,6 @@ void Shadows::draw() {
 
 
 
-  imgui->render(window->getWindow(), window->getContext("rendering"));
-
   // */
   swap();
 }
@@ -331,6 +319,3 @@ void Shadows::mouseMove(SDL_Event const& event) {
   mouseMoveCamera(vars, event);
 }
 
-Shadows::~Shadows(){
-  imgui = nullptr;
-}

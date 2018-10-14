@@ -5,6 +5,7 @@
 #include<vector>
 #include<map>
 #include<iostream>
+#include<glm/glm.hpp>
 
 std::string getHead(std::string const&n){
   return n.substr(0,n.find("."));
@@ -70,6 +71,15 @@ void drawGroup(std::unique_ptr<Group>const&group,vars::Vars &vars){
     if(vars.getType(fn) == typeid(bool)){
       change = ImGui::Checkbox(n.c_str(),(bool*)vars.get(fn));
     }
+    if(vars.getType(fn) == typeid(glm::vec4)){
+      change = ImGui::DragFloat4(n.c_str(),(float*)vars.get(fn));
+    }
+    if(vars.getType(fn) == typeid(glm::vec3)){
+      change = ImGui::DragFloat3(n.c_str(),(float*)vars.get(fn));
+    }
+    if(vars.getType(fn) == typeid(glm::vec2)){
+      change = ImGui::DragFloat2(n.c_str(),(float*)vars.get(fn));
+    }
     //if(vars.getType(fn) == typeid(std::string)){
     //  ImGui::TextV
     //}
@@ -96,6 +106,8 @@ void drawImguiVars(vars::Vars &vars){
   
 
   ImGui::Begin("vars");
+  ImGui::PushItemWidth(-90);
+  ImGui::LabelText("label", "Value");
 
   for(auto const&x:hierarchy.groups)
     drawGroup(x.second,vars);
