@@ -50,7 +50,7 @@ void computeTileDivisibility(vars::Vars&vars){
 void computeTileSizeInPixel(vars::Vars&vars){
   if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileDivisibility"}))return;
 
-  auto const&tileDivisibility = vars.reCreateVector<glm::uvec2>("sintorn.tileDivisibility");
+  auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const nofLevels = tileDivisibility.size();
 
   auto&tileSizeInPixels = vars.reCreateVector<glm::uvec2>("sintorn.tileSizeInPixels");
@@ -73,53 +73,37 @@ Sintorn::Sintorn(vars::Vars&vars):
   _useUniformTileSizeInClipSpace=false;
   _useUniformTileDivisibility   =false;
 
-  ___;
   computeTileDivisibility(vars);
 
-  ___;
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
-  std::cerr << "tileDivisibility.size: " << tileDivisibility.size() << std::endl;
   auto const nofLevels = tileDivisibility.size();
 
-  ___;
   computeTileSizeInPixel(vars);
 
-  ___;
-
   auto const&tileSizeInPixels = vars.getVector<glm::uvec2>("sintorn.tileSizeInPixels");
-  ___;
 
   //compute tiles sizes in clip space
   for(auto const&x:tileSizeInPixels)
     _tileSizeInClipSpace.push_back(glm::vec2(2.f)/glm::vec2(*vars.get<glm::uvec2>("windowSize"))*glm::vec2(x));
-  ___;
 
   //compute level size
   _tileCount.resize(nofLevels,glm::uvec2(1u,1u));
   std::cerr << "_tileCount.size: " << _tileCount.size() << std::endl;
   std::cerr << "nofLevels: " << nofLevels << std::endl;
-  ___;
   for(size_t l=0;l<nofLevels;++l)
     for(size_t m=l;m<nofLevels;++m){
-      ___;
       auto const&td = tileDivisibility.at(l); 
-      ___;
       auto& tc = _tileCount.at(m);
-      ___;
       tc *= td;
-      ___;
     }
-  ___;
 
   auto divRoundUp = [](uint32_t x,uint32_t y)->uint32_t{return (x/y)+((x%y)?1:0);};
   _usedTiles.resize(nofLevels,glm::uvec2(0u,0u));
   _usedTiles.back() = *vars.get<glm::uvec2>("windowSize");
-  ___;
   for(int l=(int)nofLevels-2;l>=0;--l){
     _usedTiles[l].x = divRoundUp(_usedTiles[l+1].x,tileDivisibility[l+1].x);
     _usedTiles[l].y = divRoundUp(_usedTiles[l+1].y,tileDivisibility[l+1].y);
   }
-  ___;
 
   //*
   for(size_t l=0;l<nofLevels;++l)
@@ -151,7 +135,6 @@ Sintorn::Sintorn(vars::Vars&vars):
       Ptr[(t*3+p)*4+3]=1;
     }
   _triangles->unmap();
-  ___;
 
   //compile shader programs
 #include"SintornShaders.h"
@@ -214,7 +197,6 @@ Sintorn::Sintorn(vars::Vars&vars):
 
   RASTERIZETEXTURE_BINDING_HDT         = RASTERIZETEXTURE_BINDING_HST+nofLevels;
   RASTERIZETEXTURE_BINDING_TRIANGLE_ID = RASTERIZETEXTURE_BINDING_HDT+nofLevels;
-  ___;
 
   string TileSizeInClipSpaceDefines="";
   if(_useUniformTileSizeInClipSpace)
@@ -265,9 +247,6 @@ Sintorn::Sintorn(vars::Vars&vars):
       make_shared<Shader>(GL_FRAGMENT_SHADER,drawFinalStencilMaskFragSrc));
 
 
-
-  ___;
-
   _emptyVao=make_shared<VertexArray>();
 
   _finalStencilMask = make_shared<Texture>(GL_TEXTURE_2D,GL_R32UI,1,vars.get<glm::uvec2>("windowSize")->x,vars.get<glm::uvec2>("windowSize")->y);
@@ -294,7 +273,6 @@ Sintorn::Sintorn(vars::Vars&vars):
     _HST.back()->clear(0,GL_RG_INTEGER,GL_UNSIGNED_BYTE,data);
     //glClearTexImage(_HDT.back()->getId(),0,GL_RG,GL_UNSIGNED_INT,&data);
   }
-  ___;
 }
 
 Sintorn::~Sintorn(){
