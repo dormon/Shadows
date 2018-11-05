@@ -16,11 +16,9 @@ class Sintorn: public ShadowMethod{
         glm::mat4 const&projectionMatrix)override;
   protected:
   public:
-    size_t     _nofLevels = 0;///number of level
     bool       _useUniformTileSizeInClipSpace;
     bool       _useUniformTileDivisibility;
     size_t     _nofTriangles = 0;
-    size_t     _wavefrontSize = 64;
 
     std::shared_ptr<ge::gl::Texture>_finalStencilMask;
     std::shared_ptr<ge::gl::Buffer>_shadowFrusta = nullptr;
@@ -31,8 +29,8 @@ class Sintorn: public ShadowMethod{
 
     std::vector<glm::uvec2>_tileCount;
     std::vector<glm::uvec2>_usedTiles;
-    std::vector<glm::uvec2>_tileSizeInPixels;///size of tiles in pixels in each level
-    std::vector<glm::uvec2>_tileDivisibility;
+    //std::vector<glm::uvec2>_tileSizeInPixels;///size of tiles in pixels in each level
+
     std::vector<glm::vec2>_tileSizeInClipSpace;
 
     std::shared_ptr<ge::gl::Program>WriteDepthTextureProgram;

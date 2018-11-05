@@ -5,7 +5,7 @@
 const std::string convertStencilBufferToShadowMaskVPSrc = R".(
 #version 450 core
 void main(){
-  gl_Position = vec4(-1+2*(gl_VertexID/2),-1+2*(gl_VertexID%2),0,1);
+  gl_Position = vec4(-1+2*(gl_VertexID>>1),-1+2*(gl_VertexID&1),0,1);
 }
 ).";
 

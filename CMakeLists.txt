@@ -39,7 +39,6 @@ set(SOURCES
   src/ShadowMethod.cpp
   src/FastAdjacency.cpp
   src/TimeStamp.cpp
-  src/StencilBufferToShadowMaskProgram.cpp
   src/SilhouetteShaders.cpp
   src/CSSV/CSSV.cpp
   src/CSSV/DrawSidesShaders.cpp
@@ -99,7 +98,6 @@ set(INCLUDES
   src/ShadowMethod.h
   src/FastAdjacency.h
   src/TimeStamp.h
-  src/StencilBufferToShadowMaskProgram.h
   src/CSSV/Fwd.h
   src/CSSV/CSSV.h
   src/CSSV/DrawSidesShaders.h

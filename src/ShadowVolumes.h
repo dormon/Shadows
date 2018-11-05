@@ -21,10 +21,6 @@ class ShadowVolumes: public ShadowMethod{
         glm::mat4 const&viewMatrix      ,
         glm::mat4 const&projectionMatrix) = 0;
   protected:
-    std::shared_ptr<ge::gl::Framebuffer>fbo         = nullptr;
-    std::shared_ptr<ge::gl::Framebuffer>maskFbo     = nullptr;
-    std::shared_ptr<ge::gl::Program    >stencilBufferToShadowMaskProgram;
-    std::shared_ptr<ge::gl::VertexArray>emptyVao    = nullptr;
     void convertStencilBufferToShadowMask();
 };
 
