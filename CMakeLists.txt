@@ -66,6 +66,7 @@ set(SOURCES
   src/CSSVSOE.cpp
   src/Sintorn.cpp
   src/SintornTiles.cpp
+  src/SintornShadowFrustaShaders.cpp
   src/RSSV/RSSV.cpp
   src/RSSV/Tiles.cpp
   src/RSSV/BuildStupidHierarchy.cpp
@@ -132,6 +133,7 @@ set(INCLUDES
   src/Sintorn.h
   src/SintornTiles.h
   src/SintornShaders.h
+  src/SintornShadowFrustaShaders.h
   src/RSSV/RSSV.h
   src/RSSV/Tiles.h
   src/RSSV/Shaders.h

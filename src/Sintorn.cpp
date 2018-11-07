@@ -136,6 +136,20 @@ void allocateShadowFrustaBuffer(vars::Vars&vars){
   triangles->unmap();
 }
 
+#include<SintornShadowFrustaShaders.h>
+
+void createShadowFrustaProgram(vars::Vars&vars){
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.bias","sintorn.shadowFrustaWGS"}))return;
+
+  vars.reCreate<Program>("sintorn.sfProgram",
+      make_shared<Shader>(
+        GL_COMPUTE_SHADER,
+        "#version 450 core\n",
+        Shader::define("BIAS"          ,float   (vars.getFloat ("sintorn.bias")           )),
+        Shader::define("WAVEFRONT_SIZE",uint32_t(vars.getUint32("sintorn.shadowFrustaWGS"))),
+        sintorn::shadowFrustaShader));
+}
+
 Sintorn::Sintorn(vars::Vars&vars):
   ShadowMethod(vars)
 {
@@ -175,6 +189,7 @@ Sintorn::Sintorn(vars::Vars&vars):
   // */
   
   allocateShadowFrustaBuffer(vars);
+  createShadowFrustaProgram(vars);
 
   //compile shader programs
 #include"SintornShaders.h"
@@ -227,13 +242,6 @@ Sintorn::Sintorn(vars::Vars&vars):
         GL_COMPUTE_SHADER,
         clearStencilCompSrc));
 
-  SFProgram=make_shared<Program>(
-      make_shared<Shader>(
-        GL_COMPUTE_SHADER,
-        "#version 450 core\n",
-        Shader::define("BIAS"          ,float   (vars.getFloat("sintorn.bias")           )),
-        Shader::define("WAVEFRONT_SIZE",uint32_t(vars.getUint32("sintorn.shadowFrustaWGS"))),
-        shadowFrustumCompSrc));
 
   RASTERIZETEXTURE_BINDING_HDT         = RASTERIZETEXTURE_BINDING_HST+nofLevels;
   RASTERIZETEXTURE_BINDING_TRIANGLE_ID = RASTERIZETEXTURE_BINDING_HDT+nofLevels;
@@ -405,7 +413,7 @@ class ComputePipeline{
 };
 
 void Sintorn::ComputeShadowFrusta(glm::vec4 const&lightPosition,glm::mat4 mvp){
-  SFProgram
+  vars.get<Program>("sintorn.sfProgram")
     ->set1ui      ("nofTriangles"                       ,static_cast<uint32_t>(vars.getSizeT("sintorn.nofTriangles")))
     ->setMatrix4fv("modelViewProjection"                ,glm::value_ptr(mvp)                                         )
     ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                               )
@@ -414,24 +422,6 @@ void Sintorn::ComputeShadowFrusta(glm::vec4 const&lightPosition,glm::mat4 mvp){
     ->bindBuffer  ("shadowFrusta"                       ,vars.get<Buffer>("sintorn.shadowFrusta")                    )
     ->dispatch    (getDispatchSize(vars.getSizeT("sintorn.nofTriangles"),vars.getUint32("sintorn.shadowFrustaWGS")));
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-  //auto ptr = static_cast<float*>(_shadowFrusta->map());
-  //for(size_t j=0;j<_nofTriangles;++j){
-  //  for(size_t i=0;i<FLOATS_PER_SHADOWFRUSTUM;++i)
-  //    cout << setprecision(10) <<  ptr[j*FLOATS_PER_SHADOWFRUSTUM+i]<< endl;
-  //  cout << endl;
-  //}
-  //_shadowFrusta->unmap();
-
-  //ptr = static_cast<float*>(_triangles->map());
-  //for(size_t j=0;j<_nofTriangles;++j){
-  //  for(size_t i=0;i<9;++i)
-  //    cout << setprecision(10) <<  ptr[j*9+i]<< endl;
-  //  cout << endl;
-  //}
-  //_triangles->unmap();
-  //exit(0);
-
 }
 
 void Sintorn::RasterizeTexture(){

@@ -32,7 +32,6 @@ class Sintorn: public ShadowMethod{
     std::shared_ptr<ge::gl::Program>MergeTextureProgram;
     std::shared_ptr<ge::gl::Program>WriteStencilTextureProgram;
     std::shared_ptr<ge::gl::Program>ClearStencilProgram;
-    std::shared_ptr<ge::gl::Program>SFProgram;
 
     ge::gl::Texture*_shadowMask;
     std::shared_ptr<ge::gl::Program>_blitProgram;
