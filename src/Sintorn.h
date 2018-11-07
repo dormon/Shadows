@@ -27,12 +27,6 @@ class Sintorn: public ShadowMethod{
     std::vector<std::shared_ptr<ge::gl::Texture>>_HDT;
     std::vector<std::shared_ptr<ge::gl::Texture>>_HST;
 
-    std::vector<glm::uvec2>_tileCount;
-    std::vector<glm::uvec2>_usedTiles;
-    //std::vector<glm::uvec2>_tileSizeInPixels;///size of tiles in pixels in each level
-
-    std::vector<glm::vec2>_tileSizeInClipSpace;
-
     std::shared_ptr<ge::gl::Program>WriteDepthTextureProgram;
     std::shared_ptr<ge::gl::Program>HierarchicalDepthTextureProgram;
     std::shared_ptr<ge::gl::Program>ShadowFrustumProgram;
