@@ -113,6 +113,29 @@ void computeUsedTiles(vars::Vars&vars){
   }
 }
 
+void allocateShadowFrustaBuffer(vars::Vars&vars){
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"model"}))return;
+
+  vector<float>vertices;
+  vars.get<Model>("model")->getVertices(vertices);
+  auto nofTriangles = vertices.size()/3/3;
+  
+  vars.reCreate<size_t>("sintorn.nofTriangles",nofTriangles);
+  vars.reCreate<Buffer>("sintorn.shadowFrusta",sizeof(float)*FLOATS_PER_SHADOWFRUSTUM*nofTriangles);
+  auto triangles = vars.reCreate<Buffer>("sintorn.triangles",sizeof(float)*4*3*nofTriangles);
+
+
+  //allocate triangles
+  float*Ptr=(float*)triangles->map();
+  for(unsigned t=0;t<nofTriangles;++t)
+    for(unsigned p=0;p<3;++p){
+      for(unsigned k=0;k<3;++k)
+        Ptr[(t*3+p)*4+k]=vertices[(t*3+p)*3+k];
+      Ptr[(t*3+p)*4+3]=1;
+    }
+  triangles->unmap();
+}
+
 Sintorn::Sintorn(vars::Vars&vars):
   ShadowMethod(vars)
 {
@@ -151,23 +174,7 @@ Sintorn::Sintorn(vars::Vars&vars):
     cerr<<"TileSizeInPixels: "<<tileSizeInPixels[l].x<<" "<<tileSizeInPixels[l].y<<endl;
   // */
   
-  vector<float>vertices;
-  vars.get<Model>("model")->getVertices(vertices);
-  _nofTriangles = vertices.size()/3/3;
-  
-  //allocate shadowfrustum buffer
-  _shadowFrusta=make_shared<Buffer>(sizeof(float)*FLOATS_PER_SHADOWFRUSTUM*_nofTriangles);
-
-  //allocate triangles
-  _triangles=make_shared<Buffer>(sizeof(float)*4*3*_nofTriangles);
-  float*Ptr=(float*)_triangles->map();
-  for(unsigned t=0;t<_nofTriangles;++t)
-    for(unsigned p=0;p<3;++p){
-      for(unsigned k=0;k<3;++k)
-        Ptr[(t*3+p)*4+k]=vertices[(t*3+p)*3+k];
-      Ptr[(t*3+p)*4+3]=1;
-    }
-  _triangles->unmap();
+  allocateShadowFrustaBuffer(vars);
 
   //compile shader programs
 #include"SintornShaders.h"
@@ -399,13 +406,13 @@ class ComputePipeline{
 
 void Sintorn::ComputeShadowFrusta(glm::vec4 const&lightPosition,glm::mat4 mvp){
   SFProgram
-    ->set1ui      ("nofTriangles"                       ,static_cast<uint32_t>(_nofTriangles)                              )
-    ->setMatrix4fv("modelViewProjection"                ,glm::value_ptr(mvp)                              )
-    ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                    )
-    ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp))))
-    ->bindBuffer  ("triangles"                          ,_triangles                                 )
-    ->bindBuffer  ("shadowFrusta"                       ,_shadowFrusta                              )
-    ->dispatch    (getDispatchSize(_nofTriangles,vars.getUint32("sintorn.shadowFrustaWGS")));
+    ->set1ui      ("nofTriangles"                       ,static_cast<uint32_t>(vars.getSizeT("sintorn.nofTriangles")))
+    ->setMatrix4fv("modelViewProjection"                ,glm::value_ptr(mvp)                                         )
+    ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                               )
+    ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp)))           )
+    ->bindBuffer  ("triangles"                          ,vars.get<Buffer>("sintorn.triangles")                       )
+    ->bindBuffer  ("shadowFrusta"                       ,vars.get<Buffer>("sintorn.shadowFrusta")                    )
+    ->dispatch    (getDispatchSize(vars.getSizeT("sintorn.nofTriangles"),vars.getUint32("sintorn.shadowFrustaWGS")));
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
   //auto ptr = static_cast<float*>(_shadowFrusta->map());
@@ -447,9 +454,9 @@ void Sintorn::RasterizeTexture(){
   if(_useUniformTileSizeInClipSpace)
     RasterizeTextureProgram->set2fv("TileSizeInClipSpace",glm::value_ptr(tileSizeInClipSpace.data()[0]),(GLsizei)nofLevels);
 
-  RasterizeTextureProgram->set1ui("NumberOfTriangles",(uint32_t)_nofTriangles);
+  RasterizeTextureProgram->set1ui("NumberOfTriangles",(uint32_t)vars.getSizeT("sintorn.nofTriangles"));
 
-  _shadowFrusta->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  vars.get<Buffer>("sintorn.shadowFrusta")->bindBase(GL_SHADER_STORAGE_BUFFER,0);
 
   for(size_t l=0;l<nofLevels;++l)
     _HDT[l]->bind(GLuint(RASTERIZETEXTURE_BINDING_HDT+l));
@@ -462,7 +469,7 @@ void Sintorn::RasterizeTexture(){
 
   
   size_t maxSize = 65536/2;
-  size_t workgroups = getDispatchSize(_nofTriangles,vars.getUint32("sintorn.shadowFrustaPerWorkGroup"));
+  size_t workgroups = getDispatchSize(vars.getSizeT("sintorn.nofTriangles"),vars.getUint32("sintorn.shadowFrustaPerWorkGroup"));
   size_t offset = 0;
   while(offset+maxSize<=workgroups){
     RasterizeTextureProgram->set1ui("triangleOffset",(uint32_t)offset);
