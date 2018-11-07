@@ -64,9 +64,10 @@ set(SOURCES
   src/VSSV/DrawSidesUsingPlanes.cpp
   src/VSSV/DrawSidesUsingAllPlanes.cpp
   src/CSSVSOE.cpp
-  src/Sintorn.cpp
-  src/SintornTiles.cpp
-  src/SintornShadowFrustaShaders.cpp
+  src/Sintorn/Sintorn.cpp
+  src/Sintorn/Tiles.cpp
+  src/Sintorn/ShadowFrustaShaders.cpp
+  src/Sintorn/Param.cpp
   src/RSSV/RSSV.cpp
   src/RSSV/Tiles.cpp
   src/RSSV/BuildStupidHierarchy.cpp
@@ -81,7 +82,6 @@ set(SOURCES
   src/mainUtil.cpp
   src/CameraParam.cpp
   src/TestParam.cpp
-  src/SintornParam.cpp
   src/SilhouetteShaders.cpp
   src/Function.cpp
   src/FunctionImpl.cpp
@@ -130,10 +130,11 @@ set(INCLUDES
   src/VSSV/DrawSidesUsingAllPlanes.h
   src/VSSV/DrawSidesUsingAllPlanesShader.h
   src/CSSVSOE.h
-  src/Sintorn.h
-  src/SintornTiles.h
-  src/SintornShaders.h
-  src/SintornShadowFrustaShaders.h
+  src/Sintorn/Sintorn.h
+  src/Sintorn/Tiles.h
+  src/Sintorn/Shaders.h
+  src/Sintorn/ShadowFrustaShaders.h
+  src/Sintorn/Param.h
   src/RSSV/RSSV.h
   src/RSSV/Tiles.h
   src/RSSV/Shaders.h
@@ -155,7 +156,6 @@ set(INCLUDES
   src/mainUtil.h
   src/CameraParam.h
   src/TestParam.h
-  src/SintornParam.h
   src/Function.h
   src/FunctionImpl.h
   src/createGBuffer.h

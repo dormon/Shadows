@@ -1,4 +1,4 @@
-#include <SintornShadowFrustaShaders.h>
+#include <Sintorn/ShadowFrustaShaders.h>
 #include <GLSLLine.h>
 
 std::string const sintorn::shadowFrustaShader = 

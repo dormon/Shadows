@@ -38,9 +38,8 @@
 #include <RSSV/Tiles.h>
 #include <Shading.h>
 #include <ShadowMethod.h>
-#include <Sintorn.h>
-#include <SintornParam.h>
-#include <SintornTiles.h>
+#include <Sintorn/Sintorn.h>
+#include <Sintorn/Param.h>
 #include <TimeStamp.h>
 #include <VSSV/VSSV.h>
 #include <VSSV/Params.h>

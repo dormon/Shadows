@@ -1,5 +1,5 @@
-#include<Sintorn.h>
-#include<SintornTiles.h>
+#include<Sintorn/Sintorn.h>
+#include<Sintorn/Tiles.h>
 #include<FastAdjacency.h>
 #include<sstream>
 #include<iomanip>
@@ -136,7 +136,7 @@ void allocateShadowFrustaBuffer(vars::Vars&vars){
   triangles->unmap();
 }
 
-#include<SintornShadowFrustaShaders.h>
+#include<Sintorn/ShadowFrustaShaders.h>
 
 void createShadowFrustaProgram(vars::Vars&vars){
   if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.bias","sintorn.shadowFrustaWGS"}))return;
@@ -192,7 +192,7 @@ Sintorn::Sintorn(vars::Vars&vars):
   createShadowFrustaProgram(vars);
 
   //compile shader programs
-#include"SintornShaders.h"
+#include<Sintorn/Shaders.h>
   WriteDepthTextureProgram=make_shared<Program>(
       make_shared<Shader>(
         GL_COMPUTE_SHADER,

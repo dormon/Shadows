@@ -1,4 +1,4 @@
-#include<SintornParam.h>
+#include<Sintorn/Param.h>
 #include<ArgumentViewer/ArgumentViewer.h>
 
 void loadSintornParams(

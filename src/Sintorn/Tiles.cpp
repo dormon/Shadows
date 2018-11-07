@@ -1,4 +1,4 @@
-#include<SintornTiles.h>
+#include<Sintorn/Tiles.h>
 #include<cassert>
 #include<algorithm>
 #include<util.h>
