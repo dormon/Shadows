@@ -42,7 +42,6 @@ class Sintorn: public ShadowMethod{
     void drawFinalStencilMask();
 
     void GenerateHierarchyTexture(glm::vec4 const&lightPosition);
-    void ComputeShadowFrusta(glm::vec4 const&lightPosition,glm::mat4 mvp);
     void RasterizeTexture();
     void MergeTexture();
     void blit();

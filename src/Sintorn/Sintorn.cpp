@@ -1,13 +1,12 @@
 #include<Sintorn/Sintorn.h>
 #include<Sintorn/Tiles.h>
+#include<Sintorn/ShadowFrusta.h>
 #include<FastAdjacency.h>
 #include<sstream>
 #include<iomanip>
 #include<util.h>
 #include<Deferred.h>
 
-size_t const VEC4_PER_SHADOWFRUSTUM   = 6;
-size_t const FLOATS_PER_SHADOWFRUSTUM = VEC4_PER_SHADOWFRUSTUM*4;
 size_t const UINT_BIT_SIZE            = 32;
 
 const size_t DRAWHDB_BINDING_HDBIMAGE = 0;
@@ -113,43 +112,6 @@ void computeUsedTiles(vars::Vars&vars){
   }
 }
 
-void allocateShadowFrustaBuffer(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"model"}))return;
-
-  vector<float>vertices;
-  vars.get<Model>("model")->getVertices(vertices);
-  auto nofTriangles = vertices.size()/3/3;
-  
-  vars.reCreate<size_t>("sintorn.nofTriangles",nofTriangles);
-  vars.reCreate<Buffer>("sintorn.shadowFrusta",sizeof(float)*FLOATS_PER_SHADOWFRUSTUM*nofTriangles);
-  auto triangles = vars.reCreate<Buffer>("sintorn.triangles",sizeof(float)*4*3*nofTriangles);
-
-
-  //allocate triangles
-  float*Ptr=(float*)triangles->map();
-  for(unsigned t=0;t<nofTriangles;++t)
-    for(unsigned p=0;p<3;++p){
-      for(unsigned k=0;k<3;++k)
-        Ptr[(t*3+p)*4+k]=vertices[(t*3+p)*3+k];
-      Ptr[(t*3+p)*4+3]=1;
-    }
-  triangles->unmap();
-}
-
-#include<Sintorn/ShadowFrustaShaders.h>
-
-void createShadowFrustaProgram(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.bias","sintorn.shadowFrustaWGS"}))return;
-
-  vars.reCreate<Program>("sintorn.sfProgram",
-      make_shared<Shader>(
-        GL_COMPUTE_SHADER,
-        "#version 450 core\n",
-        Shader::define("BIAS"          ,float   (vars.getFloat ("sintorn.bias")           )),
-        Shader::define("WAVEFRONT_SIZE",uint32_t(vars.getUint32("sintorn.shadowFrustaWGS"))),
-        sintorn::shadowFrustaShader));
-}
-
 Sintorn::Sintorn(vars::Vars&vars):
   ShadowMethod(vars)
 {
@@ -188,9 +150,6 @@ Sintorn::Sintorn(vars::Vars&vars):
     cerr<<"TileSizeInPixels: "<<tileSizeInPixels[l].x<<" "<<tileSizeInPixels[l].y<<endl;
   // */
   
-  allocateShadowFrustaBuffer(vars);
-  createShadowFrustaProgram(vars);
-
   //compile shader programs
 #include<Sintorn/Shaders.h>
   WriteDepthTextureProgram=make_shared<Program>(
@@ -412,18 +371,6 @@ class ComputePipeline{
     vector<SSBOBinding>         _ssboBinding           ;
 };
 
-void Sintorn::ComputeShadowFrusta(glm::vec4 const&lightPosition,glm::mat4 mvp){
-  vars.get<Program>("sintorn.sfProgram")
-    ->set1ui      ("nofTriangles"                       ,static_cast<uint32_t>(vars.getSizeT("sintorn.nofTriangles")))
-    ->setMatrix4fv("modelViewProjection"                ,glm::value_ptr(mvp)                                         )
-    ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                               )
-    ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp)))           )
-    ->bindBuffer  ("triangles"                          ,vars.get<Buffer>("sintorn.triangles")                       )
-    ->bindBuffer  ("shadowFrusta"                       ,vars.get<Buffer>("sintorn.shadowFrusta")                    )
-    ->dispatch    (getDispatchSize(vars.getSizeT("sintorn.nofTriangles"),vars.getUint32("sintorn.shadowFrustaWGS")));
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-}
-
 void Sintorn::RasterizeTexture(){
   auto const&tileDivisibility    = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const&tileSizeInClipSpace = vars.getVector<glm::vec2>("sintorn.tileSizeInClipSpace");
@@ -531,7 +478,7 @@ void Sintorn::create(
   ifExistStamp("");
   GenerateHierarchyTexture(lightPosition);
   ifExistStamp("computeHDT");
-  ComputeShadowFrusta(lightPosition,projection*view);
+  computeShadowFrusta(vars,lightPosition,projection*view);
   ifExistStamp("computeShadowFrusta");
   RasterizeTexture();
   ifExistStamp("rasterize");
