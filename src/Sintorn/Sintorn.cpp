@@ -131,7 +131,25 @@ void createWriteDepthProgram(vars::Vars&vars){
         Shader::define("WRITEDEPTHTEXTURE_BINDING_HDT"   ,int(WRITEDEPTHTEXTURE_BINDING_HDT                )),
         Shader::define("WRITEDEPTHTEXTURE_BINDING_NORMAL",int(WRITEDEPTHTEXTURE_BINDING_NORMAL             )),
         Shader::define("DISCARD_BACK_FACING"             ,int(vars.getBool("sintorn.discardBackFacing")    )),
-        sintorn::writeDepth));
+        sintorn::writeDepthSrc));
+}
+
+
+void createHierarchicalDepthProgram(vars::Vars&vars){
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize"}))return;
+
+  auto wavefrontSize = vars.getSizeT("wavefrontSize");
+
+  vars.reCreate<Program>("sintorn.hierarchicalDepthProgram",
+      make_shared<Shader>(
+        GL_COMPUTE_SHADER,
+        "#version 450 core\n",
+        Shader::define("DO_NOT_COUNT_WITH_INFINITY"                                                                     ),
+        Shader::define("WAVEFRONT_SIZE"                            ,uint32_t(wavefrontSize                      )),
+        Shader::define("HIERARCHICALDEPTHTEXTURE_BINDING_HDTINPUT" ,int     (HIERARCHICALDEPTHTEXTURE_BINDING_HDTINPUT )),
+        Shader::define("HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT",int     (HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT)),
+        sintorn::hierarchicalDepthSrc));
+
 }
 
 void allocateHierarchicalDepth(vars::Vars&vars){
@@ -196,15 +214,7 @@ Sintorn::Sintorn(vars::Vars&vars):
 #include<Sintorn/Shaders.h>
 
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
-  HierarchicalDepthTextureProgram=make_shared<Program>(
-      make_shared<Shader>(
-        GL_COMPUTE_SHADER,
-        "#version 450 core\n",
-        Shader::define("DO_NOT_COUNT_WITH_INFINITY"                                                                     ),
-        Shader::define("WAVEFRONT_SIZE"                            ,uint32_t(wavefrontSize                      )),
-        Shader::define("HIERARCHICALDEPTHTEXTURE_BINDING_HDTINPUT" ,int     (HIERARCHICALDEPTHTEXTURE_BINDING_HDTINPUT )),
-        Shader::define("HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT",int     (HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT)),
-        hierarchicalDepthTextureCompSrc));
+  createHierarchicalDepthProgram(vars);
 
 
   WriteStencilTextureProgram=make_shared<Program>(
@@ -343,6 +353,7 @@ void Sintorn::GenerateHierarchyTexture(glm::vec4 const&lightPosition){
 
   writeDepth(vars,lightPosition);
 
+  auto HierarchicalDepthTextureProgram = vars.get<Program>("sintorn.hierarchicalDepthProgram");
   HierarchicalDepthTextureProgram->use();
   HierarchicalDepthTextureProgram->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
 
