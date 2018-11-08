@@ -251,7 +251,7 @@ void Shadows::draw() {
   if (vars.getString("methodName") == "sintorn") {
     auto sintorn = vars.getReinterpret<Sintorn>("shadowMethod");
     auto dp = vars.get<DrawPrimitive>("drawPrimitive");
-    auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(sintorn->_HDT[i]);};
+    auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(vars.getVector<std::shared_ptr<ge::gl::Texture>>("sintorn.HDT")[i]);};
     for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
     if (keyDown['v']) sintorn->drawHST(0);
     if (keyDown['b']) sintorn->drawHST(1);
