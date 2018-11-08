@@ -31,6 +31,22 @@ using namespace ge::gl;
 
 #include<Barrier.h>
 
+#include<Sintorn/MergeShaders.h>
+
+void createMergeProgram(vars::Vars&vars){
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize"}))return;
+  
+  auto const wavefrontSize = vars.getSizeT("wavefrontSize");
+  vars.add<Program>("sintorn.mergeProgram",
+      make_shared<Shader>(
+        GL_COMPUTE_SHADER,
+        "#version 450 core\n",
+        Shader::define("WAVEFRONT_SIZE"                ,uint32_t(wavefrontSize          )),
+        Shader::define("MERGETEXTURE_BINDING_HSTINPUT" ,int     (MERGETEXTURE_BINDING_HSTINPUT )),
+        Shader::define("MERGETEXTURE_BINDING_HSTOUTPUT",int     (MERGETEXTURE_BINDING_HSTOUTPUT)),
+        sintorn::mergeShader));
+}
+
 Sintorn::Sintorn(vars::Vars&vars):
   ShadowMethod(vars)
 {
@@ -84,14 +100,7 @@ Sintorn::Sintorn(vars::Vars&vars):
         writeStencilTextureCompSrc));
 
 
-  MergeTextureProgram=make_shared<Program>(
-      make_shared<Shader>(
-        GL_COMPUTE_SHADER,
-        "#version 450 core\n",
-        Shader::define("WAVEFRONT_SIZE"                ,uint32_t(wavefrontSize          )),
-        Shader::define("MERGETEXTURE_BINDING_HSTINPUT" ,int     (MERGETEXTURE_BINDING_HSTINPUT )),
-        Shader::define("MERGETEXTURE_BINDING_HSTOUTPUT",int     (MERGETEXTURE_BINDING_HSTOUTPUT)),
-        mergeTextureCompSrc));
+  createMergeProgram(vars);
 
   ClearStencilProgram=make_shared<Program>(
       make_shared<Shader>(
@@ -277,13 +286,14 @@ void Sintorn::MergeTexture(){
   auto const&tileSizeInPixels = vars.getVector<glm::uvec2>("sintorn.tileSizeInPixels");
   auto const&tileCount        = vars.getVector<glm::uvec2>("sintorn.tileCount");
 
-  MergeTextureProgram->use();
-  MergeTextureProgram->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
+  auto program = vars.get<Program>("sintorn.mergeProgram");
+  program->use();
+  program->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
 
   GLsync Sync=0;
   for(size_t l=0;l<nofLevels-1;++l){
-    MergeTextureProgram->set2uiv("DstTileSizeInPixels",glm::value_ptr(tileSizeInPixels[l]));
-    MergeTextureProgram->set2uiv("DstTileDivisibility",glm::value_ptr(tileDivisibility[l]));
+    program->set2uiv("DstTileSizeInPixels",glm::value_ptr(tileSizeInPixels[l]));
+    program->set2uiv("DstTileDivisibility",glm::value_ptr(tileDivisibility[l]));
 
     _HST[l  ]->bindImage(MERGETEXTURE_BINDING_HSTINPUT);
     _HST[l+1]->bindImage(MERGETEXTURE_BINDING_HSTOUTPUT);

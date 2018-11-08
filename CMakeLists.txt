@@ -72,6 +72,7 @@ set(SOURCES
   src/Sintorn/ShadowFrusta.cpp
   src/Sintorn/HierarchyShaders.cpp
   src/Sintorn/HierarchicalDepth.cpp
+  src/Sintorn/MergeShaders.cpp
   src/RSSV/RSSV.cpp
   src/RSSV/Tiles.cpp
   src/RSSV/BuildStupidHierarchy.cpp
@@ -143,6 +144,7 @@ set(INCLUDES
   src/Sintorn/ShadowFrusta.h
   src/Sintorn/HierarchyShaders.h
   src/Sintorn/HierarchicalDepth.h
+  src/Sintorn/MergeShaders.h
   src/RSSV/RSSV.h
   src/RSSV/Tiles.h
   src/RSSV/Shaders.h
