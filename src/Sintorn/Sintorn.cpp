@@ -302,7 +302,7 @@ void Sintorn::RasterizeTexture(){
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
-void mergeStencil(vars::Vars&vars){
+void propagateStencil(vars::Vars&vars){
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const&tileSizeInPixels = vars.getVector<glm::uvec2>("sintorn.tileSizeInPixels");
   auto const&tileCount        = vars.getVector<glm::uvec2>("sintorn.tileCount");
@@ -336,14 +336,9 @@ void mergeStencil(vars::Vars&vars){
   glDeleteSync(Sync);
 }
 
-void Sintorn::MergeTexture(){
+void writeStencil(vars::Vars&vars){
   auto const&tileCount        = vars.getVector<glm::uvec2>("sintorn.tileCount");
   auto const nofLevels        = tileCount.size();
-
-  mergeStencil(vars);
-
-  //glFinish();
-  //glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   auto WriteStencilTextureProgram = vars.get<Program>("sintorn.writeStencilProgram");
   WriteStencilTextureProgram->use();
@@ -355,14 +350,16 @@ void Sintorn::MergeTexture(){
   finalStencilMask->bindImage(WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK);
   HST[nofLevels-1]->bindImage(WRITESTENCILTEXTURE_BINDING_HSTINPUT);
 
-  //GLsync Sync=0;
-
   glDispatchCompute(
       tileCount[nofLevels-2].x,
       tileCount[nofLevels-2].y,
       1);
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-  //glFinish();
+}
+
+void Sintorn::MergeTexture(){
+  propagateStencil(vars);
+  writeStencil(vars);
 }
 
 void Sintorn::create(
