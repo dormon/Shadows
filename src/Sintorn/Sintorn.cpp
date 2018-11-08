@@ -47,6 +47,23 @@ void createMergeProgram(vars::Vars&vars){
         sintorn::mergeShader));
 }
 
+void createWriteStencilProgram(vars::Vars&vars){
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileDivisibility"}))return;
+
+  auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
+  auto const nofLevels = tileDivisibility.size();
+
+  vars.reCreate<Program>("sintorn.writeStencilProgram",
+      make_shared<Shader>(
+        GL_COMPUTE_SHADER,
+        "#version 450 core\n",
+        Shader::define("LOCAL_TILE_SIZE_X"                           ,int(tileDivisibility[nofLevels-1].x)),
+        Shader::define("LOCAL_TILE_SIZE_Y"                           ,int(tileDivisibility[nofLevels-1].y)),
+        Shader::define("WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK",int(WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK )),
+        Shader::define("WRITESTENCILTEXTURE_BINDING_HSTINPUT"        ,int(WRITESTENCILTEXTURE_BINDING_HSTINPUT         )),
+        sintorn::writeStencilShader));
+}
+
 Sintorn::Sintorn(vars::Vars&vars):
   ShadowMethod(vars)
 {
@@ -88,18 +105,7 @@ Sintorn::Sintorn(vars::Vars&vars):
 
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
 
-
-  WriteStencilTextureProgram=make_shared<Program>(
-      make_shared<Shader>(
-        GL_COMPUTE_SHADER,
-        "#version 450 core\n",
-        Shader::define("LOCAL_TILE_SIZE_X"                           ,int(tileDivisibility[nofLevels-1].x)),
-        Shader::define("LOCAL_TILE_SIZE_Y"                           ,int(tileDivisibility[nofLevels-1].y)),
-        Shader::define("WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK",int(WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK )),
-        Shader::define("WRITESTENCILTEXTURE_BINDING_HSTINPUT"        ,int(WRITESTENCILTEXTURE_BINDING_HSTINPUT         )),
-        writeStencilTextureCompSrc));
-
-
+  createWriteStencilProgram(vars);
   createMergeProgram(vars);
 
   ClearStencilProgram=make_shared<Program>(
@@ -313,6 +319,7 @@ void Sintorn::MergeTexture(){
   //glFinish();
   //glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
+  auto WriteStencilTextureProgram = vars.get<Program>("sintorn.writeStencilProgram");
   WriteStencilTextureProgram->use();
   WriteStencilTextureProgram->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
 
