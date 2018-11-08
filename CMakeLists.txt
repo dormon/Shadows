@@ -68,6 +68,7 @@ set(SOURCES
   src/Sintorn/Tiles.cpp
   src/Sintorn/ShadowFrustaShaders.cpp
   src/Sintorn/Param.cpp
+  src/Sintorn/ComputeTileSizes.cpp
   src/Sintorn/ShadowFrusta.cpp
   src/Sintorn/HierarchyShaders.cpp
   src/Sintorn/HierarchicalDepth.cpp
@@ -138,6 +139,7 @@ set(INCLUDES
   src/Sintorn/Shaders.h
   src/Sintorn/ShadowFrustaShaders.h
   src/Sintorn/Param.h
+  src/Sintorn/ComputeTileSizes.h
   src/Sintorn/ShadowFrusta.h
   src/Sintorn/HierarchyShaders.h
   src/Sintorn/HierarchicalDepth.h
