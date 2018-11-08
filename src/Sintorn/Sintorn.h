@@ -37,7 +37,6 @@ class Sintorn: public ShadowMethod{
     std::shared_ptr<ge::gl::Program>_drawFinalStencilMask;
     void drawFinalStencilMask();
 
-    void GenerateHierarchyTexture(glm::vec4 const&lightPosition);
     void RasterizeTexture();
     void MergeTexture();
     void blit();
