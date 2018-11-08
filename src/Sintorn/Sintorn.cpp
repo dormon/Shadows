@@ -64,6 +64,33 @@ void createWriteStencilProgram(vars::Vars&vars){
         sintorn::writeStencilShader));
 }
 
+void allocateHierarchicalStencil(vars::Vars&vars){
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"windowSize","wavefrontSize","sintorn.usedTiles"}))return;
+
+  auto const windowSize    = *vars.get<glm::uvec2>("windowSize");
+  auto const wavefrontSize = vars.getSizeT("wavefrontSize");
+  auto const&usedTiles     = vars.getVector<glm::uvec2>("sintorn.usedTiles");
+  auto const nofLevels     = usedTiles.size();
+
+
+  auto finalStencilMask = vars.reCreate<Texture>("sintorn.finalStencilMask",GL_TEXTURE_2D,GL_R32UI,1,windowSize.x,windowSize.y);
+  finalStencilMask->texParameteri(GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+  finalStencilMask->texParameteri(GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+
+  size_t RESULT_LENGTH_IN_UINT=wavefrontSize/UINT_BIT_SIZE;
+  if(RESULT_LENGTH_IN_UINT==0)RESULT_LENGTH_IN_UINT=1;
+
+  auto&HST = vars.reCreateVector<std::shared_ptr<Texture>>("sintorn.HST");
+  for(size_t l=0;l<nofLevels;++l){
+    HST.push_back(make_shared<Texture>(GL_TEXTURE_2D,GL_R32UI,1,GLsizei(usedTiles[l].x*RESULT_LENGTH_IN_UINT),usedTiles[l].y));
+    HST.back()->texParameteri(GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    HST.back()->texParameteri(GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST);
+    uint8_t data[2] = {0,0};
+    HST.back()->clear(0,GL_RG_INTEGER,GL_UNSIGNED_BYTE,data);
+    //glClearTexImage(_HDT.back()->getId(),0,GL_RG,GL_UNSIGNED_INT,&data);
+  }
+}
+
 Sintorn::Sintorn(vars::Vars&vars):
   ShadowMethod(vars)
 {
@@ -168,21 +195,7 @@ Sintorn::Sintorn(vars::Vars&vars):
 
   _emptyVao=make_shared<VertexArray>();
 
-  _finalStencilMask = make_shared<Texture>(GL_TEXTURE_2D,GL_R32UI,1,vars.get<glm::uvec2>("windowSize")->x,vars.get<glm::uvec2>("windowSize")->y);
-  _finalStencilMask->texParameteri(GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-  _finalStencilMask->texParameteri(GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-
-  size_t RESULT_LENGTH_IN_UINT=wavefrontSize/UINT_BIT_SIZE;
-  if(RESULT_LENGTH_IN_UINT==0)RESULT_LENGTH_IN_UINT=1;
-
-  for(size_t l=0;l<nofLevels;++l){
-    _HST.push_back(make_shared<Texture>(GL_TEXTURE_2D,GL_R32UI,1,GLsizei(usedTiles[l].x*RESULT_LENGTH_IN_UINT),usedTiles[l].y));
-    _HST.back()->texParameteri(GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-    _HST.back()->texParameteri(GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST);
-    uint8_t data[2] = {0,0};
-    _HST.back()->clear(0,GL_RG_INTEGER,GL_UNSIGNED_BYTE,data);
-    //glClearTexImage(_HDT.back()->getId(),0,GL_RG,GL_UNSIGNED_INT,&data);
-  }
+  allocateHierarchicalStencil(vars);
 }
 
 Sintorn::~Sintorn(){
@@ -240,10 +253,13 @@ void Sintorn::RasterizeTexture(){
   auto const&tileSizeInClipSpace = vars.getVector<glm::vec2>("sintorn.tileSizeInClipSpace");
   auto const nofLevels = tileDivisibility.size();
 
-  _finalStencilMask->clear(0,GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+  auto finalStencilMask = vars.get<Texture>("sintorn.finalStencilMask");
+  finalStencilMask->clear(0,GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+
+  auto&HST = vars.getVector<std::shared_ptr<Texture>>("sintorn.HST");
   //glClearTexImage(_finalStencilMask->getId(),0,GL_RED_INTEGER,GL_UNSIGNED_INT,NULL);
   for(size_t l=0;l<nofLevels;++l){
-    _HST[l]->clear(0,GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+    HST[l]->clear(0,GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
     //glClearTexImage(_HST[l]->getId(),0,GL_RED_INTEGER,GL_UNSIGNED_INT,NULL);
   }
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -263,9 +279,9 @@ void Sintorn::RasterizeTexture(){
   for(size_t l=0;l<nofLevels;++l)
     HDT[l]->bind(GLuint(RASTERIZETEXTURE_BINDING_HDT+l));
   for(size_t l=0;l<nofLevels;++l)
-    _HST[l]->bindImage(GLuint(RASTERIZETEXTURE_BINDING_HST+l));
+    HST[l]->bindImage(GLuint(RASTERIZETEXTURE_BINDING_HST+l));
 
-  _finalStencilMask->bindImage(GLuint(RASTERIZETEXTURE_BINDING_FINALSTENCILMASK));
+  finalStencilMask->bindImage(GLuint(RASTERIZETEXTURE_BINDING_FINALSTENCILMASK));
 
   vars.get<GBuffer>("gBuffer")->triangleIds->bind(static_cast<GLuint>(RASTERIZETEXTURE_BINDING_TRIANGLE_ID));
 
@@ -286,23 +302,24 @@ void Sintorn::RasterizeTexture(){
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
-void Sintorn::MergeTexture(){
+void mergeStencil(vars::Vars&vars){
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
-  auto const nofLevels        = tileDivisibility.size();
   auto const&tileSizeInPixels = vars.getVector<glm::uvec2>("sintorn.tileSizeInPixels");
   auto const&tileCount        = vars.getVector<glm::uvec2>("sintorn.tileCount");
+  auto const nofLevels        = tileDivisibility.size();
 
   auto program = vars.get<Program>("sintorn.mergeProgram");
   program->use();
   program->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
 
+  auto&HST = vars.getVector<std::shared_ptr<Texture>>("sintorn.HST");
   GLsync Sync=0;
   for(size_t l=0;l<nofLevels-1;++l){
     program->set2uiv("DstTileSizeInPixels",glm::value_ptr(tileSizeInPixels[l]));
     program->set2uiv("DstTileDivisibility",glm::value_ptr(tileDivisibility[l]));
 
-    _HST[l  ]->bindImage(MERGETEXTURE_BINDING_HSTINPUT);
-    _HST[l+1]->bindImage(MERGETEXTURE_BINDING_HSTOUTPUT);
+    HST[l  ]->bindImage(MERGETEXTURE_BINDING_HSTINPUT);
+    HST[l+1]->bindImage(MERGETEXTURE_BINDING_HSTOUTPUT);
     if(l>0){
       glClientWaitSync(Sync,0,GL_TIMEOUT_IGNORED);
       glDeleteSync(Sync);
@@ -315,6 +332,15 @@ void Sintorn::MergeTexture(){
         // */
       )Sync=glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0);
   }
+  glClientWaitSync(Sync,0,GL_TIMEOUT_IGNORED);
+  glDeleteSync(Sync);
+}
+
+void Sintorn::MergeTexture(){
+  auto const&tileCount        = vars.getVector<glm::uvec2>("sintorn.tileCount");
+  auto const nofLevels        = tileCount.size();
+
+  mergeStencil(vars);
 
   //glFinish();
   //glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -323,11 +349,13 @@ void Sintorn::MergeTexture(){
   WriteStencilTextureProgram->use();
   WriteStencilTextureProgram->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
 
-  _finalStencilMask->bindImage(WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK);
-  _HST[nofLevels-1]->bindImage(WRITESTENCILTEXTURE_BINDING_HSTINPUT);
+  auto&HST = vars.getVector<std::shared_ptr<Texture>>("sintorn.HST");
+  auto finalStencilMask = vars.get<Texture>("sintorn.finalStencilMask");
 
-  glClientWaitSync(Sync,0,GL_TIMEOUT_IGNORED);
-  glDeleteSync(Sync);
+  finalStencilMask->bindImage(WRITESTENCILTEXTURE_BINDING_FINALSTENCILMASK);
+  HST[nofLevels-1]->bindImage(WRITESTENCILTEXTURE_BINDING_HSTINPUT);
+
+  //GLsync Sync=0;
 
   glDispatchCompute(
       tileCount[nofLevels-2].x,
@@ -358,7 +386,8 @@ void Sintorn::create(
 void Sintorn::drawHST(size_t l){
   assert(this!=nullptr);
   _drawHSTProgram->use();
-  _HST[l]->bindImage(0);
+  auto&HST = vars.getVector<std::shared_ptr<Texture>>("sintorn.HST");
+  HST[l]->bindImage(0);
   _emptyVao->bind();
   glDrawArrays(GL_TRIANGLE_STRIP,0,4);
   _emptyVao->unbind();
@@ -370,7 +399,8 @@ void Sintorn::drawFinalStencilMask(){
   assert(_drawFinalStencilMask!=nullptr);
   assert(_emptyVao!=nullptr);
   _drawFinalStencilMask->use();
-  _finalStencilMask->bindImage(0);
+  auto finalStencilMask = vars.get<Texture>("sintorn.finalStencilMask");
+  finalStencilMask->bindImage(0);
   _emptyVao->bind();
   glDrawArrays(GL_TRIANGLE_STRIP,0,4);
   _emptyVao->unbind();
@@ -379,10 +409,10 @@ void Sintorn::drawFinalStencilMask(){
 void Sintorn::blit(){
   assert(this!=nullptr);
   assert(_blitProgram!=nullptr);
-  assert(_finalStencilMask!=nullptr);
   assert(_shadowMask!=nullptr);
   _blitProgram->use();
-  _finalStencilMask->bindImage(0);
+  auto finalStencilMask = vars.get<Texture>("sintorn.finalStencilMask");
+  finalStencilMask->bindImage(0);
   _shadowMask->bindImage(1);
   _blitProgram->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
   glDispatchCompute(

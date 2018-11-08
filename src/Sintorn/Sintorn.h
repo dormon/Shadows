@@ -19,10 +19,7 @@ class Sintorn: public ShadowMethod{
     bool       _useUniformTileSizeInClipSpace;
     bool       _useUniformTileDivisibility;
 
-    std::shared_ptr<ge::gl::Texture>_finalStencilMask;
-    
     std::shared_ptr<ge::gl::VertexArray>_emptyVao;
-    std::vector<std::shared_ptr<ge::gl::Texture>>_HST;
 
     std::shared_ptr<ge::gl::Program>RasterizeTextureProgram;
     std::shared_ptr<ge::gl::Program>ClearStencilProgram;
