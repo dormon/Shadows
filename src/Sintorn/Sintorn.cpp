@@ -1,6 +1,7 @@
 #include<Sintorn/Sintorn.h>
 #include<Sintorn/Tiles.h>
 #include<Sintorn/ShadowFrusta.h>
+#include<Sintorn/HierarchyShaders.h>
 #include<FastAdjacency.h>
 #include<sstream>
 #include<iomanip>
@@ -112,6 +113,24 @@ void computeUsedTiles(vars::Vars&vars){
   }
 }
 
+void createWriteDepthProgram(vars::Vars&vars){
+  auto const&tileDivisibility    = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
+  auto const nofLevels           = tileDivisibility.size();
+  //compile shader programs
+
+  vars.reCreate<Program>("sintorn.writeDepthProgram",
+      make_shared<Shader>(
+        GL_COMPUTE_SHADER,
+        "#version 450 core\n",
+        Shader::define("LOCAL_TILE_SIZE_X"               ,int(tileDivisibility[nofLevels-1].x)),
+        Shader::define("LOCAL_TILE_SIZE_Y"               ,int(tileDivisibility[nofLevels-1].y)),
+        Shader::define("WRITEDEPTHTEXTURE_BINDING_DEPTH" ,int(WRITEDEPTHTEXTURE_BINDING_DEPTH              )),
+        Shader::define("WRITEDEPTHTEXTURE_BINDING_HDT"   ,int(WRITEDEPTHTEXTURE_BINDING_HDT                )),
+        Shader::define("WRITEDEPTHTEXTURE_BINDING_NORMAL",int(WRITEDEPTHTEXTURE_BINDING_NORMAL             )),
+        Shader::define("DISCARD_BACK_FACING"             ,int(vars.getBool("sintorn.discardBackFacing")    )),
+        sintorn::writeDepth));
+}
+
 Sintorn::Sintorn(vars::Vars&vars):
   ShadowMethod(vars)
 {
@@ -150,19 +169,11 @@ Sintorn::Sintorn(vars::Vars&vars):
     cerr<<"TileSizeInPixels: "<<tileSizeInPixels[l].x<<" "<<tileSizeInPixels[l].y<<endl;
   // */
   
+
+  createWriteDepthProgram(vars);
+
   //compile shader programs
 #include<Sintorn/Shaders.h>
-  WriteDepthTextureProgram=make_shared<Program>(
-      make_shared<Shader>(
-        GL_COMPUTE_SHADER,
-        "#version 450 core\n",
-        Shader::define("LOCAL_TILE_SIZE_X"               ,int(tileDivisibility[nofLevels-1].x)),
-        Shader::define("LOCAL_TILE_SIZE_Y"               ,int(tileDivisibility[nofLevels-1].y)),
-        Shader::define("WRITEDEPTHTEXTURE_BINDING_DEPTH" ,int(WRITEDEPTHTEXTURE_BINDING_DEPTH              )),
-        Shader::define("WRITEDEPTHTEXTURE_BINDING_HDT"   ,int(WRITEDEPTHTEXTURE_BINDING_HDT                )),
-        Shader::define("WRITEDEPTHTEXTURE_BINDING_NORMAL",int(WRITEDEPTHTEXTURE_BINDING_NORMAL             )),
-        Shader::define("DISCARD_BACK_FACING"             ,int(vars.getBool("sintorn.discardBackFacing")    )),
-        writeDepthTextureCompSrc));
 
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
   HierarchicalDepthTextureProgram=make_shared<Program>(
@@ -294,12 +305,13 @@ void Sintorn::GenerateHierarchyTexture(glm::vec4 const&lightPosition){
 
   if(nofLevels<2)return;
 
-  WriteDepthTextureProgram->use();
-  WriteDepthTextureProgram->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
+  auto writeDepth = vars.get<Program>("sintorn.writeDepthProgram");
+  writeDepth->use();
+  writeDepth->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
   vars.get<GBuffer>("gBuffer")->depth->bind(WRITEDEPTHTEXTURE_BINDING_DEPTH);
   if(vars.getBool("sintorn.discardBackFacing")){
     vars.get<GBuffer>("gBuffer")->normal->bind(WRITEDEPTHTEXTURE_BINDING_NORMAL);
-    WriteDepthTextureProgram->set4fv("lightPosition",glm::value_ptr(lightPosition));
+    writeDepth->set4fv("lightPosition",glm::value_ptr(lightPosition));
   }
   _HDT[nofLevels-1]->bindImage(WRITEDEPTHTEXTURE_BINDING_HDT);
   glDispatchCompute(
