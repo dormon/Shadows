@@ -24,7 +24,6 @@ class Sintorn: public ShadowMethod{
     std::shared_ptr<ge::gl::VertexArray>_emptyVao;
     std::vector<std::shared_ptr<ge::gl::Texture>>_HST;
 
-    //std::shared_ptr<ge::gl::Program>HierarchicalDepthTextureProgram;
     std::shared_ptr<ge::gl::Program>RasterizeTextureProgram;
     std::shared_ptr<ge::gl::Program>MergeTextureProgram;
     std::shared_ptr<ge::gl::Program>WriteStencilTextureProgram;

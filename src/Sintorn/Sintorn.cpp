@@ -342,6 +342,29 @@ void writeDepth(vars::Vars&vars,glm::vec4 const&lightPosition){
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
+void reduceDepthBuffer(vars::Vars&vars){
+  auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
+  auto const nofLevels        = tileDivisibility.size();
+  auto const&tileSizeInPixels = vars.getVector<glm::uvec2>("sintorn.tileSizeInPixels");
+  auto const&usedTiles        = vars.getVector<glm::uvec2>("sintorn.usedTiles");
+
+  auto program = vars.get<Program>("sintorn.hierarchicalDepthProgram");
+  program->use();
+  program->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
+
+  program->set2uiv("TileDivisibility",glm::value_ptr(tileDivisibility.data()[0]),(GLsizei)nofLevels);
+  program->set2uiv("TileSizeInPixels",glm::value_ptr(tileSizeInPixels.data()[0]),(GLsizei)nofLevels);
+
+  auto&HDT = vars.getVector<shared_ptr<Texture>>("sintorn.HDT");
+  for(int l=(int)nofLevels-2;l>=0;--l){
+    program->set1ui("DstLevel",(unsigned)l);
+    HDT[l+1]->bindImage(HIERARCHICALDEPTHTEXTURE_BINDING_HDTINPUT );
+    HDT[l  ]->bindImage(HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT);
+    glDispatchCompute(usedTiles[l].x,usedTiles[l].y,1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+  }
+}
+
 void Sintorn::GenerateHierarchyTexture(glm::vec4 const&lightPosition){
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const nofLevels        = tileDivisibility.size();
@@ -352,22 +375,7 @@ void Sintorn::GenerateHierarchyTexture(glm::vec4 const&lightPosition){
   if(nofLevels<2)return;
 
   writeDepth(vars,lightPosition);
-
-  auto HierarchicalDepthTextureProgram = vars.get<Program>("sintorn.hierarchicalDepthProgram");
-  HierarchicalDepthTextureProgram->use();
-  HierarchicalDepthTextureProgram->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
-
-  HierarchicalDepthTextureProgram->set2uiv("TileDivisibility",glm::value_ptr(tileDivisibility.data()[0]),(GLsizei)nofLevels);
-  HierarchicalDepthTextureProgram->set2uiv("TileSizeInPixels",glm::value_ptr(tileSizeInPixels.data()[0]),(GLsizei)nofLevels);
-
-  auto&HDT = vars.getVector<shared_ptr<Texture>>("sintorn.HDT");
-  for(int l=(int)nofLevels-2;l>=0;--l){
-    HierarchicalDepthTextureProgram->set1ui("DstLevel",(unsigned)l);
-    HDT[l+1]->bindImage(HIERARCHICALDEPTHTEXTURE_BINDING_HDTINPUT );
-    HDT[l  ]->bindImage(HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT);
-    glDispatchCompute(usedTiles[l].x,usedTiles[l].y,1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-  }
+  reduceDepthBuffer(vars);
 }
 
 class ComputePipeline{
