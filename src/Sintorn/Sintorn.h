@@ -33,6 +33,5 @@ class Sintorn: public ShadowMethod{
     void drawFinalStencilMask();
 
     void RasterizeTexture();
-    void MergeTexture();
     void blit();
 };
