@@ -3,6 +3,7 @@
 #include<algorithm>
 #include<util.h>
 
+#define ___ std::cerr << __FILE__ << ": " << __LINE__ << std::endl
 
 
 class TileDivisibility{
@@ -83,7 +84,9 @@ void generateSolutions(std::vector<TileDivisibility>&solutions,glm::uvec2 const&
     for(size_t l=0;l<nofLevels;++l)//loop over levels
       size*=choices[index[l]];
 
+    std::cerr << "size: " << size.x << " x " << size.y << std::endl;
     if(size.x>=windowSize.x && size.y>=windowSize.y){
+      std::cerr << "OK" << std::endl;
       solutions.push_back(TileDivisibility());
       for(size_t i=0;i<nofLevels;++i)
         solutions.back().divisibility.push_back(choices[index[i]]);
@@ -105,11 +108,18 @@ void generateSolutions(std::vector<TileDivisibility>&solutions,glm::uvec2 const&
 }
 
 void chooseTileSizes(std::vector<glm::uvec2>&tileDivisibility,glm::uvec2 const&windowSize,size_t wgs){
+  ___;
   std::vector<TileDivisibility>solutions;
+  ___;
   generateSolutions(solutions,windowSize,wgs);
+  ___;
   std::sort(solutions.begin(),solutions.end());
+  ___;
+  std::cout << windowSize.x << " x " << windowSize.y << std::endl;
+  std::cout << "solutions: " << solutions.size() << std::endl;
   for(auto const&x:solutions.front().divisibility)
     tileDivisibility.push_back(x);
+  ___;
 }
 
 

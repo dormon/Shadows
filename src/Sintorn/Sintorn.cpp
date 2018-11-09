@@ -32,27 +32,6 @@ Sintorn::Sintorn(vars::Vars&vars):
 
   computeTileSizes(vars);
 
-  auto const&tileDivisibility    = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
-  auto const nofLevels           = tileDivisibility.size();
-  auto const&tileSizeInPixels    = vars.getVector<glm::uvec2>("sintorn.tileSizeInPixels");
-  auto const&tileSizeInClipSpace = vars.getVector<glm::vec2>("sintorn.tileSizeInClipSpace");
-  auto const&tileCount           = vars.getVector<glm::uvec2>("sintorn.tileCount");
-  auto const&usedTiles           = vars.getVector<glm::uvec2>("sintorn.usedTiles");
-
-  //*
-  for(size_t l=0;l<nofLevels;++l)
-    cerr<<"TileCount: "<<tileCount[l].x<<" "<<tileCount[l].y<<endl;
-  for(size_t l=0;l<nofLevels;++l)
-    cerr<<"UsedTiles: "<<usedTiles[l].x<<" "<<usedTiles[l].y<<endl;
-  for(size_t l=0;l<nofLevels;++l)
-    cerr<<"TileDivisibility: "<<tileDivisibility[l].x<<" "<<tileDivisibility[l].y<<endl;
-  for(size_t l=0;l<nofLevels;++l)
-    cerr<<"TileSizeInClip: "<<tileSizeInClipSpace[l].x<<" "<<tileSizeInClipSpace[l].y<<endl;
-  for(unsigned l=0;l<nofLevels;++l)
-    cerr<<"TileSizeInPixels: "<<tileSizeInPixels[l].x<<" "<<tileSizeInPixels[l].y<<endl;
-  // */
-  
-
   //compile shader programs
 #include<Sintorn/Shaders.h>
 
@@ -82,17 +61,19 @@ void Sintorn::create(
     glm::vec4 const&lightPosition,
     glm::mat4 const&view      ,
     glm::mat4 const&projection){
+  computeTileSizes(vars);
+
   assert(this!=nullptr);
   ifExistStamp("");
-  computeHierarchicalDepth(vars,lightPosition);
+  //computeHierarchicalDepth(vars,lightPosition);
   ifExistStamp("computeHDT");
-  computeShadowFrusta(vars,lightPosition,projection*view);
+  //computeShadowFrusta(vars,lightPosition,projection*view);
   ifExistStamp("computeShadowFrusta");
-  rasterize(vars);
+  //rasterize(vars);
   ifExistStamp("rasterize");
-  mergeStencil(vars);
+  //mergeStencil(vars);
   ifExistStamp("merge");
-  blit();
+  //blit();
   ifExistStamp("blit");
 }
 
@@ -126,7 +107,7 @@ void Sintorn::blit(){
   _blitProgram->use();
   auto finalStencilMask = vars.get<Texture>("sintorn.finalStencilMask");
   finalStencilMask->bindImage(0);
-  _shadowMask->bindImage(1);
+  vars.get<Texture>("shadowMask")->bindImage(1);
   _blitProgram->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
   glDispatchCompute(
       (GLuint)getDispatchSize(vars.get<glm::uvec2>("windowSize")->x,8),

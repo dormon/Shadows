@@ -16,9 +16,6 @@ class Sintorn: public ShadowMethod{
         glm::mat4 const&projectionMatrix)override;
   protected:
   public:
-    bool       _useUniformTileSizeInClipSpace;
-    bool       _useUniformTileDivisibility;
-
     std::shared_ptr<ge::gl::VertexArray>_emptyVao;
 
     ge::gl::Texture*_shadowMask;
