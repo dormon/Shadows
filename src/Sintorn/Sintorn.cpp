@@ -3,6 +3,7 @@
 #include<Sintorn/ShadowFrusta.h>
 #include<Sintorn/HierarchicalDepth.h>
 #include<Sintorn/MergeStencil.h>
+#include<Sintorn/RasterizationShaders.h>
 #include<geGL/StaticCalls.h>
 #include<FastAdjacency.h>
 #include<sstream>
@@ -24,6 +25,59 @@ using namespace ge::gl;
 
 #include<Barrier.h>
 
+void createRasterizationProgram(vars::Vars&vars){
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize","sintorn.tileDivisibility","sintorn.tileSizeInClipSpace","sintorn.useUniformTileDivisibility","sintorn.useUniformTileSizeInClipSpace"}))return;
+
+  auto useUniformTileDivisibility    = vars.getBool("sintorn.useUniformTileDivisibility"   );
+  auto useUniformTileSizeInClipSpace = vars.getBool("sintorn.useUniformTileSizeInClipSpace");
+
+  auto const&tileDivisibility    = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
+  auto const nofLevels           = tileDivisibility.size();
+  auto const&tileSizeInClipSpace = vars.getVector<glm::vec2>("sintorn.tileSizeInClipSpace");
+
+  auto const wavefrontSize = vars.getSizeT("wavefrontSize");
+
+  RASTERIZETEXTURE_BINDING_HDT         = RASTERIZETEXTURE_BINDING_HST+nofLevels;
+  RASTERIZETEXTURE_BINDING_TRIANGLE_ID = RASTERIZETEXTURE_BINDING_HDT+nofLevels;
+
+  string TileSizeInClipSpaceDefines="";
+  if(useUniformTileSizeInClipSpace)
+    TileSizeInClipSpaceDefines+=Shader::define("USE_UNIFORM_TILE_SIZE_IN_CLIP_SPACE");
+  else{
+    for(unsigned l=0;l<nofLevels;++l){
+      stringstream DefineName;
+      DefineName<<"TILE_SIZE_IN_CLIP_SPACE"<<l;
+      TileSizeInClipSpaceDefines+=Shader::define(DefineName.str(),2,glm::value_ptr(tileSizeInClipSpace[l]));
+    }
+  }
+  string TileDivisibilityDefines="";
+  if(useUniformTileDivisibility)
+    TileDivisibilityDefines+=Shader::define("USE_UNIFORM_TILE_DIVISIBILITY");
+  else{
+    for(unsigned l=0;l<nofLevels;++l){
+      stringstream DefineName;
+      DefineName<<"TILE_DIVISIBILITY"<<l;
+      TileDivisibilityDefines+=Shader::define(DefineName.str(),2,glm::value_ptr(tileDivisibility[l]));
+    }
+  }
+  vars.reCreate<Program>("sintorn.rasterizationProgram",
+      make_shared<Shader>(
+        GL_COMPUTE_SHADER,
+        "#version 450 core\n",
+        Shader::define("NUMBER_OF_LEVELS"            ,int(nofLevels                      )),
+        Shader::define("NUMBER_OF_LEVELS_MINUS_ONE"  ,int(nofLevels-1                    )),
+        Shader::define("WAVEFRONT_SIZE"              ,int(wavefrontSize                  )),
+        Shader::define("SHADOWFRUSTUMS_PER_WORKGROUP",int(vars.getUint32("sintorn.shadowFrustaPerWorkGroup"))),
+        TileSizeInClipSpaceDefines,
+        TileDivisibilityDefines,
+        Shader::define("RASTERIZETEXTURE_BINDING_FINALSTENCILMASK",int(RASTERIZETEXTURE_BINDING_FINALSTENCILMASK)),
+        Shader::define("RASTERIZETEXTURE_BINDING_HST"             ,int(RASTERIZETEXTURE_BINDING_HST             )),
+        Shader::define("RASTERIZETEXTURE_BINDING_HDT"             ,int(RASTERIZETEXTURE_BINDING_HDT             )),
+        Shader::define("RASTERIZETEXTURE_BINDING_TRIANGLE_ID"     ,int(RASTERIZETEXTURE_BINDING_TRIANGLE_ID     )),
+        Shader::define("RASTERIZETEXTURE_BINDING_SHADOWFRUSTA"    ,int(RASTERIZETEXTURE_BINDING_SHADOWFRUSTA    )),
+        sintorn::rasterizationShader));
+}
+
 Sintorn::Sintorn(vars::Vars&vars):
   ShadowMethod(vars)
 {
@@ -31,8 +85,8 @@ Sintorn::Sintorn(vars::Vars&vars):
 
   _shadowMask = vars.get<Texture>("shadowMask");
 
-  _useUniformTileSizeInClipSpace=false;
-  _useUniformTileDivisibility   =false;
+  vars.addBool("sintorn.useUniformTileDivisibility"   ,false);
+  vars.addBool("sintorn.useUniformTileSizeInClipSpace",false);
 
   computeTileSizes(vars);
 
@@ -58,59 +112,11 @@ Sintorn::Sintorn(vars::Vars&vars):
     cerr<<"TileSizeInPixels: "<<tileSizeInPixels[l].x<<" "<<tileSizeInPixels[l].y<<endl;
   // */
   
-
+  createRasterizationProgram(vars);
 
   //compile shader programs
 #include<Sintorn/Shaders.h>
 
-  auto const wavefrontSize = vars.getSizeT("wavefrontSize");
-
-
-  ClearStencilProgram=make_shared<Program>(
-      make_shared<Shader>(
-        GL_COMPUTE_SHADER,
-        clearStencilCompSrc));
-
-
-  RASTERIZETEXTURE_BINDING_HDT         = RASTERIZETEXTURE_BINDING_HST+nofLevels;
-  RASTERIZETEXTURE_BINDING_TRIANGLE_ID = RASTERIZETEXTURE_BINDING_HDT+nofLevels;
-
-  string TileSizeInClipSpaceDefines="";
-  if(_useUniformTileSizeInClipSpace)
-    TileSizeInClipSpaceDefines+=Shader::define("USE_UNIFORM_TILE_SIZE_IN_CLIP_SPACE");
-  else{
-    for(unsigned l=0;l<nofLevels;++l){
-      stringstream DefineName;
-      DefineName<<"TILE_SIZE_IN_CLIP_SPACE"<<l;
-      TileSizeInClipSpaceDefines+=Shader::define(DefineName.str(),2,glm::value_ptr(tileSizeInClipSpace[l]));
-    }
-  }
-  string TileDivisibilityDefines="";
-  if(_useUniformTileDivisibility)
-    TileDivisibilityDefines+=Shader::define("USE_UNIFORM_TILE_DIVISIBILITY");
-  else{
-    for(unsigned l=0;l<nofLevels;++l){
-      stringstream DefineName;
-      DefineName<<"TILE_DIVISIBILITY"<<l;
-      TileDivisibilityDefines+=Shader::define(DefineName.str(),2,glm::value_ptr(tileDivisibility[l]));
-    }
-  }
-  RasterizeTextureProgram=make_shared<Program>(
-      make_shared<Shader>(
-        GL_COMPUTE_SHADER,
-        "#version 450 core\n",
-        Shader::define("NUMBER_OF_LEVELS"            ,int(nofLevels                      )),
-        Shader::define("NUMBER_OF_LEVELS_MINUS_ONE"  ,int(nofLevels-1                    )),
-        Shader::define("WAVEFRONT_SIZE"              ,int(wavefrontSize                  )),
-        Shader::define("SHADOWFRUSTUMS_PER_WORKGROUP",int(vars.getUint32("sintorn.shadowFrustaPerWorkGroup"))),
-        TileSizeInClipSpaceDefines,
-        TileDivisibilityDefines,
-        Shader::define("RASTERIZETEXTURE_BINDING_FINALSTENCILMASK",int(RASTERIZETEXTURE_BINDING_FINALSTENCILMASK)),
-        Shader::define("RASTERIZETEXTURE_BINDING_HST"             ,int(RASTERIZETEXTURE_BINDING_HST             )),
-        Shader::define("RASTERIZETEXTURE_BINDING_HDT"             ,int(RASTERIZETEXTURE_BINDING_HDT             )),
-        Shader::define("RASTERIZETEXTURE_BINDING_TRIANGLE_ID"     ,int(RASTERIZETEXTURE_BINDING_TRIANGLE_ID     )),
-        Shader::define("RASTERIZETEXTURE_BINDING_SHADOWFRUSTA"    ,int(RASTERIZETEXTURE_BINDING_SHADOWFRUSTA    )),
-        rasterizeTextureCompSrc));
 
    _blitProgram = make_shared<Program>(
       make_shared<Shader>(GL_COMPUTE_SHADER  ,blitCompSrc));
@@ -133,54 +139,10 @@ Sintorn::Sintorn(vars::Vars&vars):
 Sintorn::~Sintorn(){
 }
 
-class ComputePipeline{
-  public:
-    void operator()(){
-      assert(this != nullptr);
-      _program->use();
-      for(auto const&x:_ssboBinding)
-        get<BUFFER>(x)->bindRange(
-            GL_SHADER_STORAGE_BUFFER,
-            get<INDEX> (x)     ,
-            get<OFFSET>(x)     ,
-            get<SIZE>  (x)     );
-      _program->dispatch(
-          _nofGroups[0],
-          _nofGroups[1],
-          _nofGroups[2]);
-    }
-    ComputePipeline*setSSBO(
-        string                    const&name  ,
-        shared_ptr<Buffer>const&buffer){
-      return setSSBO(name,buffer,0,buffer->getSize());
-    }
-    ComputePipeline*setSSBO(
-        string                    const&name  ,
-        shared_ptr<Buffer>const&buffer,
-        GLintptr                       const&offset,
-        GLsizei                        const&size  ){
-      auto const&binding = _program->getBufferBinding(name);
-      if(binding == Program::nonExistingBufferBinding)
-        return this;
-      while(binding > _ssboBinding.size())
-        _ssboBinding.push_back(SSBOBinding(nullptr,0,0,0));
-      _ssboBinding.push_back(SSBOBinding(buffer,binding,offset,size));
-      return this;
-    }
-  protected:
-    using SSBOBinding = tuple<shared_ptr<Buffer>,GLuint,GLintptr,GLsizei>;
-    enum SSBOBindingParts{
-      BUFFER = 0,
-      INDEX  = 1,
-      OFFSET = 2,
-      SIZE   = 3,
-    };
-    shared_ptr<Program> _program      = nullptr;
-    GLuint                           _nofGroups[3] = {1,1,1};
-    vector<SSBOBinding>         _ssboBinding           ;
-};
+void rasterize(vars::Vars&vars){
+  auto useUniformTileDivisibility    = vars.getBool("sintorn.useUniformTileDivisibility"   );
+  auto useUniformTileSizeInClipSpace = vars.getBool("sintorn.useUniformTileSizeInClipSpace");
 
-void Sintorn::RasterizeTexture(){
   auto const&tileDivisibility    = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const&tileSizeInClipSpace = vars.getVector<glm::vec2>("sintorn.tileSizeInClipSpace");
   auto const nofLevels = tileDivisibility.size();
@@ -196,11 +158,12 @@ void Sintorn::RasterizeTexture(){
   }
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+  auto RasterizeTextureProgram = vars.get<Program>("sintorn.rasterizationProgram");
   RasterizeTextureProgram->use();
 
-  if(_useUniformTileDivisibility)
+  if(useUniformTileDivisibility)
     RasterizeTextureProgram->set2uiv("TileDivisibility",glm::value_ptr(tileDivisibility.data()[0]),(GLsizei)nofLevels);
-  if(_useUniformTileSizeInClipSpace)
+  if(useUniformTileSizeInClipSpace)
     RasterizeTextureProgram->set2fv("TileSizeInClipSpace",glm::value_ptr(tileSizeInClipSpace.data()[0]),(GLsizei)nofLevels);
 
   RasterizeTextureProgram->set1ui("NumberOfTriangles",(uint32_t)vars.getSizeT("sintorn.nofTriangles"));
@@ -244,7 +207,7 @@ void Sintorn::create(
   ifExistStamp("computeHDT");
   computeShadowFrusta(vars,lightPosition,projection*view);
   ifExistStamp("computeShadowFrusta");
-  RasterizeTexture();
+  rasterize(vars);
   ifExistStamp("rasterize");
   mergeStencil(vars);
   ifExistStamp("merge");
