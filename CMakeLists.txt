@@ -75,6 +75,7 @@ set(SOURCES
   src/Sintorn/MergeShaders.cpp
   src/Sintorn/MergeStencil.cpp
   src/Sintorn/RasterizationShaders.cpp
+  src/Sintorn/Rasterize.cpp
   src/RSSV/RSSV.cpp
   src/RSSV/Tiles.cpp
   src/RSSV/BuildStupidHierarchy.cpp
@@ -149,6 +150,7 @@ set(INCLUDES
   src/Sintorn/MergeShaders.h
   src/Sintorn/MergeStencil.h
   src/Sintorn/RasterizationShaders.h
+  src/Sintorn/Rasterize.h
   src/RSSV/RSSV.h
   src/RSSV/Tiles.h
   src/RSSV/Shaders.h
