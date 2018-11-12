@@ -49,7 +49,6 @@ void reduceDepthBuffer(vars::Vars&vars){
   auto program = vars.get<Program>("sintorn.hierarchicalDepthProgram");
   program->use();
   program->set2uiv("WindowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
-
   program->set2uiv("TileDivisibility",glm::value_ptr(tileDivisibility.data()[0]),(GLsizei)nofLevels);
   program->set2uiv("TileSizeInPixels",glm::value_ptr(tileSizeInPixels.data()[0]),(GLsizei)nofLevels);
 
@@ -102,8 +101,10 @@ void createWriteDepthProgram(vars::Vars&vars){
 
 
 void createHierarchicalDepthProgram(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize"}))return;
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize","sintorn.tileDivisibility"}))return;
 
+  auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
+  auto const nofLevels        = tileDivisibility.size();
   auto wavefrontSize = vars.getSizeT("wavefrontSize");
 
   vars.reCreate<Program>("sintorn.hierarchicalDepthProgram",
@@ -111,7 +112,8 @@ void createHierarchicalDepthProgram(vars::Vars&vars){
         GL_COMPUTE_SHADER,
         "#version 450 core\n",
         Shader::define("DO_NOT_COUNT_WITH_INFINITY"                                                                     ),
-        Shader::define("WAVEFRONT_SIZE"                            ,uint32_t(wavefrontSize                      )),
+        Shader::define("WAVEFRONT_SIZE"                            ,uint32_t(wavefrontSize                             )),
+        Shader::define("MAX_LEVELS"                                ,uint32_t(nofLevels                                 )),
         Shader::define("HIERARCHICALDEPTHTEXTURE_BINDING_HDTINPUT" ,int     (HIERARCHICALDEPTHTEXTURE_BINDING_HDTINPUT )),
         Shader::define("HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT",int     (HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT)),
         sintorn::hierarchicalDepthSrc));

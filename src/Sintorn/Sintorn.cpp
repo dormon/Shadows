@@ -54,7 +54,12 @@ Sintorn::Sintorn(vars::Vars&vars):
 
 }
 
+#define ___ std::cerr << __FILE__ << ": " << __LINE__ << std::endl
+
 Sintorn::~Sintorn(){
+  ___;
+  vars.erase("sintorn");
+  ___;
 }
 
 void Sintorn::create(
@@ -65,15 +70,15 @@ void Sintorn::create(
 
   assert(this!=nullptr);
   ifExistStamp("");
-  //computeHierarchicalDepth(vars,lightPosition);
+  computeHierarchicalDepth(vars,lightPosition);
   ifExistStamp("computeHDT");
-  //computeShadowFrusta(vars,lightPosition,projection*view);
+  computeShadowFrusta(vars,lightPosition,projection*view);
   ifExistStamp("computeShadowFrusta");
-  //rasterize(vars);
+  rasterize(vars);
   ifExistStamp("rasterize");
-  //mergeStencil(vars);
+  mergeStencil(vars);
   ifExistStamp("merge");
-  //blit();
+  blit();
   ifExistStamp("blit");
 }
 

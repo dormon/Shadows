@@ -116,6 +116,19 @@ void createShadowMask(vars::Vars&vars){
   vars.reCreate<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
 }
 
+void createMethod(vars::Vars&vars){
+  if(notChanged(vars,"all",__FUNCTION__,{"methodName"}))return;
+
+  if      (vars.getString("methodName") == "cubeShadowMapping")vars.reCreate<CubeShadowMapping>("shadowMethod",vars);
+  else if (vars.getString("methodName") == "cssv"             )vars.reCreate<cssv::CSSV       >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "cssvsoe"          )vars.reCreate<CSSVSOE          >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "sintorn"          )vars.reCreate<Sintorn          >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "rssv"             )vars.reCreate<rssv::RSSV       >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "vssv"             )vars.reCreate<VSSV             >("shadowMethod",vars);
+  else if (vars.getString("methodName") == "rayTracing"       )vars.reCreate<RayTracing       >("shadowMethod",vars);
+  else vars.getBool("useShadows") = false;
+}
+
 void Shadows::init() {
   parseArguments();
 
@@ -142,14 +155,7 @@ void Shadows::init() {
   vars.add<RenderModel    >("renderModel",vars.get<Model>("model"));
   vars.add<Shading        >("shading"    ,vars);
 
-  if      (vars.getString("methodName") == "cubeShadowMapping")vars.add<CubeShadowMapping>("shadowMethod",vars);
-  else if (vars.getString("methodName") == "cssv"             )vars.add<cssv::CSSV       >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "cssvsoe"          )vars.add<CSSVSOE          >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "sintorn"          )vars.add<Sintorn          >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "rssv"             )vars.add<rssv::RSSV       >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "vssv"             )vars.add<VSSV             >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "rayTracing"       )vars.add<RayTracing       >("shadowMethod",vars);
-  else vars.getBool("useShadows") = false;
+  createMethod(vars);
 
   bool isTest = vars.getString("test.name") == "fly";
   if (vars.getBool("verbose") || (vars.has("shadowMethod") && isTest))
@@ -172,6 +178,8 @@ void Shadows::ifExistEndStamp(std::string const&n){
 }
 
 void Shadows::drawScene() {
+  //createMethod(vars);
+
   ifExistBeginStamp();
 
   createGBuffer(vars);
@@ -267,8 +275,29 @@ void Shadows::draw() {
   }
 #endif
 
+
+  //ImGui::BeginCombo("cici","was");
+  //ImGui::EndCombo();
+
   //TODO imgui gui
   drawImguiVars(vars);
+
+  int static item = 0;
+  char const*names[]={
+    "cubeShadowMapping",
+    "cssv"             ,
+    "cssvsoe"          ,
+    "sintorn"          ,
+    "rssv"             ,
+    "vssv"             ,
+    "rayTracing"       ,
+  };
+  ImGui::ListBox("how",&item,names,sizeof(names)/sizeof(char*));
+  if(vars.getString("methodName") != names[item]){
+    vars.getString("methodName") = names[item];
+    vars.updateTicks("methodName");
+  }
+
 
   if(ImGui::Button("screenshot"))
   {
