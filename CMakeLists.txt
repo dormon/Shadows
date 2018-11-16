@@ -96,6 +96,7 @@ set(SOURCES
   src/createGBuffer.cpp
   src/imguiVars.cpp
   src/Barrier.cpp
+  src/Methods.cpp
   )
 
 set(INCLUDES
@@ -179,6 +180,7 @@ set(INCLUDES
   src/Barrier.h
   src/Simplex.h
   src/GLSLLine.h
+  src/Methods.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

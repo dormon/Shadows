@@ -4,10 +4,12 @@
 #include<VSSV/DrawSidesUsingPoints.h>
 #include<VSSV/DrawSidesUsingPlanes.h>
 #include<VSSV/DrawSidesUsingAllPlanes.h>
+#include<Vars/Caller.h>
 
 VSSV::VSSV(vars::Vars&vars):
   ShadowVolumes(vars       )
 {
+  vars::Caller caller(vars,__FUNCTION__);
   auto const adj = createAdjacency(vars);
 
   if(vars.getBool("vssv.usePlanes")){

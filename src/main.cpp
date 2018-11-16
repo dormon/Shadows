@@ -45,11 +45,15 @@
 #include <VSSV/Params.h>
 #include <RayTracing/RayTracing.h>
 #include <Vars/Vars.h>
+#include <Vars/Caller.h>
 #include <createGBuffer.h>
 
 #include <imguiVars.h>
 
 #include<Barrier.h>
+#include <Methods.h>
+
+#define ___ std::cerr << __FILE__ << ": " << __LINE__ << std::endl
 
 class Shadows : public simple3DApp::Application {
  public:
@@ -74,6 +78,16 @@ class Shadows : public simple3DApp::Application {
 
 void Shadows::parseArguments() {
   assert(this != nullptr);
+
+  auto methods = vars.add<Methods>("methods");
+  methods->add<CubeShadowMapping>("cubeShadowMapping");
+  methods->add<cssv::CSSV       >("cssv"             );
+  methods->add<CSSVSOE          >("cssvsoe"          );
+  methods->add<Sintorn          >("sintorn"          );
+  methods->add<rssv::RSSV       >("rssv"             );
+  methods->add<VSSV             >("vssv"             );
+  methods->add<RayTracing       >("rayTracing"       );
+
   auto arg = std::make_shared<argumentViewer::ArgumentViewer>(argc, argv);
   loadBasicApplicationParameters(vars,arg);
   loadCubeShadowMappingParams   (vars,arg);
@@ -99,11 +113,13 @@ void Shadows::parseArguments() {
 }
 
 void Shadows::initWavefrontSize() {
+  vars::Caller caller(vars,__FUNCTION__);
   vars.getSizeT("wavefrontSize") = getWavefrontSize(vars.getSizeT("wavefrontSize"));
 }
 
 void createGeometryBuffer(vars::Vars&vars){
   if(notChanged(vars,"all",__FUNCTION__,{"windowSize"}))return;
+  vars::Caller caller(vars,__FUNCTION__);
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   vars.reCreate<GBuffer>("gBuffer",windowSize.x, windowSize.y);
@@ -111,6 +127,7 @@ void createGeometryBuffer(vars::Vars&vars){
 
 void createShadowMask(vars::Vars&vars){
   if(notChanged(vars,"all",__FUNCTION__,{"windowSize"}))return;
+  vars::Caller caller(vars,__FUNCTION__);
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   vars.reCreate<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
@@ -118,18 +135,17 @@ void createShadowMask(vars::Vars&vars){
 
 void createMethod(vars::Vars&vars){
   if(notChanged(vars,"all",__FUNCTION__,{"methodName"}))return;
+  vars::Caller caller(vars,__FUNCTION__);
 
-  if      (vars.getString("methodName") == "cubeShadowMapping")vars.reCreate<CubeShadowMapping>("shadowMethod",vars);
-  else if (vars.getString("methodName") == "cssv"             )vars.reCreate<cssv::CSSV       >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "cssvsoe"          )vars.reCreate<CSSVSOE          >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "sintorn"          )vars.reCreate<Sintorn          >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "rssv"             )vars.reCreate<rssv::RSSV       >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "vssv"             )vars.reCreate<VSSV             >("shadowMethod",vars);
-  else if (vars.getString("methodName") == "rayTracing"       )vars.reCreate<RayTracing       >("shadowMethod",vars);
-  else vars.getBool("useShadows") = false;
+  ___;
+  auto const methodName = vars.getString("methodName"); 
+  auto methods = vars.get<Methods>("methods");
+  methods->createMethod(methodName,vars);
+  ___;
 }
 
 void Shadows::init() {
+  vars::Caller caller(vars,__FUNCTION__);
   parseArguments();
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
@@ -195,6 +211,7 @@ void Shadows::drawScene() {
 
 
 void Shadows::measure() {
+  vars::Caller caller(vars,__FUNCTION__);
   assert(this != nullptr);
   if (vars.getString("test.flyKeyFileName") == "") {
     std::cerr << "camera path file is empty" << std::endl;
@@ -231,15 +248,18 @@ void Shadows::measure() {
 }
 
 void Shadows::draw() {
+  vars::Caller caller(vars,__FUNCTION__);
   createGeometryBuffer(vars);
   createShadowMask(vars);
   createProjection(vars);
+  createMethod(vars);
 
   if(vars.getSizeT("maxFrame") != 0){
     if(vars.getSizeT("frameCounter") >= vars.getSizeT("maxFrame"))
       mainLoop->removeWindow(window->getId());
     vars.getSizeT("frameCounter")++;
   }
+  ___;
 
   ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
@@ -250,13 +270,17 @@ void Shadows::draw() {
     measure();
     return;
   }
+  ___;
 
   moveCameraWSAD(vars, keyDown);
 
   drawScene();
+  ___;
 
   //*
+  //std::cerr << vars.getString("methodName") << std::endl;
   if (vars.getString("methodName") == "sintorn") {
+    //std::cerr << "asd" << std::endl;
     auto sintorn = vars.getReinterpret<Sintorn>("shadowMethod");
     auto dp = vars.get<DrawPrimitive>("drawPrimitive");
     auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(vars.getVector<std::shared_ptr<ge::gl::Texture>>("sintorn.HDT")[i]);};
@@ -274,6 +298,7 @@ void Shadows::draw() {
     for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
   }
 #endif
+  ___;
 
 
   //ImGui::BeginCombo("cici","was");
@@ -281,22 +306,30 @@ void Shadows::draw() {
 
   //TODO imgui gui
   drawImguiVars(vars);
+  ___;
 
-  int static item = 0;
-  char const*names[]={
-    "cubeShadowMapping",
-    "cssv"             ,
-    "cssvsoe"          ,
-    "sintorn"          ,
-    "rssv"             ,
-    "vssv"             ,
-    "rayTracing"       ,
-  };
-  ImGui::ListBox("how",&item,names,sizeof(names)/sizeof(char*));
-  if(vars.getString("methodName") != names[item]){
-    vars.getString("methodName") = names[item];
+  auto methods = vars.get<Methods>("methods");
+  auto method = vars.getString("methodName");
+  int oldMethodId;
+  if(methods->hasMethod(method))
+    oldMethodId = methods->getId(vars.getString("methodName"));
+  else
+    oldMethodId = methods->getNofMethods();
+  int newMethodId = oldMethodId;
+  ___;
+
+  std::vector<char const*>names;
+  for(size_t i=0;i<methods->getNofMethods();++i)
+    names.push_back(methods->getName(i).c_str());
+  names.push_back("no shadow");
+  ___;
+  
+  ImGui::ListBox("method",&newMethodId,names.data(),names.size());
+  if(newMethodId != oldMethodId){
+    vars.getString("methodName") = methods->getName(newMethodId);
     vars.updateTicks("methodName");
   }
+  ___;
 
 
   if(ImGui::Button("screenshot"))
@@ -317,6 +350,7 @@ void Shadows::draw() {
     img.save("/home/dormon/Desktop/test.exr");
     std::cerr << "take a screenshot" << std::endl;
   }
+  ___;
 
 
 
@@ -336,6 +370,7 @@ void Shadows::key(SDL_Event const& event, bool DOWN) {
 }
 
 void Shadows::resize(uint32_t x,uint32_t y){
+  vars::Caller caller(vars,__FUNCTION__);
   auto windowSize = vars.get<glm::uvec2>("windowSize");
   windowSize->x = x;
   windowSize->y = y;

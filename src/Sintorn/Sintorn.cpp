@@ -10,6 +10,7 @@
 #include<iomanip>
 #include<util.h>
 #include<Deferred.h>
+#include<Vars/Caller.h>
 
 const size_t DRAWHDB_BINDING_HDBIMAGE = 0;
 const size_t DRAWHDB_BINDING_HDT      = 1;
@@ -23,6 +24,7 @@ using namespace ge::gl;
 Sintorn::Sintorn(vars::Vars&vars):
   ShadowMethod(vars)
 {
+  vars::Caller caller(vars,__FUNCTION__);
   assert(this!=nullptr);
 
   _shadowMask = vars.get<Texture>("shadowMask");
@@ -83,6 +85,7 @@ void Sintorn::create(
 }
 
 void Sintorn::drawHST(size_t l){
+  vars::Caller caller(vars,__FUNCTION__);
   assert(this!=nullptr);
   _drawHSTProgram->use();
   auto&HST = vars.getVector<std::shared_ptr<Texture>>("sintorn.HST");
@@ -93,6 +96,7 @@ void Sintorn::drawHST(size_t l){
 }
 
 void Sintorn::drawFinalStencilMask(){
+  vars::Caller caller(vars,__FUNCTION__);
   assert(this!=nullptr);
   assert(_drawFinalStencilMask!=nullptr);
   assert(_drawFinalStencilMask!=nullptr);
@@ -106,6 +110,7 @@ void Sintorn::drawFinalStencilMask(){
 }
 
 void Sintorn::blit(){
+  vars::Caller caller(vars,__FUNCTION__);
   assert(this!=nullptr);
   assert(_blitProgram!=nullptr);
   assert(_shadowMask!=nullptr);

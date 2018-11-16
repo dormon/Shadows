@@ -8,6 +8,7 @@
 #include <Deferred.h>
 #include <util.h>
 #include <sstream>
+#include <Vars/Caller.h>
 
 using namespace std;
 using namespace ge::gl;
@@ -20,6 +21,7 @@ size_t RASTERIZETEXTURE_BINDING_SHADOWFRUSTA     = 0;
 
 void createRasterizationProgram(vars::Vars&vars){
   if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize","sintorn.tileDivisibility","sintorn.tileSizeInClipSpace","sintorn.useUniformTileDivisibility","sintorn.useUniformTileSizeInClipSpace"}))return;
+  vars::Caller caller(vars,__FUNCTION__);
 
   auto useUniformTileDivisibility    = vars.getBool("sintorn.useUniformTileDivisibility"   );
   auto useUniformTileSizeInClipSpace = vars.getBool("sintorn.useUniformTileSizeInClipSpace");
@@ -72,6 +74,7 @@ void createRasterizationProgram(vars::Vars&vars){
 }
 
 void rasterize(vars::Vars&vars){
+  vars::Caller caller(vars,__FUNCTION__);
   createRasterizationProgram(vars);
 
   auto useUniformTileDivisibility    = vars.getBool("sintorn.useUniformTileDivisibility"   );

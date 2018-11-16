@@ -7,6 +7,8 @@
 #include<iostream>
 #include<glm/glm.hpp>
 
+#define ___ std::cerr << __FILE__ << ": " << __LINE__ << std::endl
+
 std::string getHead(std::string const&n){
   return n.substr(0,n.find("."));
 }
@@ -42,7 +44,9 @@ class VarNamesHierarchy{
         auto const groupName  = getHead(name);
         auto const subVarName = getTail(name);
         createChildGroup(children,groupName);
+        ___;
         insertIntoChildren(children.at(groupName)->children,subVarName,fullName);
+        ___;
       }else{
         createChildGroup(children,name,fullName);
         children[name]->isVariable = true;
@@ -98,11 +102,14 @@ void drawGroup(std::unique_ptr<Group>const&group,vars::Vars &vars){
 
 
 void drawImguiVars(vars::Vars &vars){
+  ___;
   std::vector<std::string>names;
   for(size_t i = 0;i<vars.getNofVars();++i)
     names.push_back(vars.getVarName(i));
+  ___;
   
   VarNamesHierarchy hierarchy(names);
+  ___;
   
 
   ImGui::Begin("vars");

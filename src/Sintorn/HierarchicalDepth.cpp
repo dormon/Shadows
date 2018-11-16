@@ -5,6 +5,7 @@
 #include <geGL/StaticCalls.h>
 #include <Deferred.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <Vars/Caller.h>
 
 using namespace std;
 using namespace ge::gl;
@@ -18,6 +19,7 @@ const size_t HIERARCHICALDEPTHTEXTURE_BINDING_HDTOUTPUT = 1;
 
 
 void writeDepth(vars::Vars&vars,glm::vec4 const&lightPosition){
+  vars::Caller caller(vars,__FUNCTION__);
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const nofLevels        = tileDivisibility.size();
   auto const&tileCount        = vars.getVector<glm::uvec2>("sintorn.tileCount");
@@ -41,6 +43,7 @@ void writeDepth(vars::Vars&vars,glm::vec4 const&lightPosition){
 }
 
 void reduceDepthBuffer(vars::Vars&vars){
+  vars::Caller caller(vars,__FUNCTION__);
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const nofLevels        = tileDivisibility.size();
   auto const&tileSizeInPixels = vars.getVector<glm::uvec2>("sintorn.tileSizeInPixels");
@@ -64,6 +67,7 @@ void reduceDepthBuffer(vars::Vars&vars){
 
 void allocateHierarchicalDepth(vars::Vars&vars){
   if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.usedTiles"}))return;
+  vars::Caller caller(vars,__FUNCTION__);
 
   auto const&usedTiles = vars.getVector<glm::uvec2>("sintorn.usedTiles");
   auto const nofLevels = usedTiles.size();
@@ -81,6 +85,7 @@ void allocateHierarchicalDepth(vars::Vars&vars){
 
 void createWriteDepthProgram(vars::Vars&vars){
   if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileDivisibility","sintorn.discardBackFacing"}))return;
+  vars::Caller caller(vars,__FUNCTION__);
 
   auto const&tileDivisibility    = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const nofLevels           = tileDivisibility.size();
@@ -102,6 +107,7 @@ void createWriteDepthProgram(vars::Vars&vars){
 
 void createHierarchicalDepthProgram(vars::Vars&vars){
   if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize","sintorn.tileDivisibility"}))return;
+  vars::Caller caller(vars,__FUNCTION__);
 
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const nofLevels        = tileDivisibility.size();
@@ -122,6 +128,7 @@ void createHierarchicalDepthProgram(vars::Vars&vars){
 
 
 void computeHierarchicalDepth(vars::Vars&vars,glm::vec4 const&lightPosition){
+  vars::Caller caller(vars,__FUNCTION__);
   allocateHierarchicalDepth(vars);
   createWriteDepthProgram(vars);
   createHierarchicalDepthProgram(vars);
