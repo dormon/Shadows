@@ -28,7 +28,7 @@ void writeDepth(vars::Vars&vars,glm::vec4 const&lightPosition){
   program->use();
   program->set2uiv("windowSize",glm::value_ptr(*vars.get<glm::uvec2>("windowSize")));
   vars.get<GBuffer>("gBuffer")->depth->bind(WRITEDEPTHTEXTURE_BINDING_DEPTH);
-  if(vars.getBool("sintorn.discardBackFacing")){
+  if(vars.getBool("args.sintorn.discardBackFacing")){
     vars.get<GBuffer>("gBuffer")->normal->bind(WRITEDEPTHTEXTURE_BINDING_NORMAL);
     program->set4fv("lightPosition",glm::value_ptr(lightPosition));
   }
@@ -84,7 +84,7 @@ void allocateHierarchicalDepth(vars::Vars&vars){
 }
 
 void createWriteDepthProgram(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileDivisibility","sintorn.discardBackFacing"}))return;
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileDivisibility","args.sintorn.discardBackFacing"}))return;
   vars::Caller caller(vars,__FUNCTION__);
 
   auto const&tileDivisibility    = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
@@ -95,12 +95,12 @@ void createWriteDepthProgram(vars::Vars&vars){
       make_shared<Shader>(
         GL_COMPUTE_SHADER,
         "#version 450 core\n",
-        Shader::define("LOCAL_TILE_SIZE_X"               ,int(tileDivisibility[nofLevels-1].x)),
-        Shader::define("LOCAL_TILE_SIZE_Y"               ,int(tileDivisibility[nofLevels-1].y)),
-        Shader::define("WRITEDEPTHTEXTURE_BINDING_DEPTH" ,int(WRITEDEPTHTEXTURE_BINDING_DEPTH              )),
-        Shader::define("WRITEDEPTHTEXTURE_BINDING_HDT"   ,int(WRITEDEPTHTEXTURE_BINDING_HDT                )),
-        Shader::define("WRITEDEPTHTEXTURE_BINDING_NORMAL",int(WRITEDEPTHTEXTURE_BINDING_NORMAL             )),
-        Shader::define("DISCARD_BACK_FACING"             ,int(vars.getBool("sintorn.discardBackFacing")    )),
+        Shader::define("LOCAL_TILE_SIZE_X"               ,int(tileDivisibility[nofLevels-1].x               )),
+        Shader::define("LOCAL_TILE_SIZE_Y"               ,int(tileDivisibility[nofLevels-1].y               )),
+        Shader::define("WRITEDEPTHTEXTURE_BINDING_DEPTH" ,int(WRITEDEPTHTEXTURE_BINDING_DEPTH               )),
+        Shader::define("WRITEDEPTHTEXTURE_BINDING_HDT"   ,int(WRITEDEPTHTEXTURE_BINDING_HDT                 )),
+        Shader::define("WRITEDEPTHTEXTURE_BINDING_NORMAL",int(WRITEDEPTHTEXTURE_BINDING_NORMAL              )),
+        Shader::define("DISCARD_BACK_FACING"             ,int(vars.getBool("args.sintorn.discardBackFacing"))),
         sintorn::writeDepthSrc));
 }
 

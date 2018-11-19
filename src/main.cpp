@@ -137,11 +137,9 @@ void createMethod(vars::Vars&vars){
   if(notChanged(vars,"all",__FUNCTION__,{"methodName"}))return;
   vars::Caller caller(vars,__FUNCTION__);
 
-  ___;
   auto const methodName = vars.getString("methodName"); 
   auto methods = vars.get<Methods>("methods");
   methods->createMethod(methodName,vars);
-  ___;
 }
 
 void Shadows::init() {
@@ -259,7 +257,6 @@ void Shadows::draw() {
       mainLoop->removeWindow(window->getId());
     vars.getSizeT("frameCounter")++;
   }
-  ___;
 
   ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
@@ -270,12 +267,10 @@ void Shadows::draw() {
     measure();
     return;
   }
-  ___;
 
   moveCameraWSAD(vars, keyDown);
 
   drawScene();
-  ___;
 
   //*
   //std::cerr << vars.getString("methodName") << std::endl;
@@ -298,7 +293,6 @@ void Shadows::draw() {
     for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
   }
 #endif
-  ___;
 
 
   //ImGui::BeginCombo("cici","was");
@@ -306,7 +300,6 @@ void Shadows::draw() {
 
   //TODO imgui gui
   drawImguiVars(vars);
-  ___;
 
   auto methods = vars.get<Methods>("methods");
   auto method = vars.getString("methodName");
@@ -316,20 +309,17 @@ void Shadows::draw() {
   else
     oldMethodId = methods->getNofMethods();
   int newMethodId = oldMethodId;
-  ___;
 
   std::vector<char const*>names;
   for(size_t i=0;i<methods->getNofMethods();++i)
     names.push_back(methods->getName(i).c_str());
   names.push_back("no shadow");
-  ___;
   
   ImGui::ListBox("method",&newMethodId,names.data(),names.size());
   if(newMethodId != oldMethodId){
     vars.getString("methodName") = methods->getName(newMethodId);
     vars.updateTicks("methodName");
   }
-  ___;
 
 
   if(ImGui::Button("screenshot"))
@@ -350,7 +340,6 @@ void Shadows::draw() {
     img.save("/home/dormon/Desktop/test.exr");
     std::cerr << "take a screenshot" << std::endl;
   }
-  ___;
 
 
 

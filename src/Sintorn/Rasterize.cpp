@@ -20,7 +20,7 @@ size_t RASTERIZETEXTURE_BINDING_TRIANGLE_ID      = 9;
 size_t RASTERIZETEXTURE_BINDING_SHADOWFRUSTA     = 0;
 
 void createRasterizationProgram(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize","sintorn.tileDivisibility","sintorn.tileSizeInClipSpace","sintorn.useUniformTileDivisibility","sintorn.useUniformTileSizeInClipSpace"}))return;
+  if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize","sintorn.tileDivisibility","sintorn.tileSizeInClipSpace","sintorn.useUniformTileDivisibility","sintorn.useUniformTileSizeInClipSpace","args.sintorn.shadowFrustaPerWorkGroup"}))return;
   vars::Caller caller(vars,__FUNCTION__);
 
   auto useUniformTileDivisibility    = vars.getBool("sintorn.useUniformTileDivisibility"   );
@@ -62,7 +62,7 @@ void createRasterizationProgram(vars::Vars&vars){
         Shader::define("NUMBER_OF_LEVELS"            ,int(nofLevels                      )),
         Shader::define("NUMBER_OF_LEVELS_MINUS_ONE"  ,int(nofLevels-1                    )),
         Shader::define("WAVEFRONT_SIZE"              ,int(wavefrontSize                  )),
-        Shader::define("SHADOWFRUSTUMS_PER_WORKGROUP",int(vars.getUint32("sintorn.shadowFrustaPerWorkGroup"))),
+        Shader::define("SHADOWFRUSTUMS_PER_WORKGROUP",int(vars.getUint32("args.sintorn.shadowFrustaPerWorkGroup"))),
         TileSizeInClipSpaceDefines,
         TileDivisibilityDefines,
         Shader::define("RASTERIZETEXTURE_BINDING_FINALSTENCILMASK",int(RASTERIZETEXTURE_BINDING_FINALSTENCILMASK)),
@@ -119,7 +119,7 @@ void rasterize(vars::Vars&vars){
 
   
   size_t maxSize = 65536/2;
-  size_t workgroups = getDispatchSize(vars.getSizeT("sintorn.nofTriangles"),vars.getUint32("sintorn.shadowFrustaPerWorkGroup"));
+  size_t workgroups = getDispatchSize(vars.getSizeT("sintorn.nofTriangles"),vars.getUint32("args.sintorn.shadowFrustaPerWorkGroup"));
   size_t offset = 0;
   while(offset+maxSize<=workgroups){
     RasterizeTextureProgram->set1ui("triangleOffset",(uint32_t)offset);
