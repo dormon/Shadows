@@ -301,6 +301,9 @@ void Shadows::draw() {
   //TODO imgui gui
   drawImguiVars(vars);
 
+
+
+
   auto methods = vars.get<Methods>("methods");
   auto method = vars.getString("methodName");
   int oldMethodId;
@@ -317,9 +320,14 @@ void Shadows::draw() {
   
   ImGui::ListBox("method",&newMethodId,names.data(),names.size());
   if(newMethodId != oldMethodId){
-    vars.getString("methodName") = methods->getName(newMethodId);
+    if(newMethodId < methods->getNofMethods())
+      vars.getString("methodName") = methods->getName(newMethodId);
+    else
+      vars.getString("methodName") = "no shadow";
     vars.updateTicks("methodName");
   }
+
+
 
 
   if(ImGui::Button("screenshot"))
