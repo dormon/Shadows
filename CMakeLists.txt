@@ -181,6 +181,7 @@ set(INCLUDES
   src/Simplex.h
   src/GLSLLine.h
   src/Methods.h
+  src/FunctionPrologue.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

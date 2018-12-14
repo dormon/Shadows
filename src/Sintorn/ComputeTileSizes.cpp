@@ -2,13 +2,13 @@
 #include <Sintorn/Tiles.h>
 
 #include <iostream>
+#include <FunctionPrologue.h>
 #include <Barrier.h>
 #include <glm/glm.hpp>
 #include <Vars/Caller.h>
 
 void computeTileDivisibility(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize","windowSize"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","wavefrontSize","windowSize");
 
   auto const windowSize = *vars.get<glm::uvec2>("windowSize");
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
@@ -23,8 +23,7 @@ void computeTileDivisibility(vars::Vars&vars){
 }
 
 void computeTileSizeInPixel(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileDivisibility"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","sintorn.tileDivisibility");
 
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const nofLevels = tileDivisibility.size();
@@ -41,8 +40,7 @@ void computeTileSizeInPixel(vars::Vars&vars){
 }
 
 void computeTileCount(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileDivisibility"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","sintorn.tileDivisibility");
 
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const nofLevels = tileDivisibility.size();
@@ -65,8 +63,7 @@ void computeTileCount(vars::Vars&vars){
 
 
 void computeTileSizeInClipSpace(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileSizeInPixels","windowSize"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","sintorn.tileSizeInPixels","windowSize");
 
   auto const&tileSizeInPixels = vars.getVector<glm::uvec2>("sintorn.tileSizeInPixels");
   auto const windowSize       = *vars.get<glm::uvec2>("windowSize");
@@ -83,8 +80,7 @@ void computeTileSizeInClipSpace(vars::Vars&vars){
 }
 
 void computeUsedTiles(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileDivisibility","windowSize"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","sintorn.tileDivisibility","windowSize");
 
   auto const&tileDivisibility = vars.getVector<glm::uvec2>("sintorn.tileDivisibility");
   auto const nofLevels        = tileDivisibility.size();

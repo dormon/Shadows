@@ -7,10 +7,10 @@ using namespace std;
 
 #include<Vars/Resource.h>
 
-#include<Barrier.h>
+#include<FunctionPrologue.h>
 
 void createShadowMapTexture(vars::Vars&vars){
-  if(notChanged(vars,"csm",__FUNCTION__,{"args.csm.resolution"}))return;
+  FUNCTION_PROLOGUE("csm","args.csm.resolution");
 
   auto const resolution = vars.getUint32("args.csm.resolution");
   auto shadowMap = vars.reCreate<Texture>("csm.shadowMap",GL_TEXTURE_CUBE_MAP,GL_DEPTH_COMPONENT24,1,resolution,resolution);
@@ -23,7 +23,7 @@ void createShadowMapTexture(vars::Vars&vars){
 }
 
 void createShadowMapFBO(vars::Vars&vars){
-  if(notChanged(vars,"csm",__FUNCTION__,{"csm.shadowMap"}))return;
+  FUNCTION_PROLOGUE("csm","csm.shadowMap");
 
   auto fbo = vars.reCreate<Framebuffer>("csm.shadowMapFBO");
   fbo->attachTexture(GL_DEPTH_ATTACHMENT,vars.get<Texture>("csm.shadowMap"));
@@ -31,14 +31,14 @@ void createShadowMapFBO(vars::Vars&vars){
 
 
 void createShadowMapVAO(vars::Vars&vars){
-  if(notChanged(vars,"csm",__FUNCTION__,{"renderModel"}))return;
+  FUNCTION_PROLOGUE("csm","renderModel");
 
   auto vao = vars.reCreate<VertexArray>("csm.shadowMapVAO");
   vao->addAttrib(vars.get<RenderModel>("renderModel")->vertices,0,3,GL_FLOAT);
 }
 
 void createShadowMapProgram(vars::Vars&vars){
-  if(notChanged(vars,"csm",__FUNCTION__))return;
+  FUNCTION_PROLOGUE("csm");
 
 #include<CubeShadowMapping/CreateShadowMapShaders.h>
   vars.reCreate<Program>("csm.shadowMapProgram",
@@ -51,7 +51,7 @@ void createShadowMapProgram(vars::Vars&vars){
 }
 
 void createMaskFBO(vars::Vars&vars){
-  if(notChanged(vars,"csm",__FUNCTION__,{"shadowMask"}))return;
+  FUNCTION_PROLOGUE("csm","shadowMask");
 
   auto fbo = vars.reCreate<Framebuffer>("csm.maskFBO");
   fbo->attachTexture(GL_COLOR_ATTACHMENT0,vars.get<Texture>("shadowMask"));
@@ -59,7 +59,7 @@ void createMaskFBO(vars::Vars&vars){
 }
 
 void createShadowMaskProgram(vars::Vars&vars){
-  if(notChanged(vars,"csm",__FUNCTION__))return;
+  FUNCTION_PROLOGUE("csm");
 
 #include<CubeShadowMapping/ShadowMapToShadowMaskShaders.h>
 
@@ -73,7 +73,7 @@ void createShadowMaskProgram(vars::Vars&vars){
 }
 
 void createShadowMaskVAO(vars::Vars&vars){
-  if(notChanged(vars,"csm",__FUNCTION__))return;
+  FUNCTION_PROLOGUE("csm");
 
   vars.reCreate<VertexArray>("csm.maskVAO");
 }

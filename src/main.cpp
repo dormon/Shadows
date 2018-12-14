@@ -50,8 +50,9 @@
 
 #include <imguiVars.h>
 
-#include<Barrier.h>
+#include <FunctionPrologue.h>
 #include <Methods.h>
+#include <geGL/OpenGLUtil.h>
 
 #define ___ std::cerr << __FILE__ << ": " << __LINE__ << std::endl
 
@@ -113,29 +114,26 @@ void Shadows::parseArguments() {
 }
 
 void Shadows::initWavefrontSize() {
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_CALLER();
   vars.getSizeT("wavefrontSize") = getWavefrontSize(vars.getSizeT("wavefrontSize"));
 }
 
 void createGeometryBuffer(vars::Vars&vars){
-  if(notChanged(vars,"all",__FUNCTION__,{"windowSize"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("all","windowSize");
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   vars.reCreate<GBuffer>("gBuffer",windowSize.x, windowSize.y);
 }
 
 void createShadowMask(vars::Vars&vars){
-  if(notChanged(vars,"all",__FUNCTION__,{"windowSize"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("all","windowSize");
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   vars.reCreate<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
 }
 
 void createMethod(vars::Vars&vars){
-  if(notChanged(vars,"all",__FUNCTION__,{"methodName"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("all","methodName");
 
   auto const methodName = vars.getString("methodName"); 
   auto methods = vars.get<Methods>("methods");
@@ -143,7 +141,8 @@ void createMethod(vars::Vars&vars){
 }
 
 void Shadows::init() {
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_CALLER();
+
   parseArguments();
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
@@ -209,7 +208,8 @@ void Shadows::drawScene() {
 
 
 void Shadows::measure() {
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_CALLER();
+
   assert(this != nullptr);
   if (vars.getString("test.flyKeyFileName") == "") {
     std::cerr << "camera path file is empty" << std::endl;
@@ -245,8 +245,71 @@ void Shadows::measure() {
   mainLoop->removeWindow(window->getId());
 }
 
+void selectMethod(vars::Vars&vars){
+  auto methods = vars.get<Methods>("methods");
+  auto method = vars.getString("methodName");
+  int oldMethodId;
+  if(methods->hasMethod(method))
+    oldMethodId = methods->getId(vars.getString("methodName"));
+  else
+    oldMethodId = methods->getNofMethods();
+  int newMethodId = oldMethodId;
+
+  std::vector<char const*>names;
+  for(size_t i=0;i<methods->getNofMethods();++i)
+    names.push_back(methods->getName(i).c_str());
+  names.push_back("no shadow");
+  
+  ImGui::ListBox("method",&newMethodId,names.data(),names.size());
+  if(newMethodId != oldMethodId){
+    if(newMethodId < methods->getNofMethods())
+      vars.getString("methodName") = methods->getName(newMethodId);
+    else
+      vars.getString("methodName") = "no shadow";
+    vars.updateTicks("methodName");
+  }
+}
+
+void saveTexture(std::string const&name,ge::gl::Texture const*tex){
+    auto const width     = tex->getWidth(0);
+    auto const height    = tex->getHeight(0);
+    auto const nofTexels = width * height;
+    auto const id        = tex->getId();
+    auto const iFormat   = tex->getInternalFormat(0);
+    auto const texelSize = ge::gl::internalFormatSize(iFormat);
+    fipImage img;
+    std::vector<uint8_t>buf(nofTexels * texelSize);
+
+    ge::gl::glGetTextureImage(id,0,GL_RED,GL_FLOAT,buf.size(),buf.data());
+    img.setSize(FIT_FLOAT,windowSize.x,windowSize.y,32);
+    for(size_t y=0;y<windowSize.y;++y){
+      auto ptr = (float*)FreeImage_GetScanLine(img,y);
+      for(size_t x=0;x<windowSize.x;++x)
+        ptr[x] = buf.at(y*windowSize.x + x);
+    }
+    img.save("/home/dormon/Desktop/test.exr");
+
+    id = vars.get<GBuffer>("gBuffer")->color->getId();
+    std::vector<uint8_t>buf1(windowSize.x * windowSize.y * sizeof(uint16_t) * 4);
+    ge::gl::glGetTextureImage(id,0,GL_RGBA_INTEGER,GL_UNSIGNED_SHORT,buf1.size(),buf1.data());
+    img.setSize(FIT_BITMAP,windowSize.x,windowSize.y,24);
+    for(size_t y=0;y<windowSize.y;++y){
+      auto ptr = (uint8_t*)FreeImage_GetScanLine(img,y);
+      for(size_t x=0;x<windowSize.x;++x){
+        ptr[x*3+0] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 0*sizeof(uint16_t));
+        ptr[x*3+1] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 1*sizeof(uint16_t));
+        ptr[x*3+2] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 2*sizeof(uint16_t));
+      }
+    }
+    img.save("/home/dormon/Desktop/aa.png");
+
+}
+
 void Shadows::draw() {
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_CALLER();
+
+  //ge::gl::glClear(GL_COLOR_BUFFER_BIT);
+#if 1
   createGeometryBuffer(vars);
   createShadowMask(vars);
   createProjection(vars);
@@ -303,29 +366,7 @@ void Shadows::draw() {
 
 
 
-
-  auto methods = vars.get<Methods>("methods");
-  auto method = vars.getString("methodName");
-  int oldMethodId;
-  if(methods->hasMethod(method))
-    oldMethodId = methods->getId(vars.getString("methodName"));
-  else
-    oldMethodId = methods->getNofMethods();
-  int newMethodId = oldMethodId;
-
-  std::vector<char const*>names;
-  for(size_t i=0;i<methods->getNofMethods();++i)
-    names.push_back(methods->getName(i).c_str());
-  names.push_back("no shadow");
-  
-  ImGui::ListBox("method",&newMethodId,names.data(),names.size());
-  if(newMethodId != oldMethodId){
-    if(newMethodId < methods->getNofMethods())
-      vars.getString("methodName") = methods->getName(newMethodId);
-    else
-      vars.getString("methodName") = "no shadow";
-    vars.updateTicks("methodName");
-  }
+  selectMethod(vars);
 
 
 
@@ -336,7 +377,6 @@ void Shadows::draw() {
     auto windowSize = *vars.get<glm::uvec2>("windowSize");
     //img.setSize(FIT_BITMAP,->x,vars.get<glm::uvec2>("windowSize")->y,24);
     auto id = vars.get<ge::gl::Texture>("shadowMask")->getId();
-
     std::vector<float>buf(windowSize.x * windowSize.y);
     ge::gl::glGetTextureImage(id,0,GL_RED,GL_FLOAT,buf.size()*sizeof(float),buf.data());
     img.setSize(FIT_FLOAT,windowSize.x,windowSize.y,32);
@@ -346,9 +386,26 @@ void Shadows::draw() {
         ptr[x] = buf.at(y*windowSize.x + x);
     }
     img.save("/home/dormon/Desktop/test.exr");
+
+    id = vars.get<GBuffer>("gBuffer")->color->getId();
+    std::vector<uint8_t>buf1(windowSize.x * windowSize.y * sizeof(uint16_t) * 4);
+    ge::gl::glGetTextureImage(id,0,GL_RGBA_INTEGER,GL_UNSIGNED_SHORT,buf1.size(),buf1.data());
+    img.setSize(FIT_BITMAP,windowSize.x,windowSize.y,24);
+    for(size_t y=0;y<windowSize.y;++y){
+      auto ptr = (uint8_t*)FreeImage_GetScanLine(img,y);
+      for(size_t x=0;x<windowSize.x;++x){
+        ptr[x*3+0] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 0*sizeof(uint16_t));
+        ptr[x*3+1] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 1*sizeof(uint16_t));
+        ptr[x*3+2] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 2*sizeof(uint16_t));
+      }
+    }
+    img.save("/home/dormon/Desktop/aa.png");
+
+
+    
     std::cerr << "take a screenshot" << std::endl;
   }
-
+#endif
 
 
   // */
@@ -367,7 +424,8 @@ void Shadows::key(SDL_Event const& event, bool DOWN) {
 }
 
 void Shadows::resize(uint32_t x,uint32_t y){
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_CALLER();
+
   auto windowSize = vars.get<glm::uvec2>("windowSize");
   windowSize->x = x;
   windowSize->y = y;

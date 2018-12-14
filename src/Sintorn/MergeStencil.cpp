@@ -7,8 +7,7 @@
 #include <geGL/geGL.h>
 #include <geGL/StaticCalls.h>
 
-#include <Barrier.h>
-#include <Vars/Caller.h>
+#include <FunctionPrologue.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -24,8 +23,7 @@ const size_t WRITESTENCILTEXTURE_BINDING_HSTINPUT         = 1;
 
 
 void createMergeProgram(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"wavefrontSize"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","wavefrontSize");
   
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
   vars.add<Program>("sintorn.mergeProgram",
@@ -39,8 +37,7 @@ void createMergeProgram(vars::Vars&vars){
 }
 
 void createWriteStencilProgram(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"sintorn.tileDivisibility"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","sintorn.tileDivisibility");
 
   auto const&tileDivisibility = vars.getVector<uvec2>("sintorn.tileDivisibility");
   auto const nofLevels = tileDivisibility.size();
@@ -57,8 +54,7 @@ void createWriteStencilProgram(vars::Vars&vars){
 }
 
 void allocateHierarchicalStencil(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"windowSize","wavefrontSize","sintorn.usedTiles"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","windowSize","wavefrontSize","sintorn.usedTiles");
 
   auto const windowSize    = *vars.get<uvec2>("windowSize");
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
@@ -84,7 +80,8 @@ void allocateHierarchicalStencil(vars::Vars&vars){
 }
 
 void propagateStencil(vars::Vars&vars){
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_CALLER();
+
   auto const&tileDivisibility = vars.getVector<uvec2>("sintorn.tileDivisibility");
   auto const&tileSizeInPixels = vars.getVector<uvec2>("sintorn.tileSizeInPixels");
   auto const&tileCount        = vars.getVector<uvec2>("sintorn.tileCount");
@@ -119,7 +116,8 @@ void propagateStencil(vars::Vars&vars){
 }
 
 void writeStencil(vars::Vars&vars){
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_CALLER();
+
   auto const&tileCount        = vars.getVector<uvec2>("sintorn.tileCount");
   auto const nofLevels        = tileCount.size();
   auto       program          = vars.get<Program>("sintorn.writeStencilProgram");

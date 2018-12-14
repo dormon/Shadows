@@ -4,7 +4,7 @@
 #include <geGL/StaticCalls.h>
 #include <Model.h>
 #include <util.h>
-#include <Vars/Caller.h>
+#include <FunctionPrologue.h>
 
 using namespace std;
 using namespace ge::gl;
@@ -13,8 +13,7 @@ size_t const VEC4_PER_SHADOWFRUSTUM   = 6;
 size_t const FLOATS_PER_SHADOWFRUSTUM = VEC4_PER_SHADOWFRUSTUM*4;
 
 void allocateShadowFrustaBuffer(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"model"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","model");
 
   vector<float>vertices;
   vars.get<Model>("model")->getVertices(vertices);
@@ -39,8 +38,7 @@ void allocateShadowFrustaBuffer(vars::Vars&vars){
 #include<Sintorn/ShadowFrustaShaders.h>
 
 void createShadowFrustaProgram(vars::Vars&vars){
-  if(notChanged(vars,"sintorn",__FUNCTION__,{"args.sintorn.bias","args.sintorn.shadowFrustaWGS"}))return;
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_PROLOGUE("sintorn","args.sintorn.bias","args.sintorn.shadowFrustaWGS");
 
   vars.reCreate<Program>("sintorn.sfProgram",
       make_shared<Shader>(
@@ -52,7 +50,8 @@ void createShadowFrustaProgram(vars::Vars&vars){
 }
 
 void computeShadowFrusta(vars::Vars&vars,glm::vec4 const&lightPosition,glm::mat4 mvp){
-  vars::Caller caller(vars,__FUNCTION__);
+  FUNCTION_CALLER();
+
   allocateShadowFrustaBuffer(vars);
   createShadowFrustaProgram(vars);
 

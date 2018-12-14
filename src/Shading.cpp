@@ -41,9 +41,9 @@ void main(){
     shadowCoef = texelFetch(shadowMaskTexture,coord,0).x+.5;
 
   uvec4 color              = texelFetch(colorTexture,coord,0);
-  vec3  Ka                 = vec3((color.xyz>>0)&0xff)/0xff;
+  vec3  Ka                 = vec3((color.xyz>>0u)&0xffu)/0xffu;
   vec3  Kd                 = Ka;
-  vec3  Ks                 = vec3((color.xyz>>8)&0xff)/0xff;
+  vec3  Ks                 = vec3((color.xyz>>8u)&0xffu)/0xffu;
   float Shininess          = 50;//shininess factor
   float specularFactorCoef = float(color.w)/255.;
 
