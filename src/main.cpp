@@ -271,38 +271,24 @@ void selectMethod(vars::Vars&vars){
 }
 
 void saveTexture(std::string const&name,ge::gl::Texture const*tex){
-    auto const width     = tex->getWidth(0);
-    auto const height    = tex->getHeight(0);
-    auto const nofTexels = width * height;
-    auto const id        = tex->getId();
-    auto const iFormat   = tex->getInternalFormat(0);
-    auto const texelSize = ge::gl::internalFormatSize(iFormat);
-    fipImage img;
-    std::vector<uint8_t>buf(nofTexels * texelSize);
 
-    ge::gl::glGetTextureImage(id,0,GL_RED,GL_FLOAT,buf.size(),buf.data());
-    img.setSize(FIT_FLOAT,windowSize.x,windowSize.y,32);
-    for(size_t y=0;y<windowSize.y;++y){
-      auto ptr = (float*)FreeImage_GetScanLine(img,y);
-      for(size_t x=0;x<windowSize.x;++x)
-        ptr[x] = buf.at(y*windowSize.x + x);
-    }
-    img.save("/home/dormon/Desktop/test.exr");
+  auto const width     = tex->getWidth(0);
+  auto const height    = tex->getHeight(0);
+  auto const nofTexels = width * height;
+  auto const id        = tex->getId();
+  auto const iFormat   = tex->getInternalFormat(0);
+  auto const texelSize = ge::gl::internalFormatSize(iFormat);
+  fipImage img;
+  std::vector<uint8_t>buf(nofTexels * texelSize);
 
-    id = vars.get<GBuffer>("gBuffer")->color->getId();
-    std::vector<uint8_t>buf1(windowSize.x * windowSize.y * sizeof(uint16_t) * 4);
-    ge::gl::glGetTextureImage(id,0,GL_RGBA_INTEGER,GL_UNSIGNED_SHORT,buf1.size(),buf1.data());
-    img.setSize(FIT_BITMAP,windowSize.x,windowSize.y,24);
-    for(size_t y=0;y<windowSize.y;++y){
-      auto ptr = (uint8_t*)FreeImage_GetScanLine(img,y);
-      for(size_t x=0;x<windowSize.x;++x){
-        ptr[x*3+0] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 0*sizeof(uint16_t));
-        ptr[x*3+1] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 1*sizeof(uint16_t));
-        ptr[x*3+2] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 2*sizeof(uint16_t));
-      }
-    }
-    img.save("/home/dormon/Desktop/aa.png");
-
+  ge::gl::glGetTextureImage(id,0,GL_RED,GL_FLOAT,buf.size(),buf.data());
+  img.setSize(FIT_FLOAT,width,height,32);
+  for(size_t y=0;y<height;++y){
+    auto ptr = (float*)FreeImage_GetScanLine(img,y);
+    for(size_t x=0;x<width;++x)
+      ptr[x] = buf.at(y*width + x);
+  }
+  img.save(name.c_str());
 }
 
 void Shadows::draw() {
