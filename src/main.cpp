@@ -140,8 +140,35 @@ void createMethod(vars::Vars&vars){
   methods->createMethod(methodName,vars);
 }
 
+void testComputeShader(){
+  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
+  R".(
+  #version 450
+  layout(local_size_x=64)in;
+
+  layout(binding=0,std430)buffer Data{uint data[];};
+
+  void main(){
+    data[gl_GlobalInvocationID.x] = gl_GlobalInvocationID.x;
+  }
+  ).");
+  auto prg = std::make_shared<ge::gl::Program>(cs);
+  prg->use();
+  auto data = std::vector<uint32_t>(64*2);
+  for(auto&x:data)
+    x = 10;
+  auto buf = std::make_shared<ge::gl::Buffer>(data);
+  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  ge::gl::glDispatchCompute(2,1,1);
+  ge::gl::glFinish();
+  buf->getData(data.data());
+
+}
+
 void Shadows::init() {
   FUNCTION_CALLER();
+
+  testComputeShader();
 
   parseArguments();
 
@@ -270,14 +297,63 @@ void selectMethod(vars::Vars&vars){
   }
 }
 
-void saveTexture(std::string const&name,ge::gl::Texture const*tex){
+size_t basicTexelSize(ge::gl::BasicInternalFormatElement const&info){
+  size_t result = 0;
+  for(auto const&x:info.channelSize)
+    result += x;
+  return result;
+}
 
+void saveBasicTexture(std::string const&name,ge::gl::Texture const*tex){
+  auto const iFormat   = tex->getInternalFormat(0);
+  auto const info      = ge::gl::getBasicInternalFormatInformation(iFormat);
   auto const width     = tex->getWidth(0);
   auto const height    = tex->getHeight(0);
+  auto const texelSize = basicTexelSize(info);
   auto const nofTexels = width * height;
-  auto const id        = tex->getId();
+  auto buffer = std::vector<uint8_t>(texelSize * nofTexels);
+  if(info.type == ge::gl::BasicInternalFormatElement::UNSIGNED_INT){
+    //ge::gl::glGetTextureImage(); tex,level,format,type,bufSize,pixels
+    //
+    //ge::gl::glGetTextureSubImage(); tex,level,xoff,yoff,zoff,w,h,d,format,type,bufSize,pixels
+  }
+}
+
+void saveDepthTexture(std::string const&name,ge::gl::Texture const*tex){
+}
+
+void saveCompressedTexture(std::string const&name,ge::gl::Texture const*tex){
+
+}
+
+void saveTexture(std::string const&name,ge::gl::Texture const*tex){
   auto const iFormat   = tex->getInternalFormat(0);
-  auto const texelSize = ge::gl::internalFormatSize(iFormat);
+  if(ge::gl::isInternalFormatBasic(iFormat)){
+    saveBasicTexture(name,tex);
+    return;
+  }
+  if(ge::gl::isInternalFormatDepth(iFormat)){
+    saveDepthTexture(name,tex);
+    return;
+  }
+  if(ge::gl::isInternalFormatDepth(iFormat)){
+    saveCompressedTexture(name,tex);
+    return;
+  }
+/*
+
+  auto const info      = ge::gl::getBasicInternalFormatInformation(iFormat);
+  auto const nofChannels = ge::gl::nofInternalFormatChannels(iFormat);
+  size_t const channelSizes[4] = {
+    ge::gl::internalFormatChannelSize(iFormat,0),
+    ge::gl::internalFormatChannelSize(iFormat,1),
+    ge::gl::internalFormatChannelSize(iFormat,2),
+    ge::gl::internalFormatChannelSize(iFormat,3),
+  };
+  auto const floatingPoint = ge::gl::internalFormatFloatingPoint(iFormat);
+  auto const signedType    = ge::gl::internalFormatSigned(iFormat);
+  auto const fixedPoint    = ge::gl::internalFormatFixedPoint(iFormat);
+  auto const texelSize     = ge::gl::internalFormatSize(iFormat);
   fipImage img;
   std::vector<uint8_t>buf(nofTexels * texelSize);
 
@@ -289,6 +365,7 @@ void saveTexture(std::string const&name,ge::gl::Texture const*tex){
       ptr[x] = buf.at(y*width + x);
   }
   img.save(name.c_str());
+  */
 }
 
 void Shadows::draw() {
@@ -393,6 +470,8 @@ void Shadows::draw() {
   }
 #endif
 
+  //ge::gl::glClearColor(0,0.4,0,1);
+  //ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
   // */
   swap();

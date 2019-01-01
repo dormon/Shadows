@@ -113,7 +113,7 @@ R".(
 "#version 450\n" 
 GLSL_LINE
 R".(
-    layout(location=0)out uvec4 fColor;
+  layout(location=0)out uvec4 fColor;
   layout(location=1)out vec4  fPosition;
   layout(location=2)out vec4  fNormal; 
 

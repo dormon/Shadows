@@ -7,6 +7,8 @@ class GBuffer: public ge::gl::Context{
     GBuffer(uint32_t w,uint32_t h){
       assert(this!=nullptr);
       color       = std::make_shared<ge::gl::Texture>(GL_TEXTURE_2D,GL_RGBA16UI,1,w,h);
+      color->texParameteri(GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+      color->texParameteri(GL_TEXTURE_MIN_FILTER,GL_NEAREST);
       position    = std::make_shared<ge::gl::Texture>(GL_TEXTURE_2D,GL_RGBA32F ,1,w,h);
       normal      = std::make_shared<ge::gl::Texture>(GL_TEXTURE_2D,GL_RGBA32F ,1,w,h);
       triangleIds = std::make_shared<ge::gl::Texture>(GL_TEXTURE_2D,GL_R32UI   ,1,w,h);
