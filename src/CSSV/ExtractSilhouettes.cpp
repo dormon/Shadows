@@ -43,15 +43,22 @@ void ExtractSilhouettes::compute(glm::vec4 const&lightPosition){
   dibo->clear(GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT);
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER,0,edges->getId());
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER,1,sillhouettes->getId());
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER,2,dibo->getId());
+  //std::cerr << "edges      : " << program->getBufferBinding("edges"             ) << std::endl;
+  //std::cerr << "silhouettes: " << program->getBufferBinding("silhouettes"       ) << std::endl;
+  //std::cerr << "dibo       : " << program->getBufferBinding("drawIndirectBuffer") << std::endl;
   program
     ->set1ui    ("numEdge"           ,uint32_t(nofEdges)    )
     ->set4fv    ("lightPosition"     ,glm::value_ptr(lightPosition))
-    ->bindBuffer("edges"             ,edges                 )
-    ->bindBuffer("silhouettes"       ,sillhouettes          )
-    ->bindBuffer("drawIndirectBuffer",dibo                  )
+    //->bindBuffer("edges"             ,edges                 )
+    //->bindBuffer("silhouettes"       ,sillhouettes          )
+    //->bindBuffer("drawIndirectBuffer",dibo                  )
     ->dispatch((GLuint)getDispatchSize(nofEdges,vars.getUint32("cssv.computeSidesWGS")));
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   glFinish();
+
 }
 

@@ -9,9 +9,9 @@ R".(
 
 //DO NOT EDIT ANYTHING BELOW THIS COMMENT
 
-#define JOIN__(x,y) x##y
-#define JOIN_(x,y) JOIN__(x,y)
-#define JOIN(x,y) JOIN_(x,y)
+#define JOIN2(x,y) x##y
+#define JOIN1(x,y) JOIN2(x,y)
+#define JOIN(x,y) JOIN1(x,y)
 
 #ifndef NUMBER_OF_LEVELS
   #define NUMBER_OF_LEVELS 4
@@ -61,23 +61,24 @@ R".(
   UINT_BIT_SIZE
 #endif
 
+/*
 #ifdef USE_BALLOT
   #if WAVEFRONT_SIZE == 64
     #extension GL_AMD_gcn_shader       : enable
     #extension GL_AMD_gpu_shader_int64 : enable
     #define BALLOT(x) ballotAMD(x)
-    #define TRANSFORM_WAVEFRONT_RESULT_TO_UINTS(result) unpackUint2x32(result)
+    #define TRANSFORM_BALLOT_RESULT_TO_UINTS(result) unpackUint2x32(result)
     #define UINT_RESULT_ARRAY uvec2
     #define GET_UINT_FROM_UINT_ARRAY(array,i) array[i]
   #else
     #extension GL_NV_shader_thread_group : enable
     #define BALLOT(x) ballotThreadNV(x)
-    #define TRANSFORM_WAVEFRONT_RESULT_TO_UINTS(result) result
+    #define TRANSFORM_BALLOT_RESULT_TO_UINTS(result) result
     #define UINT_RESULT_ARRAY uint
     #define GET_UINT_FROM_UINT_ARRAY(array,i) array
   #endif
 #endif
-
+*/
 
 
 #define RESULT_LENGTH_IN_UINT         (WAVEFRONT_SIZE/UINT_BIT_SIZE)
@@ -246,8 +247,8 @@ void JOIN(TestShadowFrustumHDB,LEVEL)(uvec2 coord,vec2 clipCoord){\
         if(SampleInsideEdge(tr,SharedShadowFrusta[SHADOWFRUSTUM_ID_IN_WORKGROUP][NOF_PLANES_PER_SF+i].xyz))Result=TRIVIAL_REJECT;\
       }\
     }\
-    UINT_RESULT_ARRAY AcceptBallot     = TRANSFORM_WAVEFRONT_RESULT_TO_UINTS(BALLOT(Result==TRIVIAL_ACCEPT));\
-    UINT_RESULT_ARRAY IntersectsBallot = TRANSFORM_WAVEFRONT_RESULT_TO_UINTS(BALLOT(Result==INTERSECTS    ));\
+    UINT_RESULT_ARRAY AcceptBallot     = TRANSFORM_BALLOT_RESULT_TO_UINTS(BALLOT(Result==TRIVIAL_ACCEPT));\
+    UINT_RESULT_ARRAY IntersectsBallot = TRANSFORM_BALLOT_RESULT_TO_UINTS(BALLOT(Result==INTERSECTS    ));\
     if(INVOCATION_ID_IN_WAVEFRONT<RESULT_LENGTH_IN_UINT){\
       ivec2 hstGlobalCoord=ivec2(coord.x*RESULT_LENGTH_IN_UINT+INVOCATION_ID_IN_WAVEFRONT,coord.y);\
       imageAtomicOr(HST[LEVEL],hstGlobalCoord,GET_UINT_FROM_UINT_ARRAY(AcceptBallot,INVOCATION_ID_IN_WAVEFRONT));\

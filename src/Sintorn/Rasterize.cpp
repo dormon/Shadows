@@ -1,5 +1,6 @@
 #include <Sintorn/Rasterize.h>
 #include <Sintorn/RasterizationShaders.h>
+#include <BallotShader.h>
 #include <Barrier.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -69,6 +70,7 @@ void createRasterizationProgram(vars::Vars&vars){
         Shader::define("RASTERIZETEXTURE_BINDING_HDT"             ,int(RASTERIZETEXTURE_BINDING_HDT             )),
         Shader::define("RASTERIZETEXTURE_BINDING_TRIANGLE_ID"     ,int(RASTERIZETEXTURE_BINDING_TRIANGLE_ID     )),
         Shader::define("RASTERIZETEXTURE_BINDING_SHADOWFRUSTA"    ,int(RASTERIZETEXTURE_BINDING_SHADOWFRUSTA    )),
+        ballotSrc,
         sintorn::rasterizationShader));
 }
 

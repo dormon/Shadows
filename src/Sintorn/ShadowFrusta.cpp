@@ -54,14 +54,15 @@ void computeShadowFrusta(vars::Vars&vars,glm::vec4 const&lightPosition,glm::mat4
 
   allocateShadowFrustaBuffer(vars);
   createShadowFrustaProgram(vars);
-
+  vars.get<Buffer>("sintorn.triangles")->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  vars.get<Buffer>("sintorn.shadowFrusta")->bindBase(GL_SHADER_STORAGE_BUFFER,1);
   vars.get<Program>("sintorn.sfProgram")
     ->set1ui      ("nofTriangles"                       ,static_cast<uint32_t>(vars.getSizeT("sintorn.nofTriangles"))   )
     ->setMatrix4fv("modelViewProjection"                ,glm::value_ptr(mvp)                                            )
     ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                                  )
     ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp)))              )
-    ->bindBuffer  ("triangles"                          ,vars.get<Buffer>("sintorn.triangles")                          )
-    ->bindBuffer  ("shadowFrusta"                       ,vars.get<Buffer>("sintorn.shadowFrusta")                       )
+    //->bindBuffer  ("triangles"                          ,vars.get<Buffer>("sintorn.triangles")                          )
+    //->bindBuffer  ("shadowFrusta"                       ,vars.get<Buffer>("sintorn.shadowFrusta")                       )
     ->dispatch    (getDispatchSize(vars.getSizeT("sintorn.nofTriangles"),vars.getUint32("args.sintorn.shadowFrustaWGS")));
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }

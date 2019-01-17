@@ -47,6 +47,7 @@
 #include <Vars/Vars.h>
 #include <Vars/Caller.h>
 #include <createGBuffer.h>
+#include <numeric>
 
 #include <imguiVars.h>
 
@@ -157,18 +158,114 @@ void testComputeShader(){
   auto data = std::vector<uint32_t>(64*2);
   for(auto&x:data)
     x = 10;
+  auto test = data;
   auto buf = std::make_shared<ge::gl::Buffer>(data);
   buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   ge::gl::glDispatchCompute(2,1,1);
   ge::gl::glFinish();
   buf->getData(data.data());
+  std::iota(test.begin(),test.end(),0);
+  if(test != data)
+    std::cerr << "testComputeShader failed" << std::endl;
+}
 
+void testComputeShaderUVec4(){
+  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
+  R".(
+  #version 450
+  layout(local_size_x=64)in;
+
+  layout(binding=0,std430)buffer Data{uvec4 data[];};
+
+  void main(){
+    data[gl_GlobalInvocationID.x] = uvec4(gl_GlobalInvocationID.x*4)+uvec4(0u,1u,2u,3u);
+  }
+  ).");
+  auto prg = std::make_shared<ge::gl::Program>(cs);
+  prg->use();
+  auto data = std::vector<uint32_t>(64*4);
+  for(auto&x:data)
+    x = 10;
+  auto test = data;
+  auto buf = std::make_shared<ge::gl::Buffer>(data);
+  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  ge::gl::glDispatchCompute(1,1,1);
+  ge::gl::glFinish();
+  buf->getData(data.data());
+  std::iota(test.begin(),test.end(),0);
+  if(test != data){
+    std::cerr << "testComputeUVEC4Shader failed" << std::endl;
+    for(auto const&x:data)
+      std::cerr << x << std::endl;
+  }
+}
+
+void testComputeShaderVec4(){
+  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
+  R".(
+  #version 450
+  layout(local_size_x=64)in;
+
+  layout(binding=0,std430)buffer Data{vec4 data[];};
+
+  void main(){
+    data[gl_GlobalInvocationID.x] = vec4(gl_GlobalInvocationID.x*4.f)+vec4(0.1f,1.1f,2.1f,3.1f);
+  }
+  ).");
+  auto prg = std::make_shared<ge::gl::Program>(cs);
+  prg->use();
+  auto data = std::vector<float>(64*4);
+  for(auto&x:data)
+    x = 10.f;
+  auto test = data;
+  auto buf = std::make_shared<ge::gl::Buffer>(data);
+  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  ge::gl::glDispatchCompute(1,1,1);
+  ge::gl::glFinish();
+  buf->getData(data.data());
+  for(size_t i=0;i<test.size();++i)
+    test[i] = 0.1f + i;
+  if(test != data){
+    std::cerr << "testComputeVEC4Shader failed" << std::endl;
+    for(auto const&x:data)
+      std::cerr << x << std::endl;
+  }
+}
+
+
+void testGlobalAtomicCounter(){
+  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
+  R".(
+  #version 450
+  layout(local_size_x=64)in;
+
+  layout(binding=0,std430)buffer Data{uint counter[4];};
+
+  void main(){
+    atomicAdd(counter[0],gl_GlobalInvocationID.x);
+  }
+  ).");
+  auto prg = std::make_shared<ge::gl::Program>(cs);
+  prg->use();
+  auto data = std::vector<uint32_t>(4);
+  for(auto&x:data)x = 0;
+  auto buf = std::make_shared<ge::gl::Buffer>(data);
+  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  ge::gl::glDispatchCompute(1,1,1);
+  ge::gl::glFinish();
+  buf->getData(data.data());
+  if(data.at(0) != 2016)
+    std::cerr << "data: " << data.at(0) << std::endl;
 }
 
 void Shadows::init() {
   FUNCTION_CALLER();
 
   testComputeShader();
+  testGlobalAtomicCounter();
+  testComputeShaderUVec4();
+  testComputeShaderVec4();
+  //exit(0);
 
   parseArguments();
 

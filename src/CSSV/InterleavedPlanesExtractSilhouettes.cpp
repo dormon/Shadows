@@ -70,12 +70,15 @@ void InterleavedPlanesExtractSilhouettes::compute(glm::vec4 const&lightPosition)
   dibo->clear(GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT);
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  edges->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  sillhouettes->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  dibo->bindBase(GL_SHADER_STORAGE_BUFFER,2);
   program
     ->set1ui    ("numEdge"           ,uint32_t(nofEdges)    )
     ->set4fv    ("lightPosition"     ,glm::value_ptr(lightPosition))
-    ->bindBuffer("edges"             ,edges                 )
-    ->bindBuffer("silhouettes"       ,sillhouettes          )
-    ->bindBuffer("drawIndirectBuffer",dibo                  )
+    //->bindBuffer("edges"             ,edges                 )
+    //->bindBuffer("silhouettes"       ,sillhouettes          )
+    //->bindBuffer("drawIndirectBuffer",dibo                  )
     ->dispatch((GLuint)getDispatchSize(nofEdges,vars.getUint32("cssv.computeSidesWGS")));
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   glFinish();

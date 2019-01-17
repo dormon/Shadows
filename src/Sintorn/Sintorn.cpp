@@ -126,4 +126,6 @@ void Sintorn::blit(){
   glDispatchCompute(
       (GLuint)getDispatchSize(vars.get<glm::uvec2>("windowSize")->x,8),
       (GLuint)getDispatchSize(vars.get<glm::uvec2>("windowSize")->y,8),1);
+
+  glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 }

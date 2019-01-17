@@ -141,6 +141,15 @@ void main(){
     Multiplicity += currentMultiplicity(P[0].xyz,P[1].xyz,edges[gid+i].xyz,lightPosition);
 #endif//USE_PLANES == 1
 
+    /*
+  if(Multiplicity != 1337){
+    //Multiplicity = 1;
+    silhouettes[gl_GlobalInvocationID.x] = edges[gl_GlobalInvocationID.x];
+    atomicAdd(drawIndirectBuffer[0],1);
+    return;
+  }
+  */
+
 #if LOCAL_ATOMIC == 1
   uint localOffset = atomicAdd(localCounter,uint(2*abs(Multiplicity)));
   barrier();
