@@ -61,26 +61,6 @@ R".(
   UINT_BIT_SIZE
 #endif
 
-/*
-#ifdef USE_BALLOT
-  #if WAVEFRONT_SIZE == 64
-    #extension GL_AMD_gcn_shader       : enable
-    #extension GL_AMD_gpu_shader_int64 : enable
-    #define BALLOT(x) ballotAMD(x)
-    #define TRANSFORM_BALLOT_RESULT_TO_UINTS(result) unpackUint2x32(result)
-    #define UINT_RESULT_ARRAY uvec2
-    #define GET_UINT_FROM_UINT_ARRAY(array,i) array[i]
-  #else
-    #extension GL_NV_shader_thread_group : enable
-    #define BALLOT(x) ballotThreadNV(x)
-    #define TRANSFORM_BALLOT_RESULT_TO_UINTS(result) result
-    #define UINT_RESULT_ARRAY uint
-    #define GET_UINT_FROM_UINT_ARRAY(array,i) array
-  #endif
-#endif
-*/
-
-
 #define RESULT_LENGTH_IN_UINT         (WAVEFRONT_SIZE/UINT_BIT_SIZE)
 
 #define       VEC4_PER_SHADOWFRUSTUM  6

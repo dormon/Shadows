@@ -141,6 +141,127 @@ void createMethod(vars::Vars&vars){
   methods->createMethod(methodName,vars);
 }
 
+void sortComputeShader(
+    size_t nofElements   = 1024,
+    size_t elementSize   = 4   ,
+    size_t wgs           = 64  ,
+    size_t localElements = 64  ){
+  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
+  "#version 450\n",
+  ge::gl::Shader::define("WORKGROUP_SIZE",(uint32_t)wgs          ),
+  ge::gl::Shader::define("LOCAL_ELEMENTS",(uint32_t)localElements),
+  ge::gl::Shader::define("ELEMENT_SIZE"  ,(uint32_t)elementSize  ),
+  ge::gl::Shader::define("NOF_ELEMENTS"  ,(uint32_t)nofElements  ),
+  R".(
+  layout(local_size_x=WORKGROUP_SIZE)in;
+
+  #define UINT_SIZE             4
+  #define ELEMENT_SIZE_IN_UINTS (ELEMENT_SIZE/UINT_SIZE)
+  #define LOCAL_SIZE_IN_UINTS   (LOCAL_ELEMENTS*ELEMENT_SIZE_IN_UINTS)
+  #define UINT_LOADS_PER_THREAD (LOCAL_SIZE_IN_UINTS / WORKGROUP_SIZE)
+  #define ELEMENTS_PER_THREAD   (LOCAL_ELEMENTS / WORKGROUP_SIZE)
+
+  shared uint local[LOCAL_SIZE_IN_UINTS];
+
+  layout(binding=0,std430)buffer Data{uint data[];};
+
+  uint loadUint(uint i){
+    if(i>=NOF_ELEMENTS)return 0xffffffff;
+    return data[i];
+  }
+
+  void storeUint(uint i,uint d){
+    if(i>=NOF_ELEMENTS)return;
+    data[i] = d;
+  }
+
+  #define GLOBAL_INDEX(i) (gl_LocalInvocationID.x + i*gl_WorkGroupID.x + gl_WorkGroupID.x*gl_WorkGroupSize.x*UINT_LOADS_PER_THREAD)
+  #define LOCAL_INDEX(i) (gl_LocalInvocationID.x + i*WORKGROUP_SIZE)
+
+  void loadToLocal(){
+    for(uint i=0;i<UINT_LOADS_PER_THREAD;++i)
+      local[LOCAL_INDEX(i)] = loadUint(GLOBAL_INDEX(i));
+    barrier();
+  }
+
+  void storeToGlobal(){
+    for(uint i=0;i<UINT_LOADS_PER_THREAD;++i)
+      storeUint(GLOBAL_INDEX(i),local[LOCAL_INDEX(i)]);
+  }
+
+  bool less(uint A,uint B){
+    if(A >= LOCAL_ELEMENTS || B >= LOCAL_ELEMENTS)return true;
+    for(uint i=0;i<ELEMENT_SIZE_IN_UINTS;++i){
+      if(local[A*ELEMENT_SIZE_IN_UINTS+i] > local[B*ELEMENT_SIZE_IN_UINTS+i])return false;
+      if(local[A*ELEMENT_SIZE_IN_UINTS+i] < local[B*ELEMENT_SIZE_IN_UINTS+i])return true ;
+    }
+    return false;
+  }
+
+  void swap(uint A,uint B){
+    if(A >= LOCAL_ELEMENTS || B >= LOCAL_ELEMENTS)return;
+    for(uint i=0;i<ELEMENT_SIZE_IN_UINTS;++i){
+      uint a = local[A*ELEMENT_SIZE_IN_UINTS+i];
+      local[A*ELEMENT_SIZE_IN_UINTS+i] = local[B*ELEMENT_SIZE_IN_UINTS+i];
+      local[B*ELEMENT_SIZE_IN_UINTS+i] = a;
+    }
+  }
+
+  void bubbleSortEvenRun(){
+    for(uint i=0;i<ELEMENTS_PER_THREAD;++i)
+      if(!less(gl_LocalInvocationID.x*2+i*gl_WorkGroupSize.x,gl_LocalInvocationID.x*2+1+i*gl_WorkGroupSize.x)){
+        swap(gl_LocalInvocationID.x*2+i*gl_WorkGroupSize.x,gl_LocalInvocationID.x*2+1+i*gl_WorkGroupSize.x);
+      }
+  }
+  void bubbleSortOddRun(){
+    for(uint i=0;i<ELEMENTS_PER_THREAD;++i)
+      if(!less(gl_LocalInvocationID.x*2+1+i*gl_WorkGroupSize.x,gl_LocalInvocationID.x*2+2+i*gl_WorkGroupSize.x)){
+        swap(gl_LocalInvocationID.x*2+1+i*gl_WorkGroupSize.x,gl_LocalInvocationID.x*2+2+i*gl_WorkGroupSize.x);
+      }
+  }
+
+  void bubbleOneRun(){
+    bubbleSortEvenRun();
+    barrier();
+    bubbleSortOddRun();
+    barrier();
+  }
+
+  void bubbleSort(){
+    for(uint i=0;i<LOCAL_ELEMENTS;++i)
+      bubbleOneRun();
+  }
+
+  void main(){
+    loadToLocal();
+
+    bubbleSort();
+
+    storeToGlobal();
+  }
+  ).");
+  auto prg = std::make_shared<ge::gl::Program>(cs);
+  prg->use();
+  auto data = std::vector<uint32_t>(nofElements*elementSize/sizeof(uint32_t));
+  for(size_t i=0;i<nofElements;++i)
+    for(size_t e=0;e<elementSize/sizeof(uint32_t);++e)
+      data[i*elementSize/sizeof(uint32_t)+e] = nofElements-i-1;
+  for(size_t i=0;i<100;++i)
+    std::cerr << data.at(i) << std::endl;
+
+  auto test = data;
+  auto buf = std::make_shared<ge::gl::Buffer>(data);
+  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  auto const divRoundUp = [](size_t x,size_t d){if(x%d>0)return x/d+1;else return x/d;};
+  ge::gl::glDispatchCompute(divRoundUp(nofElements,localElements),1,1);
+  ge::gl::glFinish();
+  buf->getData(data.data());
+
+  for(size_t i=0;i<100;++i)
+    std::cerr << data.at(i) << std::endl;
+
+}
+
 void testComputeShader(){
   auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
   R".(
@@ -265,6 +386,8 @@ void Shadows::init() {
   testGlobalAtomicCounter();
   testComputeShaderUVec4();
   testComputeShaderVec4();
+  sortComputeShader();
+  exit(0);
   //exit(0);
 
   parseArguments();
