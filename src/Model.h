@@ -25,11 +25,11 @@ class RenderModel: public ge::gl::Context{
     RenderModel(Model*mdl);
     ~RenderModel();
     void draw(glm::mat4 const&projectionView);
-    std::shared_ptr<ge::gl::VertexArray>vao = nullptr;
-    std::shared_ptr<ge::gl::Buffer>vertices = nullptr;
-    std::shared_ptr<ge::gl::Buffer>normals = nullptr;
-    std::shared_ptr<ge::gl::Buffer>indices = nullptr;
-    std::shared_ptr<ge::gl::Buffer>indexVertices = nullptr;
-    std::shared_ptr<ge::gl::Program>program = nullptr;
+    std::shared_ptr<ge::gl::VertexArray>vao           = nullptr;
+    std::shared_ptr<ge::gl::Buffer     >vertices      = nullptr;
+    std::shared_ptr<ge::gl::Buffer     >normals       = nullptr;
+    std::shared_ptr<ge::gl::Buffer     >indices       = nullptr;
+    std::shared_ptr<ge::gl::Buffer     >indexVertices = nullptr;
+    std::shared_ptr<ge::gl::Program    >program       = nullptr;
     uint32_t nofVertices = 0;
 };

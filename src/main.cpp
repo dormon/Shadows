@@ -387,7 +387,7 @@ void Shadows::init() {
   testComputeShaderUVec4();
   testComputeShaderVec4();
   sortComputeShader();
-  exit(0);
+  //exit(0);
   //exit(0);
 
   parseArguments();
