@@ -5,6 +5,7 @@
 #include<Deferred.h>
 #include<ShadowVolumes.h>
 #include<RSSV/BuildStupidHierarchy.h>
+#include<RSSV/PerfectResolution/Build.h>
 
 using namespace rssv;
 
@@ -35,7 +36,8 @@ RSSV::RSSV(vars::Vars&vars           ):
   ShadowMethod(vars),
   _tiling      (*vars.get<glm::uvec2>("windowSize"),vars.getSizeT("wavefrontSize"))
 {
-  buildHierarchy = std::make_shared<BuildStupidHierarchy>(vars);
+  //buildHierarchy = std::make_shared<BuildStupidHierarchy>(vars);
+  buildHierarchy = std::make_shared<PerfectHierarchy>(vars);
   //extractSilhouettes = std::make_shared<RSSVExtractSilhouettes>(vars);
 #if 0
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
