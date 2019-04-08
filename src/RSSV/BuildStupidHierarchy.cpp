@@ -12,6 +12,28 @@ using namespace ge::gl;
 using namespace glm;
 using namespace rssv;
 
+/*
+std::vector<glm::uvec2>computeSizes(glm::uvec2 const&windowSize,uint32_t branchingFactor){
+  std::vector<glm::uvec2>res;
+  glm::uvec2 tile;
+  tile.y = glm::log2(branchingFactor)/2;
+  tile.x = branchingFactor / tile.y;
+  res.push_back(windowSize);
+  int dir=0;
+
+  res.push_back(windowSize);
+  while(res.back().x > 1 || res.back().y > 1){
+    auto const&l=res.back();
+    while(tile.x >= l.x*2){
+      tile.x/=2;
+      tile.y*=2;
+    }
+
+  }
+
+  return res;
+}*/
+
 void BuildStupidHierarchy::allocateHierarchy(){
   auto const windowSize    = vars.get<uvec2>("windowSize"    );
   auto const wavefrontSize = vars.getSizeT  ("wavefrontSize" );
