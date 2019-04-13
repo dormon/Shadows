@@ -6,35 +6,133 @@
 #include <Deferred.h>
 #include <TimeStamp.h>
 #include <geGL/StaticCalls.h>
+#include <algorithm>
 
 using namespace std;
 using namespace ge::gl;
 using namespace glm;
 using namespace rssv;
 
-/*
-std::vector<glm::uvec2>computeSizes(glm::uvec2 const&windowSize,uint32_t branchingFactor){
-  std::vector<glm::uvec2>res;
-  glm::uvec2 tile;
-  tile.y = glm::log2(branchingFactor)/2;
-  tile.x = branchingFactor / tile.y;
-  res.push_back(windowSize);
-  int dir=0;
+uvec2 divRoundUp(uvec2 const&a,uvec2 const&b){
+  return uvec2(divRoundUp(a.x,b.x),divRoundUp(a.y,b.y));
+}
 
-  res.push_back(windowSize);
-  while(res.back().x > 1 || res.back().y > 1){
-    auto const&l=res.back();
-    while(tile.x >= l.x*2){
-      tile.x/=2;
-      tile.y*=2;
+uint32_t ilog2(uint32_t a){
+  return static_cast<uint32_t>(glm::log2(static_cast<float>(a)));
+}
+
+class Hier{
+  public:
+    std::vector<uvec2>levelSize;
+    std::vector<uvec2>fullTileSize;
+    std::vector<uvec2>fullTileSizeInPixels;
+    std::vector<vec2 >fullTileSizeInClipSpace;
+    std::vector<uvec2>fullTileCount;
+    std::vector<uvec2>borderTileSize;
+    std::vector<uvec2>borderTileSizeInPixels;
+    std::vector<vec2 >borderTileSizeInClipSpace;
+    uint32_t nofLevels;
+};
+
+void printHier(Hier const&h){
+  std::cerr << "level size: " << std::endl;
+  for(auto const&x:h.levelSize)
+    std::cerr << x.x << " x " << x.y << std::endl;
+  std::cerr << std::endl;
+
+  std::cerr << "tile size: " << std::endl;
+  for(auto const&x:h.fullTileSize)
+    std::cerr << x.x << " x " << x.y << std::endl;
+  std::cerr << std::endl;
+
+  std::cerr << "tile size in pixels: " << std::endl;
+  for(auto const&x:h.fullTileSizeInPixels)
+    std::cerr << x.x << " x " << x.y << std::endl;
+  std::cerr << std::endl;
+
+  std::cerr << "full tile count: " << std::endl;
+  for(auto const&x:h.fullTileCount)
+    std::cerr << x.x << " x " << x.y << std::endl;
+  std::cerr << std::endl;
+
+  std::cerr << "border size: " << std::endl;
+  for(auto const&x:h.borderTileSize)
+    std::cerr << x.x << " x " << x.y << std::endl;
+  std::cerr << std::endl;
+
+  std::cerr << "border size in pixels: " << std::endl;
+  for(auto const&x:h.borderTileSizeInPixels)
+    std::cerr << x.x << " x " << x.y << std::endl;
+  std::cerr << std::endl;
+
+  std::cerr << "full area: " << std::endl;
+  for(size_t i=0;i<h.levelSize.size();++i)
+    std::cerr << h.fullTileCount[i].x*h.fullTileSize[i].x << " x " << h.fullTileCount[i].y*h.fullTileSize[i].y << std::endl;
+  std::cerr << std::endl;
+}
+
+Hier computeSizes(glm::uvec2 const&windowSize,uint32_t branchingFactor){
+  glm::uvec2 fullTileSize;
+  fullTileSize.y = 1<<(ilog2(branchingFactor)/2);
+  fullTileSize.x = branchingFactor / fullTileSize.y;
+
+  Hier result;
+  uvec2 levelSize = windowSize;
+  uvec2 fullTileSizeInPixels = uvec2(1);
+  while(levelSize.x > 1 || levelSize.y > 1){
+    bool xDone = levelSize.x == 1;
+    bool yDone = levelSize.y == 1;
+    while(fullTileSize.x >= levelSize.x*2 && !yDone){
+      fullTileSize.x/=2;
+      fullTileSize.y*=2;
     }
-
+    while(fullTileSize.y >= levelSize.y*2 && !xDone){
+      fullTileSize.y/=2;
+      fullTileSize.x*=2;
+    }
+    fullTileSizeInPixels           *= fullTileSize;
+    uvec2 fullTileCount             = windowSize / fullTileSizeInPixels;
+    uvec2 borderTileSize            = levelSize-fullTileCount*fullTileSize;
+    uvec2 borderTileSizeInPixels    = windowSize-fullTileCount*fullTileSizeInPixels;
+    vec2  fullTileSizeInClipSpace   = vec2(fullTileSizeInPixels) / vec2(windowSize) * 2.f;
+    vec2  borderTileSizeInClipSpace = vec2(borderTileSizeInPixels) / vec2(windowSize) * 2.f;
+    result.levelSize                .push_back(levelSize                );
+    result.fullTileSize             .push_back(fullTileSize             );
+    result.fullTileCount            .push_back(fullTileCount            );
+    result.borderTileSize           .push_back(borderTileSize           );
+    result.fullTileSizeInPixels     .push_back(fullTileSizeInPixels     );
+    result.borderTileSizeInPixels   .push_back(borderTileSizeInPixels   );
+    result.fullTileSizeInClipSpace  .push_back(fullTileSizeInClipSpace  );
+    result.borderTileSizeInClipSpace.push_back(borderTileSizeInClipSpace);
+    levelSize    = divRoundUp(levelSize,fullTileSize);
+    fullTileSize = uvec2(fullTileSize.y,fullTileSize.x);
   }
+  fullTileSizeInPixels           *= fullTileSize;
+  uvec2 fullTileCount             = windowSize / fullTileSizeInPixels;
+  uvec2 borderTileSize            = levelSize-fullTileCount*fullTileSize;
+  uvec2 borderTileSizeInPixels    = windowSize-fullTileCount*fullTileSizeInPixels;
+  vec2  fullTileSizeInClipSpace   = vec2(fullTileSizeInPixels) / vec2(windowSize) * 2.f;
+  vec2  borderTileSizeInClipSpace = vec2(borderTileSizeInPixels) / vec2(windowSize) * 2.f;
+  result.fullTileCount            .push_back(fullTileCount         );
+  result.fullTileSize             .push_back(fullTileSize          );
+  result.borderTileSize           .push_back(borderTileSize        );
+  result.fullTileSizeInPixels     .push_back(fullTileSizeInPixels  );
+  result.borderTileSizeInPixels   .push_back(borderTileSizeInPixels);
+  result.levelSize                .push_back(levelSize             );
+  result.fullTileSizeInClipSpace  .push_back(fullTileSizeInClipSpace);
+  result.borderTileSizeInClipSpace.push_back(borderTileSizeInClipSpace);
 
-  return res;
-}*/
+  std::reverse(result.levelSize             .begin(),result.levelSize             .end());
+  std::reverse(result.fullTileSize          .begin(),result.fullTileSize          .end());
+  std::reverse(result.fullTileCount         .begin(),result.fullTileCount         .end());
+  std::reverse(result.borderTileSize        .begin(),result.borderTileSize        .end());
+  std::reverse(result.fullTileSizeInPixels  .begin(),result.fullTileSizeInPixels  .end());
+  std::reverse(result.borderTileSizeInPixels.begin(),result.borderTileSizeInPixels.end());
+  return result;
+}
 
 void BuildStupidHierarchy::allocateHierarchy(){
+
   auto const windowSize    = vars.get<uvec2>("windowSize"    );
   auto const wavefrontSize = vars.getSizeT  ("wavefrontSize" );
   auto const alignment     = vars.getSizeT  ("rssv.alignment");
@@ -68,6 +166,12 @@ void BuildStupidHierarchy::createNextLevelProgram(){
 }
 
 BuildStupidHierarchy::BuildStupidHierarchy(vars::Vars&vars):BuildHierarchy(vars){
+
+
+  auto r = computeSizes(uvec2(30,1024),64);
+  printHier(r);
+  exit(0);
+
   allocateHierarchy();
   createLevel0Program();
   createNextLevelProgram();

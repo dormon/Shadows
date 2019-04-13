@@ -184,6 +184,7 @@ set(INCLUDES
   src/GLSLLine.h
   src/Methods.h
   src/FunctionPrologue.h
+  src/AABB.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

@@ -36,6 +36,10 @@ void loadBasicApplicationParameters(vars::Vars&vars,std::shared_ptr<argumentView
   vars.addSizeT         ("wavefrontSize"  ) = args->getu32("--wavefrontSize", 0,"warp/wavefront size, usually 32 for NVidia and 64 for AMD");
   vars.addSizeT         ("maxMultiplicity") = args->getu32("--maxMultiplicity", 2,"max number of triangles that share the same edge");
   vars.addBool          ("zfail"          ) = args->getu32("--zfail", 1, "shadow volumes zfail 0/1");
+  vars.addBool          ("getModelStats"  ) = args->isPresent("--getModelStats","gets models stats - nof triangles, edges, silhouettes, ...");
+  auto stats = args->getContext("modelStats","model stats parameters");
+  *vars.add<glm::uvec3> ("modelStatsGrid" ) = vector2uvec3(stats->getu32v("grid",{10,10,10},"grid size"));
+  vars.addFloat         ("modelStatsScale") = stats->getf32("scale",10.f,"scale factor");
 }
 
 void moveCameraWSAD(
