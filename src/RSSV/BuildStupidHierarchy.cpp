@@ -40,13 +40,18 @@ void printHier(Hier const&h){
     std::cerr << x.x << " x " << x.y << std::endl;
   std::cerr << std::endl;
 
-  std::cerr << "tile size: " << std::endl;
+  std::cerr << "full tile size: " << std::endl;
   for(auto const&x:h.fullTileSize)
     std::cerr << x.x << " x " << x.y << std::endl;
   std::cerr << std::endl;
 
-  std::cerr << "tile size in pixels: " << std::endl;
+  std::cerr << "full tile size in pixels: " << std::endl;
   for(auto const&x:h.fullTileSizeInPixels)
+    std::cerr << x.x << " x " << x.y << std::endl;
+  std::cerr << std::endl;
+
+  std::cerr << "full size in clip space: " << std::endl;
+  for(auto const&x:h.fullTileSizeInClipSpace)
     std::cerr << x.x << " x " << x.y << std::endl;
   std::cerr << std::endl;
 
@@ -65,10 +70,17 @@ void printHier(Hier const&h){
     std::cerr << x.x << " x " << x.y << std::endl;
   std::cerr << std::endl;
 
-  std::cerr << "full area: " << std::endl;
-  for(size_t i=0;i<h.levelSize.size();++i)
-    std::cerr << h.fullTileCount[i].x*h.fullTileSize[i].x << " x " << h.fullTileCount[i].y*h.fullTileSize[i].y << std::endl;
+  std::cerr << "border size in clip space: " << std::endl;
+  for(auto const&x:h.borderTileSizeInClipSpace)
+    std::cerr << x.x << " x " << x.y << std::endl;
   std::cerr << std::endl;
+
+
+}
+
+template<typename T>
+void reverse(std::vector<T>&v){
+  std::reverse(v.begin(),v.end());
 }
 
 Hier computeSizes(glm::uvec2 const&windowSize,uint32_t branchingFactor){
@@ -77,8 +89,31 @@ Hier computeSizes(glm::uvec2 const&windowSize,uint32_t branchingFactor){
   fullTileSize.x = branchingFactor / fullTileSize.y;
 
   Hier result;
-  uvec2 levelSize = windowSize;
-  uvec2 fullTileSizeInPixels = uvec2(1);
+  uvec2 levelSize                 = windowSize;
+  uvec2 fullTileSizeInPixels      = uvec2(1)  ;
+  uvec2 fullTileCount                         ;
+  uvec2 borderTileSize                        ;
+  uvec2 borderTileSizeInPixels                ;
+  vec2  fullTileSizeInClipSpace               ;
+  vec2  borderTileSizeInClipSpace             ;
+
+  auto const computeLevel = [&](){
+    fullTileSizeInPixels      *= fullTileSize;
+    fullTileCount              = windowSize / fullTileSizeInPixels;
+    borderTileSize             = levelSize-fullTileCount*fullTileSize;
+    borderTileSizeInPixels     = windowSize-fullTileCount*fullTileSizeInPixels;
+    fullTileSizeInClipSpace    = vec2(fullTileSizeInPixels) / vec2(windowSize) * 2.f;
+    borderTileSizeInClipSpace  = vec2(borderTileSizeInPixels) / vec2(windowSize) * 2.f;
+    result.levelSize                .push_back(levelSize                );
+    result.fullTileSize             .push_back(fullTileSize             );
+    result.fullTileCount            .push_back(fullTileCount            );
+    result.borderTileSize           .push_back(borderTileSize           );
+    result.fullTileSizeInPixels     .push_back(fullTileSizeInPixels     );
+    result.borderTileSizeInPixels   .push_back(borderTileSizeInPixels   );
+    result.fullTileSizeInClipSpace  .push_back(fullTileSizeInClipSpace  );
+    result.borderTileSizeInClipSpace.push_back(borderTileSizeInClipSpace);
+  };
+
   while(levelSize.x > 1 || levelSize.y > 1){
     bool xDone = levelSize.x == 1;
     bool yDone = levelSize.y == 1;
@@ -90,44 +125,21 @@ Hier computeSizes(glm::uvec2 const&windowSize,uint32_t branchingFactor){
       fullTileSize.y/=2;
       fullTileSize.x*=2;
     }
-    fullTileSizeInPixels           *= fullTileSize;
-    uvec2 fullTileCount             = windowSize / fullTileSizeInPixels;
-    uvec2 borderTileSize            = levelSize-fullTileCount*fullTileSize;
-    uvec2 borderTileSizeInPixels    = windowSize-fullTileCount*fullTileSizeInPixels;
-    vec2  fullTileSizeInClipSpace   = vec2(fullTileSizeInPixels) / vec2(windowSize) * 2.f;
-    vec2  borderTileSizeInClipSpace = vec2(borderTileSizeInPixels) / vec2(windowSize) * 2.f;
-    result.levelSize                .push_back(levelSize                );
-    result.fullTileSize             .push_back(fullTileSize             );
-    result.fullTileCount            .push_back(fullTileCount            );
-    result.borderTileSize           .push_back(borderTileSize           );
-    result.fullTileSizeInPixels     .push_back(fullTileSizeInPixels     );
-    result.borderTileSizeInPixels   .push_back(borderTileSizeInPixels   );
-    result.fullTileSizeInClipSpace  .push_back(fullTileSizeInClipSpace  );
-    result.borderTileSizeInClipSpace.push_back(borderTileSizeInClipSpace);
+    computeLevel();
     levelSize    = divRoundUp(levelSize,fullTileSize);
     fullTileSize = uvec2(fullTileSize.y,fullTileSize.x);
   }
-  fullTileSizeInPixels           *= fullTileSize;
-  uvec2 fullTileCount             = windowSize / fullTileSizeInPixels;
-  uvec2 borderTileSize            = levelSize-fullTileCount*fullTileSize;
-  uvec2 borderTileSizeInPixels    = windowSize-fullTileCount*fullTileSizeInPixels;
-  vec2  fullTileSizeInClipSpace   = vec2(fullTileSizeInPixels) / vec2(windowSize) * 2.f;
-  vec2  borderTileSizeInClipSpace = vec2(borderTileSizeInPixels) / vec2(windowSize) * 2.f;
-  result.fullTileCount            .push_back(fullTileCount         );
-  result.fullTileSize             .push_back(fullTileSize          );
-  result.borderTileSize           .push_back(borderTileSize        );
-  result.fullTileSizeInPixels     .push_back(fullTileSizeInPixels  );
-  result.borderTileSizeInPixels   .push_back(borderTileSizeInPixels);
-  result.levelSize                .push_back(levelSize             );
-  result.fullTileSizeInClipSpace  .push_back(fullTileSizeInClipSpace);
-  result.borderTileSizeInClipSpace.push_back(borderTileSizeInClipSpace);
+  computeLevel();
 
-  std::reverse(result.levelSize             .begin(),result.levelSize             .end());
-  std::reverse(result.fullTileSize          .begin(),result.fullTileSize          .end());
-  std::reverse(result.fullTileCount         .begin(),result.fullTileCount         .end());
-  std::reverse(result.borderTileSize        .begin(),result.borderTileSize        .end());
-  std::reverse(result.fullTileSizeInPixels  .begin(),result.fullTileSizeInPixels  .end());
-  std::reverse(result.borderTileSizeInPixels.begin(),result.borderTileSizeInPixels.end());
+
+  reverse(result.levelSize                );
+  reverse(result.fullTileSize             );
+  reverse(result.fullTileCount            );
+  reverse(result.borderTileSize           );
+  reverse(result.fullTileSizeInPixels     );
+  reverse(result.fullTileSizeInClipSpace  );
+  reverse(result.borderTileSizeInPixels   );
+  reverse(result.borderTileSizeInClipSpace);
   return result;
 }
 
@@ -168,7 +180,7 @@ void BuildStupidHierarchy::createNextLevelProgram(){
 BuildStupidHierarchy::BuildStupidHierarchy(vars::Vars&vars):BuildHierarchy(vars){
 
 
-  auto r = computeSizes(uvec2(30,1024),64);
+  auto r = computeSizes(uvec2(512,512),32);
   printHier(r);
   exit(0);
 

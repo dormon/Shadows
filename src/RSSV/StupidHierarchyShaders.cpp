@@ -1,6 +1,71 @@
 #include <RSSV/StupidHierarchyShaders.h>
 #include <GLSLLine.h>
 
+
+std::string const computeSecondLastLevel =
+GLSL_LINE
+R".(
+
+#ifndef WAVEFRONT_SIZE
+#define WAVEFRONT_SIZE 64
+#endif//WAVEFRONT_SIZE
+
+#define LOCAL_SIZE_IN_FLOATS (WAVEFRONT_SIZE * 2)
+
+layout(local_size_x=WAVEFRONT_SIZE)in;
+
+layout(binding=0       )uniform sampler2DRect depthTexture;
+layout(binding=0,std430)buffer                Level{float level[];};
+
+uniform uint  nofPixels        = 0;
+uniform uint  alignedNofPixels = 0;
+
+shared float localDepth[LOCAL_SIZE_IN_FLOATS];
+
+uniform uvec2 nofTiles         = uvec2(0);
+uniform uvec2 tileSizeInPixels = uvec2(0);
+
+uvec2 computeTileCoord(){
+  uvec2 tileCoord;
+  tileCoord.x = gl_WorkGroupID.x % nofTiles.x;
+  tileCoord.y = gl_WorkGroupID.x / nofTiles.y;
+  if(tileCoord.y&1)tileCoord.y = nofTiles.x - tileCoord.y - 1;
+  return tileCoord;
+}
+
+uvec2 computeTileCoordInPixels(){
+  return computeTileCoord() * tileSizeInPixels;
+}
+
+uvec2 computeLocalCoordInPixels(uint evenYTile){
+  uvec2 coord;
+  coord[evenYTile] = gl_LocalInvocationID[evenYTile] % tileSizeInPixels[evenYTile];
+  coord[1-evenYTile] = gl_LocalInvocationID[evenYTile] / tileSizeInPixels[evenYTile];
+  if(coord[evenYTile]&1)coord[evenYTile] = tileSizeInPixels[evenYTile] - coord[evenYTile] - 1;
+}
+
+void loadToLocal(){
+}
+
+void main(){
+  if(gl_GlobalInvocationID.x >= nofPixels)
+    return;
+
+  loadToLocal();
+
+  ivec2 coord = getCoord(gl_GlobalInvocationID.x);
+  float depth = texelFetch(depthTexture,getCoord(gl_GlobalInvocationID.x)).r;
+
+  level[alignedNofPixels*0+gl_GlobalInvocationID.x] = float(coord.x) / float(windowSize.x) * 2 - 1;
+  level[alignedNofPixels*1+gl_GlobalInvocationID.x] = float(coord.x) / float(windowSize.x) * 2 - 1;
+  level[alignedNofPixels*2+gl_GlobalInvocationID.x] = float(coord.y) / float(windowSize.y) * 2 - 1;
+  level[alignedNofPixels*3+gl_GlobalInvocationID.x] = float(coord.y) / float(windowSize.y) * 2 - 1;
+  level[alignedNofPixels*4+gl_GlobalInvocationID.x] = depth                                * 2 - 1;
+  level[alignedNofPixels*5+gl_GlobalInvocationID.x] = depth                                * 2 - 1;
+}
+
+).";
+
 std::string const rssv::copyLevel0Src = 
 GLSL_LINE
 R".(
