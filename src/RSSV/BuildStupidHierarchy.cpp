@@ -1,5 +1,6 @@
 #include <RSSV/BuildStupidHierarchy.h>
 #include <RSSV/StupidHierarchyShaders.h>
+#include <RSSV/Hierarchy.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <util.h>
@@ -8,140 +9,13 @@
 #include <geGL/StaticCalls.h>
 #include <algorithm>
 
+
 using namespace std;
 using namespace ge::gl;
 using namespace glm;
 using namespace rssv;
 
-uvec2 divRoundUp(uvec2 const&a,uvec2 const&b){
-  return uvec2(divRoundUp(a.x,b.x),divRoundUp(a.y,b.y));
-}
 
-uint32_t ilog2(uint32_t a){
-  return static_cast<uint32_t>(glm::log2(static_cast<float>(a)));
-}
-
-class Hier{
-  public:
-    std::vector<uvec2>levelSize;
-    std::vector<uvec2>fullTileSize;
-    std::vector<uvec2>fullTileSizeInPixels;
-    std::vector<vec2 >fullTileSizeInClipSpace;
-    std::vector<uvec2>fullTileCount;
-    std::vector<uvec2>borderTileSize;
-    std::vector<uvec2>borderTileSizeInPixels;
-    std::vector<vec2 >borderTileSizeInClipSpace;
-    uint32_t nofLevels;
-};
-
-void printHier(Hier const&h){
-  std::cerr << "level size: " << std::endl;
-  for(auto const&x:h.levelSize)
-    std::cerr << x.x << " x " << x.y << std::endl;
-  std::cerr << std::endl;
-
-  std::cerr << "full tile size: " << std::endl;
-  for(auto const&x:h.fullTileSize)
-    std::cerr << x.x << " x " << x.y << std::endl;
-  std::cerr << std::endl;
-
-  std::cerr << "full tile size in pixels: " << std::endl;
-  for(auto const&x:h.fullTileSizeInPixels)
-    std::cerr << x.x << " x " << x.y << std::endl;
-  std::cerr << std::endl;
-
-  std::cerr << "full size in clip space: " << std::endl;
-  for(auto const&x:h.fullTileSizeInClipSpace)
-    std::cerr << x.x << " x " << x.y << std::endl;
-  std::cerr << std::endl;
-
-  std::cerr << "full tile count: " << std::endl;
-  for(auto const&x:h.fullTileCount)
-    std::cerr << x.x << " x " << x.y << std::endl;
-  std::cerr << std::endl;
-
-  std::cerr << "border size: " << std::endl;
-  for(auto const&x:h.borderTileSize)
-    std::cerr << x.x << " x " << x.y << std::endl;
-  std::cerr << std::endl;
-
-  std::cerr << "border size in pixels: " << std::endl;
-  for(auto const&x:h.borderTileSizeInPixels)
-    std::cerr << x.x << " x " << x.y << std::endl;
-  std::cerr << std::endl;
-
-  std::cerr << "border size in clip space: " << std::endl;
-  for(auto const&x:h.borderTileSizeInClipSpace)
-    std::cerr << x.x << " x " << x.y << std::endl;
-  std::cerr << std::endl;
-
-
-}
-
-template<typename T>
-void reverse(std::vector<T>&v){
-  std::reverse(v.begin(),v.end());
-}
-
-Hier computeSizes(glm::uvec2 const&windowSize,uint32_t branchingFactor){
-  glm::uvec2 fullTileSize;
-  fullTileSize.y = 1<<(ilog2(branchingFactor)/2);
-  fullTileSize.x = branchingFactor / fullTileSize.y;
-
-  Hier result;
-  uvec2 levelSize                 = windowSize;
-  uvec2 fullTileSizeInPixels      = uvec2(1)  ;
-  uvec2 fullTileCount                         ;
-  uvec2 borderTileSize                        ;
-  uvec2 borderTileSizeInPixels                ;
-  vec2  fullTileSizeInClipSpace               ;
-  vec2  borderTileSizeInClipSpace             ;
-
-  auto const computeLevel = [&](){
-    fullTileSizeInPixels      *= fullTileSize;
-    fullTileCount              = windowSize / fullTileSizeInPixels;
-    borderTileSize             = levelSize-fullTileCount*fullTileSize;
-    borderTileSizeInPixels     = windowSize-fullTileCount*fullTileSizeInPixels;
-    fullTileSizeInClipSpace    = vec2(fullTileSizeInPixels) / vec2(windowSize) * 2.f;
-    borderTileSizeInClipSpace  = vec2(borderTileSizeInPixels) / vec2(windowSize) * 2.f;
-    result.levelSize                .push_back(levelSize                );
-    result.fullTileSize             .push_back(fullTileSize             );
-    result.fullTileCount            .push_back(fullTileCount            );
-    result.borderTileSize           .push_back(borderTileSize           );
-    result.fullTileSizeInPixels     .push_back(fullTileSizeInPixels     );
-    result.borderTileSizeInPixels   .push_back(borderTileSizeInPixels   );
-    result.fullTileSizeInClipSpace  .push_back(fullTileSizeInClipSpace  );
-    result.borderTileSizeInClipSpace.push_back(borderTileSizeInClipSpace);
-  };
-
-  while(levelSize.x > 1 || levelSize.y > 1){
-    bool xDone = levelSize.x == 1;
-    bool yDone = levelSize.y == 1;
-    while(fullTileSize.x >= levelSize.x*2 && !yDone){
-      fullTileSize.x/=2;
-      fullTileSize.y*=2;
-    }
-    while(fullTileSize.y >= levelSize.y*2 && !xDone){
-      fullTileSize.y/=2;
-      fullTileSize.x*=2;
-    }
-    computeLevel();
-    levelSize    = divRoundUp(levelSize,fullTileSize);
-    fullTileSize = uvec2(fullTileSize.y,fullTileSize.x);
-  }
-  computeLevel();
-
-
-  reverse(result.levelSize                );
-  reverse(result.fullTileSize             );
-  reverse(result.fullTileCount            );
-  reverse(result.borderTileSize           );
-  reverse(result.fullTileSizeInPixels     );
-  reverse(result.fullTileSizeInClipSpace  );
-  reverse(result.borderTileSizeInPixels   );
-  reverse(result.borderTileSizeInClipSpace);
-  return result;
-}
 
 void BuildStupidHierarchy::allocateHierarchy(){
 
@@ -178,10 +52,7 @@ void BuildStupidHierarchy::createNextLevelProgram(){
 }
 
 BuildStupidHierarchy::BuildStupidHierarchy(vars::Vars&vars):BuildHierarchy(vars){
-
-
-  auto r = computeSizes(uvec2(512,512),32);
-  printHier(r);
+  printHierarchy(Hierarchy(uvec2(512,512),64));
   exit(0);
 
   allocateHierarchy();

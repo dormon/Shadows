@@ -83,6 +83,7 @@ set(SOURCES
   src/RSSV/Params.cpp
   src/RSSV/StupidHierarchyShaders.cpp
   src/RSSV/PerfectResolution/Build.cpp
+  src/RSSV/Hierarchy.cpp
   src/RayTracing/nanort.cc
   src/RayTracing/RayTracing.cpp
   src/DrawPrimitive.cpp
@@ -159,6 +160,7 @@ set(INCLUDES
   src/RSSV/BuildHierarchy.h
   src/RSSV/BuildStupidHierarchy.h
   src/RSSV/StupidHierarchyShaders.h
+  src/RSSV/Hierarchy.h
   src/RSSV/ExtractSilhouettes.h
   src/RSSV/ExtractSilhouettesShader.h
   src/RSSV/Params.h
