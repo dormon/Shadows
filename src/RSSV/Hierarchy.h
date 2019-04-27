@@ -15,6 +15,10 @@ class rssv::Hierarchy{
     std::vector<glm::uvec2>tileCount;
     std::vector<glm::uvec2>fullTileSize;
     std::vector<glm::uvec2>fullTileSizeInPixels;
+    std::vector<glm::uvec2>fullTileExponent;
+    std::vector<glm::uvec2>fullTileMask;
+    std::vector<glm::uvec2>fullTileExponentPrev;
+    std::vector<glm::uvec2>fullTileMaskPrev;
     std::vector<glm::vec2 >fullTileSizeInClipSpace;
     std::vector<glm::uvec2>fullTileCount;
     std::vector<glm::uvec2>borderTileSize;

@@ -52,7 +52,9 @@ void BuildStupidHierarchy::createNextLevelProgram(){
 }
 
 BuildStupidHierarchy::BuildStupidHierarchy(vars::Vars&vars):BuildHierarchy(vars){
-  printHierarchy(Hierarchy(uvec2(512,512),64));
+  auto ws = *vars.get<uvec2>("windowSize");
+  auto warp = vars.getSizeT("wavefrontSize");
+  printHierarchy(Hierarchy(uvec2(ws.x,ws.y),warp));
   exit(0);
 
   allocateHierarchy();

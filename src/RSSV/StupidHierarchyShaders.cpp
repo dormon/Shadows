@@ -10,6 +10,10 @@ R".(
 #define WAVEFRONT_SIZE 64
 #endif//WAVEFRONT_SIZE
 
+#ifndef NOF_LEVELS
+#define NOF_LEVELS 3
+#endif//NOF_LEVELS
+
 #define LOCAL_SIZE_IN_FLOATS WAVEFRONT_SIZE
 
 layout(local_size_x=WAVEFRONT_SIZE)in;
@@ -24,6 +28,11 @@ shared float localDepth[LOCAL_SIZE_IN_FLOATS];
 
 uniform uvec2 nofTiles         = uvec2(0);
 uniform uvec2 tileSizeInPixels = uvec2(0);
+
+uniform uvec2 fullTileSizeInPixels[NOF_LEVELS] = {uvec2(512u),uvec2(64u),uvec2( 8u)};
+uniform uvec2 fullTileExponent    [NOF_LEVELS] = {uvec2(  9u),uvec2( 6u),uvec2( 3u)};
+uniform uvec2 fullTileMask        [NOF_LEVELS] = {uvec2(511u),uvec2(63u),uvec2( 7u)};
+uniform uvec2 tileCount           [NOF_LEVELS] = {uvec2(  1u),uvec2( 8u),uvec2(64u)};
 
 float getDepth(uvec2 coord){
   return texelFetch(depthTexture,ivec2(coord),0).r * 2.f - 1.f;
@@ -80,10 +89,61 @@ void findMinMax(){
   }
 }
 
+#define DIV_ROUND_UP(value,exponent,mask) ((value>>exponent) + uint(greaterThan(value&mask,0)))
+
+uvec2 toSnake(uvec2 coord,uvec2 size,uint yAxis){
+  uint odd = coord[yAxis];
+  uvec2 result;
+  result[1-yAxis] = coord[1-yAxis] + odd*uint(size[1-yAxis] - 2*coord[1-yAxis] - 1u);
+  result[  yAxis] = coord[  yAxis]                                                  ;
+}
+
 void bridge(){
   if(gl_LocalInvocationID.x > 0)return;
 
   uvec2 coord;
+
+#define ORIENTATION_BOTTOM 0u
+#define ORIENTATION_LEFT   1u
+#define ORIENTATION_TOP    2u
+#define ORIENTATION_RIGHT  3u
+  // >b 00
+  // ^l 01
+  // <t 10
+  // ^r 11
+  uint parentOrientation = ORIENTATION_LEFT ;
+  uvec2 parentCoord = uvec2(0u);
+  uvec2 parentId = uvec2(0u);
+
+#if NOF_LEVELS >= 1
+  #if NOF_LEVELS >  1
+  parentId = uvec2(gl_WorkGroupID.xy) >> fullTileExponent[0];
+  #else
+  parentId = uvec2(gl_WorkGroupID.xy);
+  #endif
+  parentCoord += convertToSnake(parentId,tileCount[0],1u) * tileSizeInPixels[0];
+#endif
+
+#if NOF_LEVELS >= 2
+  #if NOF_LEVELS >  2
+  parentId = uvec2(gl_WorkGroupID.xy) >> fullTileExponent[1];
+  #else
+  parentId = uvec2(gl_WorkGroupID.xy);
+  #endif
+  parentCoord += convertToSnake(parentId,tileCount[1],0u) * tileSizeInPixels[1];
+#endif
+
+#if NOF_LEVELS >= 3
+  #if NOF_LEVELS >  3
+  parentId = uvec2(gl_WorkGroupID.xy) >> fullTileExponent[2];
+  #else
+  parentId = uvec2(gl_WorkGroupID.xy);
+  #endif
+  parentCoord += convertToSnake(parentId,tileCount[2],1u) * tileSizeInPixels[2];
+#endif
+
+
+
 
   float depth = getDepth(coord);
 
