@@ -7,6 +7,8 @@ SET(CMAKE_CXX_STANDARD 14)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1 ) 
+
 set(MAJOR_VERSION 1)
 set(MINOR_VERSION 0)
 set(REVISION_VERSION 0)
@@ -91,14 +93,36 @@ set(SOURCES
   src/util.cpp
   src/mainUtil.cpp
   src/CameraParam.cpp
-  src/TestParam.cpp
+  src/loadTestParams.cpp
   src/SilhouetteShaders.cpp
   src/Function.cpp
   src/FunctionImpl.cpp
-  src/createGBuffer.cpp
+  src/renderModelToGBuffer.cpp
   src/imguiVars.cpp
   src/Barrier.cpp
   src/Methods.cpp
+  src/modelStats.cpp
+  src/selectMethod.cpp
+  src/createShadowMask.cpp
+  src/createMethod.cpp
+  src/stopAppAfterMaxFrame.cpp
+  src/takeAScreenShot.cpp
+  src/initMethods.cpp
+  src/parseArguments.cpp
+  src/loadBasicApplicationParameters.cpp
+  src/getMethodNameList.cpp
+  src/loadCameraParams.cpp
+  src/measureFly.cpp
+  src/drawScene.cpp
+  src/ifExistBeginStamp.cpp
+  src/ifExistStamp.cpp
+  src/ifExistEndStamp.cpp
+  src/doShading.cpp
+  src/ifMethodExistCreateShadowMask.cpp
+  src/saveTexture.cpp
+  src/createGeometryBuffer.cpp
+  src/copyTexture.cpp
+  src/saveGBufferAsPointCloud.cpp
   )
 
 set(INCLUDES
@@ -176,10 +200,10 @@ set(INCLUDES
   src/util.h
   src/mainUtil.h
   src/CameraParam.h
-  src/TestParam.h
+  src/loadTestParams.h
   src/Function.h
   src/FunctionImpl.h
-  src/createGBuffer.h
+  src/renderModelToGBuffer.h
   src/imguiVars.h
   src/Barrier.h
   src/Simplex.h
@@ -187,6 +211,28 @@ set(INCLUDES
   src/Methods.h
   src/FunctionPrologue.h
   src/AABB.h
+  src/modelStats.h
+  src/selectMethod.h
+  src/createShadowMask.h
+  src/createMethod.h
+  src/stopAppAfterMaxFrame.h
+  src/takeAScreenShot.h
+  src/initMethods.h
+  src/parseArguments.h
+  src/loadBasicApplicationParameters.h
+  src/getMethodNameList.h
+  src/loadCameraParams.h
+  src/measureFly.h
+  src/drawScene.h
+  src/ifExistBeginStamp.h
+  src/ifExistStamp.h
+  src/ifExistEndStamp.h
+  src/doShading.h
+  src/ifMethodExistCreateShadowMask.h
+  src/saveTexture.h
+  src/createGeometryBuffer.h
+  src/copyTexture.h
+  src/saveGBufferAsPointCloud.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

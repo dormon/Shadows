@@ -1,13 +1,12 @@
-#include<createGBuffer.h>
-
 #include<glm/glm.hpp>
 #include<geGL/StaticCalls.h>
+#include<Vars/Vars.h>
 
 #include<Deferred.h>
 #include<BasicCamera/Camera.h>
 #include<Model.h>
 
-void createGBuffer(vars::Vars&vars){
+void renderModelToGBuffer(vars::Vars&vars){
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   ge::gl::glViewport(0, 0, windowSize.x, windowSize.y);
   ge::gl::glEnable(GL_DEPTH_TEST);

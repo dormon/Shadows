@@ -6,9 +6,6 @@
 #include <Vars/Vars.h>
 #include <glm/glm.hpp>
 
-void loadCameraParams(
-    vars::Vars&                                            vars,
-    std::shared_ptr<argumentViewer::ArgumentViewer> const& args);
 
 void createView(vars::Vars& vars);
 void createProjection(vars::Vars& vars);

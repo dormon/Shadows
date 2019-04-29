@@ -1,37 +1,13 @@
-#include <SDL2CPP/Window.h>
-#include <TxtUtils/TxtUtils.h>
-#include <geGL/OpenGLContext.h>
 #include <geGL/StaticCalls.h>
-#include <geGL/VertexArray.h>
 #include <geGL/geGL.h>
-#include <cmath>
-#include <limits>
-#include <string>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_access.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include<FreeImagePlus.h>
 
 #include <Simple3DApp/Application.h>
 #include <CameraParam.h>
-#include <TestParam.h>
 #include <mainUtil.h>
 #include <util.h>
 
-#include <ArgumentViewer/ArgumentViewer.h>
-#include <BasicCamera/FreeLookCamera.h>
-#include <BasicCamera/OrbitCamera.h>
-#include <BasicCamera/PerspectiveCamera.h>
-#include <CSSV/CSSV.h>
-#include <CSSVSOE.h>
-#include <CSV.h>
-#include <CameraPath.h>
-#include <CubeShadowMapping/CubeShadowMapping.h>
-#include <CubeShadowMapping/Params.h>
-#include <Deferred.h>
 #include <DrawPrimitive.h>
 #include <Model.h>
 #include <RSSV/RSSV.h>
@@ -40,22 +16,25 @@
 #include <ShadowMethod.h>
 #include <Sintorn/Sintorn.h>
 #include <Sintorn/Param.h>
-#include <TimeStamp.h>
-#include <VSSV/VSSV.h>
-#include <VSSV/Params.h>
-#include <RayTracing/RayTracing.h>
 #include <Vars/Vars.h>
 #include <Vars/Caller.h>
-#include <createGBuffer.h>
-#include <numeric>
+#include <modelStats.h>
+#include <selectMethod.h>
+#include <createShadowMask.h>
+#include <createMethod.h>
+#include <stopAppAfterMaxFrame.h>
+#include <takeAScreenShot.h>
+#include <initMethods.h>
+#include <parseArguments.h>
+#include <measureFly.h>
+#include <drawScene.h>
+#include <createGeometryBuffer.h>
+#include <saveGBufferAsPointCloud.h>
 
 #include <imguiVars.h>
 
 #include <FunctionPrologue.h>
 #include <Methods.h>
-#include <geGL/OpenGLUtil.h>
-
-#include <AABB.h>
 
 #define ___ std::cerr << __FILE__ << ": " << __LINE__ << std::endl
 
@@ -67,374 +46,32 @@ class Shadows : public simple3DApp::Application {
   vars::Vars vars;
 
   virtual void                init() override;
-  void                        parseArguments();
   void                        initWavefrontSize();
-  void                        measure();
-  void                        drawScene();
   virtual void                mouseMove(SDL_Event const& event) override;
   std::map<SDL_Keycode, bool> keyDown;
   virtual void                key(SDL_Event const& e, bool down) override;
   virtual void                resize(uint32_t x,uint32_t y) override;
-  void ifExistStamp(std::string const&n);
-  void ifExistBeginStamp();
-  void ifExistEndStamp(std::string const&n);
 };
-
-void Shadows::parseArguments() {
-  assert(this != nullptr);
-
-  auto methods = vars.add<Methods>("methods");
-  methods->add<CubeShadowMapping>("cubeShadowMapping");
-  methods->add<cssv::CSSV       >("cssv"             );
-  methods->add<CSSVSOE          >("cssvsoe"          );
-  methods->add<Sintorn          >("sintorn"          );
-  methods->add<rssv::RSSV       >("rssv"             );
-  methods->add<VSSV             >("vssv"             );
-  methods->add<RayTracing       >("rayTracing"       );
-
-  auto arg = std::make_shared<argumentViewer::ArgumentViewer>(argc, argv);
-  loadBasicApplicationParameters(vars,arg);
-  loadCubeShadowMappingParams   (vars,arg);
-  cssv::loadParams              (vars,arg);
-  loadVSSVParams                (vars,arg);
-  loadSintornParams             (vars,arg);
-  rssv::loadParams              (vars,arg);
-  loadTestParams                (vars,arg);
-  loadCameraParams              (vars,arg);
-
-  vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
-      "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");
-
-  vars.addSizeT("frameCounter");
-  vars.addSizeT("maxFrame") = arg->getu32("--maxFrame",0,"after this frame the app will stop");
-
-
-  bool printHelp = arg->isPresent("-h", "prints this help");
-  if (printHelp || !arg->validate()) {
-    std::cerr << arg->toStr();
-    exit(0);
-  }
-}
 
 void Shadows::initWavefrontSize() {
   FUNCTION_CALLER();
   vars.getSizeT("wavefrontSize") = getWavefrontSize(vars.getSizeT("wavefrontSize"));
 }
 
-void createGeometryBuffer(vars::Vars&vars){
-  FUNCTION_PROLOGUE("all","windowSize");
-
-  auto windowSize = *vars.get<glm::uvec2>("windowSize");
-  vars.reCreate<GBuffer>("gBuffer",windowSize.x, windowSize.y);
-}
-
-void createShadowMask(vars::Vars&vars){
-  FUNCTION_PROLOGUE("all","windowSize");
-
-  auto windowSize = *vars.get<glm::uvec2>("windowSize");
-  vars.reCreate<ge::gl::Texture>("shadowMask" ,(GLenum)GL_TEXTURE_2D,(GLenum)GL_R32F, 1,(GLsizei)windowSize.x,(GLsizei)windowSize.y);
-}
-
-void createMethod(vars::Vars&vars){
-  FUNCTION_PROLOGUE("all","methodName");
-
-  auto const methodName = vars.getString("methodName"); 
-  auto methods = vars.get<Methods>("methods");
-  methods->createMethod(methodName,vars);
-}
-
-void sortComputeShader(
-    size_t nofElements   = 1024,
-    size_t elementSize   = 4   ,
-    size_t wgs           = 64  ,
-    size_t localElements = 64  ){
-  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
-  "#version 450\n",
-  ge::gl::Shader::define("WORKGROUP_SIZE",(uint32_t)wgs          ),
-  ge::gl::Shader::define("LOCAL_ELEMENTS",(uint32_t)localElements),
-  ge::gl::Shader::define("ELEMENT_SIZE"  ,(uint32_t)elementSize  ),
-  ge::gl::Shader::define("NOF_ELEMENTS"  ,(uint32_t)nofElements  ),
-  R".(
-  layout(local_size_x=WORKGROUP_SIZE)in;
-
-  #define UINT_SIZE             4
-  #define ELEMENT_SIZE_IN_UINTS (ELEMENT_SIZE/UINT_SIZE)
-  #define LOCAL_SIZE_IN_UINTS   (LOCAL_ELEMENTS*ELEMENT_SIZE_IN_UINTS)
-  #define UINT_LOADS_PER_THREAD (LOCAL_SIZE_IN_UINTS / WORKGROUP_SIZE)
-  #define ELEMENTS_PER_THREAD   (LOCAL_ELEMENTS / WORKGROUP_SIZE)
-
-  shared uint local[LOCAL_SIZE_IN_UINTS];
-
-  layout(binding=0,std430)buffer Data{uint data[];};
-
-  uint loadUint(uint i){
-    if(i>=NOF_ELEMENTS)return 0xffffffff;
-    return data[i];
-  }
-
-  void storeUint(uint i,uint d){
-    if(i>=NOF_ELEMENTS)return;
-    data[i] = d;
-  }
-
-  #define GLOBAL_INDEX(i) (gl_LocalInvocationID.x + i*gl_WorkGroupID.x + gl_WorkGroupID.x*gl_WorkGroupSize.x*UINT_LOADS_PER_THREAD)
-  #define LOCAL_INDEX(i) (gl_LocalInvocationID.x + i*WORKGROUP_SIZE)
-
-  void loadToLocal(){
-    for(uint i=0;i<UINT_LOADS_PER_THREAD;++i)
-      local[LOCAL_INDEX(i)] = loadUint(GLOBAL_INDEX(i));
-    barrier();
-  }
-
-  void storeToGlobal(){
-    for(uint i=0;i<UINT_LOADS_PER_THREAD;++i)
-      storeUint(GLOBAL_INDEX(i),local[LOCAL_INDEX(i)]);
-  }
-
-  bool less(uint A,uint B){
-    if(A >= LOCAL_ELEMENTS || B >= LOCAL_ELEMENTS)return true;
-    for(uint i=0;i<ELEMENT_SIZE_IN_UINTS;++i){
-      if(local[A*ELEMENT_SIZE_IN_UINTS+i] > local[B*ELEMENT_SIZE_IN_UINTS+i])return false;
-      if(local[A*ELEMENT_SIZE_IN_UINTS+i] < local[B*ELEMENT_SIZE_IN_UINTS+i])return true ;
-    }
-    return false;
-  }
-
-  void swap(uint A,uint B){
-    if(A >= LOCAL_ELEMENTS || B >= LOCAL_ELEMENTS)return;
-    for(uint i=0;i<ELEMENT_SIZE_IN_UINTS;++i){
-      uint a = local[A*ELEMENT_SIZE_IN_UINTS+i];
-      local[A*ELEMENT_SIZE_IN_UINTS+i] = local[B*ELEMENT_SIZE_IN_UINTS+i];
-      local[B*ELEMENT_SIZE_IN_UINTS+i] = a;
-    }
-  }
-
-  void bubbleSortEvenRun(){
-    for(uint i=0;i<ELEMENTS_PER_THREAD;++i)
-      if(!less(gl_LocalInvocationID.x*2+i*gl_WorkGroupSize.x,gl_LocalInvocationID.x*2+1+i*gl_WorkGroupSize.x)){
-        swap(gl_LocalInvocationID.x*2+i*gl_WorkGroupSize.x,gl_LocalInvocationID.x*2+1+i*gl_WorkGroupSize.x);
-      }
-  }
-  void bubbleSortOddRun(){
-    for(uint i=0;i<ELEMENTS_PER_THREAD;++i)
-      if(!less(gl_LocalInvocationID.x*2+1+i*gl_WorkGroupSize.x,gl_LocalInvocationID.x*2+2+i*gl_WorkGroupSize.x)){
-        swap(gl_LocalInvocationID.x*2+1+i*gl_WorkGroupSize.x,gl_LocalInvocationID.x*2+2+i*gl_WorkGroupSize.x);
-      }
-  }
-
-  void bubbleOneRun(){
-    bubbleSortEvenRun();
-    barrier();
-    bubbleSortOddRun();
-    barrier();
-  }
-
-  void bubbleSort(){
-    for(uint i=0;i<LOCAL_ELEMENTS;++i)
-      bubbleOneRun();
-  }
-
-  void main(){
-    loadToLocal();
-
-    bubbleSort();
-
-    storeToGlobal();
-  }
-  ).");
-  auto prg = std::make_shared<ge::gl::Program>(cs);
-  prg->use();
-  auto data = std::vector<uint32_t>(nofElements*elementSize/sizeof(uint32_t));
-  for(size_t i=0;i<nofElements;++i)
-    for(size_t e=0;e<elementSize/sizeof(uint32_t);++e)
-      data[i*elementSize/sizeof(uint32_t)+e] = nofElements-i-1;
-  for(size_t i=0;i<100;++i)
-    std::cerr << data.at(i) << std::endl;
-
-  auto test = data;
-  auto buf = std::make_shared<ge::gl::Buffer>(data);
-  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  auto const divRoundUp = [](size_t x,size_t d){if(x%d>0)return x/d+1;else return x/d;};
-  ge::gl::glDispatchCompute(divRoundUp(nofElements,localElements),1,1);
-  ge::gl::glFinish();
-  buf->getData(data.data());
-
-  for(size_t i=0;i<100;++i)
-    std::cerr << data.at(i) << std::endl;
-
-}
-
-void testComputeShader(){
-  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
-  R".(
-  #version 450
-  layout(local_size_x=64)in;
-
-  layout(binding=0,std430)buffer Data{uint data[];};
-
-  void main(){
-    data[gl_GlobalInvocationID.x] = gl_GlobalInvocationID.x;
-  }
-  ).");
-  auto prg = std::make_shared<ge::gl::Program>(cs);
-  prg->use();
-  auto data = std::vector<uint32_t>(64*2);
-  for(auto&x:data)
-    x = 10;
-  auto test = data;
-  auto buf = std::make_shared<ge::gl::Buffer>(data);
-  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  ge::gl::glDispatchCompute(2,1,1);
-  ge::gl::glFinish();
-  buf->getData(data.data());
-  std::iota(test.begin(),test.end(),0);
-  if(test != data)
-    std::cerr << "testComputeShader failed" << std::endl;
-}
-
-void testComputeShaderUVec4(){
-  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
-  R".(
-  #version 450
-  layout(local_size_x=64)in;
-
-  layout(binding=0,std430)buffer Data{uvec4 data[];};
-
-  void main(){
-    data[gl_GlobalInvocationID.x] = uvec4(gl_GlobalInvocationID.x*4)+uvec4(0u,1u,2u,3u);
-  }
-  ).");
-  auto prg = std::make_shared<ge::gl::Program>(cs);
-  prg->use();
-  auto data = std::vector<uint32_t>(64*4);
-  for(auto&x:data)
-    x = 10;
-  auto test = data;
-  auto buf = std::make_shared<ge::gl::Buffer>(data);
-  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  ge::gl::glDispatchCompute(1,1,1);
-  ge::gl::glFinish();
-  buf->getData(data.data());
-  std::iota(test.begin(),test.end(),0);
-  if(test != data){
-    std::cerr << "testComputeUVEC4Shader failed" << std::endl;
-    for(auto const&x:data)
-      std::cerr << x << std::endl;
-  }
-}
-
-void testComputeShaderVec4(){
-  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
-  R".(
-  #version 450
-  layout(local_size_x=64)in;
-
-  layout(binding=0,std430)buffer Data{vec4 data[];};
-
-  void main(){
-    data[gl_GlobalInvocationID.x] = vec4(gl_GlobalInvocationID.x*4.f)+vec4(0.1f,1.1f,2.1f,3.1f);
-  }
-  ).");
-  auto prg = std::make_shared<ge::gl::Program>(cs);
-  prg->use();
-  auto data = std::vector<float>(64*4);
-  for(auto&x:data)
-    x = 10.f;
-  auto test = data;
-  auto buf = std::make_shared<ge::gl::Buffer>(data);
-  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  ge::gl::glDispatchCompute(1,1,1);
-  ge::gl::glFinish();
-  buf->getData(data.data());
-  for(size_t i=0;i<test.size();++i)
-    test[i] = 0.1f + i;
-  if(test != data){
-    std::cerr << "testComputeVEC4Shader failed" << std::endl;
-    for(auto const&x:data)
-      std::cerr << x << std::endl;
-  }
-}
-
-
-void testGlobalAtomicCounter(){
-  auto cs = std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
-  R".(
-  #version 450
-  layout(local_size_x=64)in;
-
-  layout(binding=0,std430)buffer Data{uint counter[4];};
-
-  void main(){
-    atomicAdd(counter[0],gl_GlobalInvocationID.x);
-  }
-  ).");
-  auto prg = std::make_shared<ge::gl::Program>(cs);
-  prg->use();
-  auto data = std::vector<uint32_t>(4);
-  for(auto&x:data)x = 0;
-  auto buf = std::make_shared<ge::gl::Buffer>(data);
-  buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  ge::gl::glDispatchCompute(1,1,1);
-  ge::gl::glFinish();
-  buf->getData(data.data());
-  if(data.at(0) != 2016)
-    std::cerr << "data: " << data.at(0) << std::endl;
-}
-
 void Shadows::init() {
   FUNCTION_CALLER();
 
-  testComputeShader();
-  testGlobalAtomicCounter();
-  testComputeShaderUVec4();
-  testComputeShaderVec4();
-  sortComputeShader();
-  //exit(0);
-  //exit(0);
+  vars.add<sdl2cpp::MainLoop*>("mainLoop",&*mainLoop);
+  vars.add<sdl2cpp::Window  *>("window"  ,&*window  );
+  vars.addUint32("argc",argc);
+  vars.add<char**>("argv",argv);
 
-  parseArguments();
+  initMethods(vars);
+  parseArguments(vars);
+
 
   if(vars.getBool("getModelStats")){
-    auto model = vars.add<Model>("model",vars.getString("modelName"));
-    std::vector<float>vertices;
-    model->getVertices(vertices);
-    auto adj = std::make_shared<Adjacency const>(vertices,vars.getSizeT("maxMultiplicity"));
-    auto const aabb = AABB(vertices)*vars.getFloat("modelStatsScale");
-
-    glm::uvec3 grid = *vars.get<glm::uvec3>("modelStatsGrid");
-    size_t silhouetteCounter = 0;
-    for(size_t z=0;z<grid.z;++z)
-      for(size_t y=0;y<grid.y;++y)
-        for(size_t x=0;x<grid.x;++x){
-          std::cerr << x << "," << y << "," << z << std::endl;
-          auto const light = aabb.getMin() + aabb.getDiagonal()/(glm::vec3(grid)-glm::vec3(1.f))*glm::vec3(x,y,z);
-          //std::cerr << light.x << " " << light.y << " " << light.z << std::endl;
-          for(size_t e=0;e<adj->getNofEdges();++e){
-            auto const a = adj->getEdgeVertexA(e);
-            auto const b = adj->getEdgeVertexB(e);
-            auto const A = glm::vec3(vertices[a+0],vertices[a+1],vertices[a+2]);
-            auto const B = glm::vec3(vertices[b+0],vertices[b+1],vertices[b+2]);
-            auto const n = glm::normalize(glm::cross(light-A,B-A));
-            auto const d = -glm::dot(A,n);
-            int mult = 0;
-            for(size_t o=0;o<adj->getNofOpposite(e);++o){
-              auto const oi = adj->getOpposite(e,o);
-              auto const O = glm::vec3(vertices[oi+0],vertices[oi+1],vertices[oi+2]);
-              mult += -1+2*int(glm::dot(n,O) + d > 0);
-            }
-            if(mult != 0)silhouetteCounter++;
-          }
-
-        }
-
-
-    float avgSil = static_cast<float>(silhouetteCounter) / static_cast<float>(grid.x*grid.y*grid.z);
-    float triangles = vertices.size() / 3 ;
-    float edges = adj->getNofEdges();
-    std::cerr << "nofTriangles,nofEdges,avgSil,silPerEdge,silPerTriangle" << std::endl;
-    std::cerr << triangles << "," << edges << "," << avgSil << "," << avgSil/edges << "," << avgSil/triangles << std::endl;
-
-    
+    getModelStats(vars);
     exit(0);
   }
 
@@ -471,201 +108,30 @@ void Shadows::init() {
 
 }
 
-void Shadows::ifExistStamp(std::string const&n){
-  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->stamp(n);
-}
-
-void Shadows::ifExistBeginStamp(){
-  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->begin();
-}
-
-void Shadows::ifExistEndStamp(std::string const&n){
-  if (vars.has("timeStamp")) vars.get<TimeStamp>("timeStamp")->end(n);
-}
-
-void Shadows::drawScene() {
-  //createMethod(vars);
-
-  ifExistBeginStamp();
-
-  createGBuffer(vars);
-
-  ifExistStamp("gBuffer");
-
-  ifMethodExistCreateShadowMask(vars);
-
-  doShading(vars);
-
-  ifExistEndStamp("shading");
-}
-
-
-void Shadows::measure() {
-  FUNCTION_CALLER();
-
-  assert(this != nullptr);
-  if (vars.getString("test.flyKeyFileName") == "") {
-    std::cerr << "camera path file is empty" << std::endl;
-    mainLoop->removeWindow(window->getId());
-    return;
-  }
-  auto cameraPath =
-      std::make_shared<CameraPath>(false, vars.getString("test.flyKeyFileName"));
-  std::map<std::string, float> measurement;
-  vars.get<TimeStamp>("timeStamp")->setPrinter([&](std::vector<std::string> const& names,
-                              std::vector<float> const&       values) {
-    for (size_t i = 0; i < names.size(); ++i)
-      if (names[i] != "") {
-        if (measurement.count(names[i]) == 0) measurement[names[i]] = 0.f;
-        measurement[names[i]] += values[i];
-      }
-  });
-
-  std::vector<std::vector<std::string>> csv;
-  for (size_t k = 0; k < vars.getSizeT("test.flyLength"); ++k) {
-    setCameraAccordingToKeyFrame(cameraPath,vars,k);
-
-    for (size_t f = 0; f < vars.getSizeT("test.framesPerMeasurement"); ++f) drawScene();
-
-    writeCSVHeaderIfFirstLine(csv,measurement);
-    writeMeasurementIntoCSV(vars,csv,measurement,k);
-
-    measurement.clear();
-    window->swap();
-  }
-  std::string output = vars.getString("test.outputName") + ".csv";
-  saveCSV(output, csv);
-  mainLoop->removeWindow(window->getId());
-}
-
-void selectMethod(vars::Vars&vars){
-  auto methods = vars.get<Methods>("methods");
-  auto method = vars.getString("methodName");
-  int oldMethodId;
-  if(methods->hasMethod(method))
-    oldMethodId = methods->getId(vars.getString("methodName"));
-  else
-    oldMethodId = methods->getNofMethods();
-  int newMethodId = oldMethodId;
-
-  std::vector<char const*>names;
-  for(size_t i=0;i<methods->getNofMethods();++i)
-    names.push_back(methods->getName(i).c_str());
-  names.push_back("no shadow");
-  
-  ImGui::ListBox("method",&newMethodId,names.data(),names.size());
-  if(newMethodId != oldMethodId){
-    if(newMethodId < methods->getNofMethods())
-      vars.getString("methodName") = methods->getName(newMethodId);
-    else
-      vars.getString("methodName") = "no shadow";
-    vars.updateTicks("methodName");
-  }
-}
-
-size_t basicTexelSize(ge::gl::BasicInternalFormatElement const&info){
-  size_t result = 0;
-  for(auto const&x:info.channelSize)
-    result += x;
-  return result;
-}
-
-void saveBasicTexture(std::string const&name,ge::gl::Texture const*tex){
-  auto const iFormat   = tex->getInternalFormat(0);
-  auto const info      = ge::gl::getBasicInternalFormatInformation(iFormat);
-  auto const width     = tex->getWidth(0);
-  auto const height    = tex->getHeight(0);
-  auto const texelSize = basicTexelSize(info);
-  auto const nofTexels = width * height;
-  auto buffer = std::vector<uint8_t>(texelSize * nofTexels);
-  if(info.type == ge::gl::BasicInternalFormatElement::UNSIGNED_INT){
-    //ge::gl::glGetTextureImage(); tex,level,format,type,bufSize,pixels
-    //
-    //ge::gl::glGetTextureSubImage(); tex,level,xoff,yoff,zoff,w,h,d,format,type,bufSize,pixels
-  }
-}
-
-void saveDepthTexture(std::string const&name,ge::gl::Texture const*tex){
-}
-
-void saveCompressedTexture(std::string const&name,ge::gl::Texture const*tex){
-
-}
-
-void saveTexture(std::string const&name,ge::gl::Texture const*tex){
-  auto const iFormat   = tex->getInternalFormat(0);
-  if(ge::gl::isInternalFormatBasic(iFormat)){
-    saveBasicTexture(name,tex);
-    return;
-  }
-  if(ge::gl::isInternalFormatDepth(iFormat)){
-    saveDepthTexture(name,tex);
-    return;
-  }
-  if(ge::gl::isInternalFormatDepth(iFormat)){
-    saveCompressedTexture(name,tex);
-    return;
-  }
-/*
-
-  auto const info      = ge::gl::getBasicInternalFormatInformation(iFormat);
-  auto const nofChannels = ge::gl::nofInternalFormatChannels(iFormat);
-  size_t const channelSizes[4] = {
-    ge::gl::internalFormatChannelSize(iFormat,0),
-    ge::gl::internalFormatChannelSize(iFormat,1),
-    ge::gl::internalFormatChannelSize(iFormat,2),
-    ge::gl::internalFormatChannelSize(iFormat,3),
-  };
-  auto const floatingPoint = ge::gl::internalFormatFloatingPoint(iFormat);
-  auto const signedType    = ge::gl::internalFormatSigned(iFormat);
-  auto const fixedPoint    = ge::gl::internalFormatFixedPoint(iFormat);
-  auto const texelSize     = ge::gl::internalFormatSize(iFormat);
-  fipImage img;
-  std::vector<uint8_t>buf(nofTexels * texelSize);
-
-  ge::gl::glGetTextureImage(id,0,GL_RED,GL_FLOAT,buf.size(),buf.data());
-  img.setSize(FIT_FLOAT,width,height,32);
-  for(size_t y=0;y<height;++y){
-    auto ptr = (float*)FreeImage_GetScanLine(img,y);
-    for(size_t x=0;x<width;++x)
-      ptr[x] = buf.at(y*width + x);
-  }
-  img.save(name.c_str());
-  */
-}
 
 void Shadows::draw() {
   FUNCTION_CALLER();
 
-  //ge::gl::glClear(GL_COLOR_BUFFER_BIT);
-#if 1
   createGeometryBuffer(vars);
   createShadowMask(vars);
   createProjection(vars);
   createMethod(vars);
-
-  if(vars.getSizeT("maxFrame") != 0){
-    if(vars.getSizeT("frameCounter") >= vars.getSizeT("maxFrame"))
-      mainLoop->removeWindow(window->getId());
-    vars.getSizeT("frameCounter")++;
-  }
+  
+  stopAppAfterMaxFrame(vars);
 
   ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-#if 1
   assert(this != nullptr);
 
   if (vars.getString("test.name") == "fly") {
-    measure();
+    measureFly(vars);
     return;
   }
 
   moveCameraWSAD(vars, keyDown);
 
-  drawScene();
+  drawScene(vars);
 
-  //*
-  //std::cerr << vars.getString("methodName") << std::endl;
   if (vars.getString("methodName") == "sintorn") {
     //std::cerr << "asd" << std::endl;
     auto sintorn = vars.getReinterpret<Sintorn>("shadowMethod");
@@ -684,62 +150,20 @@ void Shadows::draw() {
     auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(rssv->_HDT[i]);};
     for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
   }
-#endif
 
 
-  //ImGui::BeginCombo("cici","was");
-  //ImGui::EndCombo();
-
-  //TODO imgui gui
   drawImguiVars(vars);
 
 
 
   selectMethod(vars);
 
-
-
-
   if(ImGui::Button("screenshot"))
-  {
-    fipImage img;
-    auto windowSize = *vars.get<glm::uvec2>("windowSize");
-    //img.setSize(FIT_BITMAP,->x,vars.get<glm::uvec2>("windowSize")->y,24);
-    auto id = vars.get<ge::gl::Texture>("shadowMask")->getId();
-    std::vector<float>buf(windowSize.x * windowSize.y);
-    ge::gl::glGetTextureImage(id,0,GL_RED,GL_FLOAT,buf.size()*sizeof(float),buf.data());
-    img.setSize(FIT_FLOAT,windowSize.x,windowSize.y,32);
-    for(size_t y=0;y<windowSize.y;++y){
-      auto ptr = (float*)FreeImage_GetScanLine(img,y);
-      for(size_t x=0;x<windowSize.x;++x)
-        ptr[x] = buf.at(y*windowSize.x + x);
-    }
-    img.save("/home/dormon/Desktop/test.exr");
+    takeAScreenShot(vars);
 
-    id = vars.get<GBuffer>("gBuffer")->color->getId();
-    std::vector<uint8_t>buf1(windowSize.x * windowSize.y * sizeof(uint16_t) * 4);
-    ge::gl::glGetTextureImage(id,0,GL_RGBA_INTEGER,GL_UNSIGNED_SHORT,buf1.size(),buf1.data());
-    img.setSize(FIT_BITMAP,windowSize.x,windowSize.y,24);
-    for(size_t y=0;y<windowSize.y;++y){
-      auto ptr = (uint8_t*)FreeImage_GetScanLine(img,y);
-      for(size_t x=0;x<windowSize.x;++x){
-        ptr[x*3+0] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 0*sizeof(uint16_t));
-        ptr[x*3+1] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 1*sizeof(uint16_t));
-        ptr[x*3+2] = buf1.at((y*windowSize.x + x)*(sizeof(uint16_t)*4) + 2*sizeof(uint16_t));
-      }
-    }
-    img.save("/home/dormon/Desktop/aa.png");
+  if(ImGui::Button("storePointCloud"))
+    saveGBufferAsPointCloud(vars);
 
-
-    
-    std::cerr << "take a screenshot" << std::endl;
-  }
-#endif
-
-  //ge::gl::glClearColor(0,0.4,0,1);
-  //ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-  // */
   swap();
 }
 
