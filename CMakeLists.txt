@@ -123,6 +123,8 @@ set(SOURCES
   src/createGeometryBuffer.cpp
   src/copyTexture.cpp
   src/saveGBufferAsPointCloud.cpp
+  src/drawPointCloud.cpp
+  src/getMVP.cpp
   )
 
 set(INCLUDES
@@ -233,6 +235,8 @@ set(INCLUDES
   src/createGeometryBuffer.h
   src/copyTexture.h
   src/saveGBufferAsPointCloud.h
+  src/drawPointCloud.h
+  src/getMVP.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

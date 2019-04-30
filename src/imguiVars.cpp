@@ -67,7 +67,8 @@ void drawGroup(std::unique_ptr<Group>const&group,vars::Vars &vars){
       change = ImGui::DragFloat(n.c_str(),(float*)vars.get(fn));
     }
     if(vars.getType(fn) == typeid(uint32_t)){
-      change = ImGui::InputScalar(n.c_str(),ImGuiDataType_U32,(uint32_t*)vars.get(fn));
+      change = ImGui::DragScalar(n.c_str(),ImGuiDataType_U32,(uint32_t*)vars.get(fn),1);
+      //change = ImGui::InputScalar(n.c_str(),ImGuiDataType_U32,(uint32_t*)vars.get(fn));
       //ImGui::DragInt(n.c_str(),(int32_t*)vars.get(fn),1,0);
     }
     if(vars.getType(fn) == typeid(bool)){

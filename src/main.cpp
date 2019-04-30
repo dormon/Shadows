@@ -30,6 +30,7 @@
 #include <drawScene.h>
 #include <createGeometryBuffer.h>
 #include <saveGBufferAsPointCloud.h>
+#include <drawPointCloud.h>
 
 #include <imguiVars.h>
 
@@ -130,7 +131,10 @@ void Shadows::draw() {
 
   moveCameraWSAD(vars, keyDown);
 
-  drawScene(vars);
+  if(vars.addOrGetBool("drawPointCloud")){
+    drawPointCloud(vars);
+  }else
+    drawScene(vars);
 
   if (vars.getString("methodName") == "sintorn") {
     //std::cerr << "asd" << std::endl;
@@ -163,6 +167,7 @@ void Shadows::draw() {
 
   if(ImGui::Button("storePointCloud"))
     saveGBufferAsPointCloud(vars);
+
 
   swap();
 }
