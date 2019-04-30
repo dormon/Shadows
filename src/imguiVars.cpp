@@ -1,4 +1,6 @@
 #include <imguiVars.h>
+#include <Vars/Vars.h>
+#include <addVarsLimits.h>
 
 #include <imguiSDL2OpenGL/imgui.h>
 
@@ -8,6 +10,7 @@
 #include<glm/glm.hpp>
 
 #define ___ std::cerr << __FILE__ << ": " << __LINE__ << std::endl
+
 
 std::string getHead(std::string const&n){
   return n.substr(0,n.find("."));
@@ -63,13 +66,27 @@ void drawGroup(std::unique_ptr<Group>const&group,vars::Vars &vars){
     auto const n = group->name;
     auto const fn = group->fullName;
     bool change = false;
+
+    std::string limitsName = "";
+    if(vars.has(limitsPostfixVariable)){
+      auto const postfix = vars.getString(limitsPostfixVariable);
+      if(vars.has(n + postfix))
+        limitsName = n + postfix;
+    }
+
     if(vars.getType(fn) == typeid(float)){
-      change = ImGui::DragFloat(n.c_str(),(float*)vars.get(fn));
+      if(limitsName != ""){
+        auto lims = vars.get<VarsLimits<float>>(limitsName);
+        change = ImGui::DragFloat(n.c_str(),(float*)vars.get(fn),lims->step,lims->minValue,lims->maxValue);
+      }else
+        change = ImGui::DragFloat(n.c_str(),(float*)vars.get(fn));
     }
     if(vars.getType(fn) == typeid(uint32_t)){
-      change = ImGui::DragScalar(n.c_str(),ImGuiDataType_U32,(uint32_t*)vars.get(fn),1);
-      //change = ImGui::InputScalar(n.c_str(),ImGuiDataType_U32,(uint32_t*)vars.get(fn));
-      //ImGui::DragInt(n.c_str(),(int32_t*)vars.get(fn),1,0);
+      if(limitsName != ""){
+        auto lims = vars.get<VarsLimits<uint32_t>>(limitsName);
+        change = ImGui::DragScalar(n.c_str(),ImGuiDataType_U32,(uint32_t*)vars.get(fn),lims->step,&lims->minValue,&lims->maxValue);
+      }else
+        change = ImGui::DragScalar(n.c_str(),ImGuiDataType_U32,(uint32_t*)vars.get(fn),1);
     }
     if(vars.getType(fn) == typeid(bool)){
       change = ImGui::Checkbox(n.c_str(),(bool*)vars.get(fn));

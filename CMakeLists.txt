@@ -125,6 +125,7 @@ set(SOURCES
   src/saveGBufferAsPointCloud.cpp
   src/drawPointCloud.cpp
   src/getMVP.cpp
+  src/addVarsLimits.cpp
   )
 
 set(INCLUDES
@@ -237,6 +238,7 @@ set(INCLUDES
   src/saveGBufferAsPointCloud.h
   src/drawPointCloud.h
   src/getMVP.h
+  src/addVarsLimits.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

@@ -5,6 +5,7 @@
 #include <geGL/geGL.h>
 #include <geGL/StaticCalls.h>
 #include <getMVP.h>
+#include <addVarsLimits.h>
 
 using namespace glm;
 using namespace ge::gl;
@@ -58,6 +59,7 @@ void drawPointCloud(vars::Vars&vars){
   if(!vars.has("gBufferAsPointCloud"))return;
 
   uint32_t selectedPoint = vars.addOrGetUint32("selectedPoint");
+  addVarsLimitsU(vars,"selectedPoint",0,100,10);
   createPointCloudProgram(vars);
   createPointCloudVAO(vars);
 

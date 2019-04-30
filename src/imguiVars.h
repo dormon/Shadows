@@ -1,5 +1,5 @@
 #pragma once
 
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 
 void drawImguiVars(vars::Vars &vars);
