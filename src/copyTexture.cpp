@@ -154,12 +154,46 @@ void copyTexture2D(ge::gl::Texture*const out,ge::gl::Texture const*const in,vars
   ge::gl::glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
+void blitDepthStencil(ge::gl::Texture*const out,ge::gl::Texture*const in){
+  std::cerr << "blitDepthStencil" << std::endl;
+  std::cerr << "error: " << ge::gl::glGetError() << std::endl;
+  GLuint fbos[2];
+  GLint w = in->getWidth(0);
+  GLint h = in->getHeight(0);
+  ge::gl::glCreateFramebuffers(2,fbos);
+  ge::gl::glNamedFramebufferTexture(fbos[0],GL_DEPTH_ATTACHMENT,out->getId(),0);
+  ge::gl::glNamedFramebufferTexture(fbos[1],GL_DEPTH_ATTACHMENT,in ->getId(),0);
+  ge::gl::glBlitNamedFramebuffer(fbos[1],fbos[0],0,0,w,h,0,0,w,h,
+       GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT,GL_NEAREST);
+  ge::gl::glFinish();
+  ge::gl::glDeleteFramebuffers(2,fbos);
 
-void copyTexture(ge::gl::Texture*const out,ge::gl::Texture const*const in,vars::Vars&vars){
+  //auto read  = std::make_shared<ge::gl::Framebuffer>();
+  //auto write = std::make_shared<ge::gl::Framebuffer>();
+  //read->attachTexture(GL_DEPTH_ATTACHMENT,in);
+  //read->attachTexture(GL_STENCIL_ATTACHMENT,in);
+  //write->attachTexture(GL_DEPTH_ATTACHMENT,out);
+  //write->attachTexture(GL_STENCIL_ATTACHMENT,out);
+  //GLint w = in->getWidth(0);
+  //GLint h = in->getHeight(0);
+  //std::cerr << "w x h: " << w << " x " << h << std::endl;
+  //ge::gl::glBlitNamedFramebuffer(read->getId(),write->getId(),0,0,w,h,0,0,w,h,
+  //    GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT,GL_NEAREST);
+  //ge::gl::glFinish();
+  std::cerr << "error: " << ge::gl::glGetError() << std::endl;
+}
+
+void copyTextureRectangle(ge::gl::Texture*const out,ge::gl::Texture*const in,vars::Vars&vars){
+  GLenum format = in->getInternalFormat(0);
+  if(format == GL_DEPTH24_STENCIL8)blitDepthStencil(out,in);
+}
+
+void copyTexture(ge::gl::Texture*const out,ge::gl::Texture*const in,vars::Vars&vars){
   if(in->getInternalFormat(0) != out->getInternalFormat(0))return;
   if(in->getWidth(0) != out->getWidth(0))return;
   if(in->getHeight(0) != out->getHeight(0))return;
   if(in->getDepth(0) != out->getDepth(0))return;
   if(in->getTarget() != out->getTarget())return;
   if(in->getTarget() == GL_TEXTURE_2D)copyTexture2D(out,in,vars);
+  if(in->getTarget() == GL_TEXTURE_RECTANGLE)copyTextureRectangle(out,in,vars);
 }

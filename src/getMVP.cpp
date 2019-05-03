@@ -1,5 +1,4 @@
 #include <Vars/Vars.h>
-#include <glm/glm.hpp>
 #include <BasicCamera/Camera.h>
 
 glm::mat4 getMVP(vars::Vars&vars){

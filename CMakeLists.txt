@@ -126,6 +126,8 @@ set(SOURCES
   src/drawPointCloud.cpp
   src/getMVP.cpp
   src/addVarsLimits.cpp
+  src/getCameraNear.cpp
+  src/getCameraFar.cpp
   )
 
 set(INCLUDES
@@ -239,6 +241,8 @@ set(INCLUDES
   src/drawPointCloud.h
   src/getMVP.h
   src/addVarsLimits.h
+  src/getCameraNear.h
+  src/getCameraFar.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})
