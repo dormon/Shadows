@@ -290,7 +290,7 @@ void drawPointCloud(vars::Vars&vars){
   program
     ->setMatrix4fv("mvp"          ,value_ptr(mvp           ))
     ->setMatrix4fv("pointCloudMVP",value_ptr(*pointCloudMVP))
-    ->set1ui      ("selLevel"     ,selLevel                 )
+    //->set1ui      ("selLevel"     ,selLevel                 )
     ->set1i       ("drawColors"   ,drawColors               )
     ->set1i       ("useDepth"     ,useDepth                 )
     ->set2ui      ("roundedSize"  ,ww,hh                    )
