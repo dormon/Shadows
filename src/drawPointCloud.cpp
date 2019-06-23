@@ -271,7 +271,7 @@ void drawPointCloud(vars::Vars&vars){
   uint32_t selPointY = vars.addOrGetUint32("pointCloud.selPointY");
   uint32_t selPoint  = vars.addOrGetUint32("pointCloud.selPoint" );
   uint32_t selLevel  = vars.addOrGetUint32("pointCloud.selLevel",2);
-  bool     useDepth  = vars.addOrGetBool  ("pointCloud.useDepth");
+  bool     useDepth  = vars.addOrGetBool  ("pointCloud.useDepth",true);
   bool     usePointID     = vars.addOrGetBool  ("pointCloud.usePointID"     );
   bool     drawColors     = vars.addOrGetBool  ("pointCloud.drawColors");
 
