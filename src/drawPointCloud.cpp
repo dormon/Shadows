@@ -168,13 +168,17 @@ void createPointCloudProgram(vars::Vars&vars){
     return 2*near*far/(d*(far-near)-far-near);
   }
 
+  float depthToZInf(float d){
+    return 2*near / (d - 1);
+  }
+
   vec4 getWorldSpacePosition(uvec2 coord){
     if(useDepth == 0)
       return texelFetch(positionTexture,ivec2(coord),0);
 
     uvec2 size = textureSize(depthTexture);
     float depth = texelFetch(depthTexture,ivec2(coord)).x*2.f-1.f;
-    float z = depthToZ(depth);
+    float z = depthToZInf(depth);
     
     return inverse(pointCloudMVP)*vec4((2*vec2(coord) / vec2(size) - 1) * (z),depth*(z),z);
   }

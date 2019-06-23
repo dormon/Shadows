@@ -160,12 +160,12 @@ void blitDepthStencil(ge::gl::Texture*const out,ge::gl::Texture*const in){
   GLuint fbos[2];
   GLint w = in->getWidth(0);
   GLint h = in->getHeight(0);
+  std::cerr << "w h : " << w << " " << h << std::endl;
   ge::gl::glCreateFramebuffers(2,fbos);
   ge::gl::glNamedFramebufferTexture(fbos[0],GL_DEPTH_ATTACHMENT,out->getId(),0);
   ge::gl::glNamedFramebufferTexture(fbos[1],GL_DEPTH_ATTACHMENT,in ->getId(),0);
   ge::gl::glBlitNamedFramebuffer(fbos[1],fbos[0],0,0,w,h,0,0,w,h,
        GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT,GL_NEAREST);
-  ge::gl::glFinish();
   ge::gl::glDeleteFramebuffers(2,fbos);
 
   //auto read  = std::make_shared<ge::gl::Framebuffer>();

@@ -38,5 +38,29 @@ void saveGBufferAsPointCloud(vars::Vars&vars){
   copyTexture(pointCloud     ,&*gBuffer->position,vars);
   copyTexture(pointCloudColor,&*gBuffer->color   ,vars);
   copyTexture(pointCloudDepth,&*gBuffer->depth   ,vars);
+  size_t const nofPix = gBuffer->depth->getWidth(0)*gBuffer->depth->getHeight(0);
+  std::vector<float>data(nofPix);
+  glGetTextureImage(gBuffer->depth->getId(),0,GL_DEPTH_COMPONENT,GL_FLOAT,sizeof(float)*data.size(),data.data());
+
+  float mmin = 10e10;
+  float mmax = -10e10;
+  for(auto const&p:data){
+    mmin = glm::min(mmin,p);
+    mmax = glm::max(mmax,p);
+  }
+
+
+  float near = getCameraNear(vars);
+  float far  = getCameraFar(vars);
+  auto const depthToZ = [](float d,float near,float far){
+    return 2*near*far/(d*(far-near)-far-near);
+  };
+
+  auto const depthToZInf = [](float d,float near,float far){
+    return 2.f*near / (d - 1.f);
+  };
+
+  std::cerr << "near: " << near << " - far: " << far << std::endl;
+  std::cerr << "mmin: " << depthToZInf(mmin,near,far) << " - mmax: " << depthToZInf(mmax,near,far) << std::endl;
 }
 
