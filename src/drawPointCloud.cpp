@@ -6,7 +6,7 @@
 #include <geGL/StaticCalls.h>
 #include <getMVP.h>
 #include <addVarsLimits.h>
-#include <util.h>
+#include <divRoundUp.h>
 #include <RSSV/Hierarchy.h>
 #include <Deferred.h>
 
@@ -180,7 +180,7 @@ void createPointCloudProgram(vars::Vars&vars){
     float depth = texelFetch(depthTexture,ivec2(coord)).x*2.f-1.f;
     float z = depthToZInf(depth);
     
-    return inverse(pointCloudMVP)*vec4((2*vec2(coord) / vec2(size) - 1) * (z),depth*(z),z);
+    return inverse(pointCloudMVP)*vec4((2*vec2(coord) / vec2(size) - 1) * (-z),depth*(-z),-z);
   }
 
   void main(){

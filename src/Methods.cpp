@@ -34,7 +34,6 @@ void Methods::createMethod(std::string const&name,vars::Vars&vars){
     vars.updateTicks("useShadows");
     return;
   }
-
   auto id = getId(name);
   constructors.at(id)(vars);
   vars.getBool("useShadows") = true;

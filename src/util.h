@@ -7,7 +7,6 @@
 #include<glm/glm.hpp>
 
 uint32_t getDispatchSize(std::size_t n,std::size_t wgs);
-std::size_t divRoundUp(std::size_t a,std::size_t b);
 glm::vec2 vector2vec2(std::vector<float> const& v);
 glm::vec3 vector2vec3(std::vector<float> const& v);
 glm::vec4 vector2vec4(std::vector<float> const& v);

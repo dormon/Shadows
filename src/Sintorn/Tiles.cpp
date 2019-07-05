@@ -2,6 +2,7 @@
 #include<cassert>
 #include<algorithm>
 #include<util.h>
+#include<divRoundUp.h>
 
 class TileDivisibility{
   public:

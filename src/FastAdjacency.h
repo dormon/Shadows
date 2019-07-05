@@ -1,101 +1,43 @@
 #pragma once
 
-#include<cstddef>
-#include<vector>
-#include<cassert>
+#include <cassert>
+#include <cstddef>
+#include <vector>
 
-class Adjacency{
-  public:
-    /**
-     * @brief constructor of adjacency information
-     *
-     * @param vertices three 3D consecutive vertices form a triangle
-     * @param maxMultiplicity edges with larger nof opposite vertices will be split
-     */
-    Adjacency(
-        std::vector<float>const&vertices       ,
-        size_t            const&maxMultiplicity);
-    /**
-     * @brief gets number of edges
-     *
-     * @return 
-     */
-    size_t getNofEdges()const;
-    /**
-     * @brief gets indices of edge vertices
-     *
-     * @param e edge number
-     * @param i 0 - vertex a, 1 - vertex b of edge e
-     *
-     * @return index of vertex a or b of edge e
-     */
-    size_t getEdge(size_t e,size_t i)const;
-    /**
-     * @brief gets index of edge vertex A
-     *
-     * @param e edge index
-     *
-     * @return index of vertex A of an edge e
-     */
-    size_t getEdgeVertexA(size_t e)const{assert(this!=nullptr);return this->getEdge(e,0);}
-    /**
-     * @brief gets index of vertex B of edge
-     *
-     * @param e
-     *
-     * @return 
-     */
-    size_t getEdgeVertexB(size_t e)const{assert(this!=nullptr);return this->getEdge(e,1);}
-    /**
-     * @brief gets number of opposite vertices of edge e
-     *
-     * @param e edge number
-     *
-     * @return number of opposite vertice of edge e
-     */
-    size_t getNofOpposite(size_t e)const;
-    /**
-     * @brief gets index of opposite vertex
-     *
-     * @param e edge e
-     * @param i ith opposite vertex
-     *
-     * @return index of ith opposite vertex of edge e
-     */
-    size_t getOpposite   (size_t e,size_t i)const;
-    /**
-     * @brief gets maximal multiplicity
-     *
-     * @return maximal multiplicity
-     */
-    size_t getMaxMultiplicity()const;
-    /**
-     * @brief gets array of vertices
-     *
-     * @return array of vertices
-     */
-    std::vector<float>const&getVertices()const;
-    /**
-     * @brief gets nof triangles
-     *
-     * @return number of triangles
-     */
-    size_t getNofTriangles()const;
-  protected:
-    class EdgeAdjacency{
-      public:
-        size_t ab[2] ;
-        size_t offset;
-        size_t count ;
-        EdgeAdjacency(size_t const&a,size_t const&b,size_t const&offset,size_t const&count){
-          this->ab[0] = a;
-          this->ab[1] = b;
-          this->offset = offset;
-          this->count  = count;
-        }
-    };
-    std::vector<EdgeAdjacency>_edges                    ;
-    std::vector<size_t>       _opposite                 ;///< list of all indices to opposite vertices
-    size_t                    _maxMultiplicity = 0      ;///<max allowed multiplicity
-    std::vector<float>        _vertices                 ;///all vertices, with redundancy  
+class Adjacency {
+ public:
+  Adjacency(std::vector<float> const& vertices, size_t const& maxMultiplicity);
+  size_t                    getNofEdges() const;
+  size_t                    getEdge(size_t e, size_t i) const;
+  size_t                    getEdgeVertexA(size_t e) const;
+  size_t                    getEdgeVertexB(size_t e) const;
+  size_t                    getNofOpposite(size_t e) const;
+  size_t                    getOpposite(size_t e, size_t i) const;
+  size_t                    getMaxMultiplicity() const;
+  std::vector<float> const& getVertices() const;
+  size_t                    getNofTriangles() const;
+
+ protected:
+  class EdgeAdjacency;
+  std::vector<EdgeAdjacency> edges;
+  std::vector<size_t> opposite;  ///< list of all indices to opposite vertices
+  size_t              maxMultiplicity = 0;  ///< max allowed multiplicity
+  std::vector<float>  vertices;             /// all vertices, with redundancy
+};
+
+class Adjacency::EdgeAdjacency {
+ public:
+  size_t ab[2];
+  size_t offset;
+  size_t count;
+  EdgeAdjacency(size_t const& a,
+                size_t const& b,
+                size_t const& o,
+                size_t const& c)
+  {
+    ab[0]  = a;
+    ab[1]  = b;
+    offset = o;
+    count  = c;
+  }
 };

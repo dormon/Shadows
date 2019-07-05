@@ -8,10 +8,6 @@ uint32_t getDispatchSize(std::size_t n, std::size_t wgs) {
   return static_cast<uint32_t>((n / wgs) + ((n % wgs) > 0 ? 1 : 0));
 }
 
-std::size_t divRoundUp(std::size_t a, std::size_t b) {
-  return (a / b) + ((a % b) > 0 ? 1 : 0);
-}
-
 glm::vec2 vector2vec2(std::vector<float> const& v) {
   assert(v.size() >= 2);
   return glm::vec2(v[0], v[1]);

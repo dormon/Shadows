@@ -23,5 +23,7 @@ class Methods{
 template<typename T>
 size_t Methods::add(std::string const&name){
   auto const id = addMethodName(name);
-  constructors[id] = [](vars::Vars&vars){vars.reCreate<T>("shadowMethod",vars);};
+  constructors[id] = [](vars::Vars&vars){
+    vars.reCreate<T>("shadowMethod",vars);
+  };
 }

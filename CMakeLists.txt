@@ -78,6 +78,7 @@ set(SOURCES
   src/Sintorn/MergeStencil.cpp
   src/Sintorn/RasterizationShaders.cpp
   src/Sintorn/Rasterize.cpp
+  src/Sintorn2/Sintorn2.cpp
   src/RSSV/RSSV.cpp
   src/RSSV/Tiles.cpp
   src/RSSV/BuildStupidHierarchy.cpp
@@ -128,6 +129,8 @@ set(SOURCES
   src/addVarsLimits.cpp
   src/getCameraNear.cpp
   src/getCameraFar.cpp
+  src/divRoundUp.cpp
+  src/requiredBits.cpp
   )
 
 set(INCLUDES
@@ -183,6 +186,7 @@ set(INCLUDES
   src/Sintorn/MergeStencil.h
   src/Sintorn/RasterizationShaders.h
   src/Sintorn/Rasterize.h
+  src/Sintorn2/Sintorn2.h
   src/RSSV/RSSV.h
   src/RSSV/Tiles.h
   src/RSSV/Shaders.h
@@ -243,6 +247,8 @@ set(INCLUDES
   src/addVarsLimits.h
   src/getCameraNear.h
   src/getCameraFar.h
+  src/divRoundUp.h
+  src/requiredBits.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

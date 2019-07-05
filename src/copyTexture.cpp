@@ -1,7 +1,7 @@
 #include <geGL/geGL.h>
 #include <geGL/StaticCalls.h>
 #include <Vars/Vars.h>
-#include <util.h>
+#include <divRoundUp.h>
 
 #include <geGL/OpenGLUtil.h>
 

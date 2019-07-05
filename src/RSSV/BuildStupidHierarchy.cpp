@@ -8,6 +8,7 @@
 #include <TimeStamp.h>
 #include <geGL/StaticCalls.h>
 #include <algorithm>
+#include <divRoundUp.h>
 
 
 using namespace std;

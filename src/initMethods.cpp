@@ -6,6 +6,7 @@
 #include <CSSVSOE.h>
 #include <RSSV/RSSV.h>
 #include <Sintorn/Sintorn.h>
+#include <Sintorn2/Sintorn2.h>
 #include <VSSV/VSSV.h>
 #include <RayTracing/RayTracing.h>
 
@@ -15,6 +16,7 @@ void initMethods(vars::Vars&vars){
   methods->add<cssv::CSSV       >("cssv"             );
   methods->add<CSSVSOE          >("cssvsoe"          );
   methods->add<Sintorn          >("sintorn"          );
+  methods->add<Sintorn2         >("sintorn2"         );
   methods->add<rssv::RSSV       >("rssv"             );
   methods->add<VSSV             >("vssv"             );
   methods->add<RayTracing       >("rayTracing"       );
