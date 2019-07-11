@@ -3,6 +3,7 @@
 #include <FunctionPrologue.h>
 #include <divRoundUp.h>
 #include <requiredBits.h>
+#include <startStop.h>
 
 Sintorn2::Sintorn2(vars::Vars& vars) : ShadowMethod(vars) {}
 
@@ -28,7 +29,9 @@ void Sintorn2::create(glm::vec4 const& lightPosition,
   auto nofPix = width * height;
   std::vector<float>data(nofPix);
   //glGetTextureImage(gBuffer->depth->getId(),0,GL_DEPTH_COMPONENT,GL_FLOAT,sizeof(float)*data.size(),data.data());
+  start(vars,"glGetTextureImage");
   glGetTextureImage(depth->getId(),0,GL_DEPTH_COMPONENT,GL_FLOAT,sizeof(float)*data.size(),data.data());
+  stop(vars,"glGetTextureImage");
   float mmin = 10e10;
   float mmax = -10e10;
   for(auto const&p:data){

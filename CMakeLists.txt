@@ -131,6 +131,8 @@ set(SOURCES
   src/getCameraFar.cpp
   src/divRoundUp.cpp
   src/requiredBits.cpp
+  src/startStop.cpp
+  src/split.cpp
   )
 
 set(INCLUDES
@@ -249,6 +251,10 @@ set(INCLUDES
   src/getCameraFar.h
   src/divRoundUp.h
   src/requiredBits.h
+  src/startStop.h
+  src/toStr.h
+  src/split.h
+  src/fillValues.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})
