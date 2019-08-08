@@ -32,6 +32,22 @@ find_package(assimp CONFIG REQUIRED)
 find_package(FreeImage REQUIRED)
 find_package(FreeImagePlus REQUIRED)
 
+add_subdirectory(src/Sintorn)
+add_subdirectory(src/CSSV)
+add_subdirectory(src/VSSV)
+add_subdirectory(src/RSSV)
+add_subdirectory(src/CubeShadowMapping)
+
+add_library(RayTracing STATIC
+  src/RayTracing/nanort.cc
+  src/RayTracing/RayTracing.cpp
+  src/RayTracing/nanort.h
+  src/RayTracing/RayTracing.h
+  )
+target_include_directories(RayTracing PUBLIC src)
+target_link_libraries(RayTracing PUBLIC glm geGL::geGL)
+
+
 set(SOURCES
   src/main.cpp
   src/Model.cpp
@@ -42,53 +58,9 @@ set(SOURCES
   src/FastAdjacency.cpp
   src/TimeStamp.cpp
   src/SilhouetteShaders.cpp
-  src/CSSV/CSSV.cpp
-  src/CSSV/DrawSidesShaders.cpp
-  src/CSSV/DrawCapsShaders.cpp
-  src/CSSV/ExtractSilhouettes.cpp
-  src/CSSV/BasicExtractSilhouettes.cpp
-  src/CSSV/PlanesExtractSilhouettes.cpp
-  src/CSSV/InterleavedPlanesExtractSilhouettes.cpp
-  src/CSSV/Param.cpp
-  src/CSSV/DrawSidesProgram.cpp
-  src/CSSV/DrawCapsProgram.cpp
-  src/CSSV/DrawCaps.cpp
-  src/CSSV/DrawSides.cpp
-  src/CSSV/DrawSidesShaders.cpp
-  src/CSSV/DrawCapsShaders.cpp
-  src/CubeShadowMapping/CubeShadowMapping.cpp
-  src/CubeShadowMapping/Params.cpp
-  src/VSSV/VSSV.cpp
-  src/VSSV/Params.cpp
-  src/VSSV/DrawCaps.cpp
-  src/VSSV/DrawSides.cpp
-  src/VSSV/DrawSidesUsingPoints.cpp
-  src/VSSV/DrawSidesUsingPlanes.cpp
-  src/VSSV/DrawSidesUsingAllPlanes.cpp
   src/CSSVSOE.cpp
-  src/Sintorn/Sintorn.cpp
-  src/Sintorn/Tiles.cpp
-  src/Sintorn/ShadowFrustaShaders.cpp
-  src/Sintorn/Param.cpp
-  src/Sintorn/ComputeTileSizes.cpp
-  src/Sintorn/ShadowFrusta.cpp
-  src/Sintorn/HierarchyShaders.cpp
-  src/Sintorn/HierarchicalDepth.cpp
-  src/Sintorn/MergeShaders.cpp
-  src/Sintorn/MergeStencil.cpp
-  src/Sintorn/RasterizationShaders.cpp
-  src/Sintorn/Rasterize.cpp
   src/Sintorn2/Sintorn2.cpp
-  src/RSSV/RSSV.cpp
-  src/RSSV/Tiles.cpp
-  src/RSSV/BuildStupidHierarchy.cpp
-  src/RSSV/ExtractSilhouettes.cpp
-  src/RSSV/Params.cpp
-  src/RSSV/StupidHierarchyShaders.cpp
-  src/RSSV/PerfectResolution/Build.cpp
-  src/RSSV/Hierarchy.cpp
-  src/RayTracing/nanort.cc
-  src/RayTracing/RayTracing.cpp
+  src/BallotShader.cpp
   src/DrawPrimitive.cpp
   src/ShadowVolumes.cpp
   src/util.cpp
@@ -144,64 +116,8 @@ set(INCLUDES
   src/ShadowMethod.h
   src/FastAdjacency.h
   src/TimeStamp.h
-  src/CSSV/Fwd.h
-  src/CSSV/CSSV.h
-  src/CSSV/DrawSidesShaders.h
-  src/CSSV/DrawCapsShaders.h
-  src/CSSV/ExtractSilhouetteShader.h
-  src/CSSV/ExtractSilhouettes.h
-  src/CSSV/BasicExtractSilhouettes.h
-  src/CSSV/PlanesExtractSilhouettes.h
-  src/CSSV/InterleavedPlanesExtractSilhouettes.h
-  src/CSSV/InterleavedPlanesShader.h
-  src/CSSV/DrawSidesProgram.h
-  src/CSSV/DrawCapsProgram.h
-  src/CSSV/DrawCaps.h
-  src/CSSV/DrawSides.h
-  src/CSSV/Param.h
-  src/CubeShadowMapping/CubeShadowMapping.h
-  src/CubeShadowMapping/ShadowMapToShadowMaskShaders.h
-  src/CubeShadowMapping/CreateShadowMapShaders.h
-  src/CubeShadowMapping/Params.h
-  src/VSSV/VSSV.h
-  src/VSSV/Params.h
-  src/VSSV/DrawCaps.h
-  src/VSSV/CapsShader.h
-  src/VSSV/DrawSides.h
-  src/VSSV/DrawSidesUsingPoints.h
-  src/VSSV/DrawSidesUsingPointsShader.h
-  src/VSSV/DrawSidesUsingPlanes.h
-  src/VSSV/DrawSidesUsingPlanesShader.h
-  src/VSSV/DrawSidesUsingAllPlanes.h
-  src/VSSV/DrawSidesUsingAllPlanesShader.h
   src/CSSVSOE.h
-  src/Sintorn/Sintorn.h
-  src/Sintorn/Tiles.h
-  src/Sintorn/Shaders.h
-  src/Sintorn/ShadowFrustaShaders.h
-  src/Sintorn/Param.h
-  src/Sintorn/ComputeTileSizes.h
-  src/Sintorn/ShadowFrusta.h
-  src/Sintorn/HierarchyShaders.h
-  src/Sintorn/HierarchicalDepth.h
-  src/Sintorn/MergeShaders.h
-  src/Sintorn/MergeStencil.h
-  src/Sintorn/RasterizationShaders.h
-  src/Sintorn/Rasterize.h
   src/Sintorn2/Sintorn2.h
-  src/RSSV/RSSV.h
-  src/RSSV/Tiles.h
-  src/RSSV/Shaders.h
-  src/RSSV/BuildHierarchy.h
-  src/RSSV/BuildStupidHierarchy.h
-  src/RSSV/StupidHierarchyShaders.h
-  src/RSSV/Hierarchy.h
-  src/RSSV/ExtractSilhouettes.h
-  src/RSSV/ExtractSilhouettesShader.h
-  src/RSSV/Params.h
-  src/RSSV/PerfectResolution/Build.h
-  src/RayTracing/nanort.h
-  src/RayTracing/RayTracing.h
   src/BallotShader.h
   src/DrawPrimitive.h
   src/ProgramExtension.h
@@ -263,6 +179,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Simple3DApp::Simple3DApp BasicCamera::BasicCamera ArgumentViewer::ArgumentViewer assimp::assimp FreeImage::FreeImage FreeImagePlus::FreeImagePlus Vars::Vars)
+target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV CubeShadowMapping RayTracing)
 
 #include(print_target_properties.cmake)
 #print_target_properties(SDL2::SDL2)

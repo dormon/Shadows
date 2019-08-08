@@ -227,8 +227,8 @@ void JOIN(TestShadowFrustumHDB,LEVEL)(uvec2 coord,vec2 clipCoord){\
         if(SampleInsideEdge(tr,SharedShadowFrusta[SHADOWFRUSTUM_ID_IN_WORKGROUP][NOF_PLANES_PER_SF+i].xyz))Result=TRIVIAL_REJECT;\
       }\
     }\
-    UINT_RESULT_ARRAY AcceptBallot     = TRANSFORM_BALLOT_RESULT_TO_UINTS(BALLOT(Result==TRIVIAL_ACCEPT));\
-    UINT_RESULT_ARRAY IntersectsBallot = TRANSFORM_BALLOT_RESULT_TO_UINTS(BALLOT(Result==INTERSECTS    ));\
+    BALLOT_UINTS AcceptBallot     = BALLOT_RESULT_TO_UINTS(BALLOT(Result==TRIVIAL_ACCEPT));\
+    BALLOT_UINTS IntersectsBallot = BALLOT_RESULT_TO_UINTS(BALLOT(Result==INTERSECTS    ));\
     if(INVOCATION_ID_IN_WAVEFRONT<RESULT_LENGTH_IN_UINT){\
       ivec2 hstGlobalCoord=ivec2(coord.x*RESULT_LENGTH_IN_UINT+INVOCATION_ID_IN_WAVEFRONT,coord.y);\
       imageAtomicOr(HST[LEVEL],hstGlobalCoord,GET_UINT_FROM_UINT_ARRAY(AcceptBallot,INVOCATION_ID_IN_WAVEFRONT));\
