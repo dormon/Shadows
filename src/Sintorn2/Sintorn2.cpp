@@ -28,7 +28,7 @@ void allocateHierarchy(vars::Vars&vars){
   auto const clusterY  = divRoundUp(windowSize.y,warpY);
   auto const xBits     = requiredBits(clusterX);
   auto const yBits     = requiredBits(clusterY);
-  auto const zBits     = glm::max(xBits,yBits);
+  auto const zBits     = glm::max(glm::max((uint32_t)xBits,(uint32_t)yBits),9u);
   auto const clusterZ  = 1 << zBits;
   auto const allBits   = xBits + yBits + zBits;
   auto const nofLevels = divRoundUp(allBits,warpBits);
@@ -128,7 +128,8 @@ void createProgram(vars::Vars&vars){
     ss << "uniform float near = 0.01f;\n";
     ss << "uniform float far  = 1000.f;\n";
     ss << "uniform uint  Sy   = 512/8;\n";
-    ss << "uniform float fovy = 90;\n";
+    ss << "uniform float fovy = 1.5707963267948966f;\n";
+    ss << "uniform uint  zCluster = 1<<6;\n";
     ss << "\n";
     ss << "// converts depth (-1,+1) to Z in view-space\n";
     ss << "// far, near \n";
@@ -141,8 +142,8 @@ void createProgram(vars::Vars&vars){
     ss << "  return 2*near / (d - 1);\n";
     ss << "}\n";
     ss << "\n";
-    ss << "uint convertDepth(float depth){\n";
-    ss << "  return uint(log(-depth/near) / log(1+2*tan(fovy)/Sy));\n";
+    ss << "uint quantizeZ(float z){\n";
+    ss << "  return clamp(uint(log(-z/near) / log(1+2*tan(fovy/2)/Sy)),0,zCluster-1);\n";
     ss << "}\n";
     ss << "\n";
 
@@ -152,10 +153,11 @@ void createProgram(vars::Vars&vars){
   auto getMorton = [&](){
     std::stringstream ss;
 
-    ss << "uint getMorton(){\n";
-    ss << "  float depth = texelFetch(depthTexture,ivec2(gl_GlobalInvocationID.xy)).x*2-1;\n";
-    ss << "  uint  depthQ = convertDepth(depth);\n";
-    ss << "  uvec3 clusterCoord = uvec3(uvec2(gl_GlobalInvocationID) >> uvec2(" << warpBitsX << "," << warpBitsY << "), depthQ);\n";
+    ss << "uint getMorton(uvec2 coord){\n";
+    ss << "  float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;\n";
+    ss << "  float z = depthToZInf(depth);\n";
+    ss << "  uint  zQ = quantizeZ(z);\n";
+    ss << "  uvec3 clusterCoord = uvec3(uvec2(coord) >> uvec2(" << warpBitsX << "," << warpBitsY << "), zQ);\n";
     ss << "  return morton(clusterCoord);\n";
     ss << "}\n";
     ss << "\n";
@@ -171,7 +173,7 @@ void createProgram(vars::Vars&vars){
     ss << "  uvec2 wgCoord = uvec2(gl_WorkGroupID.xy) * uvec2("<<(1<<warpBitsX)<<","<<(1<<warpBitsY)<<");\n";
     ss << "  uvec2 coord = wgCoord + loCoord;\n";
     ss << "  if(any(greaterThanEqual(coord,uvec2("<<windowSize.x<<","<<windowSize.y<<"))))return;\n";
-    ss << "  compute();\n";
+    ss << "  compute(coord);\n";
     ss << "}\n";
     ss << "\n";
 
@@ -203,13 +205,20 @@ void createProgram(vars::Vars&vars){
   ss << "shared uint mortons[" << wavefrontSize << "];\n";
   ss << "\n";
 
-  ss << "void compute(){\n";
-  ss << "  uint morton = getMorton();\n";
+  ss << "void compute(uvec2 coord){\n";
+  ss << "  uint morton = getMorton(coord);\n";
+  //ss << "  float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;\n";
+  //ss << "  float z = depthToZInf(depth);\n";
+  //ss << "  uint  zQ = quantizeZ(z);\n";
+  //ss << "  hierarchy[(gl_WorkGroupID.x + gl_WorkGroupID.y*64)*64+gl_LocalInvocationIndex] = floatBitsToUint(z);\n";
+  //ss << "  hierarchy[(gl_WorkGroupID.x + gl_WorkGroupID.y*64)*64+gl_LocalInvocationIndex] = zQ;\n";
+  //ss << "  return;\n";
   ss << "  mortons[gl_LocalInvocationIndex] = morton;\n";
 
   DEBUG_SHADER_LINE();
 
-  ss << "  uint notDone = 0xffffffff;\n";
+  //ss << "  uint notDone = 0xffffffff;\n";
+  ss << "  uint notDone;\n";
 
   DEBUG_SHADER_LINE();
   //
@@ -226,6 +235,7 @@ void createProgram(vars::Vars&vars){
   // 
   //
   if(warpInUints == 1){
+    ss << "  notDone = GET_UINT_FROM_UINT_ARRAY(BALLOT_RESULT_TO_UINTS(BALLOT(true)),0);\n";
     ss << "  while(notDone != 0){\n";
     ss << "    uint selectedBit = findLSB(notDone);\n";
     ss << "    uint otherMorton = mortons[selectedBit];\n";
@@ -241,25 +251,32 @@ void createProgram(vars::Vars&vars){
     ss << "  }\n";
   }else{
     DEBUG_SHADER_LINE();
+    ss << "uint counter = 0;\n";
     for(size_t i=0;i<warpInUints;++i){
+      ss << "  notDone = GET_UINT_FROM_UINT_ARRAY(BALLOT_RESULT_TO_UINTS(BALLOT(true)),"<<i<<");\n";
       ss << "  while(notDone != 0){\n";
       ss << "    uint selectedBit = findLSB(notDone) + " << i*32 << ";\n";
       ss << "    uint otherMorton = mortons[selectedBit];\n";
       ss << "    BALLOT_UINTS sameCluster = BALLOT_RESULT_TO_UINTS(BALLOT(otherMorton == morton));\n";
       ss << "    if(gl_LocalInvocationIndex == 0){\n";
-      for(size_t j=0;j<warpInUints;++j)
+      for(size_t j=0;j<warpInUints;++j){
         ss << "      hierarchy["<< offsets.back() << "+otherMorton*" << warpInUints <<"+"<< j <<"] = GET_UINT_FROM_UINT_ARRAY(sameCluster," << j <<");\n";
+        //ss << "      hierarchy["<< offsets.back() << "+otherMorton*" << warpInUints <<"+"<< j <<"] = 0xffffffff;\n";
+      }
       ss << "      uint bit;\n";
       for(size_t i=0;i<offsets.size()-1;++i){
         auto const offset = offsets[offsets.size()-2-i];
-        ss << "      bit = (otherMorton>>"<<warpBits*i<<")&"<<((1<<warpBits)-1)<<"u;\n";
-        ss << "      atomicOr(hierarchy["<< offset<<"+(otherMorton>>"<<warpBits*(i+1)<<")*"<<warpInUints<<"+(bit>>5)],1<<(bit&31u));\n";
+        if(warpBits*(i+1) >= allBits)
+          ss << "      atomicOr(hierarchy[otherMorton>>5],1<<(otherMorton&31u));\n";
+        else{
+          ss << "      bit = otherMorton&"<<((1<<warpBits)-1)<<"u;\n";
+          ss << "      otherMorton >>= " << warpBits << "u;\n";
+          ss << "      atomicOr(hierarchy["<< offset<<"+otherMorton*"<<warpInUints<<"+(bit>>5)],1<<(bit&31u));\n";
+        }
       }
       ss << "    }\n";
       ss << "    notDone ^= sameCluster[" << i << "];\n";
       ss << "  }\n";
-      if(i+1<warpInUints)
-        ss << "  notDone = 0xffffffff;\n";
     }
   }
   ss << "}\n";
@@ -299,6 +316,7 @@ void Sintorn2::create(glm::vec4 const& lightPosition,
   std::cerr << ddd[0] << std::endl;
   std::cerr << ddd[1] << std::endl;
 
+  /*
   auto width = depth->getWidth(0);
   auto height = depth->getHeight(0);
   //std::cerr << "width: " << width << " height: " << height << std::endl;
@@ -315,4 +333,6 @@ void Sintorn2::create(glm::vec4 const& lightPosition,
     mmax = glm::max(mmax,p);
   }
   std::cerr << "mmin: " << mmin << " - mmax: " << mmax << std::endl;
+
+  // */
 }

@@ -184,6 +184,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV CubeShadowMa
 #include(print_target_properties.cmake)
 #print_target_properties(SDL2::SDL2)
 
+add_custom_target(sintorn2 ./Shadows --model /media/devel/models/sponza/sponza.obj --method sintorn2 --window-size 999 777)
 
 function(getSharedLibraries out lib cfg)
   #message("getSharedLibraries(${lib} ${cfg})")
