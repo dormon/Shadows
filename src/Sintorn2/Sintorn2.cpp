@@ -167,12 +167,12 @@ void createProgram(vars::Vars&vars){
 
   auto writeMain = [&](){
     std::stringstream ss;
-
+    
     ss << "void main(){\n";
     ss << "  uvec2 loCoord = uvec2(uint(gl_LocalInvocationIndex)&"<<(1<<warpBitsX)-1<<"u,uint(gl_LocalInvocationIndex)>>"<<warpBitsX<<"u);\n";
     ss << "  uvec2 wgCoord = uvec2(gl_WorkGroupID.xy) * uvec2("<<(1<<warpBitsX)<<","<<(1<<warpBitsY)<<");\n";
     ss << "  uvec2 coord = wgCoord + loCoord;\n";
-    ss << "  if(any(greaterThanEqual(coord,uvec2("<<windowSize.x<<","<<windowSize.y<<"))))return;\n";
+    ss << "  activeThread = uint(all(lessThan(coord,uvec2("<<windowSize.x<<","<<windowSize.y<<"))));\n";
     ss << "  compute(coord);\n";
     ss << "}\n";
     ss << "\n";
@@ -193,6 +193,7 @@ void createProgram(vars::Vars&vars){
 
   ss << "layout(binding=0)        buffer        Hierarchy{uint hierarchy[];};\n";
   ss << "layout(binding=1)uniform sampler2DRect depthTexture;\n";
+  ss << "uint activeThread = 0;\n";
 
   ss << convertDepth();
   ss << morton();
@@ -202,7 +203,7 @@ void createProgram(vars::Vars&vars){
   ss << getMorton();
 
 
-  ss << "shared uint mortons[" << wavefrontSize << "];\n";
+  ss << "shared uint sharedMorton;\n";
   ss << "\n";
 
   ss << "void compute(uvec2 coord){\n";
@@ -213,7 +214,7 @@ void createProgram(vars::Vars&vars){
   //ss << "  hierarchy[(gl_WorkGroupID.x + gl_WorkGroupID.y*64)*64+gl_LocalInvocationIndex] = floatBitsToUint(z);\n";
   //ss << "  hierarchy[(gl_WorkGroupID.x + gl_WorkGroupID.y*64)*64+gl_LocalInvocationIndex] = zQ;\n";
   //ss << "  return;\n";
-  ss << "  mortons[gl_LocalInvocationIndex] = morton;\n";
+  //ss << "  mortons[gl_LocalInvocationIndex] = morton;\n";
 
   DEBUG_SHADER_LINE();
 
@@ -235,7 +236,7 @@ void createProgram(vars::Vars&vars){
   // 
   //
   if(warpInUints == 1){
-    ss << "  notDone = GET_UINT_FROM_UINT_ARRAY(BALLOT_RESULT_TO_UINTS(BALLOT(true)),0);\n";
+    ss << "  notDone = GET_UINT_FROM_UINT_ARRAY(BALLOT_RESULT_TO_UINTS(BALLOT(activeThread != 0)),0);\n";
     ss << "  while(notDone != 0){\n";
     ss << "    uint selectedBit = findLSB(notDone);\n";
     ss << "    uint otherMorton = mortons[selectedBit];\n";
@@ -253,15 +254,15 @@ void createProgram(vars::Vars&vars){
     DEBUG_SHADER_LINE();
     ss << "uint counter = 0;\n";
     for(size_t i=0;i<warpInUints;++i){
-      ss << "  notDone = GET_UINT_FROM_UINT_ARRAY(BALLOT_RESULT_TO_UINTS(BALLOT(true)),"<<i<<");\n";
+      ss << "  notDone = GET_UINT_FROM_UINT_ARRAY(BALLOT_RESULT_TO_UINTS(BALLOT(activeThread != 0)),"<<i<<");\n";
       ss << "  while(notDone != 0){\n";
-      ss << "    uint selectedBit = findLSB(notDone) + " << i*32 << ";\n";
-      ss << "    uint otherMorton = mortons[selectedBit];\n";
-      ss << "    BALLOT_UINTS sameCluster = BALLOT_RESULT_TO_UINTS(BALLOT(otherMorton == morton));\n";
+      ss << "    if(gl_LocalInvocationIndex == findLSB(notDone) + " << i*32 << ")\n";
+      ss << "      sharedMorton = morton;\n";
+      ss << "    uint otherMorton = sharedMorton;\n";
+      ss << "    BALLOT_UINTS sameCluster = BALLOT_RESULT_TO_UINTS(BALLOT(otherMorton == morton && activeThread != 0));\n";
       ss << "    if(gl_LocalInvocationIndex == 0){\n";
       for(size_t j=0;j<warpInUints;++j){
         ss << "      hierarchy["<< offsets.back() << "+otherMorton*" << warpInUints <<"+"<< j <<"] = GET_UINT_FROM_UINT_ARRAY(sameCluster," << j <<");\n";
-        //ss << "      hierarchy["<< offsets.back() << "+otherMorton*" << warpInUints <<"+"<< j <<"] = 0xffffffff;\n";
       }
       ss << "      uint bit;\n";
       for(size_t i=0;i<offsets.size()-1;++i){
