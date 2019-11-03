@@ -32,7 +32,7 @@
 #include <saveGBufferAsPointCloud.h>
 #include <drawPointCloud.h>
 
-#include <imguiVars.h>
+#include <imguiVars/imguiVars.h>
 
 #include <FunctionPrologue.h>
 #include <Methods.h>

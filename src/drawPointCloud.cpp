@@ -5,7 +5,7 @@
 #include <geGL/geGL.h>
 #include <geGL/StaticCalls.h>
 #include <getMVP.h>
-#include <addVarsLimits.h>
+#include <imguiVars/addVarsLimits.h>
 #include <divRoundUp.h>
 #include <RSSV/Hierarchy.h>
 #include <Deferred.h>

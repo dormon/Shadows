@@ -27,6 +27,7 @@ find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
 find_package(BasicCamera 1.0 CONFIG REQUIRED)
 find_package(Simple3DApp 1.0.0 CONFIG REQUIRED)
 find_package(Vars CONFIG REQUIRED)
+find_package(imguiVars CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 
 find_package(FreeImage REQUIRED)
@@ -71,7 +72,6 @@ set(SOURCES
   src/Function.cpp
   src/FunctionImpl.cpp
   src/renderModelToGBuffer.cpp
-  src/imguiVars.cpp
   src/Barrier.cpp
   src/Methods.cpp
   src/modelStats.cpp
@@ -98,7 +98,6 @@ set(SOURCES
   src/saveGBufferAsPointCloud.cpp
   src/drawPointCloud.cpp
   src/getMVP.cpp
-  src/addVarsLimits.cpp
   src/getCameraNear.cpp
   src/getCameraFar.cpp
   src/divRoundUp.cpp
@@ -131,7 +130,6 @@ set(INCLUDES
   src/Function.h
   src/FunctionImpl.h
   src/renderModelToGBuffer.h
-  src/imguiVars.h
   src/Barrier.h
   src/Simplex.h
   src/GLSLLine.h
@@ -162,7 +160,6 @@ set(INCLUDES
   src/saveGBufferAsPointCloud.h
   src/drawPointCloud.h
   src/getMVP.h
-  src/addVarsLimits.h
   src/getCameraNear.h
   src/getCameraFar.h
   src/divRoundUp.h
@@ -178,7 +175,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})
 target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Simple3DApp::Simple3DApp BasicCamera::BasicCamera ArgumentViewer::ArgumentViewer assimp::assimp FreeImage::FreeImage FreeImagePlus::FreeImagePlus Vars::Vars)
+target_link_libraries(${PROJECT_NAME} PUBLIC Simple3DApp::Simple3DApp BasicCamera::BasicCamera ArgumentViewer::ArgumentViewer assimp::assimp FreeImage::FreeImage FreeImagePlus::FreeImagePlus Vars::Vars imguiVars::imguiVars)
 target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV CubeShadowMapping RayTracing)
 
 #include(print_target_properties.cmake)
