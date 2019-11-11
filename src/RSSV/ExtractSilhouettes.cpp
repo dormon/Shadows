@@ -94,7 +94,7 @@ void ExtractSilhouettes::extract(glm::vec4 const&light){
   dispatchIndirect->clear(GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT);
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   program
-    ->set1ui      ("numEdge"               ,nofEdges        )
+    ->set1ui      ("numEdge"               ,(uint32_t)nofEdges        )
     ->set4fv      ("lightPosition"         ,value_ptr(light))
     ->bindBuffer  ("edges"                 ,edges           )
     ->bindBuffer  ("silhouettes"           ,silhouettes     )

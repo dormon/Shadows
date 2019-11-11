@@ -181,27 +181,36 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV CubeShadowMa
 #include(print_target_properties.cmake)
 #print_target_properties(SDL2::SDL2)
 
-add_custom_target(sintorn2 ./Shadows --model /media/devel/models/sponza/sponza.obj --method sintorn2 --window-size 999 777)
+#add_custom_target(sintorn2 ./Shadows --model /media/devel/models/sponza/sponza.obj --method sintorn2 --window-size 999 777)
 
 function(getSharedLibraries out lib cfg)
   #message("getSharedLibraries(${lib} ${cfg})")
 
   if(TARGET ${lib})
     get_target_property(target_type ${lib} TYPE)
+    #message("TARGET ${lib} ${target_type}")
     if(${target_type} STREQUAL "INTERFACE_LIBRARY")
+      #get_target_property(jojo ${lib} INTERFACE_LINK_LIBRARIES)
+      #message("${lib} ma ${jojo}")
       #message("${lib} JE ${target_type}")
       return()
     endif()
+    if(${target_type} STREQUAL "STATIC_LIBRARY")
+      #message("${lib} je ${target_type}")
+      return()
+    endif()
   else()
-    #message("${lib} NENI TARGET")
+    message("${lib} NENI TARGET")
     return()
   endif()
 
 
   get_target_property(dll ${lib} IMPORTED_LOCATION_${cfg})
+  #message(">>> ${dll}")
   list(APPEND dlls ${dll})
 
   get_target_property(interfaceLibs ${lib} INTERFACE_LINK_LIBRARIES)
+  #message("--- ${interfaceLibs}")
   if(NOT "${interfaceLibs}" STREQUAL "interfaceLibs-NOTFOUND")
     foreach(interfaceLib ${interfaceLibs})
       getSharedLibraries(ilibs ${interfaceLib} ${cfg})

@@ -2,19 +2,11 @@
 #include <iostream>
 
 #include <RSSV/Hierarchy.h>
+#include <divRoundUp.h>
 
 using namespace rssv;
 using namespace glm;
 using namespace std;
-
-template<typename T>
-T divRoundUp(T a,T b){
-  return (a/b) + static_cast<T>((a%b)>0);
-}
-
-uvec2 divRoundUp(uvec2 const&a,uvec2 const&b){
-  return uvec2(divRoundUp(a.x,b.x),divRoundUp(a.y,b.y));
-}
 
 uint32_t ilog2(uint32_t a){
   return static_cast<uint32_t>(glm::log2(static_cast<float>(a)));
@@ -115,7 +107,7 @@ rssv::Hierarchy::Hierarchy(glm::uvec2 const&windowSize,uint32_t branchingFactor)
   for(auto const&x:this->fullTileExponentPrev)
     this->fullTileMaskPrev.push_back(uvec2((1u<<x)-1u));
 
-  this->nofLevels = this->levelSize.size();
+  this->nofLevels = (uint32_t)this->levelSize.size();
 }
 
 void rssv::printHierarchy(Hierarchy const&h){

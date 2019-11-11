@@ -42,11 +42,11 @@ void saveGBufferAsPointCloud(vars::Vars&vars){
   size_t const nofPix = gBuffer->depth->getWidth(0)*gBuffer->depth->getHeight(0);
   std::vector<float>data(nofPix);
   //glGetTextureImage(gBuffer->depth->getId(),0,GL_DEPTH_COMPONENT,GL_FLOAT,sizeof(float)*data.size(),data.data());
-  glGetTextureImage(pointCloudDepth->getId(),0,GL_DEPTH_COMPONENT,GL_FLOAT,sizeof(float)*data.size(),data.data());
+  glGetTextureImage(pointCloudDepth->getId(),0,GL_DEPTH_COMPONENT,GL_FLOAT,(GLsizei)(sizeof(float)*data.size()),data.data());
 
   start(vars,"cpu_computeMinMaxDepth");
-  float mmin = 10e10;
-  float mmax = -10e10;
+  float mmin = 10e10f;
+  float mmax = -10e10f;
   for(auto const&p:data){
     mmin = glm::min(mmin,p);
     mmax = glm::max(mmax,p);

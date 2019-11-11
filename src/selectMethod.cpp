@@ -8,9 +8,9 @@ void selectMethod(vars::Vars&vars){
   auto method = vars.getString("methodName");
   int oldMethodId;
   if(methods->hasMethod(method))
-    oldMethodId = methods->getId(vars.getString("methodName"));
+    oldMethodId = (int32_t)methods->getId(vars.getString("methodName"));
   else
-    oldMethodId = methods->getNofMethods();
+    oldMethodId = (int32_t)methods->getNofMethods();
   int newMethodId = oldMethodId;
 
   std::vector<char const*>names;
@@ -18,7 +18,7 @@ void selectMethod(vars::Vars&vars){
     names.push_back(methods->getName(i).c_str());
   names.push_back("no shadow");
   
-  ImGui::ListBox("method",&newMethodId,names.data(),names.size());
+  ImGui::ListBox("method",&newMethodId,names.data(),(int32_t)names.size());
   if(newMethodId != oldMethodId){
     if(newMethodId < methods->getNofMethods())
       vars.getString("methodName") = methods->getName(newMethodId);

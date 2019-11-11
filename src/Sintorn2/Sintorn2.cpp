@@ -43,7 +43,7 @@ void allocateHierarchy(vars::Vars&vars){
 
   std::vector<uint32_t>sizes  ;
   for(auto const&x:counts)
-    sizes.push_back(x*warpInUints);
+    sizes.push_back((uint32_t)(x*warpInUints));
 
 
   std::vector<uint32_t>offsets;
@@ -66,13 +66,13 @@ void allocateHierarchy(vars::Vars&vars){
   vars.reCreateVector<uint32_t      >("sintorn2.counts" ) = counts  ;
   vars.reCreateVector<uint32_t      >("sintorn2.offsets") = offsets ;
   vars.reCreateVector<uint32_t      >("sintorn2.sizes"  ) = sizes   ;
-  vars.reCreate      <uint32_t      >("sintorn2.allBits",allBits);
-  vars.reCreate      <uint32_t      >("sintorn2.warpBitsX",warpBitsX);
-  vars.reCreate      <uint32_t      >("sintorn2.warpBitsY",warpBitsY);
-  vars.reCreate      <uint32_t      >("sintorn2.warpBits" ,warpBits );
-  vars.reCreate      <uint32_t      >("sintorn2.xBits"    ,xBits    );
-  vars.reCreate      <uint32_t      >("sintorn2.yBits"    ,yBits    );
-  vars.reCreate      <uint32_t      >("sintorn2.zBits"    ,zBits    );
+  vars.reCreate      <uint32_t      >("sintorn2.allBits"  ,(uint32_t)allBits);
+  vars.reCreate      <uint32_t      >("sintorn2.warpBitsX",(uint32_t)warpBitsX);
+  vars.reCreate      <uint32_t      >("sintorn2.warpBitsY",(uint32_t)warpBitsY);
+  vars.reCreate      <uint32_t      >("sintorn2.warpBits" ,(uint32_t)warpBits );
+  vars.reCreate      <uint32_t      >("sintorn2.xBits"    ,(uint32_t)xBits    );
+  vars.reCreate      <uint32_t      >("sintorn2.yBits"    ,(uint32_t)yBits    );
+  vars.reCreate      <uint32_t      >("sintorn2.zBits"    ,(uint32_t)zBits    );
   vars.reCreate      <uint32_t      >("sintorn2.clusterX",clusterX);
   vars.reCreate      <uint32_t      >("sintorn2.clusterY",clusterY);
   vars.reCreate      <ge::gl::Buffer>("sintorn2.hierarchy",counter * warpInUints * sizeof(uint32_t));

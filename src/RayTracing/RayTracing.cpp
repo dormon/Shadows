@@ -46,7 +46,7 @@ void buildBVH(vars::Vars&vars){
   ___;
   auto accel = vars.reCreate<Accel>("accel");
   ___;
-  auto ret = accel->Build(vertices.size()/9, triangle_mesh, triangle_pred, build_options);
+  auto ret = accel->Build((uint32_t)vertices.size()/9, triangle_mesh, triangle_pred, build_options);
   ___;
   assert(ret);
   ___;

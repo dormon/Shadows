@@ -240,7 +240,7 @@ void computeHierarchy(vars::Vars&vars){
   auto tex = vars.get<Texture>("pointCloud.positionTexture");
   auto size = uvec2(tex->getWidth(0),tex->getHeight(0));
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
-  auto hier = vars.reCreate<rssv::Hierarchy>("pointCloud.hierarchy",size,wavefrontSize);
+  auto hier = vars.reCreate<rssv::Hierarchy>("pointCloud.hierarchy",size,(uint32)wavefrontSize);
 
   vars.reCreate<uint32_t>("pointCloud.hierarchy.nofLevels",hier->nofLevels);
 }
@@ -253,7 +253,7 @@ void drawPointCloud(vars::Vars&vars){
   createPointCloudVAO(vars);
   computeHierarchy(vars);
 
-  glClearColor(0,.1,0,1);
+  glClearColor(0.f,.1f,0.f,1.f);
   glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
   glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 

@@ -26,4 +26,5 @@ size_t Methods::add(std::string const&name){
   constructors[id] = [](vars::Vars&vars){
     vars.reCreate<T>("shadowMethod",vars);
   };
+  return id;
 }

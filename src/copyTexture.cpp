@@ -150,7 +150,7 @@ void copyTexture2D(ge::gl::Texture*const out,ge::gl::Texture const*const in,vars
   out->bindImage(0);
   prg
     ->set2ui("size",width,height)
-    ->dispatch(divRoundUp(width,16),divRoundUp(height,16),1);
+    ->dispatch(divRoundUp(width,16u),divRoundUp(height,16u),1);
   ge::gl::glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 

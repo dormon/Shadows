@@ -1,6 +1,7 @@
 #include<RSSV/Tiles.h>
 #include<algorithm>
 #include<util.h>
+#include<divRoundUp.h>
 
 // threadsPerTile         - number of threads per tile - warp/wavefront size
 // threadsExponent        - threadsPerTile = 2^threadsExponent
@@ -160,8 +161,8 @@ class RSSVTilingImpl{
       auto exponentCounter = glm::uvec2(0u);
 
       size_t const threadsExponentPart[2] = {
-                          divRoundUp(threadsExponent,2lu),
-        threadsExponent - divRoundUp(threadsExponent,2lu),
+                          divRoundUp(threadsExponent,2llu),
+        threadsExponent - divRoundUp(threadsExponent,2llu),
       };
 
       bool oddLevel = false;
@@ -244,8 +245,8 @@ std::vector<glm::uvec2>rssvGetMaxUpperTileDivisibility(
   //AMD has WARP = 64 threads
   //8x8 for every level
   size_t const threadsExponentPart[2] = {
-    divRoundUp(threadsExponent,2lu),
-    threadsExponent - divRoundUp(threadsExponent,2lu),
+    divRoundUp(threadsExponent,2llu),
+    threadsExponent - divRoundUp(threadsExponent,2llu),
   };
   auto const windowExponent = glm::uvec2(
       log2RoundUp(windowSize.x),
@@ -425,8 +426,8 @@ RSSVTilingSizes::RSSVTilingSizes(
   auto const threadsExponent = log2RoundUp     (threadsPerTile);
 
   size_t const threadsExponentPart[2] = {
-                      divRoundUp(threadsExponent,2lu),
-    threadsExponent - divRoundUp(threadsExponent,2lu),
+                      divRoundUp(threadsExponent,2llu),
+    threadsExponent - divRoundUp(threadsExponent,2llu),
   };
 
   auto const windowExponent = glm::uvec2(

@@ -24,7 +24,7 @@ void BuildStupidHierarchy::allocateHierarchy(){
   auto const wavefrontSize = vars.getSizeT  ("wavefrontSize" );
   auto const alignment     = vars.getSizeT  ("rssv.alignment");
 
-  auto nofPixels = windowSize->x * windowSize->y;
+  size_t nofPixels = windowSize->x * windowSize->y;
   for(;;){
     size_t const bufferSize       = align(nofPixels*sizeof(float),alignment)*6;
     size_t const alignedNofPixels = bufferSize / sizeof(float);
@@ -55,7 +55,7 @@ void BuildStupidHierarchy::createNextLevelProgram(){
 BuildStupidHierarchy::BuildStupidHierarchy(vars::Vars&vars):BuildHierarchy(vars){
   auto ws = *vars.get<uvec2>("windowSize");
   auto warp = vars.getSizeT("wavefrontSize");
-  printHierarchy(Hierarchy(uvec2(ws.x,ws.y),warp));
+  printHierarchy(Hierarchy(uvec2(ws.x,ws.y),(uint32_t)warp));
   exit(0);
 
   allocateHierarchy();
@@ -71,10 +71,10 @@ void BuildStupidHierarchy::copyLevel0(){
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
   depth->bind(0);
   copyLevel0Program
-    ->set2uiv   ("windowSize"      ,value_ptr(*windowSize)        )
-    ->set1ui    ("nofPixels"       ,nofPixelsPerLevel.at(0)       )
-    ->set1ui    ("alignedNofPixels",alignedNofPixelsPerLevel.at(0))
-    ->bindBuffer("level"           ,hierarchy.at(0)               )
+    ->set2uiv   ("windowSize"      ,value_ptr(*windowSize)                  )
+    ->set1ui    ("nofPixels"       ,(uint32_t)nofPixelsPerLevel.at(0)       )
+    ->set1ui    ("alignedNofPixels",(uint32_t)alignedNofPixelsPerLevel.at(0))
+    ->bindBuffer("level"           ,hierarchy.at(0)                         )
     ->dispatch  (getDispatchSize(nofPixels,wavefrontSize));
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
@@ -85,12 +85,12 @@ void BuildStupidHierarchy::buildNextLevel(size_t i){
   auto const nofPixels     = nofPixelsPerLevel.at(i);
 
   buildNextLevelProgram
-    ->bindBuffer("inputLevel"            ,hierarchy.at(i  )               )
-    ->bindBuffer("outputLevel"           ,hierarchy.at(i+1)               )
-    ->set1ui    ("inputNofPixels"        ,nofPixelsPerLevel       .at(i  ))
-    ->set1ui    ("inputAlignedNofPixels" ,alignedNofPixelsPerLevel.at(i  ))
-    ->set1ui    ("outputAlignedNofPixels",alignedNofPixelsPerLevel.at(i+1))
-    ->set1i     ("useBridges"            ,i==0                            )
+    ->bindBuffer("inputLevel"            ,hierarchy.at(i  )                         )
+    ->bindBuffer("outputLevel"           ,hierarchy.at(i+1)                         )
+    ->set1ui    ("inputNofPixels"        ,(uint32_t)nofPixelsPerLevel       .at(i  ))
+    ->set1ui    ("inputAlignedNofPixels" ,(uint32_t)alignedNofPixelsPerLevel.at(i  ))
+    ->set1ui    ("outputAlignedNofPixels",(uint32_t)alignedNofPixelsPerLevel.at(i+1))
+    ->set1i     ("useBridges"            ,i==0                                      )
     ->dispatch(getDispatchSize(nofPixels,wavefrontSize));
 }
 

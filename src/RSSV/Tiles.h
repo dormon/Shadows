@@ -61,19 +61,7 @@ T log2RoundUp(T const&v){
   return counter;
 }
 
-template<typename T,typename std::enable_if_t<std::is_integral<T>::value,char> = 0>
-T divRoundUp(T const&dividend,T const&divisor){
-  if(dividend%divisor != 0)
-    return (dividend/divisor)+1;
-  return dividend/divisor;
-}
 
-inline glm::uvec2 divRoundUp(glm::uvec2 const&divident,glm::uvec2 const&divisor){
-  glm::uvec2 result;
-  for(uint32_t i=0;i<2;++i)
-    result[i] = static_cast<uint32_t>(divRoundUp<size_t>(divident[i],divisor[i]));
-  return result;
-}
 
 
 class RSSVTilingSizes{

@@ -38,8 +38,8 @@ void getModelStats(vars::Vars&vars){
 
 
   float avgSil = static_cast<float>(silhouetteCounter) / static_cast<float>(grid.x*grid.y*grid.z);
-  float triangles = vertices.size() / 3 ;
-  float edges = adj->getNofEdges();
+  float triangles = (float)vertices.size() / 3.f ;
+  float edges = (float)adj->getNofEdges();
   std::cerr << "nofTriangles,nofEdges,avgSil,silPerEdge,silPerTriangle" << std::endl;
   std::cerr << triangles << "," << edges << "," << avgSil << "," << avgSil/edges << "," << avgSil/triangles << std::endl;
 
