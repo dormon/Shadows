@@ -24,4 +24,4 @@ class ShadowVolumes: public ShadowMethod{
     void convertStencilBufferToShadowMask();
 };
 
-std::shared_ptr<Adjacency const> createAdjacency(vars::Vars&vars);
+std::shared_ptr<Adjacency const> createAdjacencyBase(vars::Vars&vars);

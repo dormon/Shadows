@@ -25,9 +25,5 @@ class cssv::CSSV: public ShadowVolumes{
         glm::vec4 const&lightPosition   ,
         glm::mat4 const&viewMatirx      ,
         glm::mat4 const&projectionMatrix)override;
-  protected:
-    std::unique_ptr<ExtractSilhouettes>extractSilhouettes;
-    std::unique_ptr<DrawSides>sides;
-    std::unique_ptr<DrawCaps >caps;
 };
 

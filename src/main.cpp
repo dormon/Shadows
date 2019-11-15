@@ -33,6 +33,7 @@
 #include <drawPointCloud.h>
 
 #include <imguiVars/imguiVars.h>
+#include <imguiVars/addVarsLimits.h>
 
 #include <FunctionPrologue.h>
 #include <Methods.h>
@@ -66,10 +67,11 @@ void Shadows::init() {
   vars.add<sdl2cpp::Window  *>("window"  ,&*window  );
   vars.addUint32("argc",argc);
   vars.add<char**>("argv",argv);
+  hide(vars,"argc");
+  hide(vars,"argv");
 
   initMethods(vars);
   parseArguments(vars);
-
 
   if(vars.getBool("getModelStats")){
     getModelStats(vars);
@@ -181,6 +183,12 @@ int main(int argc, char* argv[]) {
 void Shadows::key(SDL_Event const& event, bool DOWN) {
   keyDown[event.key.keysym.sym] = DOWN;
   if (DOWN && event.key.keysym.sym == 'p') printCameraPosition(vars);
+
+  if (DOWN && event.key.keysym.sym == '.') {
+    auto n = vars.getNofVars();
+    for(size_t i=0;i<n;++i)
+      std::cerr << vars.getVarName(i) << std::endl;
+  }
 }
 
 void Shadows::resize(uint32_t x,uint32_t y){

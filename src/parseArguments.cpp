@@ -8,6 +8,7 @@
 #include <loadBasicApplicationParameters.h>
 #include <loadTestParams.h>
 #include <loadCameraParams.h>
+#include <imguiVars/addVarsLimits.h>
 
 void parseArguments(vars::Vars&vars){
   auto argc = vars.getUint32("argc");
@@ -28,6 +29,9 @@ void parseArguments(vars::Vars&vars){
 
   vars.addSizeT("frameCounter");
   vars.addSizeT("maxFrame") = arg->getu32("--maxFrame",0,"after this frame the app will stop");
+
+  hide(vars,"frameCounter");
+  hide(vars,"maxFrame");
 
 
   bool printHelp = arg->isPresent("-h", "prints this help");

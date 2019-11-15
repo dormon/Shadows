@@ -10,7 +10,7 @@ VSSV::VSSV(vars::Vars&vars):
   ShadowVolumes(vars       )
 {
   vars::Caller caller(vars,__FUNCTION__);
-  auto const adj = createAdjacency(vars);
+  auto const adj = createAdjacencyBase(vars);
 
   if(vars.getBool("vssv.usePlanes")){
     if(vars.getBool("vssv.useAllOppositeVertices"))

@@ -27,12 +27,12 @@ ExtractSilhouettes::ExtractSilhouettes(vars::Vars&vars,shared_ptr<Adjacency cons
   program = make_shared<Program>(
       make_shared<Shader>(GL_COMPUTE_SHADER,
         "#version 450 core\n",
-        Shader::define("WORKGROUP_SIZE_X",int32_t(vars.getUint32("cssv.computeSidesWGS"))),
+        Shader::define("WORKGROUP_SIZE_X",int32_t(vars.getUint32("cssv.param.computeSidesWGS"))),
         Shader::define("MAX_MULTIPLICITY",int32_t(adj->getMaxMultiplicity()             )),
-        Shader::define("LOCAL_ATOMIC"    ,int32_t(vars.getBool("cssv.localAtomic"      ))),
-        Shader::define("CULL_SIDES"      ,int32_t(vars.getBool("cssv.cullSides"        ))),
-        Shader::define("USE_PLANES"      ,int32_t(vars.getBool("cssv.usePlanes"        ))),
-        Shader::define("USE_INTERLEAVING",int32_t(vars.getBool("cssv.useInterleaving"  ))),
+        Shader::define("LOCAL_ATOMIC"    ,int32_t(vars.getBool("cssv.param.localAtomic"      ))),
+        Shader::define("CULL_SIDES"      ,int32_t(vars.getBool("cssv.param.cullSides"        ))),
+        Shader::define("USE_PLANES"      ,int32_t(vars.getBool("cssv.param.usePlanes"        ))),
+        Shader::define("USE_INTERLEAVING",int32_t(vars.getBool("cssv.param.useInterleaving"  ))),
         silhouetteFunctions,
         computeSrc));
   dibo = createDIBO();
@@ -55,7 +55,7 @@ void ExtractSilhouettes::compute(glm::vec4 const&lightPosition){
     //->bindBuffer("edges"             ,edges                 )
     //->bindBuffer("silhouettes"       ,sillhouettes          )
     //->bindBuffer("drawIndirectBuffer",dibo                  )
-    ->dispatch((GLuint)getDispatchSize(nofEdges,vars.getUint32("cssv.computeSidesWGS")));
+    ->dispatch((GLuint)getDispatchSize(nofEdges,vars.getUint32("cssv.param.computeSidesWGS")));
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   glFinish();
