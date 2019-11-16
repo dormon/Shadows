@@ -61,6 +61,7 @@ void Shadows::initWavefrontSize() {
 
 void Shadows::init() {
   FUNCTION_CALLER();
+  SDL_GL_SetSwapInterval(0); //disable vsync
 
   vars.add<sdl2cpp::MainLoop*>("mainLoop",&*mainLoop);
   vars.add<sdl2cpp::Window  *>("window"  ,&*window  );
@@ -180,7 +181,16 @@ int main(int argc, char* argv[]) {
 
 void Shadows::key(SDL_Event const& event, bool DOWN) {
   keyDown[event.key.keysym.sym] = DOWN;
-  if (DOWN && event.key.keysym.sym == 'p') printCameraPosition(vars);
+
+  if (DOWN && event.key.keysym.sym == 'p')
+  {
+	  printCameraPosition(vars);
+  }
+
+  if (DOWN && event.key.keysym.sym == SDLK_ESCAPE)
+  {
+	  mainLoop->removeWindow(window->getId());
+  }
 }
 
 void Shadows::resize(uint32_t x,uint32_t y){

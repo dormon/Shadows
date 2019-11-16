@@ -17,7 +17,11 @@ class Model{
     aiScene const*model = nullptr;
     Model(std::string const&name);
     virtual ~Model();
-    void getVertices(std::vector<float>&vertices);
+	std::vector<float> getVertices() const;
+
+protected:
+	void generateVertices();
+	std::vector<float> vertices;
 };
 
 class RenderModel: public ge::gl::Context{

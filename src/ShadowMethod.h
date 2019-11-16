@@ -36,5 +36,8 @@ class ShadowMethod: public ge::gl::Context{
         glm::mat4 const&viewMatrix      ,
         glm::mat4 const&projectionMatrix) = 0;
     void ifExistStamp(std::string const&n);
+	virtual void drawUser(glm::vec4 const& lightPosition,
+		glm::mat4 const& viewMatrix,
+		glm::mat4 const& projectionMatrix);
     vars::Vars&vars;
 };

@@ -20,8 +20,7 @@ void buildBVH(vars::Vars&vars){
   if(notChanged(vars,"rayTracing",__FUNCTION__,{"model"}))return;
   ___;
 
-  vector<float>vertices;
-  vars.get<Model>("model")->getVertices(vertices);
+  vector<float>vertices = vars.get<Model>("model")->getVertices();
   ___;
  
 
