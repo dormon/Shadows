@@ -5,9 +5,6 @@ add_library(CSSV STATIC
   DrawSidesShaders.cpp
   DrawCapsShaders.cpp
   ExtractSilhouettes.cpp
-  BasicExtractSilhouettes.cpp
-  PlanesExtractSilhouettes.cpp
-  InterleavedPlanesExtractSilhouettes.cpp
   Param.cpp
   DrawSidesProgram.cpp
   DrawCapsProgram.cpp
@@ -21,9 +18,6 @@ add_library(CSSV STATIC
   DrawCapsShaders.h
   ExtractSilhouetteShader.h
   ExtractSilhouettes.h
-  BasicExtractSilhouettes.h
-  PlanesExtractSilhouettes.h
-  InterleavedPlanesExtractSilhouettes.h
   InterleavedPlanesShader.h
   DrawSidesProgram.h
   DrawCapsProgram.h
@@ -32,6 +26,18 @@ add_library(CSSV STATIC
   Param.h
   createExtractProgram.cpp
   createExtractProgram.h
+  createInterleavedPlanesEdges.cpp
+  createInterleavedPlanesEdges.h
+  createPlanesEdges.cpp
+  createPlanesEdges.h
+  createBasicEdges.cpp
+  createBasicEdges.h
+  createSilhouetteBuffer.cpp
+  createSilhouetteBuffer.h
+  createDIBO.cpp
+  createDIBO.h
+  extractSilhouettes.cpp
+  extractSilhouettes.h
 
   )
 target_include_directories(CSSV PUBLIC ..)

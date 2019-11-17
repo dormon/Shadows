@@ -13,10 +13,5 @@ class cssv::ExtractSilhouettes{
     virtual ~ExtractSilhouettes(){}
     virtual void compute(glm::vec4 const&lightPosition);
     vars::Vars                      &vars        ;
-    size_t                           nofEdges    ;
-    std::shared_ptr<ge::gl::Buffer > edges       ;
-    std::shared_ptr<ge::gl::Buffer > sillhouettes;
-    std::shared_ptr<ge::gl::Buffer > dibo        ;
-    //std::shared_ptr<ge::gl::Program> program     ;
 };
 

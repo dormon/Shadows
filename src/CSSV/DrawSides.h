@@ -9,8 +9,8 @@ class cssv::DrawSides{
   public:
     std::shared_ptr<ge::gl::Program    >program;
     std::shared_ptr<ge::gl::VertexArray>vao    ;
-    std::shared_ptr<ge::gl::Buffer     >dibo   ;
-    DrawSides(std::shared_ptr<ge::gl::Buffer>const&silhouettes,std::shared_ptr<ge::gl::Buffer>const&dibo);
+    ge::gl::Buffer*dibo   ;
+    DrawSides(ge::gl::Buffer*silhouettes,ge::gl::Buffer*dibo);
     void draw(
         glm::vec4 const&lightPosition   ,
         glm::mat4 const&viewMatrix      ,

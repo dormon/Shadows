@@ -8,13 +8,13 @@ using namespace ge::gl;
 using namespace std;
 using namespace glm;
 
-shared_ptr<VertexArray>createSidesVao(shared_ptr<Buffer>const&silhouettes){
+shared_ptr<VertexArray>createSidesVao(Buffer*silhouettes){
   auto vao = make_shared<VertexArray>();
   vao->addAttrib(silhouettes,0,componentsPerVertex4D,GL_FLOAT);
   return vao;
 }
 
-DrawSides::DrawSides(shared_ptr<Buffer>const&silhouettes,shared_ptr<Buffer>const&d):dibo(d){
+DrawSides::DrawSides(Buffer*silhouettes,Buffer*d):dibo(d){
   vao     = createSidesVao(silhouettes);
   program = createDrawSidesProgram();
 }

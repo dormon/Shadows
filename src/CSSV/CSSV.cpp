@@ -5,10 +5,13 @@
 
 #include<CSSV/DrawCapsProgram.h>
 #include<CSSV/DrawSidesProgram.h>
-#include<CSSV/BasicExtractSilhouettes.h>
-#include<CSSV/PlanesExtractSilhouettes.h>
-#include<CSSV/InterleavedPlanesExtractSilhouettes.h>
 #include<CSSV/DrawCaps.h>
+#include<CSSV/extractSilhouettes.h>
+#include<CSSV/createDIBO.h>
+#include<CSSV/createBasicEdges.h>
+#include<CSSV/createSilhouetteBuffer.h>
+#include<CSSV/createPlanesEdges.h>
+#include<CSSV/createInterleavedPlanesEdges.h>
 #include<FunctionPrologue.h>
 #include<createAdjacency.h>
 
@@ -18,21 +21,30 @@ using namespace std;
 using namespace glm;
 
 void createExtractSilhouetteMethod(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method","cssv.param.usePlanes","cssv.param.useInterleaving","adjacency");
-  auto const adj = vars.get<Adjacency>("adjacency");
+  FUNCTION_PROLOGUE("cssv.method"
+      ,"cssv.param.usePlanes"
+      ,"cssv.param.useInterleaving"
+      ,"adjacency"
+      );
   if(vars.getBool("cssv.param.usePlanes")){
     if(vars.getBool("cssv.param.useInterleaving"))
-      vars.reCreate<InterleavedPlanesExtractSilhouettes>("cssv.method.extractSilhouettes",vars);
+      createInterleavedPlanesEdges(vars);
     else
-      vars.reCreate<PlanesExtractSilhouettes>("cssv.method.extractSilhouettes",vars);
+      createPlanesEdges(vars);
   }else
-    vars.reCreate<BasicExtractSilhouettes>("cssv.method.extractSilhouettes",vars);
+    createBasicEdges(vars);
+  createSilhouetteBuffer(vars);
 }
 
 void createDrawSides(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method","cssv.method.extractSilhouettes");
-  auto ex = vars.getReinterpret<ExtractSilhouettes>("cssv.method.extractSilhouettes");
-  vars.reCreate<DrawSides>("cssv.method.drawSides",ex->sillhouettes,ex->dibo);
+  FUNCTION_PROLOGUE("cssv.method"
+      ,"cssv.method.silhouettes"
+      ,"cssv.method.dibo"
+      );
+  vars.reCreate<DrawSides>("cssv.method.drawSides",
+      vars.get<Buffer>("cssv.method.silhouettes" ),
+      vars.get<Buffer>("cssv.method.dibo"        )
+      );
 }
 
 void createDrawCaps(vars::Vars&vars){
@@ -54,11 +66,12 @@ void CSSV::drawSides(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
+  createDIBO(vars);
   createAdjacency(vars);
   createExtractSilhouetteMethod(vars);
   createDrawSides(vars);
-  auto ex = vars.getReinterpret<ExtractSilhouettes>("cssv.method.extractSilhouettes");
-  ex->compute(lightPosition);
+
+  extractSilhouettes(vars,lightPosition);
   ifExistStamp("compute");
   auto sides = vars.get<DrawSides>("cssv.method.drawSides");
   sides->draw(lightPosition,viewMatrix,projectionMatrix);
