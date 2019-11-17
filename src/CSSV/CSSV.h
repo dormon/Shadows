@@ -7,7 +7,6 @@
 #include <TimeStamp.h>
 #include <Vars/Vars.h>
 #include <CSSV/Param.h>
-#include <CSSV/ExtractSilhouettes.h>
 #include <CSSV/DrawCaps.h>
 #include <CSSV/DrawSides.h>
 

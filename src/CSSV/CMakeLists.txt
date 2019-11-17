@@ -4,7 +4,6 @@ add_library(CSSV STATIC
   CSSV.cpp
   DrawSidesShaders.cpp
   DrawCapsShaders.cpp
-  ExtractSilhouettes.cpp
   Param.cpp
   DrawSidesProgram.cpp
   DrawCapsProgram.cpp
@@ -17,7 +16,6 @@ add_library(CSSV STATIC
   DrawSidesShaders.h
   DrawCapsShaders.h
   ExtractSilhouetteShader.h
-  ExtractSilhouettes.h
   InterleavedPlanesShader.h
   DrawSidesProgram.h
   DrawCapsProgram.h
