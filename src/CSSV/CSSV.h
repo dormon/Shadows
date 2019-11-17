@@ -1,14 +1,9 @@
 #pragma once
 
-#include <geGL/geGL.h>
-#include <glm/glm.hpp>
 #include <ShadowVolumes.h>
-#include <Model.h>
-#include <TimeStamp.h>
-#include <Vars/Vars.h>
+#include <Vars/Fwd.h>
+#include <CSSV/Fwd.h>
 #include <CSSV/Param.h>
-#include <CSSV/DrawCaps.h>
-#include <CSSV/DrawSides.h>
 
 class Adjacency;
 

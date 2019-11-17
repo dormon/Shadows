@@ -2,7 +2,13 @@
 #include<FastAdjacency.h>
 #include<util.h>
 #include<geGL/StaticCalls.h>
+#include <geGL/geGL.h>
+#include <glm/glm.hpp>
+#include <Model.h>
+#include <TimeStamp.h>
 
+#include<CSSV/DrawSides.h>
+#include<CSSV/DrawCaps.h>
 #include<CSSV/DrawCapsProgram.h>
 #include<CSSV/DrawSidesProgram.h>
 #include<CSSV/DrawCaps.h>
