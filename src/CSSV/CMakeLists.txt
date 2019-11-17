@@ -1,26 +1,24 @@
 cmake_minimum_required(VERSION 3.12.1)
 
 add_library(CSSV STATIC
-  CSSV.cpp
-  DrawSidesShaders.cpp
-  DrawCapsShaders.cpp
-  Param.cpp
-  DrawSidesProgram.cpp
-  DrawCapsProgram.cpp
-  DrawCaps.cpp
-  DrawSides.cpp
-  DrawSidesShaders.cpp
-  DrawCapsShaders.cpp
   Fwd.h
-  CSSV.h
-  DrawSidesShaders.h
-  DrawCapsShaders.h
   ExtractSilhouetteShader.h
   InterleavedPlanesShader.h
+  CSSV.cpp
+  CSSV.h
+  DrawSidesProgram.cpp
   DrawSidesProgram.h
+  DrawCapsShaders.cpp
+  DrawCapsShaders.h
+  DrawCapsProgram.cpp
   DrawCapsProgram.h
+  DrawCaps.cpp
   DrawCaps.h
+  DrawSides.cpp
   DrawSides.h
+  DrawSidesShaders.cpp
+  DrawSidesShaders.h
+  Param.cpp
   Param.h
   createExtractProgram.cpp
   createExtractProgram.h
