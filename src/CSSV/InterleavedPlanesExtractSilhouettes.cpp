@@ -4,32 +4,22 @@
 #include <FastAdjacency.h>
 #include <ShadowMethod.h>
 #include<CSSV/InterleavedPlanesShader.h>
+#include<CSSV/createExtractProgram.h>
 #include<SilhouetteShaders.h>
 
 using namespace ge::gl;
 using namespace std;
 using namespace cssv;
 
-InterleavedPlanesExtractSilhouettes::InterleavedPlanesExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):ExtractSilhouettes(vars,adj){
-  program = make_shared<Program>(
-      make_shared<Shader>(GL_COMPUTE_SHADER,
-        "#version 450 core\n",
-        Shader::define("BUFFER_ALIGNMENT",uint32_t(vars.getSizeT("cssv.param.alignment")       )),
-        Shader::define("WORKGROUP_SIZE_X",int32_t (vars.getUint32("cssv.param.computeSidesWGS"))),
-        Shader::define("MAX_MULTIPLICITY",int32_t (adj->getMaxMultiplicity()             )),
-        Shader::define("LOCAL_ATOMIC"    ,int32_t (vars.getBool("cssv.param.localAtomic"      ))),
-        Shader::define("CULL_SIDES"      ,int32_t (vars.getBool("cssv.param.cullSides"        ))),
-        Shader::define("USE_PLANES"      ,int32_t (vars.getBool("cssv.param.usePlanes"        ))),
-        Shader::define("USE_INTERLEAVING",int32_t (vars.getBool("cssv.param.useInterleaving"  ))),
-        silhouetteFunctions,
-        computeSrc));
+InterleavedPlanesExtractSilhouettes::InterleavedPlanesExtractSilhouettes(vars::Vars&vars):ExtractSilhouettes(vars){
 
-
-
+  auto const adj = vars.get<Adjacency>("adjacency");
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
   size_t const floatsPerEdge = verticesPerEdge*componentsPerVertex3D + maxNofOppositeVertices*componentsPerPlane3D;
 
-  size_t const floatAlign = align(vars.getSizeT("cssv.param.alignment") , sizeof(float)) / sizeof(float) ;
+  size_t const alignSize = vars.getSizeT ("cssv.param.alignment");
+  size_t floatAlign = align(alignSize , sizeof(float));
+  //size_t const floatAlign = align(vars.getSizeT("cssv.param.alignment") , sizeof(float)) / sizeof(float) ;
   size_t const bufferSize = align(adj->getNofEdges(),floatAlign)*floatsPerEdge;
   
 
@@ -63,24 +53,26 @@ InterleavedPlanesExtractSilhouettes::InterleavedPlanesExtractSilhouettes(vars::V
   sillhouettes->clear(GL_R32F,GL_RED,GL_FLOAT);
 }
 
+/*
 void InterleavedPlanesExtractSilhouettes::compute(glm::vec4 const&lightPosition){
+  cssv::createExtractProgram(vars);
   auto const bufferSize = edges->getSize();
   auto const gigabyte = 1024*1024*1024;
   auto const bufferSizeInGigabytes = static_cast<double>(bufferSize) / static_cast<double>(gigabyte);
   dibo->clear(GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT);
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-  edges->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  sillhouettes->bindBase(GL_SHADER_STORAGE_BUFFER,1);
-  dibo->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+  auto program = vars.get<Program>("cssv.method.extractProgram");
   program
-    ->set1ui    ("numEdge"           ,uint32_t(nofEdges)    )
+    ->set1ui    ("numEdge"           ,uint32_t(nofEdges)           )
     ->set4fv    ("lightPosition"     ,glm::value_ptr(lightPosition))
-    //->bindBuffer("edges"             ,edges                 )
-    //->bindBuffer("silhouettes"       ,sillhouettes          )
-    //->bindBuffer("drawIndirectBuffer",dibo                  )
+    ->bindBuffer("Edges"             ,edges                        )
+    ->bindBuffer("Silhouettes"       ,sillhouettes                 )
+    ->bindBuffer("DrawIndirectBuffer",dibo                         )
     ->dispatch((GLuint)getDispatchSize(nofEdges,vars.getUint32("cssv.param.computeSidesWGS")));
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   glFinish();
 
 }
+
+*/

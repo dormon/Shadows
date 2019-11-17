@@ -29,45 +29,45 @@ void writeVertexB(Vertex4Df&dst,Vertex3Df const&src){
   createHomogenous(dst,src);
 }
 
-void writeEdge(Line4Df&dst,Vertex3Df const*const vertices,size_t e,std::shared_ptr<Adjacency const>const&adj){
+void writeEdge(Line4Df&dst,Vertex3Df const*const vertices,size_t e,Adjacency const*adj){
   writeVertexA(dst.vertices[0],vertices[adj->getEdgeVertexA(e)/3],adj->getNofOpposite(e));
   writeVertexB(dst.vertices[1],vertices[adj->getEdgeVertexB(e)/3]);
 }
 
-void writeOppositeVertex(Vertex4Df&dstPtr,Vertex3Df const*srcPtr,size_t o,size_t e,std::shared_ptr<Adjacency const>const&adj){
+void writeOppositeVertex(Vertex4Df&dstPtr,Vertex3Df const*srcPtr,size_t o,size_t e,Adjacency const*adj){
   createHomogenous(dstPtr,srcPtr[adj->getOpposite(e,o)/3]);
 }
 
-void writeUsedOppositeVertices(Vertex4Df*dstPtr,Vertex3Df const*const srcPtr,size_t e,std::shared_ptr<Adjacency const>const&adj){
+void writeUsedOppositeVertices(Vertex4Df*dstPtr,Vertex3Df const*const srcPtr,size_t e,Adjacency const*adj){
   for(size_t o=0;o<adj->getNofOpposite(e);++o)
     writeOppositeVertex(dstPtr[o],srcPtr,o,e,adj);
 }
 
 template<size_t N=2>
-void writeEmptyOppositeVertices(Vertex4Df*dstPtr,size_t e,std::shared_ptr<Adjacency const>const&adj){
+void writeEmptyOppositeVertices(Vertex4Df*dstPtr,size_t e,Adjacency const*adj){
   for(size_t o=adj->getNofOpposite(e);o<N;++o)
     dstPtr[o].clear();
 }
 
-void writeOppositeVertices(Vertex4Df*const dstPtr,Vertex3Df const* const srcPtr,size_t e,std::shared_ptr<Adjacency const>const&adj){
+void writeOppositeVertices(Vertex4Df*const dstPtr,Vertex3Df const* const srcPtr,size_t e,Adjacency const*adj){
   writeUsedOppositeVertices (dstPtr,srcPtr,e,adj);
   writeEmptyOppositeVertices(dstPtr,e,adj);
 }
 
 template<size_t N=2>
-void writeEdgeData(GPUEdgeData<N>&dst,Vertex3Df const*const src,size_t e,std::shared_ptr<Adjacency const>const&adj){
+void writeEdgeData(GPUEdgeData<N>&dst,Vertex3Df const*const src,size_t e,Adjacency const*adj){
   writeEdge(dst.edge,src,e,adj);
   writeOppositeVertices(dst.oppositeVertices,src,e,adj);
 }
 
 template<size_t N=2>
-void writeEdges(GPUEdgeData<N>*const dst,Vertex3Df const*const src,std::shared_ptr<Adjacency const>const&adj){
+void writeEdges(GPUEdgeData<N>*const dst,Vertex3Df const*const src,Adjacency const*adj){
   for(size_t e=0;e<adj->getNofEdges();++e)
     writeEdgeData<N>(dst[e],src,e,adj);
 }
 
 template<size_t N=2>
-std::shared_ptr<ge::gl::Buffer>createEdgeBuffer(std::shared_ptr<Adjacency const>const&adj){
+std::shared_ptr<ge::gl::Buffer>createEdgeBuffer(Adjacency const*adj){
   auto const src = reinterpret_cast<Vertex3Df const*>(adj->getVertices().data());
   std::vector<GPUEdgeData<N>>dst(adj->getNofEdges());
   writeEdges<N>(dst.data(),src,adj);
@@ -75,14 +75,15 @@ std::shared_ptr<ge::gl::Buffer>createEdgeBuffer(std::shared_ptr<Adjacency const>
 }
 
 template<size_t N=2>
-std::shared_ptr<ge::gl::Buffer>createSillouetteBuffer(std::shared_ptr<Adjacency const>const&adj){
+std::shared_ptr<ge::gl::Buffer>createSillouetteBuffer(Adjacency const*adj){
   size_t const bufferSize = sizeof(GPUSilhouetteData<N>)*adj->getNofEdges();
   auto sillhouettes=std::make_shared<ge::gl::Buffer>(bufferSize,nullptr,GL_DYNAMIC_COPY);
   sillhouettes->clear(GL_R32F,GL_RED,GL_FLOAT);
   return sillhouettes;
 }
 
-BasicExtractSilhouettes::BasicExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):ExtractSilhouettes(vars,adj){
+BasicExtractSilhouettes::BasicExtractSilhouettes(vars::Vars&vars):ExtractSilhouettes(vars){
+  auto const adj = vars.get<Adjacency>("adjacency");
   nofEdges     = adj->getNofEdges();
   if(adj->getMaxMultiplicity() == 2){
     edges        = createEdgeBuffer<2>(adj);

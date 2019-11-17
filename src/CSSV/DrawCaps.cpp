@@ -20,7 +20,7 @@ void copyTriangles(Triangle4Df *const dst,Triangle3Df const*const src,size_t nof
     createHomogenous(dst[t],src[t]);
 }
 
-shared_ptr<Buffer>createCapsBuffer(shared_ptr<Adjacency const>const&adj){
+shared_ptr<Buffer>createCapsBuffer(Adjacency const*adj){
   auto const nofTriangles = adj->getNofTriangles();
   vector<Triangle4Df>dst(nofTriangles);
   auto const dstPtr = dst.data();
@@ -29,7 +29,7 @@ shared_ptr<Buffer>createCapsBuffer(shared_ptr<Adjacency const>const&adj){
   return make_shared<Buffer>(dst);
 }
 
-DrawCaps::DrawCaps(shared_ptr<Adjacency const>const&adj){
+DrawCaps::DrawCaps(Adjacency const*adj){
   caps         = createCapsBuffer(adj );
   vao          = createCapsVao   (caps);
   program      = createDrawCapsProgram();

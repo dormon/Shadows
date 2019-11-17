@@ -4,9 +4,9 @@
 
 using namespace cssv;
 
-PlanesExtractSilhouettes::PlanesExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):ExtractSilhouettes(vars,adj){
+PlanesExtractSilhouettes::PlanesExtractSilhouettes(vars::Vars&vars):ExtractSilhouettes(vars){
   assert(this!=nullptr);
-  assert(adj!=nullptr);
+  auto const adj = vars.get<Adjacency>("adjacency");
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
   size_t const floatsPerEdge = verticesPerEdge*componentsPerVertex3D + maxNofOppositeVertices*componentsPerPlane3D;
   edges = std::make_shared<ge::gl::Buffer>(adj->getNofEdges()*floatsPerEdge*sizeof(float));

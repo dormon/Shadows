@@ -118,6 +118,7 @@ set(SOURCES
   src/requiredBits.cpp
   src/startStop.cpp
   src/split.cpp
+  src/createAdjacency.cpp
   )
 
 set(INCLUDES
@@ -182,6 +183,7 @@ set(INCLUDES
   src/toStr.h
   src/split.h
   src/fillValues.h
+  src/createAdjacency.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

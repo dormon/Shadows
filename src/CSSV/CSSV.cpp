@@ -10,6 +10,7 @@
 #include<CSSV/InterleavedPlanesExtractSilhouettes.h>
 #include<CSSV/DrawCaps.h>
 #include<FunctionPrologue.h>
+#include<createAdjacency.h>
 
 using namespace cssv;
 using namespace ge::gl;
@@ -17,15 +18,15 @@ using namespace std;
 using namespace glm;
 
 void createExtractSilhouetteMethod(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method","cssv.param.usePlanes","cssv.param.useInterleaving");
-  auto const adj = createAdjacencyBase(vars);
+  FUNCTION_PROLOGUE("cssv.method","cssv.param.usePlanes","cssv.param.useInterleaving","adjacency");
+  auto const adj = vars.get<Adjacency>("adjacency");
   if(vars.getBool("cssv.param.usePlanes")){
     if(vars.getBool("cssv.param.useInterleaving"))
-      vars.reCreate<InterleavedPlanesExtractSilhouettes>("cssv.method.extractSilhouettes",vars,adj);
+      vars.reCreate<InterleavedPlanesExtractSilhouettes>("cssv.method.extractSilhouettes",vars);
     else
-      vars.reCreate<PlanesExtractSilhouettes>("cssv.method.extractSilhouettes",vars,adj);
+      vars.reCreate<PlanesExtractSilhouettes>("cssv.method.extractSilhouettes",vars);
   }else
-    vars.reCreate<BasicExtractSilhouettes>("cssv.method.extractSilhouettes",vars,adj);
+    vars.reCreate<BasicExtractSilhouettes>("cssv.method.extractSilhouettes",vars);
 }
 
 void createDrawSides(vars::Vars&vars){
@@ -35,8 +36,8 @@ void createDrawSides(vars::Vars&vars){
 }
 
 void createDrawCaps(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method");
-  auto const adj = createAdjacencyBase(vars);
+  FUNCTION_PROLOGUE("cssv.method","adjacency");
+  auto const adj = vars.get<Adjacency>("adjacency");
   vars.reCreate<DrawCaps>("cssv.method.drawCaps",adj);
 }
 
@@ -53,6 +54,7 @@ void CSSV::drawSides(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
+  createAdjacency(vars);
   createExtractSilhouetteMethod(vars);
   createDrawSides(vars);
   auto ex = vars.getReinterpret<ExtractSilhouettes>("cssv.method.extractSilhouettes");

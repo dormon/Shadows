@@ -9,7 +9,7 @@
 class Adjacency;
 class cssv::ExtractSilhouettes{
   public:
-    ExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj);
+    ExtractSilhouettes(vars::Vars&vars);
     virtual ~ExtractSilhouettes(){}
     virtual void compute(glm::vec4 const&lightPosition);
     vars::Vars                      &vars        ;
@@ -17,6 +17,6 @@ class cssv::ExtractSilhouettes{
     std::shared_ptr<ge::gl::Buffer > edges       ;
     std::shared_ptr<ge::gl::Buffer > sillhouettes;
     std::shared_ptr<ge::gl::Buffer > dibo        ;
-    std::shared_ptr<ge::gl::Program> program     ;
+    //std::shared_ptr<ge::gl::Program> program     ;
 };
 

@@ -30,6 +30,8 @@ add_library(CSSV STATIC
   DrawCaps.h
   DrawSides.h
   Param.h
+  createExtractProgram.cpp
+  createExtractProgram.h
 
   )
 target_include_directories(CSSV PUBLIC ..)
