@@ -7,7 +7,6 @@
 #include <Model.h>
 #include <TimeStamp.h>
 
-#include<CSSV/DrawSides.h>
 #include<CSSV/DrawCaps.h>
 #include<CSSV/DrawCapsProgram.h>
 #include<CSSV/DrawSidesProgram.h>
@@ -43,16 +42,6 @@ void createExtractSilhouetteMethod(vars::Vars&vars){
   createSilhouetteBuffer(vars);
 }
 
-void createDrawSides(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method"
-      ,"cssv.method.silhouettes"
-      ,"cssv.method.dibo"
-      );
-  vars.reCreate<DrawSides>("cssv.method.drawSides",
-      vars.get<Buffer>("cssv.method.silhouettes" ),
-      vars.get<Buffer>("cssv.method.dibo"        )
-      );
-}
 
 void createDrawCaps(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method","adjacency");
@@ -77,7 +66,6 @@ void CSSV::drawSides(
   createDIBO(vars);
   createAdjacency(vars);
   createExtractSilhouetteMethod(vars);
-  createDrawSides(vars);
 
   extractSilhouettes(vars,lightPosition);
   ifExistStamp("compute");

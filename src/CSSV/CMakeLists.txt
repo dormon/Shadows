@@ -14,8 +14,6 @@ add_library(CSSV STATIC
   DrawCapsProgram.h
   DrawCaps.cpp
   DrawCaps.h
-  DrawSides.cpp
-  DrawSides.h
   DrawSidesShaders.cpp
   DrawSidesShaders.h
   Param.cpp
