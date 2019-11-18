@@ -39,7 +39,7 @@ void ExtractSilhouettes::createDispatchIndirectBuffer(){
 }
 
 void ExtractSilhouettes::createEdgesBuffer(){
-  auto const adj = createAdjacency(vars);
+  auto const adj = createAdjacencyBase(vars);
   nofEdges = adj->getNofEdges();
 
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();

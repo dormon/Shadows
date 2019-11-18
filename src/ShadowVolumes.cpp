@@ -130,7 +130,7 @@ void ShadowVolumes::create(
   ifExistStamp("convertStencilBufferToShadowMask");
 }
 
-shared_ptr<Adjacency const> createAdjacency(vars::Vars&vars){
+shared_ptr<Adjacency const> createAdjacencyBase(vars::Vars&vars){
   vector<float> vertices = vars.get<Model>("model")->getVertices();
   return  make_shared<Adjacency const>(vertices,vars.getSizeT("maxMultiplicity"));
 }

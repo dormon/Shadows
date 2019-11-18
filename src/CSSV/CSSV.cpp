@@ -2,53 +2,84 @@
 #include<FastAdjacency.h>
 #include<util.h>
 #include<geGL/StaticCalls.h>
+#include <geGL/geGL.h>
+#include <glm/glm.hpp>
+#include <Model.h>
+#include <TimeStamp.h>
 
+#include<CSSV/DrawCaps.h>
 #include<CSSV/DrawCapsProgram.h>
 #include<CSSV/DrawSidesProgram.h>
-#include<CSSV/BasicExtractSilhouettes.h>
-#include<CSSV/PlanesExtractSilhouettes.h>
-#include<CSSV/InterleavedPlanesExtractSilhouettes.h>
 #include<CSSV/DrawCaps.h>
+#include<CSSV/extractSilhouettes.h>
+#include<CSSV/createDIBO.h>
+#include<CSSV/createBasicEdges.h>
+#include<CSSV/createSilhouetteBuffer.h>
+#include<CSSV/createPlanesEdges.h>
+#include<CSSV/createInterleavedPlanesEdges.h>
+#include<CSSV/drawSides.h>
+#include<FunctionPrologue.h>
+#include<createAdjacency.h>
 
 using namespace cssv;
 using namespace ge::gl;
 using namespace std;
 using namespace glm;
 
-unique_ptr<ExtractSilhouettes>createExtractSilhouetteMethod(vars::Vars&vars,shared_ptr<Adjacency const>const&adj){
-  if(vars.getBool("cssv.usePlanes")){
-    if(vars.getBool("cssv.useInterleaving"))
-      return make_unique<InterleavedPlanesExtractSilhouettes>(vars,adj);
+void createExtractSilhouetteMethod(vars::Vars&vars){
+  FUNCTION_PROLOGUE("cssv.method"
+      ,"cssv.param.usePlanes"
+      ,"cssv.param.useInterleaving"
+      ,"adjacency"
+      );
+  if(vars.getBool("cssv.param.usePlanes")){
+    if(vars.getBool("cssv.param.useInterleaving"))
+      createInterleavedPlanesEdges(vars);
     else
-      return make_unique<PlanesExtractSilhouettes>(vars,adj);
+      createPlanesEdges(vars);
   }else
-    return make_unique<BasicExtractSilhouettes>(vars,adj);
+    createBasicEdges(vars);
+  createSilhouetteBuffer(vars);
+}
+
+
+void createDrawCaps(vars::Vars&vars){
+  FUNCTION_PROLOGUE("cssv.method","adjacency");
+  auto const adj = vars.get<Adjacency>("adjacency");
+  vars.reCreate<DrawCaps>("cssv.method.drawCaps",adj);
 }
 
 CSSV::CSSV(vars::Vars&vars):
   ShadowVolumes(vars  )
 {
-  auto const adj = createAdjacency(vars);
-  extractSilhouettes = createExtractSilhouetteMethod(vars,adj);
-  caps = make_unique<DrawCaps>(adj);
-  sides = make_unique<DrawSides>(extractSilhouettes->sillhouettes,extractSilhouettes->dibo);
 }
 
-CSSV::~CSSV(){}
+CSSV::~CSSV(){
+  vars.erase("cssv.method");
+}
+
 
 void CSSV::drawSides(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
-  extractSilhouettes->compute(lightPosition);
+  createDIBO(vars);
+  createAdjacency(vars);
+  createExtractSilhouetteMethod(vars);
+
+  extractSilhouettes(vars,lightPosition);
   ifExistStamp("compute");
-  sides->draw(lightPosition,viewMatrix,projectionMatrix);
+  cssv::drawSides(vars,lightPosition,viewMatrix,projectionMatrix);
+  //auto sides = vars.get<DrawSides>("cssv.method.drawSides");
+  //sides->draw(lightPosition,viewMatrix,projectionMatrix);
 }
 
 void CSSV::drawCaps(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
+  createDrawCaps(vars);
+  auto caps = vars.get<DrawCaps>("cssv.method.drawCaps");
   caps->draw(lightPosition,viewMatrix,projectionMatrix);
 }
 

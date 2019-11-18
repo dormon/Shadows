@@ -7,6 +7,7 @@
 
 #include <Vars/Resource.h>
 #include <FunctionPrologue.h>
+#include <createAdjacency.h>
 
 using namespace ge::gl;
 
@@ -23,7 +24,7 @@ void GSSV::createCapsDrawer(vars::Vars& vars)
 {
 	FUNCTION_PROLOGUE("gssv", "model", "maxMultiplicity");
 
-	vars.reCreate<GSCaps>("gssv.capsDrawer", _adjacency);
+	vars.reCreate<GSCaps>("gssv.capsDrawer", vars);
 }
 
 void GSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
@@ -60,44 +61,46 @@ void GSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix,
 
 void GSSV::createSidesVBO(vars::Vars& vars)
 {
-	FUNCTION_PROLOGUE("gssv", "model", "maxMultiplicity");
+	FUNCTION_PROLOGUE("gssv", "model", "adjacency");
 
 	Model* model = vars.get<Model>("model");
 	std::vector<float> verts = model->getVertices();
 
-	_nofEdges = _adjacency->getNofEdges();
+	Adjacency const* ad = vars.get<Adjacency>("adjacency");
+
+	_nofEdges = ad->getNofEdges();
 	unsigned const NumV = getNofAttributes();
 
 	Buffer* vbo = vars.reCreate<Buffer>("gssv.sidesVBO");
 	vbo->alloc(sizeof(float) * 4 * NumV * _nofEdges);
 
 	float* Ptr = (float*)vbo->map();
-	std::vector<float> const vertices = _adjacency->getVertices();
+	std::vector<float> const vertices = ad->getVertices();
 
 	for (unsigned e = 0; e < _nofEdges; ++e)
 	{
 		//A
 		for (int k = 0; k < 3; ++k)
-			Ptr[(e * NumV + 0) * 4 + k] = vertices[_adjacency->getEdge(e, 0) + k];
+			Ptr[(e * NumV + 0) * 4 + k] = vertices[ad->getEdge(e, 0) + k];
 		Ptr[(e * NumV + 0) * 4 + 3] = 1;
 		//B
 		for (int k = 0; k < 3; ++k)
-			Ptr[(e * NumV + 1) * 4 + k] = vertices[_adjacency->getEdge(e, 1) + k];
+			Ptr[(e * NumV + 1) * 4 + k] = vertices[ad->getEdge(e, 1) + k];
 		Ptr[(e * NumV + 1) * 4 + 3] = 1;
 		//N
-		Ptr[(e * NumV + 2) * 4 + 0] = float(_adjacency->getNofOpposite(e));
+		Ptr[(e * NumV + 2) * 4 + 0] = float(ad->getNofOpposite(e));
 		for (int k = 1; k < 4; ++k)
 			Ptr[(e * NumV + 2) * 4 + k] = 0;
 		//Oi
 		unsigned o = 0;
-		for (; o < _adjacency->getNofOpposite(e); ++o)
+		for (; o < ad->getNofOpposite(e); ++o)
 		{
 			for (int k = 0; k < 3; ++k)
-				Ptr[(e * NumV + 2 + 1 + o) * 4 + k] = vertices[_adjacency->getOpposite(e, o) + k];
+				Ptr[(e * NumV + 2 + 1 + o) * 4 + k] = vertices[ad->getOpposite(e, o) + k];
 			Ptr[(e * NumV + 2 + 1 + o) * 4 + 3] = 1;
 		}
 		//zeros
-		for (; o < _adjacency->getNofOpposite(e); ++o)
+		for (; o < ad->getNofOpposite(e); ++o)
 			for (int k = 0; k < 4; ++k)Ptr[(e * NumV + 2 + 1 + o) * 4 + k] = 0;
 	}
 	vbo->unmap();
@@ -155,16 +158,10 @@ void GSSV::createSidesPrograms(vars::Vars& vars)
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, genGsSilFragmentShader(TGS)));
 }
 
-void GSSV::recomputeAdjacency(vars::Vars& vars)
-{
-	FUNCTION_PROLOGUE("gssv", "model", "maxMultiplicity");
-
-	_adjacency = createAdjacency(vars);
-}
 
 void GSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
 {
-	recomputeAdjacency(vars);
+	createAdjacency(vars);
 	createSidesVBO(vars);
 	createSidesVAO(vars);
 	createSidesPrograms(vars);
@@ -185,7 +182,6 @@ void GSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 
 void GSSV::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
 {
-	recomputeAdjacency(vars);
 	createCapsDrawer(vars);
 
 	vars.get<GSCaps>("gssv.capsDrawer")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
@@ -193,5 +189,5 @@ void GSSV::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix,
 
 unsigned int GSSV::getNofAttributes() const
 {
-	return 2 + 1 + unsigned(_adjacency->getMaxMultiplicity());
+	return 2 + 1 + unsigned(vars.get<Adjacency>("adjacency")->getMaxMultiplicity());
 }

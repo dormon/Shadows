@@ -2,7 +2,6 @@
 
 #include <ShadowVolumes.h>
 
-
 class GSSV : public ShadowVolumes
 {
 public:
@@ -19,10 +18,8 @@ private:
 	void createSidesVAO(vars::Vars& vars);
 	void createCapsDrawer(vars::Vars& vars);
 	void createSidesPrograms(vars::Vars& vars);
-	void recomputeAdjacency(vars::Vars& vars);
 
 	unsigned int getNofAttributes() const;
 
 	size_t	_nofEdges = 0;
-	std::shared_ptr<const Adjacency> _adjacency;
 };

@@ -1,15 +1,9 @@
 #pragma once
 
-#include <geGL/geGL.h>
-#include <glm/glm.hpp>
 #include <ShadowVolumes.h>
-#include <Model.h>
-#include <TimeStamp.h>
-#include <Vars/Vars.h>
+#include <Vars/Fwd.h>
+#include <CSSV/Fwd.h>
 #include <CSSV/Param.h>
-#include <CSSV/ExtractSilhouettes.h>
-#include <CSSV/DrawCaps.h>
-#include <CSSV/DrawSides.h>
 
 class Adjacency;
 
@@ -25,9 +19,5 @@ class cssv::CSSV: public ShadowVolumes{
         glm::vec4 const&lightPosition   ,
         glm::mat4 const&viewMatirx      ,
         glm::mat4 const&projectionMatrix)override;
-  protected:
-    std::unique_ptr<ExtractSilhouettes>extractSilhouettes;
-    std::unique_ptr<DrawSides>sides;
-    std::unique_ptr<DrawCaps >caps;
 };
 

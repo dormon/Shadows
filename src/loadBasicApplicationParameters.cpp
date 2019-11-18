@@ -5,6 +5,7 @@
 #include<util.h>
 #include<Methods.h>
 #include<getMethodNameList.h>
+#include<imguiVars/addVarsLimits.h>
 
 
 void loadBasicApplicationParameters(vars::Vars&vars,std::shared_ptr<argumentViewer::ArgumentViewer>const&args){

@@ -22,6 +22,10 @@ set(CMAKE_INSTALL_RPATH ".")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules")
 
+SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually d on windows")
+SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
+SET(CMAKE_RELWITHDEBINFO_POSTFIX "rd" CACHE STRING "add a postfix, usually empty on windows")
+SET(CMAKE_MINSIZEREL_POSTFIX "s" CACHE STRING "add a postfix, usually empty on windows")
 
 find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
 find_package(BasicCamera 1.0 CONFIG REQUIRED)
@@ -120,6 +124,7 @@ set(SOURCES
   src/startStop.cpp
   src/split.cpp
   src/GSCaps.cpp
+  src/createAdjacency.cpp
   )
 
 set(INCLUDES
@@ -186,6 +191,7 @@ set(INCLUDES
   src/fillValues.h
   src/GSCaps.h
   src/GSCapsShaders.h
+  src/createAdjacency.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

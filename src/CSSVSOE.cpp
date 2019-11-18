@@ -110,7 +110,7 @@ CSSVSOE::CSSVSOE(vars::Vars&vars):
 {
   assert(this!=nullptr);
 
-  auto const adj = createAdjacency(vars);
+  auto const adj = createAdjacencyBase(vars);
 
   this->_nofTriangles=adj->getNofTriangles();
 

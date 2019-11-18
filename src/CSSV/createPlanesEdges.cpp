@@ -1,17 +1,18 @@
-#include <CSSV/PlanesExtractSilhouettes.h>
+#include <CSSV/createPlanesEdges.h>
+#include <Vars/Vars.h>
+#include <FunctionPrologue.h>
 #include <FastAdjacency.h>
 #include <ShadowMethod.h>
 
-using namespace cssv;
+void cssv::createPlanesEdges(vars::Vars&vars){
+  FUNCTION_PROLOGUE("cssv.method","adjacency");
 
-PlanesExtractSilhouettes::PlanesExtractSilhouettes(vars::Vars&vars,std::shared_ptr<Adjacency const>const&adj):ExtractSilhouettes(vars,adj){
-  assert(this!=nullptr);
-  assert(adj!=nullptr);
+  auto const adj = vars.get<Adjacency>("adjacency");
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
   size_t const floatsPerEdge = verticesPerEdge*componentsPerVertex3D + maxNofOppositeVertices*componentsPerPlane3D;
-  edges = std::make_shared<ge::gl::Buffer>(adj->getNofEdges()*floatsPerEdge*sizeof(float));
 
-  auto const dstPtr = static_cast<float      *>(edges->map());
+  std::vector<float>dst(adj->getNofEdges()*floatsPerEdge);
+  auto const dstPtr = static_cast<float      *>(dst.data());
   auto const srcPtr = adj->getVertices().data();
 
   size_t const sizeofVertex3DInBytes = componentsPerVertex3D * sizeof(float);
@@ -38,12 +39,6 @@ PlanesExtractSilhouettes::PlanesExtractSilhouettes(vars::Vars&vars,std::shared_p
     uint8_t const value             = 0;
     std::memset(emptyPlanesDstPtr,value,sizeofPlane3DInBytes*nofEmptyPlanes);
   }
-  edges->unmap();
-  nofEdges = adj->getNofEdges();
 
-  sillhouettes=std::make_shared<ge::gl::Buffer>(
-      sizeof(float)*componentsPerVertex4D*verticesPerQuad*nofEdges*adj->getMaxMultiplicity(),
-      nullptr,GL_DYNAMIC_COPY);
-  sillhouettes->clear(GL_R32F,GL_RED,GL_FLOAT);
+  vars.reCreate<ge::gl::Buffer>("cssv.method.edges",dst);
 }
-

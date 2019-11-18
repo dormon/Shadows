@@ -13,7 +13,7 @@ class cssv::DrawCaps{
     std::shared_ptr<ge::gl::VertexArray>vao    ;
     std::shared_ptr<ge::gl::Program    >program;
     size_t nofTriangles = 0;
-    DrawCaps(std::shared_ptr<Adjacency const>const&adj);
+    DrawCaps(Adjacency const*adj);
     void draw(
         glm::vec4 const&lightPosition   ,
         glm::mat4 const&viewMatirx      ,

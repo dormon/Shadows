@@ -1,57 +1,71 @@
-#include "GSCaps.h"
-#include "GSCapsShaders.h"
-#include "geGL/StaticCalls.h"
+#include <GSCaps.h>
+#include <GSCapsShaders.h>
+#include <geGL/StaticCalls.h>
+#include <FastAdjacency.h>
+#include <FunctionPrologue.h>
 
 #include <glm/gtc/type_ptr.hpp>
 
-GSCaps::GSCaps(std::shared_ptr<Adjacency const> adjacency)
+using namespace ge::gl;
+
+GSCaps::GSCaps(vars::Vars& vars) :vars(vars)
 {
-	_initCapsBuffers(adjacency);
-	_initCapsProgram();
+	_initCapsPrograms();
 }
 
 void GSCaps::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
 {
+	_initCapsBuffers();
+
 	const glm::mat4 mvp = projectionMatrix * viewMatrix;
 
-	_capsVAO->bind();
-	_capsProgram->use();
-	_capsProgram->setMatrix4fv("mvp", glm::value_ptr(mvp), 1, GL_FALSE);
-	_capsProgram->set4fv("LightPosition", glm::value_ptr(lightPosition), 1);
+	vars.get<VertexArray>("gsCaps.VAO")->bind();
+	
+	Program* program = vars.get<Program>("gsCaps.program");
+
+	program->use();
+	program->setMatrix4fv("mvp", glm::value_ptr(mvp), 1, GL_FALSE);
+	program->set4fv("LightPosition", glm::value_ptr(lightPosition), 1);
+
 	ge::gl::glDrawArrays(GL_TRIANGLES, 0, GLsizei(_nofCapsTriangles * 3));
 
-	_capsVAO->unbind();
+	vars.get<VertexArray>("gsCaps.VAO")->unbind();
 }
 
 void GSCaps::drawCapsVisualized(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix, bool drawFrontCap, bool drawBackCap, bool drawLightFacing, bool drawLightBackFacing, glm::vec3 const& color)
 {
 	const glm::mat4 mvp = projectionMatrix * viewMatrix;
 
-	_capsVAO->bind();
+	vars.get<VertexArray>("gsCaps.VAO")->bind();
 
-	_capsVisualizationProgram->use();
-	_capsVisualizationProgram->setMatrix4fv("mvp", glm::value_ptr(mvp), 1, GL_FALSE);
-	_capsVisualizationProgram->set4fv("LightPosition", glm::value_ptr(lightPosition), 1);
-	_capsVisualizationProgram->set1i("drawFrontCap", drawFrontCap ? 1 : 0);
-	_capsVisualizationProgram->set1i("drawBackCap", drawBackCap ? 1 : 0);
-	_capsVisualizationProgram->set1i("drawLightFace", drawLightFacing ? 1 : 0);
-	_capsVisualizationProgram->set1i("drawLightBackFace", drawLightBackFacing ? 1 : 0);
-	_capsVisualizationProgram->set3fv("color", glm::value_ptr(color));
+	Program* program = vars.get<Program>("gsCaps.visualizationProgram");
+	
+	program->use();
+	program->setMatrix4fv("mvp", glm::value_ptr(mvp), 1, GL_FALSE);
+	program->set4fv("LightPosition", glm::value_ptr(lightPosition), 1);
+	program->set1i("drawFrontCap", drawFrontCap ? 1 : 0);
+	program->set1i("drawBackCap", drawBackCap ? 1 : 0);
+	program->set1i("drawLightFace", drawLightFacing ? 1 : 0);
+	program->set1i("drawLightBackFace", drawLightBackFacing ? 1 : 0);
+	program->set3fv("color", glm::value_ptr(color));
 
 	ge::gl::glDrawArrays(GL_TRIANGLES, 0, GLsizei(_nofCapsTriangles * 3));
 
-	_capsVAO->unbind();
+	vars.get<VertexArray>("gsCaps.VAO")->unbind();
 }
 
-void GSCaps::_initCapsBuffers(std::shared_ptr<Adjacency const> ad)
+void GSCaps::_initCapsBuffers()
 {
-	_capsVAO = std::make_shared<ge::gl::VertexArray>();
+	FUNCTION_PROLOGUE("gsCaps", "adjacency");
 
+	VertexArray* vao = vars.reCreate<VertexArray>("gsCaps.VAO");
+
+	Adjacency const* ad = vars.get<Adjacency>("adjacency");
 	_nofCapsTriangles = ad->getNofTriangles();
 
-	_capsVBO = std::make_shared<ge::gl::Buffer>(sizeof(float) * 4 * 3 * _nofCapsTriangles, nullptr, GL_STATIC_DRAW);
+	Buffer* vbo = vars.reCreate<Buffer>("gsCaps.VBO", sizeof(float) * 4 * 3 * _nofCapsTriangles, nullptr, GL_STATIC_DRAW);
 
-	float*Ptr = (float*)_capsVBO->map();
+	float*Ptr = (float*)vbo->map();
 	for (unsigned t = 0; t<_nofCapsTriangles; ++t)
 	{
 		for (unsigned p = 0; p<3; ++p) {
@@ -61,20 +75,20 @@ void GSCaps::_initCapsBuffers(std::shared_ptr<Adjacency const> ad)
 		}
 	}
 
-	_capsVBO->unmap();
+	vbo->unmap();
 
-	_capsVAO->addAttrib(_capsVBO, 0, 4, GL_FLOAT);
+	vao->addAttrib(vbo, 0, 4, GL_FLOAT);
 }
 
-void GSCaps::_initCapsProgram()
+void GSCaps::_initCapsPrograms()
 {
 	std::shared_ptr<ge::gl::Shader> vs = std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, vsSource);
 	std::shared_ptr<ge::gl::Shader> gs = std::make_shared<ge::gl::Shader>(GL_GEOMETRY_SHADER, gsSource);
 	std::shared_ptr<ge::gl::Shader> fs = std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, fsSource);
 
-	_capsProgram = std::make_shared<ge::gl::Program>(vs, gs, fs);
+	vars.reCreate<Program>("gsCaps.program", vs, gs, fs);
 
-	_capsVisualizationProgram = std::make_shared<ge::gl::Program>(vs, 
+	vars.reCreate<Program>("gsCaps.visualizationProgram", vs,
 		std::make_shared<ge::gl::Shader>(GL_GEOMETRY_SHADER, gsSourceVisualize),
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, fsSourceVisualize));
 }
