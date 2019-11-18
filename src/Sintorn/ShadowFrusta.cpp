@@ -15,8 +15,7 @@ size_t const FLOATS_PER_SHADOWFRUSTUM = VEC4_PER_SHADOWFRUSTUM*4;
 void allocateShadowFrustaBuffer(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn","model");
 
-  vector<float>vertices;
-  vars.get<Model>("model")->getVertices(vertices);
+  vector<float>vertices = vars.get<Model>("model")->getVertices();
   auto nofTriangles = vertices.size()/3/3;
   
   vars.reCreate<size_t>("sintorn.nofTriangles",nofTriangles);

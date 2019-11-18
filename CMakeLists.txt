@@ -22,6 +22,10 @@ set(CMAKE_INSTALL_RPATH ".")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules")
 
+SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually d on windows")
+SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
+SET(CMAKE_RELWITHDEBINFO_POSTFIX "rd" CACHE STRING "add a postfix, usually empty on windows")
+SET(CMAKE_MINSIZEREL_POSTFIX "s" CACHE STRING "add a postfix, usually empty on windows")
 
 find_package(ArgumentViewer 1.0 CONFIG REQUIRED)
 find_package(BasicCamera 1.0 CONFIG REQUIRED)
@@ -52,6 +56,7 @@ add_subdirectory(src/CSSV)
 add_subdirectory(src/VSSV)
 add_subdirectory(src/RSSV)
 add_subdirectory(src/CubeShadowMapping)
+add_subdirectory(src/GSSV)
 
 add_library(RayTracing STATIC
   src/RayTracing/nanort.cc
@@ -118,6 +123,7 @@ set(SOURCES
   src/requiredBits.cpp
   src/startStop.cpp
   src/split.cpp
+  src/GSCaps.cpp
   src/createAdjacency.cpp
   )
 
@@ -183,6 +189,8 @@ set(INCLUDES
   src/toStr.h
   src/split.h
   src/fillValues.h
+  src/GSCaps.h
+  src/GSCapsShaders.h
   src/createAdjacency.h
   )
 
@@ -194,7 +202,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Simple3DApp::Simple3DApp BasicCamera::BasicCamera ArgumentViewer::ArgumentViewer assimp::assimp FreeImage::FreeImage FreeImagePlus::FreeImagePlus Vars::Vars imguiVars::imguiVars)
-target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV CubeShadowMapping RayTracing)
+target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV GSSV CubeShadowMapping RayTracing)
 
 #include(print_target_properties.cmake)
 #print_target_properties(SDL2::SDL2)

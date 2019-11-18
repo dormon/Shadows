@@ -9,8 +9,7 @@ using namespace std;
 void createAdjacency(vars::Vars&vars){
   FUNCTION_PROLOGUE("","model","maxMultiplicity");
 
-  vector<float>vertices;
-  vars.get<Model>("model")->getVertices(vertices);
+  vector<float> vertices = vars.get<Model>("model")->getVertices();
 
   size_t const constexpr verticesPerTriangle = 3;
   size_t const constexpr componentsPerVertex3D = 3;

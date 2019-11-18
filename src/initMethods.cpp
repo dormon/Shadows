@@ -9,6 +9,7 @@
 #include <Sintorn2/Sintorn2.h>
 #include <VSSV/VSSV.h>
 #include <RayTracing/RayTracing.h>
+#include <GSSV/GSSV.hpp>
 
 void initMethods(vars::Vars&vars){
   auto methods = vars.add<Methods>("methods");
@@ -20,4 +21,5 @@ void initMethods(vars::Vars&vars){
   methods->add<rssv::RSSV       >("rssv"             );
   methods->add<VSSV             >("vssv"             );
   methods->add<RayTracing       >("rayTracing"       );
+  methods->add<GSSV				>("gssv");
 }

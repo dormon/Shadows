@@ -2,10 +2,17 @@
 
 #include<GLSLLine.h>
 
-Model::Model(std::string const&name){
-  this->model = aiImportFile(name.c_str(),aiProcess_Triangulate|aiProcess_GenNormals|aiProcess_SortByPType);
-  if(this->model==nullptr)
-    std::cerr <<"Can't open file: " << name << std::endl;
+Model::Model(std::string const&name)
+{
+	this->model = aiImportFile(name.c_str(),aiProcess_Triangulate|aiProcess_GenNormals|aiProcess_SortByPType);
+	if (this->model == nullptr)
+	{
+		std::cerr << "Can't open file: " << name << std::endl;
+	}
+	else
+	{
+		generateVertices();
+	}
 }
 
 Model::~Model(){
@@ -13,7 +20,12 @@ Model::~Model(){
   if(this->model)aiReleaseImport(this->model);
 }
 
-void Model::getVertices(std::vector<float>&vertices){
+std::vector<float> Model::getVertices() const
+{
+	return vertices;
+}
+
+void Model::generateVertices(){
   size_t nofVertices = 0;
   for(size_t i=0;i<model->mNumMeshes;++i)
     nofVertices+=model->mMeshes[i]->mNumFaces*3;
@@ -38,7 +50,7 @@ RenderModel::RenderModel(Model*mdl){
     this->nofVertices+=model->mMeshes[i]->mNumFaces*3;
 
   std::vector<float>vertData;
-  mdl->getVertices(vertData);
+  vertData = mdl->getVertices();
   this->vertices = std::make_shared<ge::gl::Buffer>(this->nofVertices*sizeof(float)*3,vertData.data());
 
   std::vector<float>normData;

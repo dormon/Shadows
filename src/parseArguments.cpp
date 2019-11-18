@@ -9,6 +9,7 @@
 #include <loadTestParams.h>
 #include <loadCameraParams.h>
 #include <imguiVars/addVarsLimits.h>
+#include <GSSV/GSSV_params.h>
 
 void parseArguments(vars::Vars&vars){
   auto argc = vars.getUint32("argc");
@@ -23,6 +24,7 @@ void parseArguments(vars::Vars&vars){
   rssv::loadParams              (vars,arg);
   loadTestParams                (vars,arg);
   loadCameraParams              (vars,arg);
+  loadGSSVParams				(vars, arg);
 
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");

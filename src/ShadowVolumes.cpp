@@ -131,10 +131,7 @@ void ShadowVolumes::create(
 }
 
 shared_ptr<Adjacency const> createAdjacencyBase(vars::Vars&vars){
-  vector<float>vertices;
-  vars.get<Model>("model")->getVertices(vertices);
-
-  size_t const nofTriangles = vertices.size() / (verticesPerTriangle*componentsPerVertex3D);
+  vector<float> vertices = vars.get<Model>("model")->getVertices();
   return  make_shared<Adjacency const>(vertices,vars.getSizeT("maxMultiplicity"));
 }
 

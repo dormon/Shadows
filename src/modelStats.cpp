@@ -5,8 +5,7 @@
 
 void getModelStats(vars::Vars&vars){
   auto model = vars.add<Model>("model",vars.getString("modelName"));
-  std::vector<float>vertices;
-  model->getVertices(vertices);
+  std::vector<float>vertices = model->getVertices();
   auto adj = std::make_shared<Adjacency const>(vertices,vars.getSizeT("maxMultiplicity"));
   auto const aabb = AABB(vertices)*vars.getFloat("modelStatsScale");
 

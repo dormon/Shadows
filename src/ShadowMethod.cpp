@@ -53,3 +53,10 @@ glm::vec4 computePlane(glm::vec3 A,glm::vec3 B,glm::vec3 C){
 void ShadowMethod::ifExistStamp(std::string const&n){
   if(vars.has("timeStamp"))vars.get<TimeStamp>("timeStamp")->stamp(n);
 }
+
+void ShadowMethod::drawUser(glm::vec4 const& ,
+	glm::mat4 const& ,
+	glm::mat4 const& )
+{
+
+}
