@@ -18,6 +18,7 @@
 #include<CSSV/createSilhouetteBuffer.h>
 #include<CSSV/createPlanesEdges.h>
 #include<CSSV/createInterleavedPlanesEdges.h>
+#include<CSSV/drawSides.h>
 #include<FunctionPrologue.h>
 #include<createAdjacency.h>
 
@@ -68,6 +69,7 @@ CSSV::~CSSV(){
   vars.erase("cssv.method");
 }
 
+
 void CSSV::drawSides(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
@@ -79,8 +81,9 @@ void CSSV::drawSides(
 
   extractSilhouettes(vars,lightPosition);
   ifExistStamp("compute");
-  auto sides = vars.get<DrawSides>("cssv.method.drawSides");
-  sides->draw(lightPosition,viewMatrix,projectionMatrix);
+  cssv::drawSides(vars,lightPosition,viewMatrix,projectionMatrix);
+  //auto sides = vars.get<DrawSides>("cssv.method.drawSides");
+  //sides->draw(lightPosition,viewMatrix,projectionMatrix);
 }
 
 void CSSV::drawCaps(

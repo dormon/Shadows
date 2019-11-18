@@ -34,6 +34,12 @@ add_library(CSSV STATIC
   createDIBO.h
   extractSilhouettes.cpp
   extractSilhouettes.h
+  createDrawSidesProgram.cpp
+  createDrawSidesProgram.h
+  createDrawSidesVAO.cpp
+  createDrawSidesVAO.h
+  drawSides.cpp
+  drawSides.h
 
   )
 target_include_directories(CSSV PUBLIC ..)
