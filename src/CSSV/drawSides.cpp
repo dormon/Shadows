@@ -15,7 +15,7 @@ void cssv::drawSides(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
-  createDrawSidesVAO(vars);
+  cssv::createDrawSidesVAO(vars);
   cssv::createDrawSidesProgram(vars);
 
   auto dibo    = vars.get<Buffer     >("cssv.method.dibo"             );

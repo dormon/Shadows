@@ -83,7 +83,7 @@ std::shared_ptr<ge::gl::Buffer>createSillouetteBuffer(Adjacency const*adj){
 
 
 void cssv::createBasicEdges(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method","adjacency");
+  //FUNCTION_PROLOGUE("cssv.method","adjacency");
   auto const adj = vars.get<Adjacency>("adjacency");
   if(adj->getMaxMultiplicity() == 2){
     auto verts = adj->getVertices().data();

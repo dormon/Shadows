@@ -30,6 +30,23 @@ void cssv::extractSilhouettes(vars::Vars&vars,glm::vec4 const&lightPosition){
     ->bindBuffer("DrawIndirectBuffer",dibo                         )
     ->dispatch((GLuint)getDispatchSize(adj->getNofEdges(),WGS));
 
+  /*
+  std::vector<uint32_t>diboData;
+  dibo->getData(diboData);
+  for(auto const&x:diboData)
+    std::cerr << x << " ";
+  std::cerr << std::endl;
+  */
+
+  /*
+  std::vector<float>edgesData;
+  edges->getData(edgesData);
+  for(auto const&x:edgesData)
+    std::cerr << x << " ";
+  std::cerr << std::endl;
+  */
+
+
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   glFinish();
 }

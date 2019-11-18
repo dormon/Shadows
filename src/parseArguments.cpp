@@ -10,7 +10,7 @@
 #include <loadCameraParams.h>
 #include <imguiVars/addVarsLimits.h>
 #include <GSSV/GSSV_params.h>
-#include <TSSV/TSSV_params.h>
+#include <TSSV/TSSV_Params.h>
 #include <SM/ShadowMappingParams.h>
 
 void parseArguments(vars::Vars&vars){

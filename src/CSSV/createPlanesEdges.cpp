@@ -5,7 +5,7 @@
 #include <ShadowMethod.h>
 
 void cssv::createPlanesEdges(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method","adjacency");
+  //FUNCTION_PROLOGUE("cssv.method","adjacency");
 
   auto const adj = vars.get<Adjacency>("adjacency");
   size_t const maxNofOppositeVertices = adj->getMaxMultiplicity();
