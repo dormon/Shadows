@@ -9,7 +9,7 @@
 using namespace ge::gl;
 
 void cssv::createInterleavedPlanesEdges(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method","adjacency","cssv.param.alignment");
+  //FUNCTION_PROLOGUE("cssv.method","adjacency","cssv.param.alignment");
 
   auto const adj = vars.get<Adjacency>("adjacency");
   size_t const alignSize = vars.getSizeT ("cssv.param.alignment");

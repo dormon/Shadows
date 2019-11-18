@@ -31,6 +31,7 @@ void createExtractSilhouetteMethod(vars::Vars&vars){
       ,"cssv.param.usePlanes"
       ,"cssv.param.useInterleaving"
       ,"adjacency"
+      ,"cssv.param.alignment"
       );
   if(vars.getBool("cssv.param.usePlanes")){
     if(vars.getBool("cssv.param.useInterleaving"))
@@ -70,8 +71,6 @@ void CSSV::drawSides(
   extractSilhouettes(vars,lightPosition);
   ifExistStamp("compute");
   cssv::drawSides(vars,lightPosition,viewMatrix,projectionMatrix);
-  //auto sides = vars.get<DrawSides>("cssv.method.drawSides");
-  //sides->draw(lightPosition,viewMatrix,projectionMatrix);
 }
 
 void CSSV::drawCaps(
