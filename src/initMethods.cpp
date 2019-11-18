@@ -10,6 +10,7 @@
 #include <VSSV/VSSV.h>
 #include <RayTracing/RayTracing.h>
 #include <GSSV/GSSV.hpp>
+#include <TSSV/TSSV.hpp>
 
 void initMethods(vars::Vars&vars){
   auto methods = vars.add<Methods>("methods");
@@ -22,4 +23,5 @@ void initMethods(vars::Vars&vars){
   methods->add<VSSV             >("vssv"             );
   methods->add<RayTracing       >("rayTracing"       );
   methods->add<GSSV				>("gssv");
+  methods->add<TSSV				>("tssv");
 }
