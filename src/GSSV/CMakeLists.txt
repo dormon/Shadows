@@ -8,8 +8,8 @@ add_library(GSSV STATIC
 	GSSV.hpp
 	GSSV.cpp
 	GSSV_Shaders.h
-	GSSV_Params.h
-	GSSV_Params.cpp
+	GSSV_params.h
+	GSSV_params.cpp
 )
   
 target_include_directories(GSSV PUBLIC ..)
