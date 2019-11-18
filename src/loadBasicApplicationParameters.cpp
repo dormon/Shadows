@@ -11,7 +11,11 @@
 void loadBasicApplicationParameters(vars::Vars&vars,std::shared_ptr<argumentViewer::ArgumentViewer>const&args){
   vars::Caller caller(vars,__FUNCTION__);
   *vars.add<glm::uvec2 >("windowSize"     ) = vector2uvec2(args->getu32v("--window-size", {512, 512}, "window size"));
+
   *vars.add<glm::vec4  >("lightPosition"  ) = vector2vec4(args->getf32v("--light", {0.f, 1000.f, 0.f, 1.f}, "light position"));
+  *vars.add<glm::vec3  >("lightUp") = vector2vec3(args->getf32v("--lightUp", { 1.f, 0.f, 0.f}, "light up vector (single-directional methods)"));
+  *vars.add<glm::vec3  >("lightView") = vector2vec3(args->getf32v("--lightView", { 0.f, -1.f, 0.f}, "light view direction (single-directional methods)"));
+
   vars.addString        ("modelName"      ) = args->gets("--model", "/media/windata/ft/prace/models/2tri/2tri.3ds","model file name");
   vars.addBool          ("useShadows"     ) = !args->isPresent("--no-shadows", "turns off shadows");
   vars.addBool          ("verbose"        ) = args->isPresent("--verbose", "toggle verbose mode");

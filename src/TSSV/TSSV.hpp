@@ -2,20 +2,12 @@
 
 #include <ShadowVolumes.h>
 
-
-struct TSSVParams
-{
-	bool UseReferenceEdge = false;
-	bool CullSides = false;
-	bool UseStencilValueExport = false;
-};
-
 class TSSV : public ShadowVolumes
 {
   public:
-	  TSSV(vars::Vars& vars);
+	TSSV(vars::Vars& vars);
     
-	~TSSV();
+	virtual ~TSSV();
 	
 	void drawSides( glm::vec4 const&lightPosition, glm::mat4 const&viewMatrix, glm::mat4 const&projectionMatrix) override;
 	void drawCaps(glm::vec4 const&lightPosition, glm::mat4 const&viewMatrix, glm::mat4 const&projectionMatrix) override;

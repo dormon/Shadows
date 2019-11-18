@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.12.1)
 
-cmake_minimum_required(VERSION 3.12.1)
-
 add_library(TSSV STATIC
 	SidesShaderGenerator.cpp
 	SidesShaderGenerator.hpp	
