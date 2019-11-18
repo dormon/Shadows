@@ -11,6 +11,7 @@
 #include <RayTracing/RayTracing.h>
 #include <GSSV/GSSV.hpp>
 #include <TSSV/TSSV.hpp>
+#include <SM/ShadowMapping.h>
 
 void initMethods(vars::Vars&vars){
   auto methods = vars.add<Methods>("methods");
@@ -22,6 +23,7 @@ void initMethods(vars::Vars&vars){
   methods->add<rssv::RSSV       >("rssv"             );
   methods->add<VSSV             >("vssv"             );
   methods->add<RayTracing       >("rayTracing"       );
-  methods->add<GSSV				>("gssv");
-  methods->add<TSSV				>("tssv");
+  methods->add<GSSV				>("gssv"             );
+  methods->add<TSSV				>("tssv"             );
+  methods->add<ShadowMapping	>("sm"               );
 }

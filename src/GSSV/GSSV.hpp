@@ -7,7 +7,7 @@ class GSSV : public ShadowVolumes
 public:
 	GSSV(vars::Vars& vars);
 
-	~GSSV();
+	virtual ~GSSV();
 
 	void drawSides(glm::vec4 const&lightPosition, glm::mat4 const&viewMatrix, glm::mat4 const&projectionMatrix) override;
 	void drawCaps(glm::vec4 const&lightPosition, glm::mat4 const&viewMatrix, glm::mat4 const&projectionMatrix) override;

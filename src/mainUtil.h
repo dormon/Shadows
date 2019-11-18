@@ -7,6 +7,8 @@ void moveCameraWSAD(
     vars::Vars&vars,
     std::map<SDL_Keycode, bool>                          keyDown);
 
+void updateLightPosViewUpFromCamera(vars::Vars& vars);
+
 void createGBuffer(vars::Vars&vars);
 
 void ifMethodExistCreateShadowMask(vars::Vars&vars);

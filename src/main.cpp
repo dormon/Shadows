@@ -159,6 +159,7 @@ void Shadows::draw() {
   }
 
 
+
   drawImguiVars(vars);
 
 
@@ -198,6 +199,11 @@ void Shadows::key(SDL_Event const& event, bool DOWN) {
     auto n = vars.getNofVars();
     for(size_t i=0;i<n;++i)
       std::cerr << vars.getVarName(i) << std::endl;
+  }
+
+  if (DOWN && event.key.keysym.sym == SDLK_o)
+  {
+	  updateLightPosViewUpFromCamera(vars);
   }
 }
 
