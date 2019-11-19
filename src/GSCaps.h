@@ -14,6 +14,8 @@ class GSCaps
 {
 public:
 	GSCaps(vars::Vars& vars);
+	~GSCaps();
+
 	void drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix);
 	void drawCapsVisualized(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix, bool drawFrontCap, bool drawBackCap, bool drawLightFacing, bool drawLightBackFacing, glm::vec3 const& color);
 
