@@ -3,7 +3,7 @@
 #include <string>
 #include <sstream>
 
-#include <geGl/Program.h>
+#include <geGL/Program.h>
 
 std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbFillProgram(glm::uvec3 const& bufferDims)
 {   

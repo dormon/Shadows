@@ -7,7 +7,7 @@
 #include <geGL/Texture.h>
 #include <geGL/Buffer.h>
 #include <geGL/Program.h>
-#include <gegl/Framebuffer.h>
+#include <geGL/Framebuffer.h>
 #include <geGL/VertexArray.h>
 
 #include <ifExistStamp.h>
