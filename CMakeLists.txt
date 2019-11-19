@@ -60,6 +60,7 @@ add_subdirectory(src/GSSV)
 add_subdirectory(src/TSSV)
 add_subdirectory(src/SM)
 add_subdirectory(src/FTS)
+add_subdirectory(src/OFTS)
 
 add_library(RayTracing STATIC
   src/RayTracing/nanort.cc
@@ -205,7 +206,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Simple3DApp::Simple3DApp BasicCamera::BasicCamera ArgumentViewer::ArgumentViewer assimp::assimp FreeImage::FreeImage FreeImagePlus::FreeImagePlus Vars::Vars imguiVars::imguiVars)
-target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV GSSV TSSV SM FTS CubeShadowMapping RayTracing)
+target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV GSSV TSSV SM FTS OFTS CubeShadowMapping RayTracing)
 
 #include(print_target_properties.cmake)
 #print_target_properties(SDL2::SDL2)

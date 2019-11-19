@@ -8,8 +8,7 @@
 std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbFillProgram(glm::uvec3 const& bufferDims)
 {   
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSFill()),
-        std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSFill(bufferDims)));
+        GetIzbFillProgramShaders(bufferDims));
     
     return std::move(program);
 }
@@ -17,8 +16,7 @@ std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbFillProgram(glm::uvec3 cons
 std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbTraversalProgram(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSTraversal()),
-        std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSTraversal(bufferDims)));
+        GetIzbTraversalProgramShaders(bufferDims));
 
     return std::move(program);
 }
@@ -26,9 +24,7 @@ std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbTraversalProgram(glm::uvec3
 std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbFillProgramOmnidir(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSFillOmnidir()),
-        std::make_shared<ge::gl::Shader>(GL_GEOMETRY_SHADER, GetGSFillOmnidir()),
-        std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSFillOmnidir(bufferDims)));
+        GetIzbFillProgramOmnidirShaders(bufferDims));
 
     return std::move(program);
 }
@@ -36,18 +32,15 @@ std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbFillProgramOmnidir(glm::uve
 std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbTraversalProgramOmnidirRaytrace(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSTraversal()),
-        std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSTraversalOmnidirRaytrace(bufferDims)));
+        GetIzbTraversalProgramOmnidirRaytraceShaders(bufferDims));
 
     return std::move(program);
 }
 
-
 std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbTraversalProgramOmnidirFrusta(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSTraversal()),
-        std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSTraversalOmnidirFrusta(bufferDims)));
+        GetIzbTraversalProgramOmnidirFrustaShaders(bufferDims));
 
     return std::move(program);
 }
@@ -55,17 +48,15 @@ std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbTraversalProgramOmnidirFrus
 std::unique_ptr<ge::gl::Program> FtsShaderGen::GetTrianglePreprocessCS(uint32_t wgSize)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER, GetCSPreprocess(wgSize)));
+        GetTrianglePreprocessCSShader(wgSize));
 
     return std::move(program);
 }
 
-
 std::unique_ptr<ge::gl::Program> FtsShaderGen::GetEtsTraversalProgram(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSTraversal()),
-        std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFsEtsFill(bufferDims)));
+        GetEtsTraversalProgramShaders(bufferDims));
 
     return std::move(program);
 }
@@ -200,6 +191,7 @@ layout(std430, binding=2) buffer _vertices {float vertices[];};
 
 uniform mat4 lightVP;
 uniform vec4 lightPos;
+uniform float bias;
 
 #define NOF_FLOATS_TRIANGLE 9u
 ).";
@@ -252,7 +244,7 @@ void main()
             verts[2] = vec3(vertices[vertexIndexBase + 6], vertices[vertexIndexBase + 7], vertices[vertexIndexBase + 8]);
         
             //Test for intersection
-            const bool isIntersecting = rayTriangleIntersect(verts[0], verts[1], verts[2], rayDir, viewSamplePosition);
+            const bool isIntersecting = rayTriangleIntersect(verts[0], verts[1], verts[2], rayDir, viewSamplePosition, bias);
 
             if(isIntersecting)
             {
@@ -390,6 +382,7 @@ layout(std430, binding=1) buffer _counter  {uint counter[];};
 layout(std430, binding=2) buffer _vertices {float vertices[];};
 
 uniform vec4 lightPos;
+uniform float bias;
 
 #define NOF_FLOATS_TRIANGLE 9u
 ).";
@@ -438,7 +431,7 @@ void main()
         verts[2] = vec3(vertices[vertexIndexBase + 6], vertices[vertexIndexBase + 7], vertices[vertexIndexBase + 8]);
     
         //Test for intersection
-        const bool isIntersecting = rayTriangleIntersect(verts[0], verts[1], verts[2], -rayDir, viewSamplePosition);
+        const bool isIntersecting = rayTriangleIntersect(verts[0], verts[1], verts[2], -rayDir, viewSamplePosition, bias);
 
         if(isIntersecting)
         {
@@ -635,6 +628,7 @@ layout(std430, binding=2) buffer _vertices {float vertices[];};
 
 uniform mat4 lightVP;
 uniform vec4 lightPos;
+uniform float bias;
 
 #define NOF_FLOATS_TRIANGLE 9u
 ).";
@@ -695,7 +689,7 @@ void main()
                 verts[2] = vec3(vertices[vertexIndexBase + 6], vertices[vertexIndexBase + 7], vertices[vertexIndexBase + 8]);
         
                 //Test for intersection
-                const bool isIntersecting = rayTriangleIntersect(verts[0], verts[1], verts[2], rayDir, viewSamplePosition);
+                const bool isIntersecting = rayTriangleIntersect(verts[0], verts[1], verts[2], rayDir, viewSamplePosition, bias);
 
                 if(isIntersecting)
                 {
@@ -765,17 +759,15 @@ std::string FtsShaderGen::GetRayInersectFunction() const
 {
     return R".(
 //https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
-bool rayTriangleIntersect(vec3 v0, vec3 v1, vec3 v2, vec3 rayDir, vec3 rayOrigin)
+bool rayTriangleIntersect(vec3 v0, vec3 v1, vec3 v2, vec3 rayDir, vec3 rayOrigin, float bias)
 {
-    const float EPSILON = 0.0000008;
-
     const vec3 edge1 = v1 - v0;
     const vec3 edge2 = v2 - v0;
 
     const vec3 h = cross(rayDir, edge2);
     const float a = dot(edge1, h);
 
-    if (a > -EPSILON && a < EPSILON)
+    if (a > -bias && a < bias)
     {
         return false;
     }
@@ -798,7 +790,7 @@ bool rayTriangleIntersect(vec3 v0, vec3 v1, vec3 v2, vec3 rayDir, vec3 rayOrigin
     }
 
     const float t = f * dot(edge2, q);
-    if (t > EPSILON && t < 1/EPSILON)
+    if (t > bias && t < 1/bias)
     {
         return true;
     }
