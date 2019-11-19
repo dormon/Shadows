@@ -12,18 +12,20 @@
 #include <GSSV/GSSV.hpp>
 #include <TSSV/TSSV.hpp>
 #include <SM/ShadowMapping.h>
+#include <FTS/FrustumTracedShadows.h>
 
 void initMethods(vars::Vars&vars){
   auto methods = vars.add<Methods>("methods");
-  methods->add<CubeShadowMapping>("cubeShadowMapping");
-  methods->add<cssv::CSSV       >("cssv"             );
-  methods->add<CSSVSOE          >("cssvsoe"          );
-  methods->add<Sintorn          >("sintorn"          );
-  methods->add<Sintorn2         >("sintorn2"         );
-  methods->add<rssv::RSSV       >("rssv"             );
-  methods->add<VSSV             >("vssv"             );
-  methods->add<RayTracing       >("rayTracing"       );
-  methods->add<GSSV				>("gssv"             );
-  methods->add<TSSV				>("tssv"             );
-  methods->add<ShadowMapping	>("sm"               );
+  methods->add<CubeShadowMapping    >("cubeShadowMapping");
+  methods->add<cssv::CSSV           >("cssv"             );
+  methods->add<CSSVSOE              >("cssvsoe"          );
+  methods->add<Sintorn              >("sintorn"          );
+  methods->add<Sintorn2             >("sintorn2"         );
+  methods->add<rssv::RSSV           >("rssv"             );
+  methods->add<VSSV                 >("vssv"             );
+  methods->add<RayTracing           >("rayTracing"       );
+  methods->add<GSSV				    >("gssv"             );
+  methods->add<TSSV				    >("tssv"             );
+  methods->add<ShadowMapping	    >("sm"               );
+  methods->add<FrustumTracedShadows	>("fts"              );
 }

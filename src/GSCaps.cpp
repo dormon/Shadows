@@ -13,6 +13,11 @@ GSCaps::GSCaps(vars::Vars& vars) :vars(vars)
 	_initCapsPrograms();
 }
 
+GSCaps::~GSCaps()
+{
+	vars.erase("gsCaps");
+}
+
 void GSCaps::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
 {
 	_initCapsBuffers();
