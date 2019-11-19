@@ -56,9 +56,9 @@ void FrustumTracedShadows::create(glm::vec4 const& lightPosition, glm::mat4 cons
 
 bool FrustumTracedShadows::IsConservativeRasterizationSupported() const
 {
-    s32 NumberOfExtensions;
+    int NumberOfExtensions;
     glGetIntegerv(GL_NUM_EXTENSIONS, &NumberOfExtensions);
-    for (s32 i = 0; i < NumberOfExtensions; i++) 
+    for (int i = 0; i < NumberOfExtensions; i++) 
     {
         const char* ccc = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
 
@@ -78,8 +78,8 @@ void FrustumTracedShadows::createBuffers()
 	unsigned int res = vars.getUint32("args.fts.resolution");
 	unsigned int depth = vars.getUint32("args.fts.depth");
 
-	vars.reCreate<Buffer>("fts.izb", res * res * depth * sizeof(u32));
-	vars.reCreate<Buffer>("fts.atomicCounter", res * res * sizeof(u32));
+	vars.reCreate<Buffer>("fts.izb", res * res * depth * sizeof(uint32_t));
+	vars.reCreate<Buffer>("fts.atomicCounter", res * res * sizeof(uint32_t));
 }
 
 void FrustumTracedShadows::createVao()
@@ -222,6 +222,7 @@ void FrustumTracedShadows::createShadowMask(glm::mat4 const& lightVP)
 	program->use();
 	program->setMatrix4fv("lightVP", glm::value_ptr(lightVP));
 	program->set4fv("lightPos", glm::value_ptr(*vars.get<glm::vec4>("lightPosition")));
+	program->set1f("bias", vars.getFloat("args.fts.bias"));
 
 	vars.get<GBuffer>("gBuffer")->position->bind(0);
 
