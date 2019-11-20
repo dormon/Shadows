@@ -99,9 +99,6 @@ void DPSV::clearAuxBuffer()
 	
 	glm::uvec4 const data = glm::uvec4(0, 4, 0, 0);
 	buffer->setData(glm::value_ptr(data));
-
-	buffer = vars.get<Buffer>("dpsv.objects.nodeBuffer");
-	buffer->clear(GL_R32UI, GL_RED, GL_INT);
 }
 
 void DPSV::setWindowViewport()
@@ -159,7 +156,18 @@ void DPSV::createShadowMask(glm::vec4 const& lightPosition)
 
 ge::gl::Program* DPSV::selectTraversalProgram() const
 {
-	return vars.get<Program>("dpsv.objects.traverseStack");
+	uint32_t const alg = vars.getUint32("dpsv.args.algVersion");
+
+	switch(alg)
+	{
+	case 1:
+		return vars.get<Program>("dpsv.objects.traverseStackless");
+	case 2:
+		return vars.get<Program>("dpsv.objects.traverseHybrid");
+	default:
+	case 0:
+		return vars.get<Program>("dpsv.objects.traverseStack");
+	}
 }
 
 
