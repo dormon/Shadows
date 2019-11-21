@@ -1,5 +1,3 @@
-#pragma once
-
 #include <DpsvShaders.h>
 #include <sstream>
 #include <string>
