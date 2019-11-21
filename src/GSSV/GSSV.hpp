@@ -21,5 +21,5 @@ private:
 
 	unsigned int getNofAttributes() const;
 
-	size_t	_nofEdges = 0;
+	size_t	NofEdges = 0;
 };

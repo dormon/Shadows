@@ -40,7 +40,7 @@ void GSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix,
     program->setMatrix4fv("mvp", glm::value_ptr(mvp), 1, GL_FALSE);
     program->set4fv("LightPosition", glm::value_ptr(lightPosition), 1);
 
-    glDrawArrays(GL_POINTS, 0, GLsizei(_nofEdges));
+    glDrawArrays(GL_POINTS, 0, GLsizei(NofEdges));
 
 	vars.get<VertexArray>("gssv.sidesVAO")->unbind();
 
@@ -65,19 +65,19 @@ void GSSV::createSidesVBO(vars::Vars& vars)
 
 	Model* model = vars.get<Model>("model");
 	std::vector<float> verts = model->getVertices();
-
+	
 	Adjacency const* ad = vars.get<Adjacency>("adjacency");
 
-	_nofEdges = ad->getNofEdges();
+	NofEdges = ad->getNofEdges();
 	unsigned const NumV = getNofAttributes();
 
 	Buffer* vbo = vars.reCreate<Buffer>("gssv.sidesVBO");
-	vbo->alloc(sizeof(float) * 4 * NumV * _nofEdges);
+	vbo->alloc(sizeof(float) * 4 * NumV * NofEdges);
 
 	float* Ptr = (float*)vbo->map();
 	std::vector<float> const vertices = ad->getVertices();
 
-	for (unsigned e = 0; e < _nofEdges; ++e)
+	for (unsigned e = 0; e < NofEdges; ++e)
 	{
 		//A
 		for (int k = 0; k < 3; ++k)
@@ -175,7 +175,7 @@ void GSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 	program->setMatrix4fv("mvp", glm::value_ptr(mvp), 1, GL_FALSE);
 	program->set4fv("LightPosition", glm::value_ptr(lightPosition), 1);
 
-	glDrawArrays(GL_POINTS,0, GLsizei(_nofEdges));
+	glDrawArrays(GL_POINTS,0, GLsizei(NofEdges));
 
 	vars.get<VertexArray>("gssv.sidesVAO")->unbind();
 }
