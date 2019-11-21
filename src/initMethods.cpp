@@ -14,6 +14,7 @@
 #include <SM/ShadowMapping.h>
 #include <FTS/FrustumTracedShadows.h>
 #include <OFTS/OmnidirFrustumTracedShadows.h>
+#include <DPSV/DPSV.h>
 
 void initMethods(vars::Vars&vars){
   auto methods = vars.add<Methods>("methods");
@@ -30,4 +31,5 @@ void initMethods(vars::Vars&vars){
   methods->add<ShadowMapping	          >("sm"               );
   methods->add<FrustumTracedShadows	      >("fts"              );
   methods->add<OmnidirFrustumTracedShadows>("ofts"             );
+  methods->add<DPSV                       >("dpsv"             );
 }
