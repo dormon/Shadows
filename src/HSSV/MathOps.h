@@ -38,9 +38,9 @@ namespace MathOps
 
 	int currentMultiplicity(const glm::vec3& A, const glm::vec3& B, const glm::vec3& O, const glm::vec4& L);
 
-	int calcEdgeMultiplicity(Adjacency* edges, size_t edgeIndex, const glm::vec3& lightPos);
+	int calcEdgeMultiplicity(Adjacency const* edges, size_t edgeIndex, const glm::vec3& lightPos);
 	
-	bool isEdgeSpaceAaabbIntersecting(const Plane& p1, const Plane& p2, const AABB& voxel);
+	bool isEdgeSpaceAaabbIntersecting(std::vector<Plane> const& planes, const AABB& voxel);
 
 	int ipow(int base, int exp);
 }

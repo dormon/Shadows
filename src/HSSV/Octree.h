@@ -8,7 +8,6 @@
 #define OCTREE_NUM_CHILDREN 8
 #define OCTREE_MAX_MULTIPLICITY 2
 
-
 class Octree
 {
 public:
@@ -32,8 +31,8 @@ public:
 	Node* getNode(uint32_t nodeID);
 	const Node* getNode(uint32_t nodeID) const;
 
-	bool nodeExists(uint32_t nodeID) const;
-	bool childrenExist(uint32_t nodeID) const;
+	//bool nodeExists(uint32_t nodeID) const;
+	//bool childrenExist(uint32_t nodeID) const;
 
 	uint32_t getDeepestLevel() const;
 	uint32_t getTotalNumNodes() const;
@@ -44,8 +43,7 @@ public:
 
 	void makeNodesFit();
 
-	void setCompressionLevel(uint32_t ratio) { TreeCompressionLevel = ratio; }
-	uint32_t getCompressionLevel() const { return TreeCompressionLevel; }
+	//uint32_t getCompressionLevel() const { return CompressionLevel; }
 	uint32_t getLevelSize(uint32_t level) const;
 
 	void printNodePathToRoot(int nodeId) const;
@@ -64,6 +62,6 @@ private:
 
 	std::vector<uint32_t> LevelSizesInclusiveSum;
 
-	uint32_t TreeCompressionLevel = 0;
+	//uint32_t CompressionLevel = 0;
 	uint32_t DeepestLevel;
 };

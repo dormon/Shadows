@@ -10,12 +10,16 @@ endif()
 add_library(HSSV STATIC
 	AdjacencyWrapper.h
 	AdjacencyWrapper.cpp
+	BitSet.h
+	BitSet.cpp
 	HSSV.cpp
 	HSSV.h
 	HssvParams.h
 	HssvParams.cpp
 	MathOps.h
 	MathOps.cpp
+	MultiplicityCoder.h
+	MultiplicityCoder.cpp
 	Node.h
 	Node.cpp
 	Octree.h

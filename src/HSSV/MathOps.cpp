@@ -73,7 +73,7 @@ int MathOps::currentMultiplicity(const glm::vec3& A, const glm::vec3& B, const g
 		return computeMult(A, B, O, L);
 }
 
-int MathOps::calcEdgeMultiplicity(Adjacency* edges, size_t edgeIndex, const glm::vec3& lightPos)
+int MathOps::calcEdgeMultiplicity(Adjacency const* edges, size_t edgeIndex, const glm::vec3& lightPos)
 {
 	glm::vec3 const& lowerPoint = getEdgeVertexLow(edges, edgeIndex);
 	glm::vec3 const& higherPoint = getEdgeVertexHigh(edges, edgeIndex);
@@ -90,12 +90,17 @@ int MathOps::calcEdgeMultiplicity(Adjacency* edges, size_t edgeIndex, const glm:
 	return multiplicity;
 }
 
-bool MathOps::isEdgeSpaceAaabbIntersecting(const Plane& p1, const Plane& p2, const AABB& voxel)
+bool MathOps::isEdgeSpaceAaabbIntersecting(std::vector<Plane> const& planes, const AABB& voxel)
 {
-	auto result1 = testAabbPlane(voxel, p1);
-	auto result2 = testAabbPlane(voxel, p2);
-
-	return (result1 == TestResult::INTERSECTS_ON || result2 == TestResult::INTERSECTS_ON);
+	for(auto const& plane : planes)
+	{
+		if(testAabbPlane(voxel, plane) == TestResult::INTERSECTS_ON)
+		{
+			return true;
+		}
+	}
+	
+	return false;
 }
 
 int MathOps::ipow(int base, int exp)
@@ -104,7 +109,10 @@ int MathOps::ipow(int base, int exp)
 	while (exp)
 	{
 		if (exp & 1)
+		{
 			result *= base;
+		}
+
 		exp >>= 1;
 		base *= base;
 	}

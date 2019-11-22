@@ -117,7 +117,7 @@ int Octree::GetCorrespondingChildIndexFromPoint(uint32_t nodeID, const glm::vec3
 	int r = (point.x >= centerPoint.x) + 2 * (point.y >= centerPoint.y) + 4 * (point.z >= centerPoint.z);
 	return r;
 }
-
+/*
 bool Octree::nodeExists(uint32_t nodeID) const
 {
 	return (nodeID < getTotalNumNodes()) && Nodes[nodeID].volume.isValid();
@@ -134,7 +134,7 @@ bool Octree::childrenExist(uint32_t nodeID) const
 
 	return nodeExists(startID);
 }
-
+*/
 void Octree::splitNode(uint32_t nodeID)
 {
 	AABB nodeVolume = getNodeVolume(nodeID);
