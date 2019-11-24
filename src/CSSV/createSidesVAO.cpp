@@ -1,11 +1,11 @@
-#include <CSSV/createDrawSidesVAO.h>
+#include <CSSV/createSidesVAO.h>
 #include <FunctionPrologue.h>
 #include <geGL/geGL.h>
 #include <ShadowMethod.h>
 
 using namespace ge::gl;
 
-void cssv::createDrawSidesVAO(vars::Vars&vars){
+void cssv::createSidesVAO(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method","cssv.method.silhouettes");
 
   auto silhouettes = vars.get<Buffer>("cssv.method.silhouettes");

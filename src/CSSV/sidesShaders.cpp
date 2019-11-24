@@ -1,4 +1,4 @@
-#include <CSSV/DrawSidesShaders.h>
+#include <CSSV/sidesShaders.h>
 
 std::string const cssv::drawVPSrc = R".(
 #version 450 core

@@ -1,5 +1,5 @@
 #include<CSSV/createDrawSidesProgram.h>
-#include<CSSV/DrawSidesShaders.h>
+#include<CSSV/sidesShaders.h>
 #include<FunctionPrologue.h>
 #include<geGL/geGL.h>
 

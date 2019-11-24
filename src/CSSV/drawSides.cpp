@@ -2,7 +2,7 @@
 #include <Vars/Vars.h>
 #include <CSSV/drawSides.h>
 #include <CSSV/createDrawSidesProgram.h>
-#include <CSSV/createDrawSidesVAO.h>
+#include <CSSV/createSidesVAO.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <geGL/StaticCalls.h>
 
@@ -15,7 +15,7 @@ void cssv::drawSides(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
-  cssv::createDrawSidesVAO(vars);
+  cssv::createSidesVAO(vars);
   cssv::createDrawSidesProgram(vars);
 
   auto dibo    = vars.get<Buffer     >("cssv.method.dibo"             );
