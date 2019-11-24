@@ -10,12 +10,13 @@ endif()
 add_library(HSSV STATIC
 	AdjacencyWrapper.h
 	AdjacencyWrapper.cpp
-	BitSet.h
-	BitSet.cpp
+	Defines.h
 	HSSV.cpp
 	HSSV.h
 	HssvParams.h
 	HssvParams.cpp
+	HighResolutionTimer.h
+	HighResolutionTimer.cpp
 	MathOps.h
 	MathOps.cpp
 	MultiplicityCoder.h
@@ -26,11 +27,33 @@ add_library(HSSV STATIC
 	Octree.cpp
 	Plane.h
 	Plane.cpp
+	SidesDrawerBase.h
+	SidesDrawerBase.cpp
 	CPU/CpuBuilder.h
 	CPU/CpuBuilder.cpp
+	CPU/CpuPotEdgePropagator.h
+	CPU/CpuPotEdgePropagator.cpp
+	CPU/CpuSidesDrawer.h
+	CPU/CpuSidesDrawer.cpp
+	CapsDrawer/HssvCapsDrawer.h
+	CapsDrawer/HssvCapsDrawer.cpp
+	CapsDrawer/HssvCapsDrawerShaders.h
 )
 
-source_group("CPU" FILES CPU/CpuBuilder.h CPU/CpuBuilder.cpp)
+source_group("CPU" FILES 
+	CPU/CpuBuilder.h 
+	CPU/CpuBuilder.cpp
+	CPU/CpuPotEdgePropagator.h
+	CPU/CpuPotEdgePropagator.cpp
+	CPU/CpuSidesDrawer.h
+	CPU/CpuSidesDrawer.cpp
+)
+
+source_group("CapsDrawer" FILES 
+	CapsDrawer/HssvCapsDrawer.h
+	CapsDrawer/HssvCapsDrawer.cpp
+	CapsDrawer/HssvCapsDrawerShaders.h
+)
 
 target_include_directories(HSSV PUBLIC ..)
 target_link_libraries(HSSV PUBLIC geGL::geGL)

@@ -17,6 +17,7 @@ protected:
 	void buildOctree();
 	void createCapsDrawer();
 	void resetMultiplicity();
+	void createSidesDrawer();
 
 	AABB createOctreeVolume() const;
 	AABB getSceneAabb() const;

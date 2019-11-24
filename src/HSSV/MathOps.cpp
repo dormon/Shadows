@@ -2,8 +2,6 @@
 #include <FastAdjacency.h>
 #include <AdjacencyWrapper.h>
 
-#define EDGE_IS_SILHOUETTE(sihlouettness) (int(sihlouettness) >= 2)
-
 bool MathOps::isInRange(float value, float min, float max)
 {
 	return (value >= min) && (value < max);
@@ -41,7 +39,7 @@ TestResult MathOps::testAabbPlane(const AABB& bbox, const Plane& plane)
 
 	const TestResult result = interpretResult(testPlanePoint(plane, points[0]));
 
-	for (uint32_t i = 1; i < 8; ++i)
+	for (u32 i = 1; i < 8; ++i)
 	{
 		TestResult r = interpretResult(testPlanePoint(plane, points[i]));
 
@@ -52,18 +50,20 @@ TestResult MathOps::testAabbPlane(const AABB& bbox, const Plane& plane)
 	return result;
 }
 
-int MathOps::greaterVec(const glm::vec3& a, const glm::vec3& b)
+s32 MathOps::greaterVec(const glm::vec3& a, const glm::vec3& b)
 {
 	return int(glm::dot(glm::vec3(glm::sign(a - b)), glm::vec3(4, 2, 1)));
 }
 
 int MathOps::computeMult(const glm::vec3& A, const glm::vec3& B, const glm::vec3& C, const glm::vec4& L)
 {
-	glm::vec3 n = glm::cross(C - A, glm::vec3(L) - A * L.w);
+	//glm::vec3 n = glm::cross(C - A, glm::vec3(L) - A * L.w);
+	//return int(glm::sign(dot(n, B - A)));
+	glm::vec3 n = crossProduct(C - A, glm::vec3(L) - A * L.w);
 	return int(glm::sign(dot(n, B - A)));
 }
 
-int MathOps::currentMultiplicity(const glm::vec3& A, const glm::vec3& B, const glm::vec3& O, const glm::vec4& L)
+s32 MathOps::currentMultiplicity(const glm::vec3& A, const glm::vec3& B, const glm::vec3& O, const glm::vec4& L)
 {
 	if (greaterVec(A, O) > 0)
 		return computeMult(O, A, B, L);
@@ -73,18 +73,19 @@ int MathOps::currentMultiplicity(const glm::vec3& A, const glm::vec3& B, const g
 		return computeMult(A, B, O, L);
 }
 
-int MathOps::calcEdgeMultiplicity(Adjacency const* edges, size_t edgeIndex, const glm::vec3& lightPos)
+s32 MathOps::calcEdgeMultiplicity(Adjacency const* edges, u32 edgeIndex, const glm::vec3& lightPos)
 {
 	glm::vec3 const& lowerPoint = getEdgeVertexLow(edges, edgeIndex);
 	glm::vec3 const& higherPoint = getEdgeVertexHigh(edges, edgeIndex);
 	
-	const size_t nofOpposites = edges->getNofOpposite(edgeIndex);
-	int multiplicity = 0;
-	const glm::vec4 L = glm::vec4(lightPos, 1);
+	size_t const nofOpposites = edges->getNofOpposite(edgeIndex);
+	glm::vec4 const L = glm::vec4(lightPos, 1);
+	s32 multiplicity = 0;
 
 	for (size_t i = 0; i < nofOpposites; ++i)
 	{
-		multiplicity += currentMultiplicity(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, i), L);
+		//multiplicity += currentMultiplicity(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
+		multiplicity += computeMult(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
 	}
 
 	return multiplicity;
@@ -103,9 +104,9 @@ bool MathOps::isEdgeSpaceAaabbIntersecting(std::vector<Plane> const& planes, con
 	return false;
 }
 
-int MathOps::ipow(int base, int exp)
+s32 MathOps::ipow(s32 base, s32 exp)
 {
-	int result = 1;
+	s32 result = 1;
 	while (exp)
 	{
 		if (exp & 1)
@@ -118,4 +119,31 @@ int MathOps::ipow(int base, int exp)
 	}
 
 	return result;
+}
+
+s8 MathOps::findFirstSet(u8 num)
+{
+	if(num==0)
+	{
+		return -1;
+	}
+
+	u8 cnt = 0;
+	while((num & 1)==0)
+	{
+		cnt++;
+		num >>= 1;
+	}
+
+	return cnt;
+}
+
+u32 MathOps::getMaxNofSignedBits(u32 num)
+{
+	return u32(ceil(log2(num))) + 2;
+}
+
+glm::vec3 MathOps::crossProduct(glm::vec3 const& a, glm::vec3 const& b)
+{
+	return glm::vec3(a.y * b.z - a.z*b.y, a.z*b.x - a.x * b.z, a.x*b.y - a.y*b.x);
 }

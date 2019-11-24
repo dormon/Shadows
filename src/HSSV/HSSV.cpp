@@ -1,11 +1,17 @@
 #include <HSSV.h>
 #include <Octree.h>
 #include <CPU/CpuBuilder.h>
+#include <Defines.h>
 
 #include <GSCaps.h>
+#include <CapsDrawer/HssvCapsDrawer.h>
+
 #include <Model.h>
 #include <FunctionPrologue.h>
 #include <createAdjacency.h>
+#include <MathOps.h>
+
+#include <CPU/CpuSidesDrawer.h>
 
 HSSV::HSSV(vars::Vars& vars) : ShadowVolumes(vars)
 {
@@ -21,13 +27,24 @@ void HSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 	resetMultiplicity();
 	createAdjacency(vars);
 	buildOctree();
+	createSidesDrawer();
+
+	vars.get<CpuSidesDrawer>("hssv.objects.sidesDrawer")->drawSides(projectionMatrix * viewMatrix, lightPosition);
 }
 
 void HSSV::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
 {
 	createCapsDrawer();
 
-	vars.get<GSCaps>("hssv.objects.capsDrawer")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
+	if(vars.getBool("hssv.args.capsHssv"))
+	{
+		vars.get<HssvCapsDrawer>("hssv.objects.capsDrawerHssv")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
+	}
+	else
+	{
+		vars.get<GSCaps>("hssv.objects.capsDrawer")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
+
+	}
 }
 
 void HSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
@@ -37,15 +54,24 @@ void HSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix,
 
 void HSSV::buildOctree()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "renderModel", "hssv.args.buildOnCpu", "hssv.args.octreeDepth", "hssv.args.sceneScale", "hssv.args.compressionLevel");
+	FUNCTION_PROLOGUE("hssv.objects", 
+		"renderModel", 
+		"maxMultiplicity",
+		"hssv.args.buildCpu", 
+		"hssv.args.octreeDepth", 
+		"hssv.args.sceneScale", 
+		"hssv.args.noCompression");
 
 	AABB const volume = createOctreeVolume();
-	Octree* octree = vars.reCreate<Octree>("hssv.objects.octree", vars.getUint32("hssv.args.octreeDepth"), volume);
+	Octree* octree = vars.reCreate<Octree>("hssv.objects.octree", vars.getUint32("hssv.args.octreeDepth"), volume); 
+	Adjacency* ad = vars.get<Adjacency>("adjacency");
+	u32 const multiplicityBits = MathOps::getMaxNofSignedBits(vars.getUint32("maxMultiplicity"));
+	bool const isCompressed = !vars.getBool("hssv.args.noCompression");
 
-	if(vars.getBool("hssv.args.buildOnCpu"))
+	if(vars.getBool("hssv.args.buildCpu"))
 	{
 		CpuBuilder builder;
-		builder.fillOctree(octree, vars.get<Adjacency>("adjacency"));
+		builder.fillOctree(octree, ad, multiplicityBits, isCompressed);
 	}
 	else
 	{
@@ -58,20 +84,37 @@ void HSSV::createCapsDrawer()
 	FUNCTION_PROLOGUE("hssv.objects", "renderModel");
 
 	vars.reCreate<GSCaps>("hssv.objects.capsDrawer", vars);
+	vars.reCreate<HssvCapsDrawer>("hssv.objects.capsDrawerHssv", vars.get<Adjacency>("adjacency"));
 }
 
-//We want max multiplicity of 2 at all times
 void HSSV::resetMultiplicity()
 {
-	//PREROBIT na 24-bit
 	FUNCTION_PROLOGUE("hssv.objects", "renderModel", "maxMultiplicity");
 
-	uint32_t const maxMult = vars.getUint32("maxMultiplicity");
+	u32 const maxMult = vars.getUint32("maxMultiplicity");
 
-	if(maxMult!=2)
+	u32 const multiplicityBits = MathOps::getMaxNofSignedBits(maxMult);
+
+	if(multiplicityBits > 8)
 	{
-		*vars.get<uint32_t>("maxMultiplicity") = 2;
+		std::cerr << "Multiplicity too high! Resetting multiplicity to 2" << std::endl;
+		*vars.get<u32>("maxMultiplicity") = 2;
 		vars.updateTicks("maxMultiplicity");
+	}
+}
+
+void HSSV::createSidesDrawer()
+{
+	FUNCTION_PROLOGUE("hssv.objects", "renderModel", "maxMultiplicity", "hssv.args.drawCpu", "adjacency");
+
+	Octree* octree = vars.get<Octree>("hssv.objects.octree");
+	Adjacency* ad = vars.get<Adjacency>("adjacency");
+	u32 const maxMultiplicity = vars.getUint32("maxMultiplicity");
+
+	//TODO zistit ci sa da vytvorit aj dedeny typ do base class
+	if(vars.getBool("hssv.args.drawCpu"))
+	{
+		vars.reCreate<CpuSidesDrawer>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity);
 	}
 }
 
@@ -103,7 +146,7 @@ AABB HSSV::getSceneAabb() const
 
 	AABB bbox;
 
-	for (unsigned int i = 0; i < nofVertices; ++i)
+	for (u32 i = 0; i < nofVertices; ++i)
 	{
 		bbox.addVertex(verts[i]);
 	}

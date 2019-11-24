@@ -6,7 +6,7 @@
 #include <string>
 
 
-Octree::Octree(uint32_t deepestLevel, const AABB& volume)
+Octree::Octree(u32 deepestLevel, const AABB& volume)
 {
 	DeepestLevel = deepestLevel;
 
@@ -19,11 +19,11 @@ void Octree::GenerateLevelSizes()
 {
 	LevelSizesInclusiveSum.clear();
 
-	uint32_t prefixSum = 0;
+	u32 prefixSum = 0;
 
-	for (uint32_t i = 0; i <= DeepestLevel; ++i)
+	for (u32 i = 0; i <= DeepestLevel; ++i)
 	{
-		const uint32_t levelSize = MathOps::ipow(OCTREE_NUM_CHILDREN, i);
+		const u32 levelSize = MathOps::ipow(OCTREE_NUM_CHILDREN, i);
 		LevelSizesInclusiveSum.push_back(levelSize + prefixSum);
 		prefixSum += levelSize;
 	}
@@ -40,7 +40,7 @@ void Octree::Init(const AABB& volume)
 	ExpandWholeOctree();
 }
 
-Node* Octree::getNode(uint32_t nodeID)
+Node* Octree::getNode(u32 nodeID)
 {
 	if (nodeID > getTotalNumNodes() || !Nodes[nodeID].volume.isValid())
 	{
@@ -50,7 +50,7 @@ Node* Octree::getNode(uint32_t nodeID)
 	return &(Nodes[nodeID]);
 }
 
-const Node* Octree::getNode(uint32_t nodeID) const
+const Node* Octree::getNode(u32 nodeID) const
 {
 	if (nodeID > getTotalNumNodes() || !Nodes[nodeID].volume.isValid())
 	{
@@ -60,7 +60,7 @@ const Node* Octree::getNode(uint32_t nodeID) const
 	return &(Nodes[nodeID]);
 }
 
-AABB Octree::getNodeVolume(uint32_t nodeID) const
+AABB Octree::getNodeVolume(u32 nodeID) const
 {
 	assert(nodeExists(nodeID));
 	
@@ -74,7 +74,7 @@ AABB Octree::getNodeVolume(uint32_t nodeID) const
 	return AABB();
 }
 
-int Octree::getNodeParent(uint32_t nodeID) const
+s32 Octree::getNodeParent(u32 nodeID) const
 {
 	if (nodeID == 0)
 	{
@@ -84,7 +84,7 @@ int Octree::getNodeParent(uint32_t nodeID) const
 	return int(floor((nodeID - 1.f) / OCTREE_NUM_CHILDREN));
 }
 /*
-int Octree::getNodeRecursionLevel(uint32_t nodeID) const
+int Octree::getNodeRecursionLevel(u32 nodeID) const
 {
 	int level = 0;
 	for(auto size : _levelSizesInclusiveSum)
@@ -98,32 +98,33 @@ int Octree::getNodeRecursionLevel(uint32_t nodeID) const
 	return -1;
 }
 
-int Octree::getNodeIdInLevel(uint32_t nodeID) const
+int Octree::getNodeIdInLevel(u32 nodeID) const
 {
 	int level = getNodeRecursionLevel(nodeID);
 
 	return level > 0 ? getNodeIdInLevel(nodeID, level) : -1;
 }
 
-int Octree::getNodeIdInLevel(uint32_t nodeID, uint32_t level) const
+int Octree::getNodeIdInLevel(u32 nodeID, u32 level) const
 {
 	return nodeID - getNumNodesInPreviousLevels(level);
 }
 */
-int Octree::GetCorrespondingChildIndexFromPoint(uint32_t nodeID, const glm::vec3& point) const
+s32 Octree::GetCorrespondingChildIndexFromPoint(u32 nodeID, const glm::vec3& point) const
 {
 	const glm::vec3 centerPoint = getNodeVolume(nodeID).getCenter();
 
-	int r = (point.x >= centerPoint.x) + 2 * (point.y >= centerPoint.y) + 4 * (point.z >= centerPoint.z);
+	s32 r = (point.x >= centerPoint.x) + 2 * (point.y >= centerPoint.y) + 4 * (point.z >= centerPoint.z);
 	return r;
 }
-/*
-bool Octree::nodeExists(uint32_t nodeID) const
+
+bool Octree::nodeExists(u32 nodeID) const
 {
 	return (nodeID < getTotalNumNodes()) && Nodes[nodeID].volume.isValid();
 }
 
-bool Octree::childrenExist(uint32_t nodeID) const
+/*
+bool Octree::childrenExist(u32 nodeID) const
 {
 	int startID = getChildrenStartingId(nodeID);
 
@@ -135,24 +136,24 @@ bool Octree::childrenExist(uint32_t nodeID) const
 	return nodeExists(startID);
 }
 */
-void Octree::splitNode(uint32_t nodeID)
+void Octree::splitNode(u32 nodeID)
 {
 	AABB nodeVolume = getNodeVolume(nodeID);
 
-	const int startingIndex = getChildrenStartingId(nodeID);
+	const s32 startingIndex = getChildrenStartingId(nodeID);
 
-	for (uint32_t i = 0; i < OCTREE_NUM_CHILDREN; ++i)
+	for (u32 i = 0; i < OCTREE_NUM_CHILDREN; ++i)
 	{
 		CreateChild(nodeVolume, startingIndex + i, i);
 	}
 }
 
-int Octree::getChildrenStartingId(uint32_t nodeID) const
+s32 Octree::getChildrenStartingId(u32 nodeID) const
 {
 	return OCTREE_NUM_CHILDREN * nodeID + 1;
 }
 
-void Octree::CreateChild(const AABB& parentSpace, uint32_t newNodeId, uint32_t indexWithinParent)
+void Octree::CreateChild(const AABB& parentSpace, u32 newNodeId, u32 indexWithinParent)
 {
 	assert(!nodeExists(newNodeId));
 
@@ -176,38 +177,41 @@ void Octree::CreateChild(const AABB& parentSpace, uint32_t newNodeId, uint32_t i
 	Nodes[newNodeId] = n;
 }
 
-int Octree::getNodeIndexWithinParent(uint32_t nodeID) const
+s32 Octree::getNodeIndexWithinParent(u32 nodeID) const
 {
-	const int parent = getNodeParent(nodeID);
+	s32 const parent = getNodeParent(nodeID);
 
-	assert(parent >= 0);
+	if(parent<0)
+	{
+		return 0;
+	}
 
 	return getNodeIndexWithinParent(nodeID, parent);
 }
 
-int Octree::getNodeIndexWithinParent(uint32_t nodeID, uint32_t parent) const
+s32 Octree::getNodeIndexWithinParent(u32 nodeID, u32 parent) const
 {
 	const int startID = getChildrenStartingId(parent);
 
 	return nodeID - startID;
 }
 
-bool Octree::IsPointInsideOctree(const glm::vec3& point) const
+bool Octree::isPointInsideOctree(const glm::vec3& point) const
 {
 	return MathOps::testAabbPointIsInsideOrOn(Nodes[0].volume, point);
 }
 
-uint32_t Octree::getDeepestLevel() const
+u32 Octree::getDeepestLevel() const
 {
 	return DeepestLevel;
 }
 
-uint32_t Octree::getTotalNumNodes() const
+u32 Octree::getTotalNumNodes() const
 {
 	return LevelSizesInclusiveSum[DeepestLevel];
 }
 
-int Octree::getLevelFirstNodeID(uint32_t level) const
+s32 Octree::getLevelFirstNodeID(u32 level) const
 {
 	if (level > DeepestLevel)
 	{
@@ -222,7 +226,7 @@ int Octree::getLevelFirstNodeID(uint32_t level) const
 	return LevelSizesInclusiveSum[level - 1];
 }
 
-int Octree::getNumNodesInLevel(uint32_t level) const
+s32 Octree::getNumNodesInLevel(u32 level) const
 {
 	if (level > DeepestLevel)
 	{
@@ -235,9 +239,13 @@ int Octree::getNumNodesInLevel(uint32_t level) const
 uint64_t Octree::getOctreeSizeBytes() const
 {
 	uint64_t numIndices = 0;
+	uint64_t numMasks = 0;
 
 	for(const auto& node : Nodes)
 	{
+		numMasks += node.edgesAlwaysCastMap.size();
+		numMasks += node.edgesMayCastMap.size();
+
 		for (const auto& item : node.edgesAlwaysCastMap)
 		{
 			numIndices += item.second.size();
@@ -249,7 +257,7 @@ uint64_t Octree::getOctreeSizeBytes() const
 		}
 	}
 
-	return sizeof(uint32_t) * numIndices;
+	return sizeof(u32) * numIndices + numMasks;
 }
 
 void Octree::makeNodesFit()
@@ -259,18 +267,18 @@ void Octree::makeNodesFit()
 
 void Octree::ExpandWholeOctree()
 {
-	std::stack<uint32_t> nodeStack;
-	std::stack<int32_t> levelStack;
+	std::stack<u32> nodeStack;
+	std::stack<s32> levelStack;
 
 	nodeStack.push(0);
 	levelStack.push(0);
 
-	int const deepestLevel = getDeepestLevel();
+	s32 const deepestLevel = getDeepestLevel();
 
 	while (!nodeStack.empty())
 	{
-		const uint32_t node = nodeStack.top();
-		const int32_t currentLevel = levelStack.top();
+		const u32 node = nodeStack.top();
+		const s32 currentLevel = levelStack.top();
 		
 		nodeStack.pop();
 		levelStack.pop();
@@ -280,7 +288,7 @@ void Octree::ExpandWholeOctree()
 		if (currentLevel < (deepestLevel - 1))
 		{
 			const auto startingChild = getChildrenStartingId(node);
-			for (int i = 0; i < OCTREE_NUM_CHILDREN; ++i)
+			for (s32 i = 0; i < OCTREE_NUM_CHILDREN; ++i)
 			{
 				nodeStack.push(startingChild + i);
 				levelStack.push(currentLevel + 1);
@@ -291,7 +299,7 @@ void Octree::ExpandWholeOctree()
 	makeNodesFit();
 }
 
-uint32_t Octree::getLevelSize(uint32_t level) const
+u32 Octree::getLevelSize(u32 level) const
 {
 	if (level > getDeepestLevel())
 	{
@@ -301,7 +309,22 @@ uint32_t Octree::getLevelSize(uint32_t level) const
 	return MathOps::ipow(OCTREE_NUM_CHILDREN, level);
 }
 
-void Octree::printNodePathToRoot(int nodeId) const
+u32 Octree::getNumNodesInPreviousLevels(s32 level) const
+{
+	const int l = level - 1;
+
+	assert(l < s32(LevelSizesInclusiveSum.size()));
+
+	if (l < 0 || l>s32(DeepestLevel))
+	{
+		return 0;
+	}
+
+	return LevelSizesInclusiveSum[l];
+}
+
+
+void Octree::printNodePathToRoot(s32 nodeId) const
 {
 	std::cout << "Node path: ";
 	while (nodeId >= 0)

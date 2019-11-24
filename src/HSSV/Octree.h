@@ -5,48 +5,49 @@
 #include <vector>
 #include <map>
 
-#define OCTREE_NUM_CHILDREN 8
-#define OCTREE_MAX_MULTIPLICITY 2
+//#define OCTREE_MAX_MULTIPLICITY 2
 
 class Octree
 {
 public:
 
-	Octree(uint32_t maxRecursionDepth, const AABB& volume);
+	Octree(u32 maxRecursionDepth, const AABB& volume);
 
-	AABB getNodeVolume(uint32_t index) const;
+	AABB getNodeVolume(u32 index) const;
 
-	int getNodeParent(uint32_t nodeID) const;
-	int getChildrenStartingId(uint32_t nodeID) const;
-	int getNodeIndexWithinParent(uint32_t nodeID) const;
-	int getNodeIndexWithinParent(uint32_t nodeID, uint32_t parent) const;
+	s32 getNodeParent(u32 nodeID) const;
+	s32 getChildrenStartingId(u32 nodeID) const;
+	s32 getNodeIndexWithinParent(u32 nodeID) const;
+	s32 getNodeIndexWithinParent(u32 nodeID, u32 parent) const;
+
+	u32 getNumNodesInPreviousLevels(s32 level) const;
 	/*
-	int getNodeRecursionLevel(uint32_t nodeID) const;
-	int getNodeIdInLevel(uint32_t nodeID) const;
-	int getNodeIdInLevel(uint32_t nodeID, uint32_t level) const;
-	std::vector<uint32_t> getLevelSizeInclusiveSum() const { return _levelSizesInclusiveSum; }
+	s32 getNodeRecursionLevel(u32 nodeID) const;
+	s32 getNodeIdInLevel(u32 nodeID) const;
+	s32 getNodeIdInLevel(u32 nodeID, u32 level) const;
+	std::vector<u32> getLevelSizeInclusiveSum() const { return _levelSizesInclusiveSum; }
 	*/
-	void splitNode(uint32_t nodeID);
+	void splitNode(u32 nodeID);
 
-	Node* getNode(uint32_t nodeID);
-	const Node* getNode(uint32_t nodeID) const;
+	Node* getNode(u32 nodeID);
+	const Node* getNode(u32 nodeID) const;
 
-	//bool nodeExists(uint32_t nodeID) const;
-	//bool childrenExist(uint32_t nodeID) const;
+	bool nodeExists(u32 nodeID) const;
 
-	uint32_t getDeepestLevel() const;
-	uint32_t getTotalNumNodes() const;
-	int getLevelFirstNodeID(uint32_t level) const;
-	int getNumNodesInLevel(uint32_t level) const;
+	u32 getDeepestLevel() const;
+	u32 getTotalNumNodes() const;
+	s32 getLevelFirstNodeID(u32 level) const;
+	s32 getNumNodesInLevel(u32 level) const;
 
 	uint64_t getOctreeSizeBytes() const;
 
 	void makeNodesFit();
 
-	//uint32_t getCompressionLevel() const { return CompressionLevel; }
-	uint32_t getLevelSize(uint32_t level) const;
+	u32 getLevelSize(u32 level) const;
 
-	void printNodePathToRoot(int nodeId) const;
+	void printNodePathToRoot(s32 nodeId) const;
+
+	bool isPointInsideOctree(const glm::vec3& point) const;
 
 private:
 
@@ -54,14 +55,12 @@ private:
 	void Init(const AABB& volume);
 	void ExpandWholeOctree();
 
-	void CreateChild(const AABB& parentSpace, uint32_t childID, uint32_t indexWithinParent);
-	int  GetCorrespondingChildIndexFromPoint(uint32_t nodeID, const glm::vec3& point) const;
-	bool IsPointInsideOctree(const glm::vec3& point) const;
+	void CreateChild(const AABB& parentSpace, u32 childID, u32 indexWithinParent);
+	s32  GetCorrespondingChildIndexFromPoint(u32 nodeID, const glm::vec3& point) const;
 
 	std::vector<Node> Nodes;
 
-	std::vector<uint32_t> LevelSizesInclusiveSum;
+	std::vector<u32> LevelSizesInclusiveSum;
 
-	//uint32_t CompressionLevel = 0;
-	uint32_t DeepestLevel;
+	u32 DeepestLevel;
 };

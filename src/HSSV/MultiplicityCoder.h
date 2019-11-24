@@ -1,18 +1,18 @@
 #pragma once
 
-#include <stdint.h>
+#include <Defines.h>
 
 class MultiplicityCoder
 {
 public:
-	MultiplicityCoder(uint32_t bitsPerMultiplicity);
+	MultiplicityCoder(u32 bitsPerMultiplicity);
 
-	int32_t encodeEdgeMultiplicityToId(uint32_t edgeID, int multiplicity);
-	int32_t decodeEdgeMultiplicityFromId(int32_t edgeWithEncodedMultiplicity);
-	int32_t decodeEdgeFromEncoded(int32_t edgeWithEncodedMultiplicity);
+	u32 encodeEdgeMultiplicityToId(u32 edgeID, s32 multiplicity);
+	s32 decodeEdgeMultiplicityFromId(u32 edgeWithEncodedMultiplicity);
+	u32 decodeEdgeFromEncoded(u32 edgeWithEncodedMultiplicity);
 
 private:
-	uint32_t BitsPerMultiplicity;
-	int32_t BitMask;
-	int32_t MaxAbsMultiplicity;
+	u32 BitsPerMultiplicity;
+	u32 BitMask;
+	u32 MaxAbsMultiplicity;
 };
