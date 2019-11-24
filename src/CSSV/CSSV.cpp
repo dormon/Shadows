@@ -29,8 +29,8 @@ void createExtractSilhouetteMethod(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method"
       ,"cssv.param.usePlanes"
       ,"cssv.param.useInterleaving"
-      ,"adjacency"
       ,"cssv.param.alignment"
+      ,"adjacency"
       );
   if(vars.getBool("cssv.param.usePlanes")){
     if(vars.getBool("cssv.param.useInterleaving"))
@@ -70,6 +70,6 @@ void CSSV::drawCaps(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
-  cssv::drawCaps(vars,lightPosition,viewMatrix,projectionMatrix);
+  cssv::caps::draw(vars,lightPosition,viewMatrix,projectionMatrix);
 }
 

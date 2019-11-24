@@ -15,7 +15,7 @@ using namespace std;
 using namespace ge::gl;
 using namespace glm;
 
-void cssv::drawCaps(
+void cssv::caps::draw(
     vars::Vars&vars,
     glm::vec4 const&lightPosition   ,
     glm::mat4 const&viewMatrix      ,

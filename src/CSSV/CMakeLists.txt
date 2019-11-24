@@ -30,19 +30,9 @@ add_library(CSSV STATIC
   createSidesVAO.h
   drawSides.cpp
   drawSides.h
-
-  caps/shaders.cpp
-  caps/shaders.h
-  caps/createProgram.cpp
-  caps/createProgram.h
-  caps/createBuffer.cpp
-  caps/createBuffer.h
-  caps/createVAO.cpp
-  caps/createVAO.h
-  caps/draw.cpp
-  caps/draw.h
-
-
   )
+
+add_subdirectory(caps)
+
 target_include_directories(CSSV PUBLIC ..)
-target_link_libraries(CSSV PUBLIC geGL::geGL)
+target_link_libraries(CSSV PUBLIC geGL::geGL CSSV_caps)
