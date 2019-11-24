@@ -2,6 +2,6 @@
 
 #include<Vars/Fwd.h>
 
-namespace cssv{
-void createCapsBuffer(vars::Vars&vars);
+namespace cssv::caps{
+void createBuffer(vars::Vars&vars);
 }

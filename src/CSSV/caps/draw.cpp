@@ -20,13 +20,13 @@ void cssv::caps::draw(
     glm::vec4 const&lightPosition   ,
     glm::mat4 const&viewMatrix      ,
     glm::mat4 const&projectionMatrix){
-  createCapsProgram(vars);
-  createCapsBuffer(vars);
-  createCapsVAO(vars);
+  createProgram(vars);
+  createBuffer(vars);
+  createVAO(vars);
 
-  auto adj          = vars.get<Adjacency>("adjacency");
-  auto program      = vars.get<Program>("cssv.method.caps.program");
-  auto vao          = vars.get<VertexArray>("cssv.method.caps.vao");
+  auto adj     = vars.get<Adjacency  >("adjacency"               );
+  auto program = vars.get<Program    >("cssv.method.caps.program");
+  auto vao     = vars.get<VertexArray>("cssv.method.caps.vao"    );
 
   auto nofTriangles = adj->getNofTriangles();
 

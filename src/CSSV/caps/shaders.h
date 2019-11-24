@@ -2,9 +2,9 @@
 
 #include<iostream>
 
-namespace cssv{
+namespace cssv::caps{
 
-std::string const extern capsVPSrc;
-std::string const extern capsGPSrc;
+std::string const extern vpSrc;
+std::string const extern gpSrc;
 
 }

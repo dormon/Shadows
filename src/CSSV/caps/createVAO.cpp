@@ -8,7 +8,7 @@
 using namespace std;
 using namespace ge::gl;
 
-void cssv::createCapsVAO(vars::Vars&vars){
+void cssv::caps::createVAO(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method","cssv.method.caps.buffer");
 
   auto caps = vars.get<Buffer>("cssv.method.caps.buffer");

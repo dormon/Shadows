@@ -11,7 +11,7 @@
 using namespace std;
 using namespace ge::gl;
 
-void cssv::createCapsBuffer(vars::Vars&vars){
+void cssv::caps::createBuffer(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method","adjacency");
 
   auto adj = vars.get<Adjacency>("adjacency");

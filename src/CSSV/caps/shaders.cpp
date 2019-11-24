@@ -1,13 +1,13 @@
 #include<CSSV/caps/shaders.h>
 
-std::string const cssv::capsVPSrc = R".(
+std::string const cssv::caps::vpSrc = R".(
 #version 450 core
 layout(location=0)in vec4 Position;
 void main(){
   gl_Position=Position;
 }).";
 
-std::string const cssv::capsGPSrc = R".(
+std::string const cssv::caps::gpSrc = R".(
 
 #define SHIFT_TRIANGLE_TO_INFINITY
 

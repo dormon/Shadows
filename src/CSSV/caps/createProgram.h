@@ -2,6 +2,6 @@
 
 #include <Vars/Fwd.h>
 
-namespace cssv{
-void createCapsProgram(vars::Vars&vars);
+namespace cssv::caps{
+void createProgram(vars::Vars&vars);
 }
