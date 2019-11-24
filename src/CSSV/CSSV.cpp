@@ -7,10 +7,6 @@
 #include <Model.h>
 #include <TimeStamp.h>
 
-#include<CSSV/DrawCaps.h>
-#include<CSSV/DrawCapsProgram.h>
-#include<CSSV/DrawSidesProgram.h>
-#include<CSSV/DrawCaps.h>
 #include<CSSV/extractSilhouettes.h>
 #include<CSSV/createDIBO.h>
 #include<CSSV/createBasicEdges.h>
@@ -18,6 +14,7 @@
 #include<CSSV/createPlanesEdges.h>
 #include<CSSV/createInterleavedPlanesEdges.h>
 #include<CSSV/drawSides.h>
+#include<CSSV/drawCaps.h>
 #include<FunctionPrologue.h>
 #include<createAdjacency.h>
 
@@ -43,12 +40,6 @@ void createExtractSilhouetteMethod(vars::Vars&vars){
   createSilhouetteBuffer(vars);
 }
 
-
-void createDrawCaps(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method","adjacency");
-  auto const adj = vars.get<Adjacency>("adjacency");
-  vars.reCreate<DrawCaps>("cssv.method.drawCaps",adj);
-}
 
 CSSV::CSSV(vars::Vars&vars):
   ShadowVolumes(vars  )
@@ -77,8 +68,6 @@ void CSSV::drawCaps(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
-  createDrawCaps(vars);
-  auto caps = vars.get<DrawCaps>("cssv.method.drawCaps");
-  caps->draw(lightPosition,viewMatrix,projectionMatrix);
+  cssv::drawCaps(vars,lightPosition,viewMatrix,projectionMatrix);
 }
 

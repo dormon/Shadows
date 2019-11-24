@@ -6,14 +6,12 @@
 #include<Vars/Vars.h>
 #include<FastAdjacency.h>
 #include<CSSV/Fwd.h>
+#include<Vars/Vars.h>
 
 class cssv::DrawCaps{
   public:
-    std::shared_ptr<ge::gl::Buffer     >caps   ;
-    std::shared_ptr<ge::gl::VertexArray>vao    ;
-    std::shared_ptr<ge::gl::Program    >program;
-    size_t nofTriangles = 0;
-    DrawCaps(Adjacency const*adj);
+    vars::Vars&vars;
+    DrawCaps(Adjacency const*adj,vars::Vars&vars);
     void draw(
         glm::vec4 const&lightPosition   ,
         glm::mat4 const&viewMatirx      ,

@@ -6,14 +6,8 @@ add_library(CSSV STATIC
   InterleavedPlanesShader.h
   CSSV.cpp
   CSSV.h
-  DrawSidesProgram.cpp
-  DrawSidesProgram.h
   DrawCapsShaders.cpp
   DrawCapsShaders.h
-  DrawCapsProgram.cpp
-  DrawCapsProgram.h
-  DrawCaps.cpp
-  DrawCaps.h
   DrawSidesShaders.cpp
   DrawSidesShaders.h
   Param.cpp
@@ -38,6 +32,15 @@ add_library(CSSV STATIC
   createDrawSidesVAO.h
   drawSides.cpp
   drawSides.h
+  createCapsProgram.cpp
+  createCapsProgram.h
+  createCapsBuffer.cpp
+  createCapsBuffer.h
+  createCapsVAO.cpp
+  createCapsVAO.h
+  drawCaps.cpp
+  drawCaps.h
+
 
   )
 target_include_directories(CSSV PUBLIC ..)

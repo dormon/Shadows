@@ -1,22 +1,20 @@
-#include<CSSV/DrawCaps.h>
-#include<CSSV/DrawCapsProgram.h>
-#include<ShadowVolumes.h>
+#include<drawCaps.h>
+#include<Vars/Vars.h>
 #include<geGL/StaticCalls.h>
+#include<geGL/geGL.h>
+#include<FastAdjacency.h>
+#include<glm/gtc/type_ptr.hpp>
+
 #include<CSSV/createCapsProgram.h>
 #include<CSSV/createCapsBuffer.h>
 #include<CSSV/createCapsVAO.h>
 
-#include<Simplex.h>
-
 using namespace std;
 using namespace ge::gl;
 using namespace glm;
-using namespace cssv;
 
-DrawCaps::DrawCaps(Adjacency const*adj,vars::Vars&vars):vars(vars){
-}
-
-void DrawCaps::draw(
+void cssv::drawCaps(
+    vars::Vars&vars,
     glm::vec4 const&lightPosition   ,
     glm::mat4 const&viewMatrix      ,
     glm::mat4 const&projectionMatrix){
