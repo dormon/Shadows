@@ -1,4 +1,4 @@
-#include<CSSV/capsShaders.h>
+#include<CSSV/caps/capsShaders.h>
 
 std::string const cssv::capsVPSrc = R".(
 #version 450 core

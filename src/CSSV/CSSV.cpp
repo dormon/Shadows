@@ -14,7 +14,7 @@
 #include<CSSV/createPlanesEdges.h>
 #include<CSSV/createInterleavedPlanesEdges.h>
 #include<CSSV/drawSides.h>
-#include<CSSV/drawCaps.h>
+#include<CSSV/caps/drawCaps.h>
 #include<FunctionPrologue.h>
 #include<createAdjacency.h>
 

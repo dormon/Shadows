@@ -6,8 +6,6 @@ add_library(CSSV STATIC
   InterleavedPlanesShader.h
   CSSV.cpp
   CSSV.h
-  capsShaders.cpp
-  capsShaders.h
   sidesShaders.cpp
   sidesShaders.h
   Param.cpp
@@ -32,14 +30,17 @@ add_library(CSSV STATIC
   createSidesVAO.h
   drawSides.cpp
   drawSides.h
-  createCapsProgram.cpp
-  createCapsProgram.h
-  createCapsBuffer.cpp
-  createCapsBuffer.h
-  createCapsVAO.cpp
-  createCapsVAO.h
-  drawCaps.cpp
-  drawCaps.h
+
+  caps/capsShaders.cpp
+  caps/capsShaders.h
+  caps/createCapsProgram.cpp
+  caps/createCapsProgram.h
+  caps/createCapsBuffer.cpp
+  caps/createCapsBuffer.h
+  caps/createCapsVAO.cpp
+  caps/createCapsVAO.h
+  caps/drawCaps.cpp
+  caps/drawCaps.h
 
 
   )

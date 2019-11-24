@@ -1,7 +1,7 @@
-#include <CSSV/createCapsProgram.h>
+#include <CSSV/caps/createCapsProgram.h>
 #include <Vars/Vars.h>
 #include <SilhouetteShaders.h>
-#include <CSSV/capsShaders.h>
+#include <CSSV/caps/capsShaders.h>
 #include <geGL/geGL.h>
 #include <FunctionPrologue.h>
 
