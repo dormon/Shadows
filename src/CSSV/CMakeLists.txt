@@ -31,16 +31,16 @@ add_library(CSSV STATIC
   drawSides.cpp
   drawSides.h
 
-  caps/capsShaders.cpp
-  caps/capsShaders.h
-  caps/createCapsProgram.cpp
-  caps/createCapsProgram.h
-  caps/createCapsBuffer.cpp
-  caps/createCapsBuffer.h
-  caps/createCapsVAO.cpp
-  caps/createCapsVAO.h
-  caps/drawCaps.cpp
-  caps/drawCaps.h
+  caps/shaders.cpp
+  caps/shaders.h
+  caps/createProgram.cpp
+  caps/createProgram.h
+  caps/createBuffer.cpp
+  caps/createBuffer.h
+  caps/createVAO.cpp
+  caps/createVAO.h
+  caps/draw.cpp
+  caps/draw.h
 
 
   )

@@ -1,9 +1,11 @@
-#include<CSSV/caps/createCapsBuffer.h>
 #include<Vars/Vars.h>
 #include<geGL/geGL.h>
+
 #include<FunctionPrologue.h>
 #include<FastAdjacency.h>
 #include<Simplex.h>
+
+#include<CSSV/caps/createBuffer.h>
 
 
 using namespace std;

@@ -14,9 +14,11 @@
 #include<CSSV/createPlanesEdges.h>
 #include<CSSV/createInterleavedPlanesEdges.h>
 #include<CSSV/drawSides.h>
-#include<CSSV/caps/drawCaps.h>
 #include<FunctionPrologue.h>
 #include<createAdjacency.h>
+
+
+#include<CSSV/caps/draw.h>
 
 using namespace cssv;
 using namespace ge::gl;

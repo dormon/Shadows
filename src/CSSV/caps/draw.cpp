@@ -1,13 +1,15 @@
-#include<CSSV/caps/drawCaps.h>
+#include<glm/gtc/type_ptr.hpp>
+
 #include<Vars/Vars.h>
 #include<geGL/StaticCalls.h>
 #include<geGL/geGL.h>
-#include<FastAdjacency.h>
-#include<glm/gtc/type_ptr.hpp>
 
-#include<CSSV/caps/createCapsProgram.h>
-#include<CSSV/caps/createCapsBuffer.h>
-#include<CSSV/caps/createCapsVAO.h>
+#include<FastAdjacency.h>
+
+#include<CSSV/caps/createProgram.h>
+#include<CSSV/caps/createBuffer.h>
+#include<CSSV/caps/createVAO.h>
+#include<CSSV/caps/draw.h>
 
 using namespace std;
 using namespace ge::gl;

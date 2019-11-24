@@ -1,9 +1,11 @@
-#include <CSSV/caps/createCapsProgram.h>
 #include <Vars/Vars.h>
-#include <SilhouetteShaders.h>
-#include <CSSV/caps/capsShaders.h>
 #include <geGL/geGL.h>
+
 #include <FunctionPrologue.h>
+#include <SilhouetteShaders.h>
+
+#include <CSSV/caps/createProgram.h>
+#include <CSSV/caps/shaders.h>
 
 using namespace std;
 using namespace ge::gl;
