@@ -19,8 +19,8 @@ void cssv::drawSides(
   cssv::createDrawSidesProgram(vars);
 
   auto dibo    = vars.get<Buffer     >("cssv.method.dibo"             );
-  auto vao     = vars.get<VertexArray>("cssv.method.drawSides.vao"    );
-  auto program = vars.get<Program    >("cssv.method.drawSides.program");
+  auto vao     = vars.get<VertexArray>("cssv.method.sides.vao"        );
+  auto program = vars.get<Program    >("cssv.method.sides.drawProgram");
 
   auto mvp = projectionMatrix * viewMatrix;
   dibo->bind(GL_DRAW_INDIRECT_BUFFER);
