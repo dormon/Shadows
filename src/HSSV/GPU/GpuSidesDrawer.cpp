@@ -11,6 +11,18 @@ GpuSidesDrawer::GpuSidesDrawer(Octree* o, Adjacency* ad, u32 maxMultiplicity) : 
 {
 	MaxMultiplicity = maxMultiplicity;
 	Ad = ad;
+
+	CalcBitMasks8(2);
+}
+
+GpuSidesDrawer::~GpuSidesDrawer()
+{
+
+}
+
+void GpuSidesDrawer::drawSides(const glm::mat4& mvp, const glm::vec4& light)
+{
+
 }
 
 void GpuSidesDrawer::CreateBuffers()
@@ -60,4 +72,32 @@ void GpuSidesDrawer::CreateOctreeBuffer()
 {
 	u32 const nofNodes = octree->getTotalNumNodes();
 	octreeBuffer = std::make_unique<Buffer>();
+}
+
+u32 GpuSidesDrawer::GetNofIndicesPerBitmask() const
+{
+	//m_bitMasks[0].size() - because all bitmask arrays are of same size
+	return u32(BitmasksWithIBitSet[0].size());
+}
+
+void GpuSidesDrawer::CalcBitMasks8(unsigned int minBits)
+{
+	BitmasksWithIBitSet.resize(8);
+
+	for (uint32_t i = 1; i < 256; ++i)
+	{
+		BitSet8 num = i;
+		if (num.count() < minBits)
+		{
+			continue;
+		}
+
+		for (uint32_t b = 0; b < 8; ++b)
+		{
+			if (num[b])
+			{
+				BitmasksWithIBitSet[b].push_back(u8(num.to_ulong()));
+			}
+		}
+	}
 }

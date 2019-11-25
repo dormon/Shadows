@@ -22,6 +22,9 @@ private:
 	void CreateEdgeBuffer();
 	void CreateOctreeBuffer();
 
+	u32 GetNofIndicesPerBitmask() const;
+	void CalcBitMasks8(unsigned int minBits);
+
 private:
 	std::unique_ptr<ge::gl::Program> getBufferIdsSizesCs;
 	std::unique_ptr<ge::gl::Program> generateSidesCs;
@@ -32,4 +35,6 @@ private:
 
 	Adjacency* Ad;
 	u32 MaxMultiplicity;
+
+	std::vector< std::vector<u8> > BitmasksWithIBitSet;
 };

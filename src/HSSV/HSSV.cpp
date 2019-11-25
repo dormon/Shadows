@@ -13,6 +13,7 @@
 #include <MathOps.h>
 
 #include <CPU/CpuSidesDrawer.h>
+#include <GPU/GpuSidesDrawer.h>
 
 HSSV::HSSV(vars::Vars& vars) : ShadowVolumes(vars)
 {
@@ -28,9 +29,16 @@ void HSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 	resetMultiplicity();
 	createAdjacency(vars);
 	getOctree();
-	createSidesDrawer();
+	createSidesDrawers();
 
-	vars.get<CpuSidesDrawer>("hssv.objects.sidesDrawer")->drawSides(projectionMatrix * viewMatrix, lightPosition);
+	if(vars.getBool("hssv.args.drawCpu"))
+	{
+		vars.get<CpuSidesDrawer>("hssv.objects.cpuSidesDrawer")->drawSides(projectionMatrix * viewMatrix, lightPosition);
+	}
+	else
+	{
+		vars.get<GpuSidesDrawer>("hssv.objects.gpuSidesDrawer")->drawSides(projectionMatrix * viewMatrix, lightPosition);
+	}
 }
 
 void HSSV::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
@@ -161,7 +169,7 @@ void HSSV::resetMultiplicity()
 	}
 }
 
-void HSSV::createSidesDrawer()
+void HSSV::createSidesDrawers()
 {
 	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree");
 
@@ -169,11 +177,8 @@ void HSSV::createSidesDrawer()
 	Adjacency* ad = vars.get<Adjacency>("adjacency");
 	u32 const maxMultiplicity = vars.getUint32("maxMultiplicity");
 
-	//TODO zistit ci sa da vytvorit aj dedeny typ do base class
-	if(vars.getBool("hssv.args.drawCpu"))
-	{
-		vars.reCreate<CpuSidesDrawer>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity);
-	}
+	vars.reCreate<CpuSidesDrawer>("hssv.objects.cpuSidesDrawer", octree, ad, maxMultiplicity);
+	vars.reCreate<GpuSidesDrawer>("hssv.objects.gpuSidesDrawer", octree, ad, maxMultiplicity);
 }
 
 AABB HSSV::createOctreeVolume() const
