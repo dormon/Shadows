@@ -1,15 +1,17 @@
-#include <CSSV/createExtractProgram.h>
 #include <Vars/Vars.h>
-#include <FunctionPrologue.h>
 #include <geGL/geGL.h>
-#include <CSSV/ExtractSilhouetteShader.h>
+
+#include <FunctionPrologue.h>
 #include <SilhouetteShaders.h>
 #include <FastAdjacency.h>
+
+#include <CSSV/sides/extractShader.h>
+#include <CSSV/sides/createExtractProgram.h>
 
 using namespace ge::gl;
 using namespace std;
 
-void cssv::createExtractProgram(vars::Vars&vars){
+void cssv::sides::createExtractProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method",
       "cssv.param.alignment"      ,
       "cssv.param.computeSidesWGS",

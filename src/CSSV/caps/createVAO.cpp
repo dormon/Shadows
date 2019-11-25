@@ -10,7 +10,6 @@ using namespace ge::gl;
 
 void cssv::caps::createVAO(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method","cssv.method.caps.buffer");
-
   auto caps = vars.get<Buffer>("cssv.method.caps.buffer");
 
   auto vao = vars.reCreate<VertexArray>("cssv.method.caps.vao");

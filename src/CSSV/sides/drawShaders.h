@@ -2,7 +2,7 @@
 
 #include<iostream>
 
-namespace cssv{
+namespace cssv::sides{
 
 std::string const extern drawVPSrc;
 std::string const extern drawCPSrc;

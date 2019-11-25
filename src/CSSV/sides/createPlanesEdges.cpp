@@ -1,10 +1,10 @@
-#include <CSSV/createPlanesEdges.h>
+#include <CSSV/sides/createPlanesEdges.h>
 #include <Vars/Vars.h>
 #include <FunctionPrologue.h>
 #include <FastAdjacency.h>
 #include <ShadowMethod.h>
 
-void cssv::createPlanesEdges(vars::Vars&vars){
+void cssv::sides::createPlanesEdges(vars::Vars&vars){
   //FUNCTION_PROLOGUE("cssv.method","adjacency");
 
   auto const adj = vars.get<Adjacency>("adjacency");

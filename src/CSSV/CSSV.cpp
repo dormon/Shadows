@@ -1,9 +1,10 @@
 #include<glm/glm.hpp>
 
 #include<TimeStamp.h>
+#include<FunctionPrologue.h>
 
 #include<CSSV/CSSV.h>
-#include<CSSV/drawSides.h>
+#include<CSSV/sides/draw.h>
 #include<CSSV/caps/draw.h>
 
 
@@ -27,13 +28,15 @@ void CSSV::drawSides(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
-  cssv::drawSides(vars,lightPosition,viewMatrix,projectionMatrix);
+  FUNCTION_CALLER();
+  cssv::sides::draw(vars,lightPosition,viewMatrix,projectionMatrix);
 }
 
 void CSSV::drawCaps(
     vec4 const&lightPosition   ,
     mat4 const&viewMatrix      ,
     mat4 const&projectionMatrix){
+  FUNCTION_CALLER();
   cssv::caps::draw(vars,lightPosition,viewMatrix,projectionMatrix);
 }
 

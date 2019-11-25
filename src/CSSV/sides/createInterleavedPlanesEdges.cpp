@@ -1,4 +1,4 @@
-#include <CSSV/createInterleavedPlanesEdges.h>
+#include <CSSV/sides/createInterleavedPlanesEdges.h>
 #include <Vars/Vars.h>
 #include <FunctionPrologue.h>
 #include <geGL/geGL.h>
@@ -8,7 +8,7 @@
 
 using namespace ge::gl;
 
-void cssv::createInterleavedPlanesEdges(vars::Vars&vars){
+void cssv::sides::createInterleavedPlanesEdges(vars::Vars&vars){
   //FUNCTION_PROLOGUE("cssv.method","adjacency","cssv.param.alignment");
 
   auto const adj = vars.get<Adjacency>("adjacency");

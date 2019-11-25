@@ -5,6 +5,7 @@
 #include<geGL/geGL.h>
 
 #include<FastAdjacency.h>
+#include<FunctionPrologue.h>
 
 #include<CSSV/caps/createProgram.h>
 #include<CSSV/caps/createBuffer.h>
@@ -20,6 +21,7 @@ void cssv::caps::draw(
     glm::vec4 const&lightPosition   ,
     glm::mat4 const&viewMatrix      ,
     glm::mat4 const&projectionMatrix){
+  FUNCTION_CALLER();
   createProgram(vars);
   createBuffer(vars);
   createVAO(vars);

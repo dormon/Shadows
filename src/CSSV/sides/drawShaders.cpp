@@ -1,13 +1,13 @@
-#include <CSSV/sidesShaders.h>
+#include <CSSV/sides/drawShaders.h>
 
-std::string const cssv::drawVPSrc = R".(
+std::string const cssv::sides::drawVPSrc = R".(
 #version 450 core
 layout(location=0)in vec4 Position;
 void main(){
   gl_Position=Position;
 }).";
 
-std::string const cssv::drawCPSrc = R".(
+std::string const cssv::sides::drawCPSrc = R".(
 #version 450 core
 layout(vertices=4)out;
 uniform mat4 mvp           = mat4(1)            ;
@@ -25,7 +25,7 @@ void main(){
   }
 }).";
 
-std::string const cssv::drawEPSrc = R".(
+std::string const cssv::sides::drawEPSrc = R".(
 #version 450 core
 layout(quads)in;
 void main(){

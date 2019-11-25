@@ -1,11 +1,11 @@
-#include <CSSV/createDIBO.h>
+#include <CSSV/sides/createDIBO.h>
 #include <Vars/Vars.h>
 #include <geGL/geGL.h>
 #include <FunctionPrologue.h>
 
 using namespace ge::gl;
 
-void cssv::createDIBO(vars::Vars&vars){
+void cssv::sides::createDIBO(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method");
   struct DrawArraysIndirectCommand{
     uint32_t nofVertices  = 0;

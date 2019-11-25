@@ -1,11 +1,11 @@
-#include <CSSV/createSilhouetteBuffer.h>
+#include <CSSV/sides/createSilhouetteBuffer.h>
 #include <Vars/Vars.h>
 #include <FunctionPrologue.h>
 #include <FastAdjacency.h>
 #include <geGL/geGL.h>
 #include <ShadowMethod.h>
 
-void cssv::createSilhouetteBuffer(vars::Vars&vars){
+void cssv::sides::createSilhouetteBuffer(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method","adjacency");
   auto const adj = vars.get<Adjacency>("adjacency");
   auto nofEdges = adj->getNofEdges();

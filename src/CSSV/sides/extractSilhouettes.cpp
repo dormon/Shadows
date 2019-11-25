@@ -1,6 +1,6 @@
 #include <Vars/Vars.h>
-#include <CSSV/extractSilhouettes.h>
-#include <CSSV/createExtractProgram.h>
+#include <CSSV/sides/extractSilhouettes.h>
+#include <CSSV/sides/createExtractProgram.h>
 #include <geGL/geGL.h>
 #include <geGL/StaticCalls.h>
 #include <FastAdjacency.h>
@@ -9,8 +9,8 @@
 
 using namespace ge::gl;
 
-void cssv::extractSilhouettes(vars::Vars&vars,glm::vec4 const&lightPosition){
-  cssv::createExtractProgram(vars);
+void cssv::sides::extractSilhouettes(vars::Vars&vars,glm::vec4 const&lightPosition){
+  createExtractProgram(vars);
 
   auto dibo        = vars.get<Buffer>   ("cssv.method.dibo"          );
   auto adj         = vars.get<Adjacency>("adjacency"                 );

@@ -3,8 +3,8 @@
 #include <Vars/Fwd.h>
 #include <glm/glm.hpp>
 
-namespace cssv{
-void drawSides(
+namespace cssv::sides{
+void draw(
     vars::Vars&vars,
     glm::vec4 const&lightPosition   ,
     glm::mat4 const&viewMatrix      ,

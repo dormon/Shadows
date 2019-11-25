@@ -2,6 +2,6 @@
 
 #include<Vars/Fwd.h>
 
-namespace cssv{
+namespace cssv::sides{
 void createDIBO(vars::Vars&vars);
 }
