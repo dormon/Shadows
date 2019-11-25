@@ -82,8 +82,8 @@ s32 MathOps::calcEdgeMultiplicity(Adjacency const* edges, u32 edgeIndex, const g
 
 	for (size_t i = 0; i < nofOpposites; ++i)
 	{
-		multiplicity += currentMultiplicity(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
-		//multiplicity += computeMult(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
+		//multiplicity += currentMultiplicity(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
+		multiplicity += computeMult(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
 	}
 
 	return multiplicity;

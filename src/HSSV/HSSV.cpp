@@ -163,7 +163,7 @@ void HSSV::resetMultiplicity()
 
 void HSSV::createSidesDrawer()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree", );
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree");
 
 	Octree* octree = vars.get<Octree>("hssv.objects.octree");
 	Adjacency* ad = vars.get<Adjacency>("adjacency");

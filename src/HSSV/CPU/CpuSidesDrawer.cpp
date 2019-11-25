@@ -77,7 +77,7 @@ void CpuSidesDrawer::UpdateSidesVBO(const std::vector<float>& vertices)
 }
 
 
-CpuSidesDrawer::Edges CpuSidesDrawer::GetSilhouttePotentialEdgesFromNodeUp(uint32_t nodeID) const
+CpuSidesDrawer::Edges CpuSidesDrawer::GetSilhouttePotentialEdgesFromNodeUp(uint32_t nodeID)
 {
 	u32 currentNodeID = nodeID;
 	s32 currentLevel = octree->getDeepestLevel();
@@ -85,9 +85,7 @@ CpuSidesDrawer::Edges CpuSidesDrawer::GetSilhouttePotentialEdgesFromNodeUp(uint3
 
 	Edges edges;
 
-	static bool printOnce = true;
-
-	if (printOnce) std::cerr << "Traversal stats: \n";
+	if (printTraversePath) std::cerr << "Traversal stats: \n";
 
 	while (currentLevel >= 0)
 	{
@@ -95,27 +93,27 @@ CpuSidesDrawer::Edges CpuSidesDrawer::GetSilhouttePotentialEdgesFromNodeUp(uint3
 
 		assert(node != nullptr);
 
-		if (printOnce) std::cerr << "---Node " << currentNodeID << ":\n";
+		if (printTraversePath) std::cerr << "---Node " << currentNodeID << ":\n";
 
-		if (printOnce) std::cerr << "Sil nodes:\n";
+		if (printTraversePath) std::cerr << "Sil nodes:\n";
 		for(auto const& edgeBuffer : node->edgesAlwaysCastMap)
 		{
 			if((edgeBuffer.first >> cameAsChildId) & 1)
 			{
 				edges.silhouette.insert(edges.silhouette.end(), edgeBuffer.second.begin(), edgeBuffer.second.end());
 
-				if (printOnce) std::cerr << "Mask " << u32(edgeBuffer.first) << ": " << edgeBuffer.second.size() << " edges\n";
+				if (printTraversePath) std::cerr << "Mask " << u32(edgeBuffer.first) << ": " << edgeBuffer.second.size() << " edges\n";
 			}
 		}
 
-		if (printOnce) std::cerr << "Pot nodes:\n";
+		if (printTraversePath) std::cerr << "Pot nodes:\n";
 		for (auto const& edgeBuffer : node->edgesMayCastMap)
 		{
 			if ((edgeBuffer.first >> cameAsChildId) & 1)
 			{
 				edges.potential.insert(edges.potential.end(), edgeBuffer.second.begin(), edgeBuffer.second.end());
 
-				if (printOnce) std::cerr << "Mask " << u32(edgeBuffer.first) << ": " << edgeBuffer.second.size() << " edges\n";
+				if (printTraversePath) std::cerr << "Mask " << u32(edgeBuffer.first) << ": " << edgeBuffer.second.size() << " edges\n";
 			}
 		}
 
@@ -127,7 +125,7 @@ CpuSidesDrawer::Edges CpuSidesDrawer::GetSilhouttePotentialEdgesFromNodeUp(uint3
 		}
 	}
 
-	printOnce = false;
+	printTraversePath = false;
 	return std::move(edges);
 }
 
@@ -179,8 +177,7 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec3& li
 		}
 	}
 	
-	static bool printOnce = false;
-	if (!printOnce)
+	if (printEdgeStats)
 	{
 		//--
 		std::ofstream vstream;
@@ -238,7 +235,7 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec3& li
 		//sof.close();
 	
 
-		printOnce = true;
+		printEdgeStats = false;
 	}
 	//*/
 

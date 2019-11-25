@@ -31,7 +31,7 @@ private:
 		std::vector<uint32_t> silhouette;
 	};
 
-	Edges GetSilhouttePotentialEdgesFromNodeUp(uint32_t nodeID) const;
+	Edges GetSilhouttePotentialEdgesFromNodeUp(uint32_t nodeID);
 
 private:
 	std::shared_ptr<ge::gl::Buffer> VBO;
@@ -40,4 +40,7 @@ private:
 
 	Adjacency* Ad;
 	u32 NofBitsMultiplicity;
+
+	bool printTraversePath = false;
+	bool printEdgeStats = true;
 };
