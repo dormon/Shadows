@@ -40,6 +40,9 @@ add_library(HSSV STATIC
 	CapsDrawer/HssvCapsDrawer.h
 	CapsDrawer/HssvCapsDrawer.cpp
 	CapsDrawer/HssvCapsDrawerShaders.h
+	GPU/GpuSidesDrawer.h
+	GPU/GpuSidesDrawer.cpp
+	GPU/GpuSidesDrawerShaders.h
 )
 
 source_group("CPU" FILES 
@@ -49,6 +52,12 @@ source_group("CPU" FILES
 	CPU/CpuPotEdgePropagator.cpp
 	CPU/CpuSidesDrawer.h
 	CPU/CpuSidesDrawer.cpp
+)
+
+source_group("GPU" FILES 
+	GPU/GpuSidesDrawer.h
+	GPU/GpuSidesDrawer.cpp
+	GPU/GpuSidesDrawerShaders.h
 )
 
 source_group("CapsDrawer" FILES 
