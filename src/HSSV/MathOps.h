@@ -39,7 +39,7 @@ namespace MathOps
 
 	s32 currentMultiplicity(const glm::vec3& A, const glm::vec3& B, const glm::vec3& O, const glm::vec4& L);
 
-	s32 calcEdgeMultiplicity(Adjacency const* edges, u32 edgeIndex, const glm::vec3& lightPos);
+	s32 calcEdgeMultiplicity(Adjacency const* edges, u32 edgeIndex, const glm::vec4& lightPos);
 	
 	bool isEdgeSpaceAaabbIntersecting(std::vector<Plane> const& planes, const AABB& voxel);
 

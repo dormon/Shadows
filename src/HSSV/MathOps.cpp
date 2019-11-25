@@ -52,38 +52,42 @@ TestResult MathOps::testAabbPlane(const AABB& bbox, const Plane& plane)
 
 s32 MathOps::greaterVec(const glm::vec3& a, const glm::vec3& b)
 {
-	return int(glm::dot(glm::vec3(glm::sign(a - b)), glm::vec3(4, 2, 1)));
+	return s32(glm::dot(glm::vec3(glm::sign(a - b)), glm::vec3(4, 2, 1)));
 }
 
-int MathOps::computeMult(const glm::vec3& A, const glm::vec3& B, const glm::vec3& C, const glm::vec4& L)
+s32 MathOps::computeMult(const glm::vec3& A, const glm::vec3& B, const glm::vec3& C, const glm::vec4& L)
 {
 	glm::vec3 n = glm::cross(C - A, glm::vec3(L) - A * L.w);
-	return int(glm::sign(dot(n, B - A)));
+	return s32(glm::sign(glm::dot(n, B - A)));
 }
 
 s32 MathOps::currentMultiplicity(const glm::vec3& A, const glm::vec3& B, const glm::vec3& O, const glm::vec4& L)
 {
 	if (greaterVec(A, O) > 0)
+	{
 		return computeMult(O, A, B, L);
+	}
 	else if (greaterVec(B, O) > 0)
+	{
 		return -computeMult(A, O, B, L);
+	}
 	else
+	{
 		return computeMult(A, B, O, L);
+	}
 }
 
-s32 MathOps::calcEdgeMultiplicity(Adjacency const* edges, u32 edgeIndex, const glm::vec3& lightPos)
+s32 MathOps::calcEdgeMultiplicity(Adjacency const* edges, u32 edgeIndex, const glm::vec4& lightPos)
 {
 	glm::vec3 const& lowerPoint = getEdgeVertexLow(edges, edgeIndex);
 	glm::vec3 const& higherPoint = getEdgeVertexHigh(edges, edgeIndex);
 	
 	size_t const nofOpposites = edges->getNofOpposite(edgeIndex);
-	glm::vec4 const L = glm::vec4(lightPos, 1);
 	s32 multiplicity = 0;
 
 	for (size_t i = 0; i < nofOpposites; ++i)
 	{
-		//multiplicity += currentMultiplicity(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
-		multiplicity += computeMult(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
+		multiplicity += currentMultiplicity(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), lightPos);
 	}
 
 	return multiplicity;

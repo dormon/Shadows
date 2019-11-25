@@ -19,8 +19,8 @@ public:
 
 private:
 
-	std::vector<float> GetSilhouetteFromLightPos(const glm::vec3& lightPos);
-	void GeneratePushSideFromEdge(const glm::vec3& lightPos, const glm::vec3& lowerPoint, const glm::vec3& higherPoint, int multiplicitySign, std::vector<float>& sides);
+	std::vector<float> GetSilhouetteFromLightPos(const glm::vec4& lightPos);
+	void GeneratePushSideFromEdge(const glm::vec4& lightPos, const glm::vec3& lowerPoint, const glm::vec3& higherPoint, int multiplicitySign, std::vector<float>& sides);
 
 	void PrepareBuffers(size_t maxVboSize);
 	void UpdateSidesVBO(const std::vector<float>& vertices);

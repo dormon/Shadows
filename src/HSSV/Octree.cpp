@@ -239,13 +239,9 @@ s32 Octree::getNumNodesInLevel(u32 level) const
 uint64_t Octree::getOctreeSizeBytes() const
 {
 	uint64_t numIndices = 0;
-	uint64_t numMasks = 0;
 
 	for(const auto& node : Nodes)
 	{
-		numMasks += node.edgesAlwaysCastMap.size();
-		numMasks += node.edgesMayCastMap.size();
-
 		for (const auto& item : node.edgesAlwaysCastMap)
 		{
 			numIndices += item.second.size();
@@ -257,7 +253,7 @@ uint64_t Octree::getOctreeSizeBytes() const
 		}
 	}
 
-	return sizeof(u32) * numIndices + numMasks;
+	return sizeof(u32) * numIndices;
 }
 
 void Octree::makeNodesFit()

@@ -29,9 +29,6 @@ void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplic
 	IsCompressed = IsCompressed;
 
 	std::vector< std::vector<Plane>> edgePlanes = createEdgePlanes(adjacency);
-
-	
-
 	size_t const nofEdges = edgePlanes.size();
 	
 	std::cerr << "Octree construction started, nof edges: " << nofEdges << std::endl;
@@ -47,16 +44,20 @@ void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplic
 	{
 		processEdge(edgePlanes[i], u32(i), adjacency);
 	}
-	
+
+#ifdef ENABLE_MULTITHREAD
 	removeEmptyMasks();
-	octree->makeNodesFit();
-		
-	std::cerr << "Edges processed in " << float(t.getElapsedTimeFromLastQuerySeconds()) << "s\n";
+#endif
+	
+	std::cerr << "Edges added in " << float(t.getElapsedTimeFromLastQuerySeconds()) << "s\n";
 
 	propagatePotEdges();
-	
-	std::cerr << "Edges propagated in " << float(t.getElapsedTimeFromLastQuerySeconds()) << "s\n";
-	//std::cerr << "Octree build in " << float(t.getElapsedTimeSeconds()) << "s, size " << octree->getOctreeSizeBytes() / 1024ull /1024ull << "MB\n";
+
+	std::cerr << "Pot edges propagated in " << float(t.getElapsedTimeFromLastQuerySeconds()) << "s\n";
+
+	octree->makeNodesFit();
+
+	std::cerr << "Octree optimally allocated in " << float(t.getElapsedTimeFromLastQuerySeconds()) << "s\n";
 	std::cerr << "Octree build in " << float(t.getElapsedTimeSeconds()) << "s, size " << (octree->getOctreeSizeBytes() >> 20) << "MB\n";
 }
 
@@ -112,13 +113,12 @@ void CpuBuilder::processEdge(std::vector<Plane> const& edgePlanes, u32 edgeId, A
 CpuBuilder::ChildResults CpuBuilder::testChildNodes(u32 firstChild, u32 edgeID, std::vector<Plane> const& edgePlanes, Adjacency const* adjacency)
 {
 	ChildResults results;
-	u32 const nofOpposite = getNofOppositeVertices(adjacency, edgeID);
 
 	for(u32 child = 0; child < OCTREE_NUM_CHILDREN; ++child)
 	{		
 		u32 const currentNode = firstChild + child;
 
-		const bool isPotentiallySilhouette = (nofOpposite > 1) && MathOps::isEdgeSpaceAaabbIntersecting(edgePlanes, octree->getNodeVolume(currentNode));
+		const bool isPotentiallySilhouette = MathOps::isEdgeSpaceAaabbIntersecting(edgePlanes, octree->getNodeVolume(currentNode));
 		
 		if(isPotentiallySilhouette)
 		{
@@ -126,7 +126,7 @@ CpuBuilder::ChildResults CpuBuilder::testChildNodes(u32 firstChild, u32 edgeID, 
 		}
 		else
 		{
-			s32 const multiplicity = MathOps::calcEdgeMultiplicity(adjacency, edgeID, octree->getNodeVolume(currentNode).getMin());
+			s32 const multiplicity = MathOps::calcEdgeMultiplicity(adjacency, edgeID, glm::vec4(octree->getNodeVolume(currentNode).getMin(), 1));
 
 			if (multiplicity != 0)
 			{

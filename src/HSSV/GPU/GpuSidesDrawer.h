@@ -19,7 +19,8 @@ public:
 private:
 	void CreateShaders();
 	void CreateBuffers();
-	void LoadEdgeBuffer();
+	void CreateEdgeBuffer();
+	void CreateOctreeBuffer();
 
 private:
 	std::unique_ptr<ge::gl::Program> getBufferIdsSizesCs;

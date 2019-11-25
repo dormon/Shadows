@@ -21,13 +21,13 @@ void GpuSidesDrawer::CreateBuffers()
 
 void GpuSidesDrawer::CreateEdgeBuffer()
 {
-	size_t const nofEdges = Ad->getNofEdges();
+	u32 const nofEdges = u32(Ad->getNofEdges());
 	edgesBuffer = std::make_unique<Buffer>(nofEdges * (3 + 3 + 1 + MaxMultiplicity * 3) * sizeof(float));
 
 	float * mappedBuf = reinterpret_cast<float*>(edgesBuffer->map(GL_WRITE_ONLY));
-	size_t const edgeSize = 7 + 3 * MaxMultiplicity;
+	u32 const edgeSize = 7 + 3 * MaxMultiplicity;
 
-	for(size_t edge = 0; edge < nofEdges; ++edge)
+	for(u32 edge = 0; edge < nofEdges; ++edge)
 	{
 		glm::vec3 const& v1 = getEdgeVertexLow(Ad, edge);
 		glm::vec3 const& v2 = getEdgeVertexHigh(Ad, edge);

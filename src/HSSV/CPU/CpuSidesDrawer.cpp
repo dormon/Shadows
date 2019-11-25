@@ -129,7 +129,7 @@ CpuSidesDrawer::Edges CpuSidesDrawer::GetSilhouttePotentialEdgesFromNodeUp(uint3
 	return std::move(edges);
 }
 
-std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec3& lightPos)
+std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec4& lightPos)
 {
 	std::vector<float> sidesVertices;
 	
@@ -242,10 +242,10 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec3& li
 	return sidesVertices;
 }
 
-void CpuSidesDrawer::GeneratePushSideFromEdge(const glm::vec3& lightPos, const glm::vec3& lowerPoint, const glm::vec3& higherPoint, int multiplicity, std::vector<float>& sides)
+void CpuSidesDrawer::GeneratePushSideFromEdge(const glm::vec4& lightPos, const glm::vec3& lowerPoint, const glm::vec3& higherPoint, int multiplicity, std::vector<float>& sides)
 {
-	const glm::vec3 lowInfinity = lowerPoint - lightPos;
-	const glm::vec3 highInfinity = higherPoint - lightPos;
+	const glm::vec3 lowInfinity = lowerPoint - glm::vec3(lightPos);
+	const glm::vec3 highInfinity = higherPoint - glm::vec3(lightPos);
 
 	const uint32_t absMultiplicity = abs(multiplicity);
 
