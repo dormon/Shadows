@@ -2,16 +2,18 @@
 
 #include<GLSLLine.h>
 
-Model::Model(std::string const&name)
+Model::Model(std::string const&fileName)
 {
-	this->model = aiImportFile(name.c_str(),aiProcess_Triangulate|aiProcess_GenNormals|aiProcess_SortByPType);
-	if (this->model == nullptr)
+	model = aiImportFile(fileName.c_str(),aiProcess_Triangulate|aiProcess_GenNormals|aiProcess_SortByPType);
+
+	if (model == nullptr)
 	{
-		std::cerr << "Can't open file: " << name << std::endl;
+		std::cerr << "Can't open file: " << fileName << std::endl;
 	}
 	else
 	{
 		generateVertices();
+		name = model->GetShortFilename(fileName.c_str());
 	}
 }
 

@@ -16,7 +16,7 @@
 #include <cassert>
 #include <iostream>
 
-//#define ENABLE_MULTITHREAD
+#define ENABLE_MULTITHREAD
 
 void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplicityBits, bool IsCompressed)
 {

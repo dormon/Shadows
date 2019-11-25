@@ -19,9 +19,13 @@ class Model{
     virtual ~Model();
 	std::vector<float> getVertices() const;
 
+	std::string getName() const { return name; };
+
 protected:
 	void generateVertices();
 	std::vector<float> vertices;
+
+	std::string name;
 };
 
 class RenderModel: public ge::gl::Context{

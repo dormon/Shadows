@@ -48,6 +48,4 @@ namespace MathOps
 	s8 findFirstSet(u8 num);
 
 	u32 getMaxNofSignedBits(u32 num);
-
-	glm::vec3 crossProduct(glm::vec3 const& a, glm::vec3 const& b);
 }

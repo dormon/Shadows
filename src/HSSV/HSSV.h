@@ -3,6 +3,8 @@
 #include <ShadowVolumes.h>
 #include <AABB.h>
 
+class Octree;
+
 class HSSV : public ShadowVolumes
 {
 public:
@@ -14,10 +16,14 @@ public:
 	void drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix) override;
 
 protected:
-	void buildOctree();
+	void getOctree();
 	void createCapsDrawer();
 	void resetMultiplicity();
 	void createSidesDrawer();
+
+	void buildOctree();
+	bool loadOctreeFromFile();
+	void storeOctree();
 
 	AABB createOctreeVolume() const;
 	AABB getSceneAabb() const;

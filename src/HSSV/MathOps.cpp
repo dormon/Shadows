@@ -57,9 +57,7 @@ s32 MathOps::greaterVec(const glm::vec3& a, const glm::vec3& b)
 
 int MathOps::computeMult(const glm::vec3& A, const glm::vec3& B, const glm::vec3& C, const glm::vec4& L)
 {
-	//glm::vec3 n = glm::cross(C - A, glm::vec3(L) - A * L.w);
-	//return int(glm::sign(dot(n, B - A)));
-	glm::vec3 n = crossProduct(C - A, glm::vec3(L) - A * L.w);
+	glm::vec3 n = glm::cross(C - A, glm::vec3(L) - A * L.w);
 	return int(glm::sign(dot(n, B - A)));
 }
 
@@ -84,8 +82,8 @@ s32 MathOps::calcEdgeMultiplicity(Adjacency const* edges, u32 edgeIndex, const g
 
 	for (size_t i = 0; i < nofOpposites; ++i)
 	{
-		//multiplicity += currentMultiplicity(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
-		multiplicity += computeMult(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
+		multiplicity += currentMultiplicity(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
+		//multiplicity += computeMult(lowerPoint, higherPoint, getOppositeVertex(edges, edgeIndex, u32(i)), L);
 	}
 
 	return multiplicity;
@@ -141,9 +139,4 @@ s8 MathOps::findFirstSet(u8 num)
 u32 MathOps::getMaxNofSignedBits(u32 num)
 {
 	return u32(ceil(log2(num))) + 2;
-}
-
-glm::vec3 MathOps::crossProduct(glm::vec3 const& a, glm::vec3 const& b)
-{
-	return glm::vec3(a.y * b.z - a.z*b.y, a.z*b.x - a.x * b.z, a.x*b.y - a.y*b.x);
 }

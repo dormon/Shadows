@@ -85,7 +85,7 @@ CpuSidesDrawer::Edges CpuSidesDrawer::GetSilhouttePotentialEdgesFromNodeUp(uint3
 
 	Edges edges;
 
-	static bool printOnce = false;
+	static bool printOnce = true;
 
 	if (printOnce) std::cerr << "Traversal stats: \n";
 
@@ -139,7 +139,9 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec3& li
 
 	if (lowestNode < 0)
 	{
-		std::cerr << "Light (" << lightPos.x << " " << lightPos.y << " " << lightPos.z << ") is out of octree range\n";
+		AABB vol = octree->getNodeVolume(0);
+		std::cerr << "Light (" << lightPos.x << " " << lightPos.y << " " << lightPos.z << ") is out of octree range min:" << vol.getMin().x << " " << vol.getMin().y << " " << vol.getMin().z 
+			<<" max : " << vol.getMax().x << " " << vol.getMax().y << " " << vol.getMax().z<< std::endl;
 		return std::vector<float>();
 	}
 
@@ -155,8 +157,8 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec3& li
 	{
 		u32 const edgeId = mc.decodeEdgeFromEncoded(edge);
 		
-		//s32 const multiplicity = MathOps::calcEdgeMultiplicity(Ad, edgeId, lightPos);
-		s32 const multiplicity = mc.decodeEdgeMultiplicityFromId(edge);
+		s32 const multiplicity = MathOps::calcEdgeMultiplicity(Ad, edgeId, lightPos);
+		//s32 const multiplicity = mc.decodeEdgeMultiplicityFromId(edge);
 
 		glm::vec3 const& lowerPoint = getEdgeVertexLow(Ad, edgeId);
 		glm::vec3 const& higherPoint = getEdgeVertexHigh(Ad, edgeId);

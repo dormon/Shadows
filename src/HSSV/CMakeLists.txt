@@ -25,6 +25,8 @@ add_library(HSSV STATIC
 	Node.cpp
 	Octree.h
 	Octree.cpp
+	OctreeSerializer.h
+	OctreeSerializer.cpp
 	Plane.h
 	Plane.cpp
 	SidesDrawerBase.h

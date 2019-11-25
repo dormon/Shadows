@@ -2,6 +2,7 @@
 #include <Octree.h>
 #include <CPU/CpuBuilder.h>
 #include <Defines.h>
+#include <OctreeSerializer.h>
 
 #include <GSCaps.h>
 #include <CapsDrawer/HssvCapsDrawer.h>
@@ -26,7 +27,7 @@ void HSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 {
 	resetMultiplicity();
 	createAdjacency(vars);
-	buildOctree();
+	getOctree();
 	createSidesDrawer();
 
 	vars.get<CpuSidesDrawer>("hssv.objects.sidesDrawer")->drawSides(projectionMatrix * viewMatrix, lightPosition);
@@ -52,7 +53,7 @@ void HSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix,
 
 }
 
-void HSSV::buildOctree()
+void HSSV::getOctree()
 {
 	FUNCTION_PROLOGUE("hssv.objects", 
 		"renderModel", 
@@ -64,11 +65,46 @@ void HSSV::buildOctree()
 
 	AABB const volume = createOctreeVolume();
 	Octree* octree = vars.reCreate<Octree>("hssv.objects.octree", vars.getUint32("hssv.args.octreeDepth"), volume); 
+	
+	bool const forceBuild = vars.getBool("hssv.args.forceBuild");
+	
+	bool wasLoaded = false;
+	if(!forceBuild)
+	{
+		std::cerr << "Trying to load octree from file...\n";
+
+		wasLoaded = loadOctreeFromFile();
+
+		if(!wasLoaded)
+		{
+			std::cerr << "Failed to load octree from file, building...\n";
+		}
+		else
+		{
+			std::cerr << "Octree succesfully loaded!\n";
+		}
+	}
+
+	if(!wasLoaded)
+	{
+		buildOctree();
+
+		if(!vars.getBool("hssv.args.dontStoreOctree"))
+		{
+			storeOctree();
+
+		}
+	}
+}
+
+void HSSV::buildOctree()
+{
+	Octree* octree = vars.get<Octree>("hssv.objects.octree");
 	Adjacency* ad = vars.get<Adjacency>("adjacency");
 	u32 const multiplicityBits = MathOps::getMaxNofSignedBits(vars.getUint32("maxMultiplicity"));
 	bool const isCompressed = !vars.getBool("hssv.args.noCompression");
-
-	if(vars.getBool("hssv.args.buildCpu"))
+	
+	if (vars.getBool("hssv.args.buildCpu"))
 	{
 		CpuBuilder builder;
 		builder.fillOctree(octree, ad, multiplicityBits, isCompressed);
@@ -77,6 +113,28 @@ void HSSV::buildOctree()
 	{
 
 	}
+}
+
+bool HSSV::loadOctreeFromFile()
+{
+	Octree* octree = vars.get<Octree>("hssv.objects.octree");
+	std::string const file = vars.get<Model>("model")->getName();
+	float const sceneScale = vars.getFloat("hssv.args.sceneScale");
+	bool const isCompressed = !vars.getBool("hssv.args.noCompression");
+
+	OctreeSerializer serializer;
+	return serializer.loadFromFile(octree, file, sceneScale, isCompressed);
+}
+
+void HSSV::storeOctree()
+{
+	Octree* octree = vars.get<Octree>("hssv.objects.octree");
+	std::string const file = vars.get<Model>("model")->getName();
+	float const sceneScale = vars.getFloat("hssv.args.sceneScale");
+	bool const isCompressed = !vars.getBool("hssv.args.noCompression");
+
+	OctreeSerializer serializer;
+	serializer.storeToFile(octree, file, sceneScale, isCompressed);
 }
 
 void HSSV::createCapsDrawer()
@@ -105,7 +163,7 @@ void HSSV::resetMultiplicity()
 
 void HSSV::createSidesDrawer()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "renderModel", "maxMultiplicity", "hssv.args.drawCpu", "adjacency");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree", );
 
 	Octree* octree = vars.get<Octree>("hssv.objects.octree");
 	Adjacency* ad = vars.get<Adjacency>("adjacency");
