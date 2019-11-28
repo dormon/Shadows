@@ -7,6 +7,7 @@
 #include <stack>
 #include <unordered_map>
 #include <mutex>
+#include <memory>
 
 class Octree;
 class Adjacency;
