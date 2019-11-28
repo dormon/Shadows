@@ -15,6 +15,7 @@
 #include <FTS/FrustumTracedShadows.h>
 #include <OFTS/OmnidirFrustumTracedShadows.h>
 #include <DPSV/DPSV.h>
+#include <HSSV/HSSV.h>
 
 void initMethods(vars::Vars&vars){
   auto methods = vars.add<Methods>("methods");
@@ -32,4 +33,5 @@ void initMethods(vars::Vars&vars){
   methods->add<FrustumTracedShadows	      >("fts"              );
   methods->add<OmnidirFrustumTracedShadows>("ofts"             );
   methods->add<DPSV                       >("dpsv"             );
+  methods->add<HSSV                       >("hssv"             );
 }

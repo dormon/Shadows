@@ -84,7 +84,8 @@ Adjacency::Adjacency(vector<float> const& verts, size_t const& maxMult)
   auto const             nofTriangles = vertices.size() / 3 / 3;
   vector<EdgeToTriangle> edgeToTriangle;
   edgeToTriangle.reserve(3 * nofTriangles);
-  for (size_t t = 0; t < nofTriangles; ++t) {  // loop over triangles
+  for (size_t t = 0; t < nofTriangles; ++t)
+  {  // loop over triangles
     Vertex<3> a(vertices.data(), (t * 3 + 0) * 3);
     Vertex<3> b(vertices.data(), (t * 3 + 1) * 3);
     Vertex<3> c(vertices.data(), (t * 3 + 2) * 3);
@@ -107,6 +108,7 @@ Adjacency::Adjacency(vector<float> const& verts, size_t const& maxMult)
     else
       edgeToTriangle.push_back(EdgeToTriangle(c, b, a));
   }
+
   sort(edgeToTriangle.begin(), edgeToTriangle.end());
 
   edges.push_back(EdgeAdjacency(edgeToTriangle[0].a.index,
@@ -114,9 +116,10 @@ Adjacency::Adjacency(vector<float> const& verts, size_t const& maxMult)
   opposite.push_back(edgeToTriangle[0].c.index);
 
   size_t uniqueIndex = 0;
-  for (size_t i = 1; i < edgeToTriangle.size(); ++i) {
-    if ((--edges.end())->count < maxMultiplicity &&
-        edgeToTriangle[uniqueIndex].edgeEqual(edgeToTriangle[i])) {
+  for (size_t i = 1; i < edgeToTriangle.size(); ++i) 
+  {
+    if ((--edges.end())->count < maxMultiplicity && edgeToTriangle[uniqueIndex].edgeEqual(edgeToTriangle[i]))
+	{
       opposite.push_back(edgeToTriangle[i].c.index);
       (--edges.end())->count++;
       continue;

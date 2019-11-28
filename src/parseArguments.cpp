@@ -15,6 +15,7 @@
 #include <FTS/FtsParams.h>
 #include <OFTS/OftsParams.h>
 #include <DPSV/DpsvParams.h>
+#include <HSSV/HssvParams.h>
 
 void parseArguments(vars::Vars&vars){
   auto argc = vars.getUint32("argc");
@@ -35,6 +36,7 @@ void parseArguments(vars::Vars&vars){
   loadFtsParams                 (vars,arg);
   loadOftsParams                (vars,arg);
   loadDpsvParams                (vars,arg);
+  loadHssvParams                (vars, arg);
 
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");

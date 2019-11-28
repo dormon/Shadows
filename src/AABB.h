@@ -56,6 +56,27 @@ class AABB{
           getCenter() - scaledHalfDiagonal,
           getCenter() + scaledHalfDiagonal);
     }
+	std::vector<glm::vec3> getVertices() const
+	{
+		std::vector<glm::vec3> points;
+		points.resize(8);
+
+		glm::vec3 const extents = getDiagonal();
+		glm::vec3 const minPoint = getMin();
+		glm::vec3 const maxPoint = getMin();
+
+		points[0] = minPoint;
+		points[1] = glm::vec3(minPoint.x + extents.x, minPoint.y, minPoint.z);
+		points[2] = glm::vec3(minPoint.x, minPoint.y, minPoint.z + extents.z);
+		points[3] = glm::vec3(minPoint.x + extents.x,  minPoint.y, minPoint.z + extents.z);
+
+		points[4] = glm::vec3(minPoint.x, minPoint.y + extents.y, minPoint.z);
+		points[5] = glm::vec3(minPoint.x + extents.x, minPoint.y + extents.y, minPoint.z);
+		points[6] = glm::vec3(minPoint.x, minPoint.y + extents.y, minPoint.z + extents.z);
+		points[7] = maxPoint;
+
+		return points;
+	}
   protected:
     glm::vec3 minVertex;
     glm::vec3 maxVertex;
