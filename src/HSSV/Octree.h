@@ -49,6 +49,8 @@ public:
 
 	bool isPointInsideOctree(const glm::vec3& point) const;
 
+	u32 getNofAllEdgesInNode(u32 nodeId) const;
+
 private:
 
 	void GenerateLevelSizes();

@@ -41,6 +41,6 @@ private:
 	Adjacency* Ad;
 	u32 NofBitsMultiplicity;
 
-	bool printTraversePath = false;
+	bool printTraversePath = true;
 	bool printEdgeStats = true;
 };

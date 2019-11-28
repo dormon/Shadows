@@ -39,7 +39,7 @@ void updateLightPosViewUpFromCamera(vars::Vars& vars)
 		
 		std::cout << "\n";
 		std::cout << "Light pos: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
-		std::cout << "Light dir: " << view.x << " awd" << view.y << " " << view.z << std::endl;
+		std::cout << "Light dir: " << view.x << " " << view.y << " " << view.z << std::endl;
 		std::cout << "Light up: " << up.x << " " << up.y << " " << up.z << std::endl;
 
 		*vars.get<glm::vec3>("lightUp") = up;

@@ -37,12 +37,10 @@ add_library(HSSV STATIC
 	CPU/CpuPotEdgePropagator.cpp
 	CPU/CpuSidesDrawer.h
 	CPU/CpuSidesDrawer.cpp
-	CapsDrawer/HssvCapsDrawer.h
-	CapsDrawer/HssvCapsDrawer.cpp
-	CapsDrawer/HssvCapsDrawerShaders.h
 	GPU/GpuSidesDrawer.h
 	GPU/GpuSidesDrawer.cpp
-	GPU/GpuSidesDrawerShaders.h
+	GPU/GpuShaderGenerator.h
+	GPU/GpuShaderGenerator.cpp
 )
 
 source_group("CPU" FILES 
@@ -57,14 +55,10 @@ source_group("CPU" FILES
 source_group("GPU" FILES 
 	GPU/GpuSidesDrawer.h
 	GPU/GpuSidesDrawer.cpp
-	GPU/GpuSidesDrawerShaders.h
+	GPU/GpuShaderGenerator.h
+	GPU/GpuShaderGenerator.cpp
 )
 
-source_group("CapsDrawer" FILES 
-	CapsDrawer/HssvCapsDrawer.h
-	CapsDrawer/HssvCapsDrawer.cpp
-	CapsDrawer/HssvCapsDrawerShaders.h
-)
 
 target_include_directories(HSSV PUBLIC ..)
 target_link_libraries(HSSV PUBLIC geGL::geGL)

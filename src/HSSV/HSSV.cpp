@@ -5,7 +5,6 @@
 #include <OctreeSerializer.h>
 
 #include <GSCaps.h>
-#include <CapsDrawer/HssvCapsDrawer.h>
 
 #include <Model.h>
 #include <FunctionPrologue.h>
@@ -45,15 +44,7 @@ void HSSV::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix,
 {
 	createCapsDrawer();
 
-	if(vars.getBool("hssv.args.capsHssv"))
-	{
-		vars.get<HssvCapsDrawer>("hssv.objects.capsDrawerHssv")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
-	}
-	else
-	{
-		vars.get<GSCaps>("hssv.objects.capsDrawer")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
-
-	}
+	vars.get<GSCaps>("hssv.objects.capsDrawer")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
 }
 
 void HSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
@@ -100,7 +91,6 @@ void HSSV::getOctree()
 		if(!vars.getBool("hssv.args.dontStoreOctree"))
 		{
 			storeOctree();
-
 		}
 	}
 }
@@ -112,6 +102,7 @@ void HSSV::buildOctree()
 	u32 const multiplicityBits = MathOps::getMaxNofSignedBits(vars.getUint32("maxMultiplicity"));
 	bool const isCompressed = !vars.getBool("hssv.args.noCompression");
 	
+	/*
 	if (vars.getBool("hssv.args.buildCpu"))
 	{
 		CpuBuilder builder;
@@ -121,6 +112,9 @@ void HSSV::buildOctree()
 	{
 
 	}
+	*/
+	CpuBuilder builder;
+	builder.fillOctree(octree, ad, multiplicityBits, isCompressed);
 }
 
 bool HSSV::loadOctreeFromFile()
@@ -150,7 +144,6 @@ void HSSV::createCapsDrawer()
 	FUNCTION_PROLOGUE("hssv.objects", "renderModel");
 
 	vars.reCreate<GSCaps>("hssv.objects.capsDrawer", vars);
-	vars.reCreate<HssvCapsDrawer>("hssv.objects.capsDrawerHssv", vars.get<Adjacency>("adjacency"));
 }
 
 void HSSV::resetMultiplicity()

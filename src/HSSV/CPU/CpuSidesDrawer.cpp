@@ -151,12 +151,14 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec4& li
 
 	MultiplicityCoder mc(NofBitsMultiplicity);
 
+	std::unordered_map<u32, std::vector<glm::vec3>> potOppositeVerts;
+
 	for (const auto edge : e.silhouette)
 	{
 		u32 const edgeId = mc.decodeEdgeFromEncoded(edge);
 		
-		//s32 const multiplicity = MathOps::calcEdgeMultiplicity(Ad, edgeId, lightPos);
-		s32 const multiplicity = mc.decodeEdgeMultiplicityFromId(edge);
+		s32 const multiplicity = MathOps::calcEdgeMultiplicity(Ad, edgeId, lightPos);
+		//s32 const multiplicity = mc.decodeEdgeMultiplicityFromId(edge);
 
 		glm::vec3 const& lowerPoint = getEdgeVertexLow(Ad, edgeId);
 		glm::vec3 const& higherPoint = getEdgeVertexHigh(Ad, edgeId);
@@ -174,6 +176,12 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec4& li
 
 			GeneratePushSideFromEdge(lightPos, lowerPoint, higherPoint, multiplicity, sidesVertices);
 			castPot.push_back(mc.encodeEdgeMultiplicityToId(edge, multiplicity));
+
+			size_t const nofOpposites = Ad->getNofOpposite(edge);
+			for (size_t i = 0; i < nofOpposites; ++i)
+			{
+				potOppositeVerts[edge].push_back(getOppositeVertex(Ad, edge, u32(i)));
+			}
 		}
 	}
 	
@@ -220,7 +228,17 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec4& li
 
 		of << "\nUsedPot:\n";
 		for (auto const cp : castPot)
-			of << mc.decodeEdgeFromEncoded(cp) << " multiplicity: " << mc.decodeEdgeMultiplicityFromId(cp) << std::endl;
+		{
+			u32 const e = mc.decodeEdgeFromEncoded(cp);
+			of << e << " multiplicity: " << mc.decodeEdgeMultiplicityFromId(cp) << std::endl;
+			of << "Opposite: ";
+			
+			for(auto const& v : potOppositeVerts[e])
+			{
+				of << "(" << v.x << ", " << v.y << ", " << v.z << ") ";
+			}
+			of << std::endl;
+		}
 
 		of.close();
 		

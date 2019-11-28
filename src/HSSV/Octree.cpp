@@ -201,6 +201,25 @@ bool Octree::isPointInsideOctree(const glm::vec3& point) const
 	return MathOps::testAabbPointIsInsideOrOn(Nodes[0].volume, point);
 }
 
+u32 Octree::getNofAllEdgesInNode(u32 nodeID) const
+{
+	Node const* node = getNode(nodeID);
+
+	u32 nofIndices = 0;
+
+	for (auto const& buffer : node->edgesAlwaysCastMap)
+	{
+		nofIndices += unsigned(buffer.second.size());
+	}
+
+	for (auto const& buffer : node->edgesMayCastMap)
+	{
+		nofIndices += unsigned(buffer.second.size());
+	}
+
+	return nofIndices;
+}
+
 u32 Octree::getDeepestLevel() const
 {
 	return DeepestLevel;
