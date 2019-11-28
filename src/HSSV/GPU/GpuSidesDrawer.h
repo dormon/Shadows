@@ -6,12 +6,14 @@
 #include <geGL/Program.h>
 #include <geGL/VertexArray.h>
 
+#include<Vars/Vars.h>
+
 class Adjacency;
 
 class GpuSidesDrawer : public SidesDrawerBase
 {
 public:
-	GpuSidesDrawer(Octree* octree, Adjacency* ad, u32 maxMultiplicity);
+	GpuSidesDrawer(Octree* octree, Adjacency* ad, u32 maxMultiplicity, vars::Vars& vars);
 	~GpuSidesDrawer();
 
 	void drawSides(const glm::mat4& mvp, const glm::vec4& light) override;
@@ -24,6 +26,7 @@ private:
 	void DrawSides(glm::mat4 const& mvp);
 
 	void CreateShaders();
+	void CreateShadersWrapper();
 	void CreateSidesDrawProgram();
 	void CreateEdgeRangeProgram();
 	void CreateSidesGenerationProgram();
@@ -95,4 +98,6 @@ private:
 	std::vector< u32 > LastNodePerBuffer;
 
 	u32 atomicIndex = 0;
+
+	vars::Vars& vars;
 };

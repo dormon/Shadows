@@ -19,7 +19,7 @@ protected:
 	void getOctree();
 	void createCapsDrawer();
 	void resetMultiplicity();
-	void createSidesDrawers();
+	void createSidesDrawer();
 
 	void buildOctree();
 	bool loadOctreeFromFile();

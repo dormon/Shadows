@@ -157,8 +157,8 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec4& li
 	{
 		u32 const edgeId = mc.decodeEdgeFromEncoded(edge);
 		
-		s32 const multiplicity = MathOps::calcEdgeMultiplicity(Ad, edgeId, lightPos);
-		//s32 const multiplicity = mc.decodeEdgeMultiplicityFromId(edge);
+		//s32 const multiplicity = MathOps::calcEdgeMultiplicity(Ad, edgeId, lightPos);
+		s32 const multiplicity = mc.decodeEdgeMultiplicityFromId(edge);
 
 		glm::vec3 const& lowerPoint = getEdgeVertexLow(Ad, edgeId);
 		glm::vec3 const& higherPoint = getEdgeVertexHigh(Ad, edgeId);

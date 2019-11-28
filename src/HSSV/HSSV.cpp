@@ -28,16 +28,9 @@ void HSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 	resetMultiplicity();
 	createAdjacency(vars);
 	getOctree();
-	createSidesDrawers();
+	createSidesDrawer();
 
-	if(vars.getBool("hssv.args.drawCpu"))
-	{
-		vars.get<CpuSidesDrawer>("hssv.objects.cpuSidesDrawer")->drawSides(projectionMatrix * viewMatrix, lightPosition);
-	}
-	else
-	{
-		vars.get<GpuSidesDrawer>("hssv.objects.gpuSidesDrawer")->drawSides(projectionMatrix * viewMatrix, lightPosition);
-	}
+	vars.getReinterpret<SidesDrawerBase>("hssv.objects.sidesDrawer")->drawSides(projectionMatrix * viewMatrix, lightPosition);
 }
 
 void HSSV::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
@@ -102,17 +95,6 @@ void HSSV::buildOctree()
 	u32 const multiplicityBits = MathOps::getMaxNofSignedBits(vars.getUint32("maxMultiplicity"));
 	bool const isCompressed = !vars.getBool("hssv.args.noCompression");
 	
-	/*
-	if (vars.getBool("hssv.args.buildCpu"))
-	{
-		CpuBuilder builder;
-		builder.fillOctree(octree, ad, multiplicityBits, isCompressed);
-	}
-	else
-	{
-
-	}
-	*/
 	CpuBuilder builder;
 	builder.fillOctree(octree, ad, multiplicityBits, isCompressed);
 }
@@ -162,16 +144,22 @@ void HSSV::resetMultiplicity()
 	}
 }
 
-void HSSV::createSidesDrawers()
+void HSSV::createSidesDrawer()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree", "hssv.args.drawCpu");
 
 	Octree* octree = vars.get<Octree>("hssv.objects.octree");
 	Adjacency* ad = vars.get<Adjacency>("adjacency");
 	u32 const maxMultiplicity = vars.getUint32("maxMultiplicity");
 
-	vars.reCreate<CpuSidesDrawer>("hssv.objects.cpuSidesDrawer", octree, ad, maxMultiplicity);
-	vars.reCreate<GpuSidesDrawer>("hssv.objects.gpuSidesDrawer", octree, ad, maxMultiplicity);
+	if(vars.getBool("hssv.args.drawCpu"))
+	{
+		vars.reCreate<CpuSidesDrawer>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity);
+	}
+	else
+	{
+		vars.reCreate<GpuSidesDrawer>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity, vars);
+	}
 }
 
 AABB HSSV::createOctreeVolume() const

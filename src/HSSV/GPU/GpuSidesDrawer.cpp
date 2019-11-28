@@ -5,6 +5,7 @@
 #include <MathOps.h>
 
 #include <FastAdjacency.h>
+#include <FunctionPrologue.h>
 
 #include <geGL/StaticCalls.h>
 
@@ -13,7 +14,7 @@
 
 using namespace ge::gl;
 
-GpuSidesDrawer::GpuSidesDrawer(Octree* o, Adjacency* ad, u32 maxMultiplicity) : SidesDrawerBase(o)
+GpuSidesDrawer::GpuSidesDrawer(Octree* o, Adjacency* ad, u32 maxMultiplicity, vars::Vars& v) : SidesDrawerBase(o), vars(v)
 {
 	MaxMultiplicity = maxMultiplicity;
 	Ad = ad;
@@ -22,7 +23,7 @@ GpuSidesDrawer::GpuSidesDrawer(Octree* o, Adjacency* ad, u32 maxMultiplicity) : 
 
 	CalcBitMasks8(2);
 	CreateBuffers();
-	CreateShaders();
+	CreateShadersWrapper();
 
 	std::cout << "GpuSidesDrawer consumes " << getGpuMemoryConsumptionMB() << "MB VRAM\n";
 }
@@ -40,6 +41,8 @@ void GpuSidesDrawer::drawSides(const glm::mat4& mvp, const glm::vec4& light)
 		std::cerr << "Light out of range!\n";
 		return;
 	}
+
+	CreateShaders();
 
 	ComputeEdgeRanges(u32(pos));
 
@@ -175,6 +178,13 @@ void GpuSidesDrawer::DrawSides(glm::mat4 const& mvp)
 
 void GpuSidesDrawer::CreateShaders()
 {
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize");
+
+	CreateShadersWrapper();
+}
+
+void GpuSidesDrawer::CreateShadersWrapper()
+{
 	CreateSidesDrawProgram();
 	CreateEdgeRangeProgram();
 	CreateSidesGenerationProgram();
@@ -221,7 +231,7 @@ void GpuSidesDrawer::CreateSidesGenerationProgram()
 	params.maxOctreeLevel = octree->getDeepestLevel();
 	params.nofBitsMultiplicity = NofBitsMultiplicity;
 	params.nofEdges = u32(Ad->getNofEdges());
-	params.wgSize = 1024;
+	params.wgSize = vars.getUint32("hssv.args.wgSize");
 
 	std::string program = getComputeSidesFromEdgeRangesCsSource(LastNodePerBuffer, params);
 	generateSidesCs = std::make_unique<Program>(std::make_shared<Shader>(GL_COMPUTE_SHADER, program));
