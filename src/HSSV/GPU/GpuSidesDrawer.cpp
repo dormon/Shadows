@@ -221,7 +221,7 @@ void GpuSidesDrawer::CreateSidesGenerationProgram()
 	params.maxOctreeLevel = octree->getDeepestLevel();
 	params.nofBitsMultiplicity = NofBitsMultiplicity;
 	params.nofEdges = u32(Ad->getNofEdges());
-	params.wgSize = 1536;
+	params.wgSize = 1024;
 
 	std::string program = getComputeSidesFromEdgeRangesCsSource(LastNodePerBuffer, params);
 	generateSidesCs = std::make_unique<Program>(std::make_shared<Shader>(GL_COMPUTE_SHADER, program));

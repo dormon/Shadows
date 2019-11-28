@@ -211,8 +211,8 @@ std::string getComputeSidesFromEdgeRangesCsSource(std::vector<u32> const& lastNo
 	str << R".(
 #version 450 core
 
-#extension GL_ARB_shader_ballot : require
-#extension GL_KHR_shader_subgroup_basic : require
+#extension GL_ARB_shader_ballot : enable
+#extension GL_KHR_shader_subgroup_basic : enable
 
 ).";
 
@@ -379,7 +379,7 @@ shared uint warpCounters[32]; //max 32 warps per WG on nV - 1024 threads
 
 uint getEdgeStorePos(uint absMultiplicity, uint warpId)
 {
-	if(gl_SubgroupInvocationID == 0)
+	if(gl_SubGroupInvocationARB == 0)
 	{
 		warpCounters[warpId] = 0;
 	}
@@ -387,7 +387,7 @@ uint getEdgeStorePos(uint absMultiplicity, uint warpId)
 	const uint localOffset = atomicAdd(warpCounters[warpId], NOF_VERTICES_PER_SIDE * absMultiplicity);
 	
 	uint globalOffset = 0;
-	if(gl_SubgroupInvocationID == 0)
+	if(gl_SubGroupInvocationARB == 0)
 	{
 		globalOffset = atomicAdd(nofIndicesToDraw, warpCounters[warpId]);
 	}
@@ -401,7 +401,7 @@ void main()
 {
 	const uint wgId = gl_WorkGroupID.x;
 	const uint localId = gl_LocalInvocationID.x;
-	const uint warpId = localId / gl_SubgroupSize;
+	const uint warpId = localId / gl_SubGroupSizeARB;
 	
 	if(wgId >= (nofPotSilBuffers[POT_INDEX] + nofPotSilBuffers[SIL_INDEX]))
 	{
