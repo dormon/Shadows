@@ -16,6 +16,7 @@
 #include <OFTS/OftsParams.h>
 #include <DPSV/DpsvParams.h>
 #include <HSSV/HssvParams.h>
+#include <Sintorn2/param.h>
 
 void parseArguments(vars::Vars&vars){
   auto argc = vars.getUint32("argc");
@@ -30,13 +31,14 @@ void parseArguments(vars::Vars&vars){
   rssv::loadParams              (vars,arg);
   loadTestParams                (vars,arg);
   loadCameraParams              (vars,arg);
-  loadGSSVParams				(vars,arg);
+  loadGSSVParams				        (vars,arg);
   loadTSSVParams                (vars,arg);
   loadShadowMappingParams       (vars,arg);
   loadFtsParams                 (vars,arg);
   loadOftsParams                (vars,arg);
   loadDpsvParams                (vars,arg);
-  loadHssvParams                (vars, arg);
+  loadHssvParams                (vars,arg);
+  sintorn2::loadParams          (vars,arg);
 
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");

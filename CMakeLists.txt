@@ -63,6 +63,7 @@ add_subdirectory(src/FTS)
 add_subdirectory(src/OFTS)
 add_subdirectory(src/DPSV)
 add_subdirectory(src/HSSV)
+add_subdirectory(src/Sintorn2)
 
 add_library(RayTracing STATIC
   src/RayTracing/nanort.cc
@@ -85,7 +86,6 @@ set(SOURCES
   src/TimeStamp.cpp
   src/SilhouetteShaders.cpp
   src/CSSVSOE.cpp
-  src/Sintorn2/Sintorn2.cpp
   src/BallotShader.cpp
   src/DrawPrimitive.cpp
   src/ShadowVolumes.cpp
@@ -143,7 +143,6 @@ set(INCLUDES
   src/FastAdjacency.h
   src/TimeStamp.h
   src/CSSVSOE.h
-  src/Sintorn2/Sintorn2.h
   src/BallotShader.h
   src/DrawPrimitive.h
   src/ProgramExtension.h
@@ -208,7 +207,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Simple3DApp::Simple3DApp BasicCamera::BasicCamera ArgumentViewer::ArgumentViewer assimp::assimp FreeImage::FreeImage FreeImagePlus::FreeImagePlus Vars::Vars imguiVars::imguiVars)
-target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV GSSV TSSV SM FTS OFTS DPSV HSSV CubeShadowMapping RayTracing)
+target_link_libraries(${PROJECT_NAME} PUBLIC Sintorn CSSV VSSV RSSV GSSV TSSV SM FTS OFTS DPSV HSSV CubeShadowMapping RayTracing Sintorn2)
 
 #include(print_target_properties.cmake)
 #print_target_properties(SDL2::SDL2)
