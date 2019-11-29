@@ -63,7 +63,6 @@ class AABB{
 
 		glm::vec3 const extents = getDiagonal();
 		glm::vec3 const minPoint = getMin();
-		glm::vec3 const maxPoint = getMin();
 
 		points[0] = minPoint;
 		points[1] = glm::vec3(minPoint.x + extents.x, minPoint.y, minPoint.z);
@@ -73,7 +72,7 @@ class AABB{
 		points[4] = glm::vec3(minPoint.x, minPoint.y + extents.y, minPoint.z);
 		points[5] = glm::vec3(minPoint.x + extents.x, minPoint.y + extents.y, minPoint.z);
 		points[6] = glm::vec3(minPoint.x, minPoint.y + extents.y, minPoint.z + extents.z);
-		points[7] = maxPoint;
+		points[7] = getMax();
 
 		return points;
 	}

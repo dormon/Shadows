@@ -18,7 +18,7 @@
 
 #define ENABLE_MULTITHREAD
 
-void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplicityBits, bool IsCompressed)
+void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplicityBits, bool compressed)
 {
 	assert(o != nullptr);
 	assert(multiplicityBits > 1);
@@ -26,10 +26,10 @@ void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplic
 
 	octree = o;
 	NofBitsMultiplicity = multiplicityBits;
-	IsCompressed = IsCompressed;
+	IsCompressed = compressed;
 
 	std::vector< std::vector<Plane>> edgePlanes = createEdgePlanes(adjacency);
-	size_t const nofEdges = edgePlanes.size();
+	s32 const nofEdges = s32(edgePlanes.size());
 	
 	std::cerr << "Octree construction started, nof edges: " << nofEdges << std::endl;
 	
@@ -64,16 +64,15 @@ void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplic
 std::vector< std::vector<Plane>> CpuBuilder::createEdgePlanes(Adjacency const* adjacency)
 {
 	std::vector< std::vector<Plane>> planes;
-	u32 const numEdges = u32(adjacency->getNofEdges());
+	s32 const numEdges = s32(adjacency->getNofEdges());
 
 	planes.resize(numEdges);
 
-	u32 index = 0;
-
-	for (u32 i = 0; i < numEdges; ++i)
+	#pragma omp parallel for
+	for (s32 i = 0; i < numEdges; ++i)
 	{
 		const auto nofOpposites = getNofOppositeVertices(adjacency, i);
-		planes[index].reserve(nofOpposites);
+		planes[i].reserve(nofOpposites);
 
 		const glm::vec3& v1 = getEdgeVertexLow(adjacency, i);
 		const glm::vec3& v2 = getEdgeVertexHigh(adjacency, i);
@@ -83,10 +82,8 @@ std::vector< std::vector<Plane>> CpuBuilder::createEdgePlanes(Adjacency const* a
 			Plane p;
 			p.createFromPointsCCW(v1, getOppositeVertex(adjacency, i, j), v2);
 
-			planes[index].push_back(p);
+			planes[i].push_back(p);
 		}
-
-		++index;
 	}
 
 	return planes;
@@ -161,7 +158,6 @@ void CpuBuilder::storeSilhouetteEdgesCompressed(std::unordered_map<s32, BitSet8>
 
 	for(auto const& silMask : silMasks)
 	{
-		//todo pripad kedy je nastaveny len 1 - do childu
 		u8 const mask = u8(silMask.second.to_ulong());
 		u32 const encodedEdge = coder.encodeEdgeMultiplicityToId(edgeId, silMask.first);
 

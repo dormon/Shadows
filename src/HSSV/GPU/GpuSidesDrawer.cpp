@@ -74,7 +74,7 @@ u64 GpuSidesDrawer::getGpuMemoryConsumptionMB() const
 		sz += b->getSize();
 	}
 
-	return sz >> 20;
+	return sz / 1024ull / 1024ull;
 }
 
 void GpuSidesDrawer::ComputeEdgeRanges(u32 lightNode)
@@ -345,7 +345,8 @@ void GpuSidesDrawer::CreateLoadOctreeBuffers()
 
 		std::shared_ptr<Buffer> buffer = std::make_shared<ge::gl::Buffer>(currentSize, nullptr);
 		nodeEdgesIdBuffers.push_back(buffer);
-		u32* dataPtr = reinterpret_cast<u32*>(buffer->map(GL_WRITE_ONLY));
+
+		u32* dataPtr = reinterpret_cast<u32*>(glMapNamedBuffer(buffer->getId(), GL_WRITE_ONLY));
 
 		u64 currentNumIndices = 0;
 		while (currentNode < nofNodes)
@@ -399,7 +400,7 @@ void GpuSidesDrawer::CreateLoadOctreeBuffers()
 			currentNode++;
 		}
 
-		buffer->unmap();
+		glUnmapNamedBuffer(buffer->getId());
 
 		remainingSize -= currentNumIndices * sizeof(u32);
 		
