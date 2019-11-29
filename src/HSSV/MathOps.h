@@ -48,4 +48,6 @@ namespace MathOps
 	s8 findFirstSet(u8 num);
 
 	u32 getMaxNofSignedBits(u32 num);
+
+	bool isEdgeAabbIntersecting(Adjacency const* edges, u32 edgeId, AABB const& bbox);
 }

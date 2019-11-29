@@ -144,3 +144,33 @@ u32 MathOps::getMaxNofSignedBits(u32 num)
 {
 	return u32(ceil(log2(num))) + 2;
 }
+
+//Alternative to edge-plane test using multiplicity
+bool MathOps::isEdgeAabbIntersecting(Adjacency const* ad, u32 edgeId, AABB const& bbox)
+{
+	constexpr u32 NOF_AABB_VERTS = 8;
+	
+	std::vector<glm::vec3> const bbVerts = bbox.getVertices();
+
+	glm::vec3 const& v1 = getEdgeVertexLow(ad, edgeId);
+	glm::vec3 const& v2 = getEdgeVertexHigh(ad, edgeId);
+
+	u32 const nofOpposite = getNofOppositeVertices(ad, edgeId);
+
+	for(u32 o = 0; o<nofOpposite; ++o)
+	{
+		s32 multiplicity = 0;
+		glm::vec3 const& oppositeVertex = getOppositeVertex(ad, edgeId, o);
+		for(u32 i = 0; i< NOF_AABB_VERTS; ++i)
+		{
+			multiplicity += currentMultiplicity(v1, v2, bbVerts[i], glm::vec4(oppositeVertex, 1));
+		}
+
+		if(abs(multiplicity)!= NOF_AABB_VERTS)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}

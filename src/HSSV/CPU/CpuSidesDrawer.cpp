@@ -156,8 +156,6 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec4& li
 	for (const auto edge : e.silhouette)
 	{
 		u32 const edgeId = mc.decodeEdgeFromEncoded(edge);
-		
-		//s32 const multiplicity = MathOps::calcEdgeMultiplicity(Ad, edgeId, lightPos);
 		s32 const multiplicity = mc.decodeEdgeMultiplicityFromId(edge);
 
 		glm::vec3 const& lowerPoint = getEdgeVertexLow(Ad, edgeId);
@@ -231,33 +229,49 @@ std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPos(const glm::vec4& li
 		{
 			u32 const e = mc.decodeEdgeFromEncoded(cp);
 			of << e << " multiplicity: " << mc.decodeEdgeMultiplicityFromId(cp) << std::endl;
-			of << "Opposite: ";
-			
-			for(auto const& v : potOppositeVerts[e])
-			{
-				of << "(" << v.x << ", " << v.y << ", " << v.z << ") ";
-			}
-			of << std::endl;
 		}
 
 		of.close();
 		
-		//std::ofstream sof;
-		//sof.open("silhouette.txt");
-		//sof << "SIL\n";
-		//for (const auto e : silhouetteEdges)
-		//sof << decodeEdgeFromEncoded(e) << "(" << decodeEdgeMultiplicityFromId(e) << ")" << std::endl;
-		//sof << "POT\n";
-		//for (const auto e : ed)
-		//sof << decodeEdgeFromEncoded(e) << "(" << decodeEdgeMultiplicityFromId(e) << ")" << std::endl;
-		//sof.close();
-	
-
 		printEdgeStats = false;
 	}
 	//*/
 
 	return sidesVertices;
+}
+
+std::vector<float> CpuSidesDrawer::GetSilhouetteFromLightPosTestAll(const glm::vec4& lightPos)
+{
+	u32 const nofedges = u32(Ad->getNofEdges());
+
+	std::vector<float> sides;
+
+	std::vector<std::pair<u32, s32>> castEdges;
+
+	for(u32 edgeId = 0; edgeId < nofedges; ++edgeId)
+	{
+		int const multiplicity = MathOps::calcEdgeMultiplicity(Ad, edgeId, lightPos);
+
+		if(multiplicity!=0)
+		{
+			castEdges.push_back({ edgeId, multiplicity });
+			GeneratePushSideFromEdge(lightPos, getEdgeVertexLow(Ad, edgeId), getEdgeVertexHigh(Ad, edgeId), multiplicity, sides);
+		}
+	}
+
+	static bool once = true;
+	if(once)
+	{
+		std::cerr << "Silhouette consists of " << castEdges.size() << " edges\n";
+
+		for(auto const& p : castEdges)
+		{
+			std::cerr << p.first << " : " << p.second << std::endl;
+		}
+	}
+
+	once = false;
+	return sides;
 }
 
 void CpuSidesDrawer::GeneratePushSideFromEdge(const glm::vec4& lightPos, const glm::vec3& lowerPoint, const glm::vec3& higherPoint, int multiplicity, std::vector<float>& sides)

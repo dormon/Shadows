@@ -291,12 +291,12 @@ uint decodeEdgeFromEncoded(uint edgeWithEncodedMultiplicity)
 	if (useExtendedVersion)
 	{
 		str << R".(
-uint getEdgeId(uint pos, uint buffer)
+uint getEdgeId(uint pos, uint buf)
 {	
 ).";
 		for(u32 i = 0; i< nofEdgeBuffers; ++i)
 		{
-			str << "	if(buffer==" << i << ") return edgeIndices" << i << "[pos];\n";
+			str << "	if(buf== " << i << ") {return edgeIndices" << i << "[pos];}\n";
 		}
 		str << "	return 0;\n}\n";
 	}
@@ -483,7 +483,7 @@ std::string genEdgeBuffersMappingFn(std::vector<u32> const& lastNodePerBuffer)
 	str << "uint getBufferNum(uint edgeId)\n{\n";
 	for (u32 i = 0; i < nofEdgeBuffers; ++i)
 	{
-		str << "	if(edgeId <= edgeBuffersMapping[" << i << "] return " << i << ";\n";
+		str << "	if(edgeId <= edgeBuffersMapping[" << i << "]) return " << i << ";\n";
 	}
 	str << "	return 0;\n}\n";
 
