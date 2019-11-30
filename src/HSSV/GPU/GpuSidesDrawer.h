@@ -26,7 +26,6 @@ private:
 	void DrawSides(glm::mat4 const& mvp);
 
 	void CreateShaders();
-	void CreateShadersWrapper();
 	void CreateSidesDrawProgram();
 	void CreateEdgeRangeProgram();
 	void CreateSidesGenerationProgram();
@@ -36,22 +35,18 @@ private:
 	void CreateEdgeBufferOLD();
 	void CreateEdgeBuffers();
 	void CreateBitmaskBuffer();
-	void CreateAtomicCountersBuffer();
+	void CreateDIBOs();
 	void CreateEdgeRangeBuffer();
 	void CreateDrawBuffers();
 	void CreateIBO();
 	void CreateVBO();
 
-	void ClearAtomicCounterBuffer();
-	void ClearIBO();
-
 	u32 GetNofIndicesPerBitmask() const;
 	void CalcBitMasks8(unsigned int minBits);
 
-	void CalcSidesGenDispatchSize();
-	glm::uvec2 GetMaxNofSubBuffersPotSil() const;
-	glm::uvec2 GetNodeNofSubBuffersPotSil(uint32_t nodeID) const;
-	glm::uvec2 GetMaxNofSubBuffersInLevelPotSil(uint32_t level) const;
+	u32 GetMaxNofJobs(u32 jobSize) const;
+	u32 GetMaxNofJobsInLevel(uint32_t level, u32 jobSize) const;
+	u32 GetMaxNodeNofJobsPotSil(uint32_t nodeID, u32 jobSize) const;
 	
 private:
 	struct DrawArraysIndirectCommand
@@ -76,7 +71,7 @@ private:
 
 	//Data between programs
 	std::unique_ptr<ge::gl::Buffer> bitmaskBuffer;
-	std::unique_ptr<ge::gl::Buffer> atomicCounterBuffer[2];
+	std::unique_ptr<ge::gl::Buffer> DIBO[2];
 	std::unique_ptr<ge::gl::Buffer> edgeRangesBuffer;
 
 	//Drawing stuff
@@ -91,7 +86,6 @@ private:
 	//skipping first 3 1-bit numbers
 	u32 TotalNofSubbuffers = 253; 
 	u32 SubBufferCorrection = 3; 
-	u32 NofWgsSidesGenDispatch = 0;
 	u32 NofBitsMultiplicity;
 
 	std::vector< std::vector<u8> > BitmasksWithIthBitSet;

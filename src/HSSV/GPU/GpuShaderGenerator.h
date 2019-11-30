@@ -15,7 +15,6 @@ struct EdgeRangeShaderParams
 
 struct SidesGenShaderParams
 {
-	u32 nofEdges;
 	u32 nofBitsMultiplicity;
 	u32 bitmaskBufferSize;
 	u32 wgSize;
