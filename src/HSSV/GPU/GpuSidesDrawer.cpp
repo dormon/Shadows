@@ -6,6 +6,7 @@
 
 #include <FastAdjacency.h>
 #include <FunctionPrologue.h>
+#include <ifExistStamp.h>
 
 #include <geGL/StaticCalls.h>
 
@@ -23,7 +24,6 @@ GpuSidesDrawer::GpuSidesDrawer(Octree* o, Adjacency* ad, u32 maxMultiplicity, va
 
 	CalcBitMasks8(2);
 	CreateBuffers();
-	CreateShadersWrapper();
 
 	std::cout << "GpuSidesDrawer consumes " << getGpuMemoryConsumptionMB() << "MB VRAM\n";
 }
@@ -43,16 +43,21 @@ void GpuSidesDrawer::drawSides(const glm::mat4& mvp, const glm::vec4& light)
 	}
 
 	CreateShaders();
+	CreateEdgeRangeBuffer();
+
+	ifExistStamp(vars, "");
 
 	ComputeEdgeRanges(u32(pos));
 
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	//ifExistStamp(vars, "EdgeRanges");
 
 	GenerateSidesFromRanges(light);
 
-	glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
-
+	ifExistStamp(vars, "SidesCompute");
+	
 	DrawSides(mvp);
+
+	ifExistStamp(vars, "SidesDraw");
 }
 
 u64 GpuSidesDrawer::getGpuMemoryConsumptionMB() const
@@ -63,8 +68,8 @@ u64 GpuSidesDrawer::getGpuMemoryConsumptionMB() const
 	sz += oppositeVertices->getSize();
 	sz += nofEdgesPrefixSumBuffer->getSize();
 	sz += bitmaskBuffer->getSize();
-	sz += atomicCounterBuffer[0]->getSize();
-	sz += atomicCounterBuffer[1]->getSize();
+	sz += DIBO[0]->getSize();
+	sz += DIBO[1]->getSize();
 	sz += edgeRangesBuffer->getSize();
 	sz += IBO->getSize();
 	sz += VBO->getSize();
@@ -74,17 +79,22 @@ u64 GpuSidesDrawer::getGpuMemoryConsumptionMB() const
 		sz += b->getSize();
 	}
 
-	return sz / 1024ull / 1024ull;
+	return sz >> 20;
 }
 
 void GpuSidesDrawer::ComputeEdgeRanges(u32 lightNode)
 {
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+	DIBO[atomicIndex]->clear(GL_R32UI, 0, sizeof(u32), GL_RED, GL_INT);
+
 	getEdgeRangesCs->use();
 	getEdgeRangesCs->set1ui("nodeContainingLight", lightNode);
+	getEdgeRangesCs->set1ui("nextKernelWgSize", vars.getUint32("hssv.args.wgSize"));
 
 	nofEdgesPrefixSumBuffer->bindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	bitmaskBuffer->bindBase(GL_SHADER_STORAGE_BUFFER, 1);
-	atomicCounterBuffer[atomicIndex]->bindBase(GL_SHADER_STORAGE_BUFFER, 2);
+	DIBO[atomicIndex]->bindRange(GL_SHADER_STORAGE_BUFFER, 2, 0, sizeof(u32));
 	edgeRangesBuffer->bindBase(GL_SHADER_STORAGE_BUFFER, 3);
 	IBO->bindRange(GL_SHADER_STORAGE_BUFFER, 4, 0, sizeof(u32));
 
@@ -92,9 +102,10 @@ void GpuSidesDrawer::ComputeEdgeRanges(u32 lightNode)
 
 	nofEdgesPrefixSumBuffer->unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	bitmaskBuffer->unbindBase(GL_SHADER_STORAGE_BUFFER, 1);
-	atomicCounterBuffer[atomicIndex]->unbindBase(GL_SHADER_STORAGE_BUFFER, 2);
+	DIBO[atomicIndex]->unbindRange(GL_SHADER_STORAGE_BUFFER, 2);
 	edgeRangesBuffer->unbindBase(GL_SHADER_STORAGE_BUFFER, 3);
 	IBO->unbindRange(GL_SHADER_STORAGE_BUFFER, 4);
+
 	//--
 	/*
 	glFinish();
@@ -103,19 +114,28 @@ void GpuSidesDrawer::ComputeEdgeRanges(u32 lightNode)
 	edgeRangesBuffer->getData(v);
 
 	std::vector<u32> ac;
-	atomicCounterBuffer->getData(ac);
+	DIBO[atomicIndex]->getData(ac);
 
-	//std::vector<u32> sh;
-	//shit->getData(sh);
+	u32 sumEdges = 0;
+	for(u32 i = 1; i<2*ac[0]; i+=2)
+	{
+		sumEdges += (v[i] & 0x7FFFFFFF);
+	}
+
+	std::vector<u32> sh;
+	shit->getData(sh);
 
 	printf("");
 	//*/
+
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
 void GpuSidesDrawer::GenerateSidesFromRanges(glm::vec4 const& lightPosition)
 {
 	generateSidesCs->use();
 	generateSidesCs->set4fv("lightPosition", glm::value_ptr(lightPosition));
+	generateSidesCs->set1ui("nofEdges", u32(Ad->getNofEdges()));
 
 	u32 bindSlot = 0;
 	for(auto& buff : nodeEdgesIdBuffers)
@@ -126,12 +146,15 @@ void GpuSidesDrawer::GenerateSidesFromRanges(glm::vec4 const& lightPosition)
 	edgesBuffer->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	oppositeVertices->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	edgeRangesBuffer->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
-	atomicCounterBuffer[atomicIndex]->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
+	DIBO[atomicIndex]->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	IBO->bindRange(GL_SHADER_STORAGE_BUFFER, bindSlot++, 0, sizeof(u32));
 	VBO->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
-	atomicCounterBuffer[atomicIndex^1]->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
+	DIBO[atomicIndex^1]->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 
-	glDispatchCompute(NofWgsSidesGenDispatch, 1, 1);
+	DIBO[atomicIndex]->bind(GL_DISPATCH_INDIRECT_BUFFER);
+	glDispatchComputeIndirect(0);
+
+	DIBO[atomicIndex]->unbind(GL_DISPATCH_INDIRECT_BUFFER);
 
 	bindSlot = 0;
 	for (auto& buff : nodeEdgesIdBuffers)
@@ -142,10 +165,10 @@ void GpuSidesDrawer::GenerateSidesFromRanges(glm::vec4 const& lightPosition)
 	edgesBuffer->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	oppositeVertices->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	edgeRangesBuffer->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
-	atomicCounterBuffer[atomicIndex]->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
+	DIBO[atomicIndex]->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	IBO->unbindRange(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	VBO->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
-	atomicCounterBuffer[atomicIndex^1]->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
+	DIBO[atomicIndex^1]->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 
 	atomicIndex ^= 1;
 	//--
@@ -160,6 +183,7 @@ void GpuSidesDrawer::GenerateSidesFromRanges(glm::vec4 const& lightPosition)
 
 	printf("");
 	//*/
+	glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
 }
 
 void GpuSidesDrawer::DrawSides(glm::mat4 const& mvp)
@@ -178,13 +202,8 @@ void GpuSidesDrawer::DrawSides(glm::mat4 const& mvp)
 
 void GpuSidesDrawer::CreateShaders()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree");
 
-	CreateShadersWrapper();
-}
-
-void GpuSidesDrawer::CreateShadersWrapper()
-{
 	CreateSidesDrawProgram();
 	CreateEdgeRangeProgram();
 	CreateSidesGenerationProgram();
@@ -208,35 +227,36 @@ void main(){
 
 void GpuSidesDrawer::CreateEdgeRangeProgram()
 {
-	/*std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\getSubbuffersShader.glsl");
+	/*
+	std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\getSubbuffersShader.glsl");
 	std::string program((std::istreambuf_iterator<char>(t1)), std::istreambuf_iterator<char>());
 	//*/
+	
 	EdgeRangeShaderParams params;
 	params.bitmaskBufferSize = GetNofIndicesPerBitmask();
 	params.maxOctreeLevel = octree->getDeepestLevel();
 	params.nofSubbuffers = TotalNofSubbuffers;
 	params.subbufferCorrection = SubBufferCorrection;
-
 	std::string const program = getComputeEdgeRangesCsSource(LastNodePerBuffer, params);
+	//*/
 	getEdgeRangesCs = std::make_unique<Program>(std::make_shared<Shader>(GL_COMPUTE_SHADER, program));
 }
 
 void GpuSidesDrawer::CreateSidesGenerationProgram()
 {
-	/*std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\generateEdges.glsl");
+	/*
+	std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\generateEdges.glsl");
 	std::string program((std::istreambuf_iterator<char>(t1)), std::istreambuf_iterator<char>());
 	//*/
+	
 	SidesGenShaderParams params;
 	params.bitmaskBufferSize = GetNofIndicesPerBitmask();
 	params.maxOctreeLevel = octree->getDeepestLevel();
 	params.nofBitsMultiplicity = NofBitsMultiplicity;
-	params.nofEdges = u32(Ad->getNofEdges());
 	params.wgSize = vars.getUint32("hssv.args.wgSize");
-
 	std::string program = getComputeSidesFromEdgeRangesCsSource(LastNodePerBuffer, params);
+	//*/
 	generateSidesCs = std::make_unique<Program>(std::make_shared<Shader>(GL_COMPUTE_SHADER, program));
-
-	CalcSidesGenDispatchSize();
 }
 
 void GpuSidesDrawer::CreateBuffers()
@@ -244,7 +264,7 @@ void GpuSidesDrawer::CreateBuffers()
 	CreateEdgeBuffers();
 	CreateLoadOctreeBuffers();
 	CreateBitmaskBuffer();
-	CreateAtomicCountersBuffer();
+	CreateDIBOs();
 	CreateEdgeRangeBuffer();
 	CreateDrawBuffers();
 }
@@ -432,17 +452,37 @@ void GpuSidesDrawer::CreateBitmaskBuffer()
 	bitmaskBuffer->unmap();
 }
 
-void GpuSidesDrawer::CreateAtomicCountersBuffer()
+void GpuSidesDrawer::CreateDIBOs()
 {
-	atomicCounterBuffer[0] = std::make_unique<Buffer>(4 * sizeof(u32));
-	atomicCounterBuffer[1] = std::make_unique<Buffer>(4 * sizeof(u32));
-	ClearAtomicCounterBuffer();
+	typedef struct 
+	{
+		u32  num_groups_x;
+		u32  num_groups_y;
+		u32  num_groups_z;
+	} DispatchIndirectCommand;
+
+	DispatchIndirectCommand dic;
+	dic.num_groups_x = 0;
+	dic.num_groups_y = 1;
+	dic.num_groups_z = 1;
+
+	DIBO[0] = std::make_unique<Buffer>(sizeof(DispatchIndirectCommand), &dic);
+	DIBO[1] = std::make_unique<Buffer>(sizeof(DispatchIndirectCommand), &dic);
 }
 
 void GpuSidesDrawer::CreateEdgeRangeBuffer()
 {
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree");
+
 	u32 const edgeRangeItems = nodeEdgesIdBuffers.size() > 1 ? 3 : 2;
-	edgeRangesBuffer = std::make_unique<Buffer>(2 * (octree->getDeepestLevel() + 1) * GetNofIndicesPerBitmask() * edgeRangeItems * sizeof(u32));
+	u32 const maxJobs = GetMaxNofJobs(vars.getUint32("hssv.args.wgSize"));
+
+	if(edgeRangesBuffer)
+	{
+		edgeRangesBuffer.reset(nullptr);
+	}
+
+	edgeRangesBuffer = std::make_unique<Buffer>(maxJobs * edgeRangeItems * sizeof(u32));
 }
 
 void GpuSidesDrawer::CreateDrawBuffers()
@@ -467,18 +507,6 @@ void GpuSidesDrawer::CreateVBO()
 	VBO = std::make_shared<Buffer>(Ad->getNofEdges() * MaxMultiplicity * 6 * 4 * sizeof(float));
 }
 
-void GpuSidesDrawer::ClearAtomicCounterBuffer()
-{
-	atomicCounterBuffer[0]->clear(GL_R32UI, GL_RED, GL_INT);
-	atomicCounterBuffer[1]->clear(GL_R32UI, GL_RED, GL_INT);
-}
-
-void GpuSidesDrawer::ClearIBO()
-{
-	DrawArraysIndirectCommand cmd = { 0, 1, 0, 0 };
-	IBO->setData(&cmd);
-}
-
 void GpuSidesDrawer::CalcBitMasks8(unsigned int minBits)
 {
 	BitmasksWithIthBitSet.resize(OCTREE_NUM_CHILDREN);
@@ -501,53 +529,51 @@ void GpuSidesDrawer::CalcBitMasks8(unsigned int minBits)
 	}
 }
 
-void GpuSidesDrawer::CalcSidesGenDispatchSize()
-{
-	glm::uvec2 const ps = GetMaxNofSubBuffersPotSil();
-
-	NofWgsSidesGenDispatch = ps.x + ps.y;
-}
-
-glm::uvec2 GpuSidesDrawer::GetNodeNofSubBuffersPotSil(u32 nodeID) const
+u32 GpuSidesDrawer::GetMaxNodeNofJobsPotSil(u32 nodeID, u32 jobSize) const
 {
 	Node const* node = octree->getNode(nodeID);
-	glm::uvec2 ret = glm::uvec2(0, 0);
+	u32 ret = 0;
 
 	if (node)
 	{
-		ret.x = u32(node->edgesMayCastMap.size());
-		ret.y = u32(node->edgesAlwaysCastMap.size());
+		for(auto const& b : node->edgesAlwaysCastMap)
+		{
+			ret += u32(b.second.size()) / jobSize;
+		}
+
+		for (auto const& b : node->edgesMayCastMap)
+		{
+			ret += u32(b.second.size()) / jobSize;
+		}
 	}
 
 	return ret;
 }
 
-glm::uvec2 GpuSidesDrawer::GetMaxNofSubBuffersInLevelPotSil(u32 level) const
+u32 GpuSidesDrawer::GetMaxNofJobsInLevel(u32 level, u32 jobSize) const
 {
 	u32 const startingIndex = u32(octree->getLevelFirstNodeID(level));
 	u32 const levelSize = octree->getLevelSize(level);
 
-	glm::uvec2 ret = glm::uvec2(0, 0);
+	u32 ret = 0;
 
 	for (u32 i = 0; i < levelSize; ++i)
 	{
-		glm::uvec2 ps = GetNodeNofSubBuffersPotSil(startingIndex + i);
-		ret.x = std::max(ret.x, ps.x);
-		ret.y = std::max(ret.y, ps.y);
+		ret = std::max(ret, GetMaxNodeNofJobsPotSil(startingIndex + i, jobSize));
 	}
 
 	return ret;
 }
 
-glm::uvec2 GpuSidesDrawer::GetMaxNofSubBuffersPotSil() const
+u32 GpuSidesDrawer::GetMaxNofJobs(u32 jobSize) const
 {
 	u32 const deepestLevel = octree->getDeepestLevel();
 
-	glm::uvec2 ret = glm::uvec2(0, 0);
+	u32 ret = 0;
 
 	for (u32 i = 0; i <= deepestLevel; ++i)
 	{
-		ret += GetMaxNofSubBuffersInLevelPotSil(i);
+		ret += GetMaxNofJobsInLevel(i, jobSize);
 	}
 
 	return ret;
