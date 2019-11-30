@@ -1,6 +1,22 @@
 #include <Sintorn2/mortonShader.h>
 
 const std::string sintorn2::mortonShader = R".(
+#ifndef WARP
+#define WARP 64
+#endif//WARP
+
+#ifndef WINDOW_X
+#define WINDOW_X 512
+#endif//WINDOW_X
+
+#ifndef WINDOW_Y
+#define WINDOW_Y 512
+#endif//WINDOW_Y
+
+#ifndef MIN_Z
+#define MIN_Z 0
+#endif//MIN_Z
+
 // m - length of 3 bits together
 // n - length of 2 bits together
 // o - length of 1 bit  alone

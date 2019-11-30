@@ -13,6 +13,10 @@ add_library(${PROJECT_NAME} STATIC
   param.h
   createBuildHierarchyProgram.cpp
   createBuildHierarchyProgram.h
+  buildHierarchy.cpp
+  buildHierarchy.h
+  buildHierarchyShader.cpp
+  buildHierarchyShader.h
   )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ..)
