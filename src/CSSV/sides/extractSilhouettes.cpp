@@ -47,6 +47,5 @@ void cssv::sides::extractSilhouettes(vars::Vars&vars,glm::vec4 const&lightPositi
   */
 
 
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-  glFinish();
+  glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
 }
