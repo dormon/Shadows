@@ -22,5 +22,6 @@ void drawScene(vars::Vars&vars){
 
   ifExistEndStamp(vars,"shading");
 
-  ifMethodExistsDrawDebug(vars);
+  if(vars.addOrGetBool("debug"))
+    ifMethodExistsDrawDebug(vars);
 }
