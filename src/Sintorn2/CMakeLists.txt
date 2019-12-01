@@ -17,6 +17,8 @@ add_library(${PROJECT_NAME} STATIC
   buildHierarchy.h
   buildHierarchyShader.cpp
   buildHierarchyShader.h
+  drawDebug.cpp
+  drawDebug.h
   )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ..)

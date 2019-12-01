@@ -9,6 +9,7 @@
 #include <BallotShader.h>
 
 #include <Sintorn2/buildHierarchy.h>
+#include <Sintorn2/drawDebug.h>
 
 Sintorn2::Sintorn2(vars::Vars& vars) : ShadowMethod(vars) {}
 
@@ -22,4 +23,14 @@ void Sintorn2::create(glm::vec4 const& lightPosition,
 {
   sintorn2::buildHierarchy(vars);
 
+}
+
+void Sintorn2::drawDebug(glm::vec4 const& lightPosition,
+                      glm::mat4 const& viewMatrix,
+                      glm::mat4 const& projectionMatrix)
+{
+  *vars.addOrGet<glm::vec4>("sintorn2.method.debug.lightPosition"   ) = lightPosition   ;
+  *vars.addOrGet<glm::mat4>("sintorn2.method.debug.viewMatrix"      ) = viewMatrix      ;
+  *vars.addOrGet<glm::mat4>("sintorn2.method.debug.projectionMatrix") = projectionMatrix;
+  sintorn2::drawDebug(vars);
 }
