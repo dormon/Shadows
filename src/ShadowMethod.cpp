@@ -60,3 +60,10 @@ void ShadowMethod::drawUser(glm::vec4 const& ,
 {
 
 }
+
+void ShadowMethod::drawDebug(glm::vec4 const& ,
+	glm::mat4 const& ,
+	glm::mat4 const& )
+{
+
+}

@@ -20,14 +20,19 @@ void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
       "args.camera.near",
       "args.camera.far",
       "args.camera.fovy",
-      "sintorn2.param.minZBits");
+      "sintorn2.param.minZBits",
+      "sintorn2.param.tileX"   ,
+      "sintorn2.param.tileY"   ,
+      );
 
   auto const wavefrontSize       =  vars.getSizeT           ("wavefrontSize"          );
   auto const windowSize          = *vars.get<glm::uvec2>    ("windowSize"             );
-  auto const minZBits            =  vars.getUint32          ("sintorn2.param.minZBits");
   auto const nnear               =  vars.getFloat           ("args.camera.near"       );
   auto const ffar                =  vars.getFloat           ("args.camera.far"        );
   auto const fovy                =  vars.getFloat           ("args.camera.fovy"       );
+  auto const minZBits            =  vars.getUint32          ("sintorn2.param.minZBits");
+  auto const tileX               =  vars.getUint32          ("sintorn2.param.tileX"   );
+  auto const tileY               =  vars.getUint32          ("sintorn2.param.tileY"   );
 
 #define PRINT(x) std::cerr << #x ": " << x << std::endl
 
@@ -48,6 +53,8 @@ void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
         ge::gl::Shader::define("NEAR"      ,nnear                  ),
         glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
         ge::gl::Shader::define("FOVY"      ,fovy                   ),
+        ge::gl::Shader::define("TILE_X"    ,tileX                  ),
+        ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
         ballotSrc,
         sintorn2::mortonShader,
         sintorn2::buildHierarchyShader

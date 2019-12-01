@@ -5,6 +5,7 @@
 #include <ifExistEndStamp.h>
 #include <doShading.h>
 #include <ifMethodExistCreateShadowMask.h>
+#include <ifMethodExistsDrawDebug.h>
 
 void drawScene(vars::Vars&vars){
   //createMethod(vars);
@@ -20,4 +21,6 @@ void drawScene(vars::Vars&vars){
   doShading(vars);
 
   ifExistEndStamp(vars,"shading");
+
+  ifMethodExistsDrawDebug(vars);
 }

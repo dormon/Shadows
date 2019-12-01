@@ -18,7 +18,7 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
 
   sintorn2::allocateHierarchy(vars);
   sintorn2::createBuildHierarchyProgram(vars);
-
+  //exit(0);
   auto depth       = vars.get<GBuffer>("gBuffer")->depth;
   auto prg         = vars.get<Program>("sintorn2.method.buildHierarchyProgram");
   auto nodePool    = vars.get<Buffer >("sintorn2.method.nodePool");
@@ -40,17 +40,17 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   auto const clustersY = vars.getUint32("sintorn2.method.clustersY");
   glDispatchCompute(clustersX,clustersY,1);
 
-  //std::vector<float>nodePoolData;
-  std::vector<uint32_t>nodePoolData;
-  nodePool->getData(nodePoolData);
+  ////std::vector<float>nodePoolData;
+  //std::vector<uint32_t>nodePoolData;
+  //nodePool->getData(nodePoolData);
 
-  glFinish();
-  //for(size_t i=0;i<1000;++i)
-  //  std::cerr << nodePoolData[1+32+32*32+32*32*32+i] << std::endl;
+  //glFinish();
+  ////for(size_t i=0;i<1000;++i)
+  ////  std::cerr << nodePoolData[1+32+32*32+32*32*32+i] << std::endl;
 
-  for(auto const&n:nodePoolData)
-    std::cerr << n << std::endl;
-  exit(0);
+  //for(auto const&n:nodePoolData)
+  //  std::cerr << n << std::endl;
+  //exit(0);
 
   //std::vector<uint32_t>ddd;
   //hierarchy->getData(ddd);
