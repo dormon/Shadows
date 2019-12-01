@@ -31,17 +31,15 @@ using namespace ge::gl;
 void sintorn2::allocateHierarchy(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2","windowSize","wavefrontSize","sintorn2.param.minZBits");
 
-  auto wavefrontSize =  vars.getSizeT("wavefrontSize");
-  auto windowSize    = *vars.get<glm::uvec2>("windowSize");
-  auto minZ          =  vars.getUint32("sintorn2.param.minZBits");
+  auto const wavefrontSize =  vars.getSizeT("wavefrontSize");
+  auto const windowSize    = *vars.get<glm::uvec2>("windowSize");
+  auto const minZ          =  vars.getUint32("sintorn2.param.minZBits");
+  auto const tileX         =  vars.getUint32("sintorn2.param.tileX");
+  auto const tileY         =  vars.getUint32("sintorn2.param.tileY");
 
   uint32_t const warpBits      = requiredBits(wavefrontSize);
-  uint32_t const warpBitsX     = divRoundUp(warpBits,2u);
-  uint32_t const warpBitsY     = warpBits-warpBitsX;
-  uint32_t const warpX         = 1u<<warpBitsX;
-  uint32_t const warpY         = 1u<<warpBitsY;
-  uint32_t const clustersX     = divRoundUp(windowSize.x,warpX);
-  uint32_t const clustersY     = divRoundUp(windowSize.y,warpY);
+  uint32_t const clustersX     = divRoundUp(windowSize.x,tileX);
+  uint32_t const clustersY     = divRoundUp(windowSize.y,tileY);
   uint32_t const xBits         = requiredBits(clustersX);
   uint32_t const yBits         = requiredBits(clustersY);
   uint32_t const zBits         = minZ>0?minZ:glm::max(glm::max(xBits,yBits),minZ);
@@ -50,7 +48,24 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
   uint32_t const nofLevels     = divRoundUp(allBits,warpBits);
   uint32_t const uintsPerWarp  = wavefrontSize / (sizeof(uint32_t)*8);
 
-  uint32_t const uintsPerNode  = uintsPerWarp + 1 + (uintsPerNode-1);
+
+#define PRINT(x) std::cerr << #x ": " << x << std::endl
+  /*
+
+  PRINT(warpBits      );
+  PRINT(warpX         );
+  PRINT(clustersX     );
+  PRINT(clustersY     );
+  PRINT(xBits         );
+  PRINT(yBits         );
+  PRINT(zBits         );
+  PRINT(clustersZ     );
+  PRINT(allBits       );
+  PRINT(nofLevels     );
+  PRINT(uintsPerWarp  );
+
+  PRINT(uintsPerNode  );
+  */
 
   //nodes for 4 levels
   //n      = 1 + 32 + 32*32 + 32*32*32
@@ -62,17 +77,22 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
   //
   //n = (32^L - 1) / (32-1)
   
-  uint32_t const nofNodes = (glm::pow(wavefrontSize,nofLevels) - 1) / (wavefrontSize - 1);
 
+  int32_t bits = allBits;
+  uint32_t nofNodes = 0;
+  while(bits>0){
+    nofNodes += 1<<bits;
+    bits -= warpBits;
+  }
+  nofNodes += 1;
 
   uint32_t const floatsPerAABB = 6;
 
-  auto const nodesSize = nofNodes * uintsPerNode * sizeof(uint32_t);
+  auto const nodesSize = divRoundUp(nofNodes,wavefrontSize) * sizeof(uint32_t) * uintsPerWarp;
+  
   auto const aabbSize  = nofNodes * floatsPerAABB * sizeof(float);
 
   vars.reCreate      <uint32_t>("sintorn2.method.allBits"    ,allBits);
-  vars.reCreate      <uint32_t>("sintorn2.method.warpBitsX"  ,warpBitsX);
-  vars.reCreate      <uint32_t>("sintorn2.method.warpBitsY"  ,warpBitsY);
   vars.reCreate      <uint32_t>("sintorn2.method.warpBits"   ,warpBits );
   vars.reCreate      <uint32_t>("sintorn2.method.xBits"      ,xBits    );
   vars.reCreate      <uint32_t>("sintorn2.method.yBits"      ,yBits    );

@@ -1,9 +1,6 @@
 #include <Sintorn2/mortonShader.h>
 
 const std::string sintorn2::mortonShader = R".(
-#ifndef WARP
-#define WARP 64
-#endif//WARP
 
 #ifndef WINDOW_X
 #define WINDOW_X 512
@@ -13,9 +10,17 @@ const std::string sintorn2::mortonShader = R".(
 #define WINDOW_Y 512
 #endif//WINDOW_Y
 
-#ifndef MIN_Z
-#define MIN_Z 0
-#endif//MIN_Z
+#ifndef TILE_X
+#define TILE_X 8
+#endif//TILE_X
+
+#ifndef TILE_Y
+#define TILE_Y 8
+#endif//TILE_Y
+
+#ifndef MIN_Z_BITS
+#define MIN_Z_BITS 9
+#endif//MIN_Z_BITS
 
 // m - length of 3 bits together
 // n - length of 2 bits together
@@ -39,16 +44,11 @@ const std::string sintorn2::mortonShader = R".(
 // ...|   ...|...|...|       o    |     n     |   2n+3m   |  xxxxxxx
 
 uint morton(uvec3 v){
-  const uint warpBits      = uint(ceil(log2(float(WARP))));
-  const uint warpBitsX     = uint(warpBits/2u) + uint(warpBits%2 != 0u);
-  const uint warpBitsY     = uint(warpBits-warpBitsX);
-  const uint warpX         = uint(1u<<warpBitsX);
-  const uint warpY         = uint(1u<<warpBitsY);
-  const uint clustersX     = uint(WINDOW_X/warpX) + uint(WINDOW_X%warpX != 0u);
-  const uint clustersY     = uint(WINDOW_Y/warpY) + uint(WINDOW_Y%warpY != 0u);
+  const uint clustersX     = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
+  const uint clustersY     = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
   const uint xBits         = uint(ceil(log2(float(clustersX))));
   const uint yBits         = uint(ceil(log2(float(clustersY))));
-  const uint zBits         = MIN_Z>0?MIN_Z:max(max(xBits,yBits),MIN_Z);
+  const uint zBits         = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
   const uint shortest      = min(min(xBits,yBits),zBits);
   const uint middle        = max(max(min(xBits,yBits),min(xBits,zBits)),min(yBits,zBits));
   const uint longest       = max(max(xBits,yBits),zBits);
@@ -56,7 +56,7 @@ uint morton(uvec3 v){
   const uint bits2Length   = uint(middle-shortest);
   const uint bits1Length   = uint(longest-middle);
   const uint shortestAxis  = uint(uint(shortest == yBits) + uint(shortest == zBits)*2u);
-  const uint longestAxis   = uint(uint(longest  == yBits) + uint(longest  == zBits)*2u);
+  const uint longestAxis   = clamp(uint(uint(longest  == yBits) + uint(longest  == zBits)*2u),0u,2u);
   const uint shortestZ     = uint(shortestAxis == 2u);
   const uint shortestY     = uint(shortestAxis == 1u);
   const uint longestZ      = uint(longestAxis == 2u);
