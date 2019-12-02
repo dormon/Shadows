@@ -14,6 +14,9 @@
 #include <Sintorn2/debug/drawDebug.h>
 #include <Sintorn2/debug/dumpData.h>
 #include <Sintorn2/debug/drawSamples.h>
+#include <Sintorn2/debug/drawNodePool.h>
+#include <Sintorn2/quantizeZShader.h>
+#include <Sintorn2/depthToZShader.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -141,28 +144,6 @@ R".(
 layout(location=0)out vec4 fColor;
 layout(binding=1)uniform sampler2DRect depthTexture;
 
-// converts depth (-1,+1) to Z in view-space
-float depthToZ(float d){
-#ifdef FAR_IS_INFINITE
-  return 2.f*NEAR    /(d - 1);
-#else
-  return 2.f*NEAR*FAR/(d*(FAR-NEAR)-FAR-NEAR);
-#endif
-}
-
-uint quantizeZ(float z){
-  const uint clustersX     = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
-  const uint clustersY     = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
-  const uint xBits         = uint(ceil(log2(float(clustersX))));
-  const uint yBits         = uint(ceil(log2(float(clustersY))));
-  const uint zBits         = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
-  const uint clustersZ     = 1u << zBits;
-  const uint Sy            = clustersY;
-
-  return clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/Sy)),0,clustersZ-1);
-}
-
-
 uint getMorton(uvec2 coord){
   const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
   const uint tileBitsY     = uint(ceil(log2(float(TILE_Y))));
@@ -211,6 +192,8 @@ void main(){
         ge::gl::Shader::define("TILE_X"    ,tileX                  ),
         ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
         sintorn2::mortonShader,
+        sintorn2::depthToZShader,
+        sintorn2::quantizeZShader,
         fs));
 
 }
@@ -261,24 +244,31 @@ void sintorn2::drawDebug(vars::Vars&vars){
 
 
   enum DebugType{
-    BASIC,
+    DEFAULT,
     DRAW_MORTON,
     DRAW_SAMPLES,
+    DRAW_NODEPOOL,
   };
 
-  auto&type = vars.addOrGetUint32("sintorn2.method.debug.type",BASIC);
+  auto&type = vars.addOrGetUint32("sintorn2.method.debug.type",DEFAULT);
   if(ImGui::BeginMainMenuBar()){
     if(ImGui::BeginMenu("debug")){
-      if(ImGui::MenuItem("basic"))
-        type = BASIC;
+      if(ImGui::MenuItem("default"))
+        type = DEFAULT;
       if(ImGui::MenuItem("drawMorton"))
         type = DRAW_MORTON;
-      if(ImGui::MenuItem("drawSamples"))
-        type = DRAW_SAMPLES;
-      if(ImGui::MenuItem("copyData"))
-        sintorn2::debug::dumpData(vars);
       ImGui::EndMenu();
     }
+    if(ImGui::BeginMenu("dump")){
+      if(ImGui::MenuItem("copyData"))
+        sintorn2::debug::dumpData(vars);
+      if(ImGui::MenuItem("drawSamples"))
+        type = DRAW_SAMPLES;
+      if(ImGui::MenuItem("drawNodePool"))
+        type = DRAW_NODEPOOL;
+      ImGui::EndMenu();
+    }
+
 
     ImGui::EndMainMenuBar();
   }
@@ -290,6 +280,11 @@ void sintorn2::drawDebug(vars::Vars&vars){
 
   if(type == DRAW_SAMPLES)
     debug::drawSamples(vars);
+
+  if(type == DRAW_NODEPOOL){
+    debug::drawSamples(vars);
+    debug::drawNodePool(vars);
+  }
 
 
   //if(ImGui::Button("mine button"))

@@ -39,6 +39,7 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   auto const clustersX = vars.getUint32("sintorn2.method.clustersX");
   auto const clustersY = vars.getUint32("sintorn2.method.clustersY");
   glDispatchCompute(clustersX,clustersY,1);
+  //glDispatchCompute(10,10,1);
 
   ////std::vector<float>nodePoolData;
   //std::vector<uint32_t>nodePoolData;

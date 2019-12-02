@@ -75,15 +75,16 @@ void createViewSamplesBuffer(vars::Vars&vars){
   auto const nofSamples = windowSize.x*windowSize.y;
   auto const floatsPerSample = 3 + 3 + 3;
   auto const bufSize = nofSamples * floatsPerSample * sizeof(float);
-  vars.reCreate<Buffer>("sintorn2.method.debug.samples",bufSize);
+  vars.reCreate<Buffer>("sintorn2.method.debug.dump.samples",bufSize);
 }
 
 void dumpSamples(vars::Vars&vars){
+  FUNCTION_CALLER();
   createCopyViewSamplesProgram(vars);
   createViewSamplesBuffer(vars);
 
   auto prg = vars.get<Program>("sintorn2.method.debug.copyViewSamplesData");
-  auto buf = vars.get<Buffer >("sintorn2.method.debug.samples");
+  auto buf = vars.get<Buffer >("sintorn2.method.debug.dump.samples");
   auto gBuffer = vars.get<GBuffer>("gBuffer");
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
@@ -100,8 +101,45 @@ void dumpSamples(vars::Vars&vars){
 
 }
 
+void dumpNodePool(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto nodePool = vars.get<Buffer>("sintorn2.method.nodePool");
+  auto buf = vars.reCreate<Buffer>("sintorn2.method.debug.dump.nodePool",nodePool->getSize());
+  buf->copy(*nodePool);
+}
+
+void dumpBasic(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto ws = *vars.get<glm::uvec2>("windowSize");
+  auto lp = *vars.get<glm::vec4>("sintorn2.method.debug.lightPosition"   );
+  auto vm = *vars.get<glm::mat4>("sintorn2.method.debug.viewMatrix"      );
+  auto pm = *vars.get<glm::mat4>("sintorn2.method.debug.projectionMatrix");
+  auto tx = vars.getUint32("sintorn2.param.tileX");
+  auto ty = vars.getUint32("sintorn2.param.tileY");
+  auto mz = vars.getUint32("sintorn2.param.minZBits");
+
+  auto const nnear =  vars.getFloat("args.camera.near");
+  auto const ffar  =  vars.getFloat("args.camera.far" );
+  auto const fovy  =  vars.getFloat("args.camera.fovy");
+
+
+  vars.reCreate<glm::uvec2>("sintorn2.method.debug.dump.windowSize"      ,ws);
+  vars.reCreate<glm::vec4 >("sintorn2.method.debug.dump.lightPosition"   ,lp);
+  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.viewMatrix"      ,vm);
+  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.projectionMatrix",pm);
+  vars.reCreate<uint32_t  >("sintorn2.method.debug.dump.tileX"           ,tx);
+  vars.reCreate<uint32_t  >("sintorn2.method.debug.dump.tileY"           ,ty);
+  vars.reCreate<uint32_t  >("sintorn2.method.debug.dump.minZBits"        ,mz);
+  vars.reCreate<float     >("sintorn2.method.debug.dump.near"            ,nnear);
+  vars.reCreate<float     >("sintorn2.method.debug.dump.far"             ,ffar );
+  vars.reCreate<float     >("sintorn2.method.debug.dump.fovy"            ,fovy );
+}
+
 void dumpData(vars::Vars&vars){
+  FUNCTION_CALLER();
   dumpSamples(vars);
+  dumpBasic(vars);
+  dumpNodePool(vars);
   std::cerr << "dump" << std::endl;
 }
 

@@ -9,6 +9,8 @@ add_library(${PROJECT_NAME} STATIC
   dumpData.h
   drawSamples.cpp
   drawSamples.h
+  drawNodePool.cpp
+  drawNodePool.h
   )
 
 target_include_directories(${PROJECT_NAME} PUBLIC .. ../..)

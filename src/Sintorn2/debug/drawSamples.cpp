@@ -84,9 +84,9 @@ void drawSamples(vars::Vars&vars){
   auto vao = vars.get<VertexArray>("sintorn2.method.debug.vao");
   auto view = *vars.get<glm::mat4>("sintorn2.method.debug.viewMatrix");
   auto proj = *vars.get<glm::mat4>("sintorn2.method.debug.projectionMatrix");
-  auto windowSize = *vars.get<glm::uvec2>("windowSize");
+  auto windowSize = *vars.get<glm::uvec2>("sintorn2.method.debug.dump.windowSize");
 
-  auto buf = vars.get<Buffer>("sintorn2.method.debug.samples");
+  auto buf = vars.get<Buffer>("sintorn2.method.debug.dump.samples");
   buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   vao->bind();
   prg->use();
