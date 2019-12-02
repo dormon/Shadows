@@ -9,7 +9,7 @@
 #include <FunctionPrologue.h>
 #include <divRoundUp.h>
 
-#include <Sintorn2/drawSamples.h>
+#include <Sintorn2/debug/drawSamples.h>
 
 using namespace ge::gl;
 using namespace std;

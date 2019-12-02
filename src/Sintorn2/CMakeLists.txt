@@ -17,13 +17,9 @@ add_library(${PROJECT_NAME} STATIC
   buildHierarchy.h
   buildHierarchyShader.cpp
   buildHierarchyShader.h
-  drawDebug.cpp
-  drawDebug.h
-  dumpData.cpp
-  dumpData.h
-  drawSamples.cpp
-  drawSamples.h
   )
 
+add_subdirectory(debug)
+
 target_include_directories(${PROJECT_NAME} PUBLIC ..)
-target_link_libraries(${PROJECT_NAME} PUBLIC geGL::geGL)
+target_link_libraries(${PROJECT_NAME} PUBLIC geGL::geGL Sintorn2_Debug)

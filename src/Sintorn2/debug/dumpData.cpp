@@ -10,7 +10,7 @@
 #include <FunctionPrologue.h>
 #include <divRoundUp.h>
 
-#include <Sintorn2/dumpData.h>
+#include <Sintorn2/debug/dumpData.h>
 
 using namespace ge::gl;
 using namespace std;

@@ -9,7 +9,7 @@
 #include <BallotShader.h>
 
 #include <Sintorn2/buildHierarchy.h>
-#include <Sintorn2/drawDebug.h>
+#include <Sintorn2/debug/drawDebug.h>
 
 Sintorn2::Sintorn2(vars::Vars& vars) : ShadowMethod(vars) {}
 
