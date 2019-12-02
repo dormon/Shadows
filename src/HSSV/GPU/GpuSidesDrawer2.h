@@ -23,7 +23,7 @@ public:
 private:
 	void ComputeEdgeRanges(u32 lightNode);
 	void GenerateSidesFromRanges(glm::vec4 const& lightPosition);
-	void DrawSides(glm::mat4 const& mvp);
+	void DrawSides(glm::mat4 const& mvp, glm::vec4 const& lightPosition);
 
 	void CreateShaders();
 	void CreateSidesDrawProgram();

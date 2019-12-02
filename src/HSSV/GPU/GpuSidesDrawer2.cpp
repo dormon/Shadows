@@ -8,6 +8,8 @@
 #include <FunctionPrologue.h>
 #include <ifExistStamp.h>
 
+#include <CSSV/sides/drawShaders.h>
+
 #include <geGL/StaticCalls.h>
 
 #include <fstream>
@@ -55,7 +57,7 @@ void GpuSidesDrawer2::drawSides(const glm::mat4& mvp, const glm::vec4& light)
 
 	ifExistStamp(vars, "SidesCompute");
 	
-	DrawSides(mvp);
+	DrawSides(mvp, light);
 
 	ifExistStamp(vars, "SidesDraw");
 	//*/
@@ -207,15 +209,17 @@ void GpuSidesDrawer2::GenerateSidesFromRanges(glm::vec4 const& lightPosition)
 	glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
 }
 
-void GpuSidesDrawer2::DrawSides(glm::mat4 const& mvp)
+void GpuSidesDrawer2::DrawSides(glm::mat4 const& mvp, glm::vec4 const& lightPosition)
 {
 	drawSidesProgram->use();
 	drawSidesProgram->setMatrix4fv("mvp", glm::value_ptr(mvp));
-	
+	drawSidesProgram->set4fv("lightPosition", glm::value_ptr(lightPosition));
+
 	VAO->bind();
 	IBO->bind(GL_DRAW_INDIRECT_BUFFER);
 
-	glDrawArraysIndirect(GL_TRIANGLES, nullptr);
+	glPatchParameteri(GL_PATCH_VERTICES, 2);
+	glDrawArraysIndirect(GL_PATCHES, NULL);
 
 	VAO->unbind();
 	IBO->unbind(GL_DRAW_INDIRECT_BUFFER);
@@ -232,18 +236,11 @@ void GpuSidesDrawer2::CreateShaders()
 
 void GpuSidesDrawer2::CreateSidesDrawProgram()
 {
-	const char* vsSource = R"(
-#version 430 core
-
-layout(location=0)in vec4 Position;
-
-uniform mat4 mvp = mat4(1);
-
-void main(){
-  gl_Position=mvp*Position;
-}
-)";
-	drawSidesProgram = std::make_unique<Program>(std::make_shared<Shader>(GL_VERTEX_SHADER, vsSource));
+	drawSidesProgram = std::make_unique<Program>(
+		 std::make_shared<Shader>(GL_VERTEX_SHADER, cssv::sides::drawVPSrc)
+		,std::make_shared<Shader>(GL_TESS_CONTROL_SHADER, cssv::sides::drawCPSrc)
+		,std::make_shared<Shader>(GL_TESS_EVALUATION_SHADER, cssv::sides::drawEPSrc)
+		);
 }
 
 void GpuSidesDrawer2::CreateEdgeRangeProgram()
@@ -487,7 +484,7 @@ void GpuSidesDrawer2::CreateIBO()
 
 void GpuSidesDrawer2::CreateVBO()
 {
-	VBO = std::make_shared<Buffer>(Ad->getNofEdges() * MaxMultiplicity * 6 * 4 * sizeof(float));
+	VBO = std::make_shared<Buffer>(Ad->getNofEdges() * MaxMultiplicity * 2 * 4 * sizeof(float));
 }
 
 void GpuSidesDrawer2::CalcBitMasks8(unsigned int minBits)

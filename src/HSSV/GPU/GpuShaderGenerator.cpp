@@ -533,7 +533,7 @@ std::string getComputeSidesFromEdgeRangesCsSource2(std::vector<u32> const& lastN
 	str << "#define NOF_VEC4_EDGE " << params.edgeSizeNofVec4 << "u\n";
 
 	str << R".(
-#define NOF_VERTICES_PER_SIDE 6
+#define NOF_VERTICES_PER_SIDE 2
 #define MULTIPLICITY_MASK ((uint(1) << MULTIPLICITY_BITS) - 1)
 #define POT_INDEX 0u
 #define SIL_INDEX 1u
@@ -628,11 +628,7 @@ void pushEdge(vec4 edgeVertices[2], uint startingIndex, int multiplicity)
 	for(uint m = 0; m<absMultiplicity; ++m)
 	{
 		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 0] = vec4(edgeVertices[0^swapVertices].xyz, 1);
-		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 1] = vec4(edgeVertices[1^swapVertices].xyz - lightPosition.xyz, 0);
-		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 2] = vec4(edgeVertices[0^swapVertices].xyz - lightPosition.xyz, 0);
-		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 3] = vec4(edgeVertices[1^swapVertices].xyz - lightPosition.xyz, 0);
-		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 4] = vec4(edgeVertices[0^swapVertices].xyz, 1);
-		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 5] = vec4(edgeVertices[1^swapVertices].xyz, 1);
+		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 1] = vec4(edgeVertices[1^swapVertices].xyz, 1);
 	}
 }
 
