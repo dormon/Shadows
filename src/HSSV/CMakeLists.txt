@@ -36,6 +36,8 @@ add_library(HSSV STATIC
 	GPU/GpuSidesDrawer.cpp
 	GPU/GpuShaderGenerator.h
 	GPU/GpuShaderGenerator.cpp
+	GPU/GpuSidesDrawer2.h
+	GPU/GpuSidesDrawer2.cpp
 )
 
 source_group("CPU" FILES 
@@ -52,6 +54,8 @@ source_group("GPU" FILES
 	GPU/GpuSidesDrawer.cpp
 	GPU/GpuShaderGenerator.h
 	GPU/GpuShaderGenerator.cpp
+	GPU/GpuSidesDrawer2.h
+	GPU/GpuSidesDrawer2.cpp
 )
 
 
