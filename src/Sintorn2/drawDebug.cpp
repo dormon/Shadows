@@ -8,9 +8,12 @@
 
 #include <Deferred.h>
 #include <FunctionPrologue.h>
+#include <divRoundUp.h>
 
 #include <Sintorn2/drawDebug.h>
 #include <Sintorn2/mortonShader.h>
+#include <Sintorn2/dumpData.h>
+#include <Sintorn2/drawSamples.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -20,6 +23,7 @@ void prepareCommon(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2.method.debug");
   vars.reCreate<VertexArray>("sintorn2.method.debug.vao");
 }
+
 
 void blitDepth(vars::Vars&vars){
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
@@ -249,6 +253,7 @@ void drawMortons(vars::Vars&vars){
   vao->unbind();
 }
 
+
 }
 
 void sintorn2::drawDebug(vars::Vars&vars){
@@ -258,6 +263,7 @@ void sintorn2::drawDebug(vars::Vars&vars){
   enum DebugType{
     BASIC,
     DRAW_MORTON,
+    DRAW_SAMPLES,
   };
 
   auto&type = vars.addOrGetUint32("sintorn2.method.debug.type",BASIC);
@@ -267,15 +273,24 @@ void sintorn2::drawDebug(vars::Vars&vars){
         type = BASIC;
       if(ImGui::MenuItem("drawMorton"))
         type = DRAW_MORTON;
+      if(ImGui::MenuItem("drawSamples"))
+        type = DRAW_SAMPLES;
+      if(ImGui::MenuItem("copyData"))
+        sintorn2::debug::dumpData(vars);
       ImGui::EndMenu();
     }
+
     ImGui::EndMainMenuBar();
   }
   if(type == DRAW_MORTON)
     debug::drawMortons(vars);
 
-  if(type == BASIC)
-    debug::drawBasic(vars);
+  //if(type == BASIC)
+  //  debug::drawBasic(vars);
+
+  if(type == DRAW_SAMPLES)
+    debug::drawSamples(vars);
+
 
   //if(ImGui::Button("mine button"))
   //  std::cerr << "button pressed" << std::endl;

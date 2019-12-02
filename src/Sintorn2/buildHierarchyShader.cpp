@@ -42,8 +42,10 @@ layout(local_size_x=WARP)in;
 layout(binding=0)buffer NodePool   {uint  nodePool   [];};
 layout(binding=1)buffer AABBPool   {float aabbPool   [];};
 layout(binding=2)buffer AABBCounter{uint  aabbCounter[];};
-layout(binding=1)uniform sampler2DRect depthTexture;
 
+
+
+layout(binding=1)uniform sampler2DRect depthTexture;
 
 // converts depth (-1,+1) to Z in view-space
 float depthToZ(float d){
