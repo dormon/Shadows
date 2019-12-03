@@ -108,6 +108,13 @@ void dumpNodePool(vars::Vars&vars){
   buf->copy(*nodePool);
 }
 
+void dumpAABBPool(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto aabbPool = vars.get<Buffer>("sintorn2.method.aabbPool");
+  auto buf = vars.reCreate<Buffer>("sintorn2.method.debug.dump.aabbPool",aabbPool->getSize());
+  buf->copy(*aabbPool);
+}
+
 void dumpBasic(vars::Vars&vars){
   FUNCTION_CALLER();
   auto ws        = *vars.get<glm::uvec2>("windowSize");
@@ -142,6 +149,7 @@ void dumpData(vars::Vars&vars){
   dumpSamples(vars);
   dumpBasic(vars);
   dumpNodePool(vars);
+  dumpAABBPool(vars);
   std::cerr << "dump" << std::endl;
 }
 
