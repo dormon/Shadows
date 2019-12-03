@@ -2,6 +2,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <Vars/Vars.h>
+#include <imguiVars/addVarsLimits.h>
 #include <geGL/geGL.h>
 #include <geGL/StaticCalls.h>
 
@@ -58,9 +59,19 @@ void prepareDrawNodePool(vars::Vars&vars){
   std::string const fsSrc = R".(
   #version 450
 
+  uniform uint levelToDraw = 0;
+
+  const vec4 colors[6] = {
+    vec4(1,1,1,1),
+    vec4(1,0,0,1),
+    vec4(0,1,0,1),
+    vec4(0,0,1,1),
+    vec4(1,1,0,1),
+    vec4(1,0,1,1),
+  };
   layout(location=0)out vec4 fColor;
   void main(){
-    fColor = vec4(1);
+    fColor = vec4(colors[levelToDraw]);
   }
   ).";
 
@@ -68,7 +79,7 @@ void prepareDrawNodePool(vars::Vars&vars){
 #ifndef WARP
 #define WARP 64
 #endif//WARP
-
+#line 72
 #ifndef WINDOW_X
 #define WINDOW_X 512
 #endif//WINDOW_X
@@ -101,6 +112,9 @@ void prepareDrawNodePool(vars::Vars&vars){
 #define FOVY 1.5707963267948966f
 #endif//FOVY
 
+uint divRoundUp(uint x,uint y){
+  return uint(x/y) + uint((x%y)>0);
+}
 
   layout(points)in;
   layout(line_strip,max_vertices=28)out;
@@ -114,6 +128,9 @@ void prepareDrawNodePool(vars::Vars&vars){
 
   uniform mat4 nodeView;
   uniform mat4 nodeProj;
+
+#line 122
+  uniform uint levelToDraw = 0;
 
   void main(){
     const uint warpBits        = uint(ceil(log2(float(WARP))));
@@ -147,33 +164,41 @@ void prepareDrawNodePool(vars::Vars&vars){
       0 + levelSize[0] + levelSize[1] + levelSize[2] + levelSize[3] + levelSize[4],
     };
     uint gId = vId[0];
+#line 157
+    uint bitsToDiv = warpBits*(nofLevels-1-levelToDraw);
+    uint xBitsToDiv = divRoundUp(bitsToDiv , 3u);
+    uint yBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-1,0)) , 3u);
+    uint zBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-2,0)) , 3u);
 
-    uint x = gId % clustersX;
-    uint y = (gId / clustersX) % clustersY;
-    uint z = (gId / (clustersX * clustersY));
+#line 163
+    uint clusX = divRoundUp(clustersX,1u<<xBitsToDiv);
+    uint clusY = divRoundUp(clustersY,1u<<yBitsToDiv);
 
-    uint mor = morton(uvec3(x,y,z));
+    uint x = gId % clusX;
+    uint y = (gId / clusX) % clusY;
+    uint z = (gId / (clusX * clusY));
 
-    uint bit  = (mor >> (warpBits*0u)) & warpMask;
-    uint node = (mor >> (warpBits*1u));
+    uint mor = morton(uvec3(x<<xBitsToDiv,y<<yBitsToDiv,z<<zBitsToDiv));
 
-    uint doesNodeExist = nodePool[levelOffset[clamp(nofLevels-1u,0u,5u)]+node*2u+uint(bit>31u)]&(1u<<(bit&0x1fu));
+    uint bit  = (mor >> (warpBits*(nofLevels-1-levelToDraw))) & warpMask;
+    uint node = (mor >> (warpBits*(nofLevels  -levelToDraw)));
+
+    uint doesNodeExist = nodePool[levelOffset[clamp(levelToDraw,0u,5u)]+node*2u+uint(bit>31u)]&(1u<<(bit&0x1fu));
 
     if(doesNodeExist == 0)return;
 
     vec4 ndc  = vec4(0);
     vec4 ndc2 = vec4(0);
 
-    float startZ = clusterToZ(z);
-    float endZ   = clusterToZ(z+1);
 
-    float startX = -1.f + 2.f * float(x*TILE_X) / float(WINDOW_X);
-    float startY = -1.f + 2.f * float(y*TILE_Y) / float(WINDOW_Y);
+    float startZ = clusterToZ(z<<zBitsToDiv);
+    float endZ   = clusterToZ((z+1)<<zBitsToDiv);
 
-    float endX = clamp(-1.f + 2.f * float((x+1)*TILE_X) / float(WINDOW_X),-1.f,1.f);
-    float endY = clamp(-1.f + 2.f * float((y+1)*TILE_Y) / float(WINDOW_Y),-1.f,1.f);
+    float startX = -1.f + 2.f * float((x<<xBitsToDiv)*TILE_X) / float(WINDOW_X);
+    float startY = -1.f + 2.f * float((y<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y);
 
-
+    float endX = clamp(-1.f + 2.f * float(((x+1)<<xBitsToDiv)*TILE_X) / float(WINDOW_X),-1.f,1.f);
+    float endY = clamp(-1.f + 2.f * float(((y+1)<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y),-1.f,1.f);
 
 #ifdef FAR_IS_INFINITE
     float e = -1.f;
@@ -190,7 +215,7 @@ void prepareDrawNodePool(vars::Vars&vars){
     gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
     gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
     EndPrimitive();
-
+#line 208
     gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
     gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
     gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
@@ -198,24 +223,6 @@ void prepareDrawNodePool(vars::Vars&vars){
     gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
     EndPrimitive();
 
-    /*
-    M = proj*view;//*inverse(nodeView)*inverse(nodeProj);
-    startZ = -1.f;
-    gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    EndPrimitive();
-    */
-
-    /*
-    gl_Position = vec4(-1,0,0,1);EmitVertex();
-    gl_Position = vec4(+1,0,0,1);EmitVertex();
-    EndPrimitive();
-    */
-
-    //*
     gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
     gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
     EndPrimitive();
@@ -228,7 +235,6 @@ void prepareDrawNodePool(vars::Vars&vars){
     gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
     gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
     EndPrimitive();
-    // */
   }
 
   ).";
@@ -279,6 +285,7 @@ void drawNodePool(vars::Vars&vars){
 
   auto const view           = *vars.get<glm::mat4>     ("sintorn2.method.debug.viewMatrix"           );
   auto const proj           = *vars.get<glm::mat4>     ("sintorn2.method.debug.projectionMatrix"     );
+  auto const levelsToDraw   =  vars.getUint32          ("sintorn2.method.debug.levelsToDraw"         );
 
   auto vao = vars.get<VertexArray>("sintorn2.method.debug.vao");
 
@@ -290,12 +297,21 @@ void drawNodePool(vars::Vars&vars){
   nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   prg->use();
   prg
-    ->setMatrix4fv("nodeView",glm::value_ptr(nodeView))
-    ->setMatrix4fv("nodeProj",glm::value_ptr(nodeProj))
-    ->setMatrix4fv("view"    ,glm::value_ptr(view    ))
-    ->setMatrix4fv("proj"    ,glm::value_ptr(proj    ))
+    ->setMatrix4fv("nodeView"   ,glm::value_ptr(nodeView))
+    ->setMatrix4fv("nodeProj"   ,glm::value_ptr(nodeProj))
+    ->setMatrix4fv("view"       ,glm::value_ptr(view    ))
+    ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
     ;
-  glDrawArrays(GL_POINTS,0,cfg.clustersX*cfg.clustersY*cfg.clustersZ);
+
+
+  for(uint32_t l=0;l<cfg.nofLevels;++l){
+    if((levelsToDraw&(1u<<l)) == 0)continue;
+
+    int32_t bits = glm::max(((int)cfg.allBits)-(int)(cfg.warpBits*(cfg.nofLevels-1-l)),0);
+    uint32_t nofNodes = 1u << ((uint32_t)bits);
+    prg->set1ui      ("levelToDraw",l);
+    glDrawArrays(GL_POINTS,0,nofNodes);
+  }
 
   vao->unbind();
 

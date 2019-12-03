@@ -110,13 +110,14 @@ void dumpNodePool(vars::Vars&vars){
 
 void dumpBasic(vars::Vars&vars){
   FUNCTION_CALLER();
-  auto ws = *vars.get<glm::uvec2>("windowSize");
-  auto lp = *vars.get<glm::vec4>("sintorn2.method.debug.lightPosition"   );
-  auto vm = *vars.get<glm::mat4>("sintorn2.method.debug.viewMatrix"      );
-  auto pm = *vars.get<glm::mat4>("sintorn2.method.debug.projectionMatrix");
-  auto tx = vars.getUint32("sintorn2.param.tileX");
-  auto ty = vars.getUint32("sintorn2.param.tileY");
-  auto mz = vars.getUint32("sintorn2.param.minZBits");
+  auto ws        = *vars.get<glm::uvec2>("windowSize");
+  auto lp        = *vars.get<glm::vec4>("sintorn2.method.debug.lightPosition"   );
+  auto vm        = *vars.get<glm::mat4>("sintorn2.method.debug.viewMatrix"      );
+  auto pm        = *vars.get<glm::mat4>("sintorn2.method.debug.projectionMatrix");
+  auto tx        = vars.getUint32("sintorn2.param.tileX");
+  auto ty        = vars.getUint32("sintorn2.param.tileY");
+  auto mz        = vars.getUint32("sintorn2.param.minZBits"  );
+  auto nofLevels = vars.getUint32("sintorn2.method.nofLevels");
 
   auto const nnear =  vars.getFloat("args.camera.near");
   auto const ffar  =  vars.getFloat("args.camera.far" );
@@ -133,6 +134,7 @@ void dumpBasic(vars::Vars&vars){
   vars.reCreate<float     >("sintorn2.method.debug.dump.near"            ,nnear);
   vars.reCreate<float     >("sintorn2.method.debug.dump.far"             ,ffar );
   vars.reCreate<float     >("sintorn2.method.debug.dump.fovy"            ,fovy );
+  vars.reCreate<uint32_t  >("sintorn2.method.debug.dump.nofLevels"       ,nofLevels);
 }
 
 void dumpData(vars::Vars&vars){

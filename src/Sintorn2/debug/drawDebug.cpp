@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -250,7 +252,9 @@ void sintorn2::drawDebug(vars::Vars&vars){
     DRAW_NODEPOOL,
   };
 
-  auto&type = vars.addOrGetUint32("sintorn2.method.debug.type",DEFAULT);
+  auto&type         = vars.addOrGetUint32("sintorn2.method.debug.type",DEFAULT);
+  auto&levelsToDraw = vars.addOrGetUint32("sintorn2.method.debug.levelsToDraw",0);
+
   if(ImGui::BeginMainMenuBar()){
     if(ImGui::BeginMenu("debug")){
       if(ImGui::MenuItem("default"))
@@ -266,6 +270,20 @@ void sintorn2::drawDebug(vars::Vars&vars){
         type = DRAW_SAMPLES;
       if(ImGui::MenuItem("drawNodePool"))
         type = DRAW_NODEPOOL;
+
+      if(type == DRAW_NODEPOOL){
+        if(vars.has("sintorn2.method.debug.dump.nofLevels")){
+          auto nofLevels = vars.getUint32("sintorn2.method.debug.dump.nofLevels");
+          for(uint32_t i=0;i<nofLevels;++i){
+            std::stringstream ss;
+            ss << "level" << i;
+            if(ImGui::MenuItem(ss.str().c_str())){
+              levelsToDraw ^= 1<<i;
+            }
+          }
+        }
+      }
+
       ImGui::EndMenu();
     }
 

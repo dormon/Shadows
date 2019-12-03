@@ -171,31 +171,31 @@ void compute(uvec2 coord){
           uint node = (referenceMorton >> (warpBits*1u));
           atomicOr(nodePool[levelOffset[clamp(nofLevels-1u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
         }
-        //if(nofLevels>1){
-        //  uint bit  = (referenceMorton >> (warpBits*1u)) & warpMask;
-        //  uint node = (referenceMorton >> (warpBits*2u));
-        //  atomicOr(nodePool[levelOffset[clamp(nofLevels-2u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
-        //}
-        //if(nofLevels>2){
-        //  uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
-        //  uint node = (referenceMorton >> (warpBits*3u));
-        //  atomicOr(nodePool[levelOffset[clamp(nofLevels-3u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
-        //}
-        //if(nofLevels>3){
-        //  uint bit  = (referenceMorton >> (warpBits*3u)) & warpMask;
-        //  uint node = (referenceMorton >> (warpBits*4u));
-        //  atomicOr(nodePool[levelOffset[clamp(nofLevels-4u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
-        //}
-        //if(nofLevels>4){
-        //  uint bit  = (referenceMorton >> (warpBits*4u)) & warpMask;
-        //  uint node = (referenceMorton >> (warpBits*5u));
-        //  atomicOr(nodePool[levelOffset[clamp(nofLevels-5u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
-        //}
-        //if(nofLevels>5){
-        //  uint bit  = (referenceMorton >> (warpBits*5u)) & warpMask;
-        //  uint node = (referenceMorton >> (warpBits*6u));
-        //  atomicOr(nodePool[levelOffset[clamp(nofLevels-6u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
-        //}
+        if(nofLevels>1){
+          uint bit  = (referenceMorton >> (warpBits*1u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*2u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-2u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+        }
+        if(nofLevels>2){
+          uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*3u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-3u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+        }
+        if(nofLevels>3){
+          uint bit  = (referenceMorton >> (warpBits*3u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*4u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-4u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+        }
+        if(nofLevels>4){
+          uint bit  = (referenceMorton >> (warpBits*4u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*5u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-5u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+        }
+        if(nofLevels>5){
+          uint bit  = (referenceMorton >> (warpBits*5u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*6u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-6u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+        }
 
 
 
