@@ -25,7 +25,7 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   auto aabbPool    = vars.get<Buffer >("sintorn2.method.aabbPool");
   auto aabbCounter = vars.get<Buffer >("sintorn2.method.aabbCounter");
 
-  aabbPool   ->clear(GL_R32F ,GL_RED        ,GL_FLOAT       );
+  //aabbPool   ->clear(GL_R32F ,GL_RED        ,GL_FLOAT       );
   aabbCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
   nodePool   ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
 

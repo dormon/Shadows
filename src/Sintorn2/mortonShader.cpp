@@ -65,9 +65,10 @@ uint morton2(uvec3 v){
   }
   return res;
 }
-*/
+// */
 
 uint morton(uvec3 v){
+  //return morton2(v);
   const uint clustersX     = uint((WINDOW_X)/(TILE_X)) + uint(((WINDOW_X)%(TILE_X)) != 0u);
   const uint clustersY     = uint((WINDOW_Y)/(TILE_Y)) + uint(((WINDOW_Y)%(TILE_Y)) != 0u);
   const uint xBits         = uint(ceil(log2(float(clustersX))));

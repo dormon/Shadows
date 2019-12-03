@@ -21,7 +21,10 @@ void Sintorn2::create(glm::vec4 const& lightPosition,
                       glm::mat4 const& viewMatrix,
                       glm::mat4 const& projectionMatrix)
 {
+  //glFinish();
+  ifExistStamp("");
   sintorn2::buildHierarchy(vars);
+  ifExistStamp("buildHierarchy");
 
 }
 
