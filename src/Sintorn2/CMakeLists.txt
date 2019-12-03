@@ -17,7 +17,14 @@ add_library(${PROJECT_NAME} STATIC
   buildHierarchy.h
   buildHierarchyShader.cpp
   buildHierarchyShader.h
+  depthToZShader.cpp
+  depthToZShader.h
+  quantizeZShader.cpp
+  quantizeZShader.h
+  config.h
   )
 
+add_subdirectory(debug)
+
 target_include_directories(${PROJECT_NAME} PUBLIC ..)
-target_link_libraries(${PROJECT_NAME} PUBLIC geGL::geGL)
+target_link_libraries(${PROJECT_NAME} PUBLIC geGL::geGL Sintorn2_Debug)

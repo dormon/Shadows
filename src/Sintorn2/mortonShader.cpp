@@ -43,12 +43,37 @@ const std::string sintorn2::mortonShader = R".(
 // .*.|   ...|...|...|       o    |     n     |   2n+3m   |  xxxxxxx
 // ...|   ...|...|...|       o    |     n     |   2n+3m   |  xxxxxxx
 
-uint morton(uvec3 v){
+/*
+uint morton2(uvec3 v){
   const uint clustersX     = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
   const uint clustersY     = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
   const uint xBits         = uint(ceil(log2(float(clustersX))));
   const uint yBits         = uint(ceil(log2(float(clustersY))));
   const uint zBits         = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
+  const uint allBits = xBits + yBits + zBits;
+
+  uint res = 0;
+  uint xb[3] = {0,0,0};
+  uint mb[3] = {xBits,yBits,zBits};
+  uint a = 0;
+  for(uint b=0;b<allBits;++b){
+    res |= ((v[a]>>xb[a])&1u) << b;
+    xb[a]++;
+    a = (a+1u)%3u;
+    if(xb[a] >= mb[a])a = (a+1u)%3u;
+    if(xb[a] >= mb[a])a = (a+1u)%3u;
+  }
+  return res;
+}
+// */
+
+uint morton(uvec3 v){
+  //return morton2(v);
+  const uint clustersX     = uint((WINDOW_X)/(TILE_X)) + uint(((WINDOW_X)%(TILE_X)) != 0u);
+  const uint clustersY     = uint((WINDOW_Y)/(TILE_Y)) + uint(((WINDOW_Y)%(TILE_Y)) != 0u);
+  const uint xBits         = uint(ceil(log2(float(clustersX))));
+  const uint yBits         = uint(ceil(log2(float(clustersY))));
+  const uint zBits         = (MIN_Z_BITS)>0u?(MIN_Z_BITS):max(max(xBits,yBits),(MIN_Z_BITS));
   const uint shortest      = min(min(xBits,yBits),zBits);
   const uint middle        = max(max(min(xBits,yBits),min(xBits,zBits)),min(yBits,zBits));
   const uint longest       = max(max(xBits,yBits),zBits);
@@ -61,22 +86,22 @@ uint morton(uvec3 v){
   const uint shortestY     = uint(shortestAxis == 1u);
   const uint longestZ      = uint(longestAxis == 2u);
   const uint longestX      = uint(longestAxis == 0u);
-  const uint isMiddle      = uint(middle > 0);
-  const uint isLongest     = uint(longest > 0);
+  const uint isMiddle      = uint(bits2Length > 0u);
+  const uint isLongest     = uint(bits1Length > 0u);
   const uint bits2Shifts   = uint(uint(bits2Length - uint(shortestZ | (shortestY & longestZ))) * isMiddle);
 
   const uint bits2OffsetB   = bits3Length*3u + shortestAxis;
-  const uint bits2Offset00  = bits2OffsetB + 2* 0;
-  const uint bits2Offset01  = bits2OffsetB + 2* 1;
-  const uint bits2Offset02  = bits2OffsetB + 2* 2;
-  const uint bits2Offset03  = bits2OffsetB + 2* 3;
-  const uint bits2Offset04  = bits2OffsetB + 2* 4;
-  const uint bits2Offset05  = bits2OffsetB + 2* 5;
-  const uint bits2Offset06  = bits2OffsetB + 2* 6;
-  const uint bits2Offset07  = bits2OffsetB + 2* 7;
-  const uint bits2Offset08  = bits2OffsetB + 2* 8;
-  const uint bits2Offset09  = bits2OffsetB + 2* 9;
-  const uint bits2Offset10  = bits2OffsetB + 2*10;
+  const uint bits2Offset00  = bits2OffsetB + 2u* 0u;
+  const uint bits2Offset01  = bits2OffsetB + 2u* 1u;
+  const uint bits2Offset02  = bits2OffsetB + 2u* 2u;
+  const uint bits2Offset03  = bits2OffsetB + 2u* 3u;
+  const uint bits2Offset04  = bits2OffsetB + 2u* 4u;
+  const uint bits2Offset05  = bits2OffsetB + 2u* 5u;
+  const uint bits2Offset06  = bits2OffsetB + 2u* 6u;
+  const uint bits2Offset07  = bits2OffsetB + 2u* 7u;
+  const uint bits2Offset08  = bits2OffsetB + 2u* 8u;
+  const uint bits2Offset09  = bits2OffsetB + 2u* 9u;
+  const uint bits2Offset10  = bits2OffsetB + 2u*10u;
 
   const uint bits2LMask00 = uint((1u << bits2Offset00)-1u);
   const uint bits2LMask01 = uint((1u << bits2Offset01)-1u);

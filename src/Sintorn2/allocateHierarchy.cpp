@@ -99,6 +99,7 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
   vars.reCreate      <uint32_t>("sintorn2.method.zBits"      ,zBits    );
   vars.reCreate      <uint32_t>("sintorn2.method.clustersX"  ,clustersX);
   vars.reCreate      <uint32_t>("sintorn2.method.clustersY"  ,clustersY);
+  vars.reCreate      <uint32_t>("sintorn2.method.nofLevels"  ,nofLevels);
   vars.reCreate      <Buffer  >("sintorn2.method.nodePool"   ,nodesSize );
   vars.reCreate      <Buffer  >("sintorn2.method.aabbPool"   ,aabbSize  );
   vars.reCreate      <Buffer  >("sintorn2.method.aabbCounter",sizeof(uint32_t));

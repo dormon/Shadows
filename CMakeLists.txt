@@ -117,6 +117,7 @@ set(SOURCES
   src/ifExistEndStamp.cpp
   src/doShading.cpp
   src/ifMethodExistCreateShadowMask.cpp
+  src/ifMethodExistsDrawDebug.cpp
   src/saveTexture.cpp
   src/createGeometryBuffer.cpp
   src/copyTexture.cpp
@@ -180,6 +181,7 @@ set(INCLUDES
   src/ifExistEndStamp.h
   src/doShading.h
   src/ifMethodExistCreateShadowMask.h
+  src/ifMethodExistsDrawDebug.h
   src/saveTexture.h
   src/createGeometryBuffer.h
   src/copyTexture.h

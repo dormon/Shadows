@@ -42,30 +42,9 @@ layout(local_size_x=WARP)in;
 layout(binding=0)buffer NodePool   {uint  nodePool   [];};
 layout(binding=1)buffer AABBPool   {float aabbPool   [];};
 layout(binding=2)buffer AABBCounter{uint  aabbCounter[];};
+
+
 layout(binding=1)uniform sampler2DRect depthTexture;
-
-
-// converts depth (-1,+1) to Z in view-space
-float depthToZ(float d){
-#ifdef FAR_IS_INFINITE
-  return 2.f*NEAR    /(d - 1);
-#else
-  return 2.f*NEAR*FAR/(d*(FAR-NEAR)-FAR-NEAR);
-#endif
-}
-
-uint quantizeZ(float z){
-  const uint clustersX     = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
-  const uint clustersY     = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
-  const uint xBits         = uint(ceil(log2(float(clustersX))));
-  const uint yBits         = uint(ceil(log2(float(clustersY))));
-  const uint zBits         = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
-  const uint clustersZ     = 1u << zBits;
-  const uint Sy            = clustersY;
-
-  return clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/Sy)),0,clustersZ-1);
-}
-
 
 uint getMorton(uvec2 coord){
   const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
@@ -81,7 +60,66 @@ uint getMorton(uvec2 coord){
 uint activeThread = 0;
 
 shared uint sharedMortons[WARP];
+shared float reductionArray[WARP];
 
+#if WARP == 64
+void reduce(){
+
+  if(gl_LocalInvocationIndex == 0){
+    float ab[2];
+    ab[0] = reductionArray[0];
+    ab[1] = reductionArray[0];
+    for(int i=1;i<64;++i){
+      ab[0] = min(ab[0],reductionArray[i]);
+      ab[1] = max(ab[1],reductionArray[i]);
+    }
+    reductionArray[0] = ab[0];
+    reductionArray[1] = ab[1];
+  }
+  return;
+
+  float ab[2];
+  ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1fu)+ 0u];
+  ab[1] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1fu)+32u];
+  uint w = uint((ab[1]-ab[0])*(-1.f+2.f*float(uint(gl_LocalInvocationIndex)&1u)) > 0.f);
+  reductionArray[gl_LocalInvocationIndex] = ab[w];
+
+  if((uint(gl_LocalInvocationIndex)&0x10u) == 0u){
+    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];
+    ab[1] = reductionArray[gl_LocalInvocationIndex + 16u];
+    uint w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x20u)!=0)) > 0.f);
+    reductionArray[gl_LocalInvocationIndex - (uint(gl_LocalInvocationIndex)&0x20u)*16u] = ab[w];
+  }
+
+  if((uint(gl_LocalInvocationIndex)&0x28u) == 0u){
+    ab[0] = reductionArray[gl_LocalInvocationIndex + 0u];
+    ab[1] = reductionArray[gl_LocalInvocationIndex + 8u];
+    uint w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x10u)!=0)) > 0.f);
+    reductionArray[gl_LocalInvocationIndex - (uint(gl_LocalInvocationIndex)&0x10u)*8u] = ab[w];
+  }
+
+  if((uint(gl_LocalInvocationIndex)&0x34u) == 0u){
+    ab[0] = reductionArray[gl_LocalInvocationIndex + 0u];
+    ab[1] = reductionArray[gl_LocalInvocationIndex + 4u];
+    uint w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x8u)!=0)) > 0.f);
+    reductionArray[gl_LocalInvocationIndex - (uint(gl_LocalInvocationIndex)&0x8u)*4u] = ab[w];
+  }
+
+  if((uint(gl_LocalInvocationIndex)&0x3au) == 0u){
+    ab[0] = reductionArray[gl_LocalInvocationIndex + 0u];
+    ab[1] = reductionArray[gl_LocalInvocationIndex + 2u];
+    uint w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x4u)!=0)) > 0.f);
+    reductionArray[gl_LocalInvocationIndex - (uint(gl_LocalInvocationIndex)&0x4u)*2u] = ab[w];
+  }
+
+  if((uint(gl_LocalInvocationIndex)&0x3du) == 0u){
+    ab[0] = reductionArray[gl_LocalInvocationIndex + 0u];
+    ab[1] = reductionArray[gl_LocalInvocationIndex + 1u];
+    uint w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x2u)!=0)) > 0.f);
+    reductionArray[gl_LocalInvocationIndex - (uint(gl_LocalInvocationIndex)&0x2u)*1u] = ab[w];
+  }
+}
+#endif
 
 void compute(uvec2 coord){
   const uint warpBits        = uint(ceil(log2(float(WARP))));
@@ -92,18 +130,17 @@ void compute(uvec2 coord){
   const uint zBits           = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
   const uint allBits         = xBits + yBits + zBits;
   const uint nofLevels       = uint(allBits/warpBits) + uint(allBits%warpBits != 0u);
-  const uint uintsPerWarp    = uint(WARP/32);
+  const uint uintsPerWarp    = uint(WARP/32u);
 
-  const uint warpMask        = uint((1u << warpBits) - 1u);
-  const uint uintsPerNode    = uintsPerWarp + 1u + (uintsPerWarp-1);
+  const uint warpMask        = uint(WARP - 1u);
 
   const uint levelSize[6] = {
-    1u << (allBits >> ((nofLevels-0u)*warpBits)),
-    1u << (allBits >> ((nofLevels-1u)*warpBits)),
-    1u << (allBits >> ((nofLevels-2u)*warpBits)),
-    1u << (allBits >> ((nofLevels-3u)*warpBits)),
-    1u << (allBits >> ((nofLevels-4u)*warpBits)),
-    1u << (allBits >> ((nofLevels-5u)*warpBits)),
+    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-0u)*warpBits),0)),
+    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
+    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
+    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
+    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
+    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
   };
 
   const uint levelOffset[6] = {
@@ -163,41 +200,96 @@ void compute(uvec2 coord){
   #endif
   //}
  
+#line 166
   //if(uintsPerWarp == 2){
   #if WARP == 64
+    //if(gl_GlobalInvocationID.x == 0){
+    //  nodePool[0] = levelSize[0];
+    //  nodePool[1] = levelSize[1];
+    //  nodePool[2] = levelSize[2];
+    //  nodePool[3] = levelSize[3];
+    //  nodePool[4] = levelSize[4];
+    //  nodePool[5] = levelSize[5];
+    //}
+    //return;
     uint counter = 0;
-    BALLOT_UINTS notDone = BALLOT_RESULT_TO_UINTS(BALLOT(activeThread != 0));
-    while(notDone[0] != 0 || notDone[1] != 0){
-      uint selectedBit     = notDone[0]!=0?findLSB(notDone[0]):findLSB(notDone[1])+32;
+    uint64_t notDone = ballotARB(activeThread != 0);
+    while(notDone != 0){
+
+      if(counter >= 64)break;
+      counter++;
+
+      uint selectedBit     = unpackUint2x32(notDone)[0]!=0?findLSB(unpackUint2x32(notDone)[0]):findLSB(unpackUint2x32(notDone)[1])+32u;
+      //uint selectedBit     = (notDone&0xfffffffful)!=0?findLSB(uint(notDone)):findLSB(uint(notDone>>32u))+32u;
       uint referenceMorton = sharedMortons[selectedBit];
 
-      BALLOT_UINTS sameCluster = BALLOT_RESULT_TO_UINTS(BALLOT(referenceMorton == morton && activeThread != 0));
       if(gl_LocalInvocationIndex == 0){
-                                nodePool[nodePoolLevelOffsets[nofLevels-1u]+(referenceMorton                  )*uintsPerNode+0] = sameCluster[0];
-                                nodePool[nodePoolLevelOffsets[nofLevels-1u]+(referenceMorton                  )*uintsPerNode+1] = sameCluster[1];
+        if(nofLevels>0){
+          uint bit  = (referenceMorton >> (warpBits*0u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*1u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-1u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+        }
         if(nofLevels>1){
-          uint shift = (referenceMorton>>warpBitsShift[0])&warpMask;
-          atomicOr(nodePool[nodePoolLevelOffsets[clamp(nofLevels-2u,0u,5u)]+(referenceMorton>>warpBitsShift[1])*uintsPerNode+uint(shift>31u)],1u<<(shift&0x1fu));
+          uint bit  = (referenceMorton >> (warpBits*1u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*2u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-2u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
         }
         if(nofLevels>2){
-          uint shift = (referenceMorton>>warpBitsShift[1])&warpMask;
-          atomicOr(nodePool[nodePoolLevelOffsets[clamp(nofLevels-3u,0u,5u)]+(referenceMorton>>warpBitsShift[2])*uintsPerNode+uint(shift>31u)],1u<<(shift&0x1fu));
+          uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*3u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-3u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
         }
         if(nofLevels>3){
-          uint shift = (referenceMorton>>warpBitsShift[2])&warpMask;
-          atomicOr(nodePool[nodePoolLevelOffsets[clamp(nofLevels-4u,0u,5u)]+(referenceMorton>>warpBitsShift[3])*uintsPerNode+uint(shift>31u)],1u<<(shift&0x1fu));
+          uint bit  = (referenceMorton >> (warpBits*3u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*4u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-4u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
         }
         if(nofLevels>4){
-          uint shift = (referenceMorton>>warpBitsShift[3])&warpMask;
-          atomicOr(nodePool[nodePoolLevelOffsets[clamp(nofLevels-5u,0u,5u)]+(referenceMorton>>warpBitsShift[4])*uintsPerNode+uint(shift>31u)],1u<<(shift&0x1fu));
+          uint bit  = (referenceMorton >> (warpBits*4u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*5u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-5u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
         }
         if(nofLevels>5){
-          uint shift = (referenceMorton>>warpBitsShift[4])&warpMask;
-          atomicOr(nodePool[nodePoolLevelOffsets[clamp(nofLevels-6u,0u,5u)]+(referenceMorton>>warpBitsShift[5])*uintsPerNode+uint(shift>31u)],1u<<(shift&0x1fu));
+          uint bit  = (referenceMorton >> (warpBits*5u)) & warpMask;
+          uint node = (referenceMorton >> (warpBits*6u));
+          atomicOr(nodePool[levelOffset[clamp(nofLevels-6u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
         }
       }
-      notDone[0] ^= sameCluster[0];
-      notDone[1] ^= sameCluster[1];
+      
+      uint64_t sameCluster = ballotARB(referenceMorton == morton && activeThread != 0);
+
+
+
+      reductionArray[gl_LocalInvocationIndex] = -1.f + 2.f/float(WINDOW_X)*(coord.x+0.5f);
+
+      if(referenceMorton != morton || activeThread == 0)
+        reductionArray[gl_LocalInvocationIndex] = reductionArray[selectedBit];
+
+      reduce();
+
+      if(gl_LocalInvocationIndex == 0){
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+0] = reductionArray[0];
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+1] = reductionArray[1];
+      }
+
+
+      reductionArray[gl_LocalInvocationIndex] = -1.f + 2.f/float(WINDOW_Y)*(coord.y+0.5f);
+
+      if(referenceMorton != morton || activeThread == 0)
+        reductionArray[gl_LocalInvocationIndex] = reductionArray[selectedBit];
+
+      reduce();
+
+      if(gl_LocalInvocationIndex == 0){
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+2] = reductionArray[0];
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+3] = reductionArray[1];
+      }
+
+
+
+      notDone ^= sameCluster;
     }
   #endif
   //}
