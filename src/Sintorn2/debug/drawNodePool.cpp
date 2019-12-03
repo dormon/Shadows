@@ -122,6 +122,7 @@ uint divRoundUp(uint x,uint y){
   flat in uint vId[];
 
   layout(binding=0)buffer NodePool{uint nodePool[];};
+  layout(binding=1)buffer AABBPool{float aabbPool[];};
 
   uniform mat4 view;
   uniform mat4 proj;
@@ -183,7 +184,14 @@ uint divRoundUp(uint x,uint y){
     uint bit  = (mor >> (warpBits*(nofLevels-1-levelToDraw))) & warpMask;
     uint node = (mor >> (warpBits*(nofLevels  -levelToDraw)));
 
+
     uint doesNodeExist = nodePool[levelOffset[clamp(levelToDraw,0u,5u)]+node*2u+uint(bit>31u)]&(1u<<(bit&0x1fu));
+
+    uint aabbNode = (mor >> (warpBits*(nofLevels-1-levelToDraw)));
+    float mminX = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+0];
+    float mmaxX = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+1];
+    float mminY = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+2];
+    float mmaxY = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+3];
 
     if(doesNodeExist == 0)return;
 
@@ -197,8 +205,15 @@ uint divRoundUp(uint x,uint y){
     float startX = -1.f + 2.f * float((x<<xBitsToDiv)*TILE_X) / float(WINDOW_X);
     float startY = -1.f + 2.f * float((y<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y);
 
+
     float endX = clamp(-1.f + 2.f * float(((x+1)<<xBitsToDiv)*TILE_X) / float(WINDOW_X),-1.f,1.f);
     float endY = clamp(-1.f + 2.f * float(((y+1)<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y),-1.f,1.f);
+
+    startX = mminX;
+    endX   = mmaxX;
+
+    startY = mminY;
+    endY   = mmaxY;
 
 #ifdef FAR_IS_INFINITE
     float e = -1.f;

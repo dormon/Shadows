@@ -64,6 +64,20 @@ shared float reductionArray[WARP];
 
 #if WARP == 64
 void reduce(){
+
+  if(gl_LocalInvocationIndex == 0){
+    float ab[2];
+    ab[0] = reductionArray[0];
+    ab[1] = reductionArray[0];
+    for(int i=1;i<64;++i){
+      ab[0] = min(ab[0],reductionArray[i]);
+      ab[1] = max(ab[1],reductionArray[i]);
+    }
+    reductionArray[0] = ab[0];
+    reductionArray[1] = ab[1];
+  }
+  return;
+
   float ab[2];
   ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1fu)+ 0u];
   ab[1] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1fu)+32u];
@@ -254,10 +268,23 @@ void compute(uvec2 coord){
       reduce();
 
       if(gl_LocalInvocationIndex == 0){
-        uint bit  = (referenceMorton >> (warpBits*0u)) & warpMask;
-        uint node = (referenceMorton >> (warpBits*1u));
-        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u+node*6u+0] = reductionArray[0];
-        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u+node*6u+1] = reductionArray[1];
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+0] = reductionArray[0];
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+1] = reductionArray[1];
+      }
+
+
+      reductionArray[gl_LocalInvocationIndex] = -1.f + 2.f/float(WINDOW_Y)*(coord.y+0.5f);
+
+      if(referenceMorton != morton || activeThread == 0)
+        reductionArray[gl_LocalInvocationIndex] = reductionArray[selectedBit];
+
+      reduce();
+
+      if(gl_LocalInvocationIndex == 0){
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+2] = reductionArray[0];
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+3] = reductionArray[1];
       }
 
 
