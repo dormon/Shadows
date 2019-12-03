@@ -8,8 +8,6 @@
 #include <FunctionPrologue.h>
 #include <ifExistStamp.h>
 
-#include <CSSV/sides/drawShaders.h>
-
 #include <geGL/StaticCalls.h>
 
 #include <fstream>
@@ -38,7 +36,7 @@ void GpuSidesDrawer2::drawSides(const glm::mat4& mvp, const glm::vec4& light)
 {
 	s32 pos = GetLowestLevelCellPoint(glm::vec3(light));
 
-	if(pos<0)
+	if (pos < 0)
 	{
 		std::cerr << "Light out of range!\n";
 		return;
@@ -57,9 +55,12 @@ void GpuSidesDrawer2::drawSides(const glm::mat4& mvp, const glm::vec4& light)
 
 	ifExistStamp(vars, "SidesCompute");
 	
-	DrawSides(mvp, light);
+	if (!vars.getBool("hssv.args.testMode"))
+	{
+		DrawSides(mvp);
 
-	ifExistStamp(vars, "SidesDraw");
+		ifExistStamp(vars, "SidesDraw");
+	}
 	//*/
 }
 
@@ -76,7 +77,7 @@ u64 GpuSidesDrawer2::getGpuMemoryConsumptionMB() const
 	sz += IBO->getSize();
 	sz += VBO->getSize();
 
-	for(auto const& b : nodeEdgesIdBuffers)
+	for (auto const& b : nodeEdgesIdBuffers)
 	{
 		sz += b->getSize();
 	}
@@ -161,7 +162,7 @@ void GpuSidesDrawer2::GenerateSidesFromRanges(glm::vec4 const& lightPosition)
 	generateSidesCs->set4fv("lightPosition", glm::value_ptr(lightPosition));
 
 	u32 bindSlot = 0;
-	for(auto& buff : nodeEdgesIdBuffers)
+	for (auto& buff : nodeEdgesIdBuffers)
 	{
 		buff->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	}
@@ -171,7 +172,7 @@ void GpuSidesDrawer2::GenerateSidesFromRanges(glm::vec4 const& lightPosition)
 	DIBO[atomicIndex]->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	IBO->bindRange(GL_SHADER_STORAGE_BUFFER, bindSlot++, 0, sizeof(u32));
 	VBO->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
-	DIBO[atomicIndex^1]->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
+	DIBO[atomicIndex ^ 1]->bindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 
 	DIBO[atomicIndex]->bind(GL_DISPATCH_INDIRECT_BUFFER);
 	glDispatchComputeIndirect(0);
@@ -189,7 +190,7 @@ void GpuSidesDrawer2::GenerateSidesFromRanges(glm::vec4 const& lightPosition)
 	DIBO[atomicIndex]->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	IBO->unbindRange(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 	VBO->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
-	DIBO[atomicIndex^1]->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
+	DIBO[atomicIndex ^ 1]->unbindBase(GL_SHADER_STORAGE_BUFFER, bindSlot++);
 
 	atomicIndex ^= 1;
 	//--
@@ -202,24 +203,22 @@ void GpuSidesDrawer2::GenerateSidesFromRanges(glm::vec4 const& lightPosition)
 	std::vector<u32> db;
 	DIBO[atomicIndex^1]->getData(db);
 
-	
+
 
 	printf("");
 	//*/
 	glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
 }
 
-void GpuSidesDrawer2::DrawSides(glm::mat4 const& mvp, glm::vec4 const& lightPosition)
+void GpuSidesDrawer2::DrawSides(glm::mat4 const& mvp)
 {
 	drawSidesProgram->use();
 	drawSidesProgram->setMatrix4fv("mvp", glm::value_ptr(mvp));
-	drawSidesProgram->set4fv("lightPosition", glm::value_ptr(lightPosition));
 
 	VAO->bind();
 	IBO->bind(GL_DRAW_INDIRECT_BUFFER);
 
-	glPatchParameteri(GL_PATCH_VERTICES, 2);
-	glDrawArraysIndirect(GL_PATCHES, NULL);
+	glDrawArraysIndirect(GL_TRIANGLES, nullptr);
 
 	VAO->unbind();
 	IBO->unbind(GL_DRAW_INDIRECT_BUFFER);
@@ -227,7 +226,7 @@ void GpuSidesDrawer2::DrawSides(glm::mat4 const& mvp, glm::vec4 const& lightPosi
 
 void GpuSidesDrawer2::CreateShaders()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree", "hssv.args.useExperimental");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree", "hssv.args.version");
 
 	CreateSidesDrawProgram();
 	CreateEdgeRangeProgram();
@@ -236,11 +235,18 @@ void GpuSidesDrawer2::CreateShaders()
 
 void GpuSidesDrawer2::CreateSidesDrawProgram()
 {
-	drawSidesProgram = std::make_unique<Program>(
-		 std::make_shared<Shader>(GL_VERTEX_SHADER, cssv::sides::drawVPSrc)
-		,std::make_shared<Shader>(GL_TESS_CONTROL_SHADER, cssv::sides::drawCPSrc)
-		,std::make_shared<Shader>(GL_TESS_EVALUATION_SHADER, cssv::sides::drawEPSrc)
-		);
+	const char* vsSource = R"(
+#version 430 core
+
+layout(location=0)in vec4 Position;
+
+uniform mat4 mvp = mat4(1);
+
+void main(){
+  gl_Position=mvp*Position;
+}
+)";
+	drawSidesProgram = std::make_unique<Program>(std::make_shared<Shader>(GL_VERTEX_SHADER, vsSource));
 }
 
 void GpuSidesDrawer2::CreateEdgeRangeProgram()
@@ -249,7 +255,7 @@ void GpuSidesDrawer2::CreateEdgeRangeProgram()
 	std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\getSubbuffersShader.glsl");
 	std::string program((std::istreambuf_iterator<char>(t1)), std::istreambuf_iterator<char>());
 	//*/
-	
+
 	EdgeRangeShaderParams params;
 	params.bitmaskBufferSize = GetNofIndicesPerBitmask();
 	params.maxOctreeLevel = octree->getDeepestLevel();
@@ -266,7 +272,7 @@ void GpuSidesDrawer2::CreateSidesGenerationProgram()
 	std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\generateEdges2.glsl");
 	std::string program((std::istreambuf_iterator<char>(t1)), std::istreambuf_iterator<char>());
 	//*/
-	
+
 	SidesGenShaderParams2 params;
 	params.bitmaskBufferSize = GetNofIndicesPerBitmask();
 	params.nofBitsMultiplicity = NofBitsMultiplicity;
@@ -295,9 +301,9 @@ void GpuSidesDrawer2::CreateEdgeBuffer()
 	u32 const edgeSize = oppositeVertexStartOffset + 4 * MaxMultiplicity;
 	edgesBuffer = std::make_unique<Buffer>(nofEdges * edgeSize * sizeof(float));
 
-	float * mappedBuf = reinterpret_cast<float*>(edgesBuffer->map(GL_WRITE_ONLY));
-	
-	for(u32 edge = 0; edge < nofEdges; ++edge)
+	float* mappedBuf = reinterpret_cast<float*>(edgesBuffer->map(GL_WRITE_ONLY));
+
+	for (u32 edge = 0; edge < nofEdges; ++edge)
 	{
 		glm::vec3 const& v1 = getEdgeVertexLow(Ad, edge);
 		glm::vec3 const& v2 = getEdgeVertexHigh(Ad, edge);
@@ -306,14 +312,14 @@ void GpuSidesDrawer2::CreateEdgeBuffer()
 		mappedBuf[edge * edgeSize + 0] = v1.x;
 		mappedBuf[edge * edgeSize + 1] = v1.y;
 		mappedBuf[edge * edgeSize + 2] = v1.z;
-		
+
 		mappedBuf[edge * edgeSize + 4] = v2.x;
 		mappedBuf[edge * edgeSize + 5] = v2.y;
 		mappedBuf[edge * edgeSize + 6] = v2.z;
 
 		reinterpret_cast<u32*>(mappedBuf)[edge * edgeSize + 7] = nofOpposite;
 
-		for(u32 opposite = 0; opposite < nofOpposite; ++opposite)
+		for (u32 opposite = 0; opposite < nofOpposite; ++opposite)
 		{
 			glm::vec3 const& o = getOppositeVertex(Ad, edge, opposite);
 
@@ -403,7 +409,7 @@ void GpuSidesDrawer2::CreateLoadOctreeBuffers()
 		glUnmapNamedBuffer(buffer->getId());
 
 		remainingSize -= currentNumIndices * sizeof(u32);
-		
+
 		LastNodePerBuffer.push_back(currentNode);
 	}
 
@@ -424,7 +430,7 @@ void GpuSidesDrawer2::CreateBitmaskBuffer()
 
 	u8* buffer = reinterpret_cast<u8*>(bitmaskBuffer->map(GL_WRITE_ONLY));
 
-	for(u8 i = 0; i < 8; ++i)
+	for (u8 i = 0; i < 8; ++i)
 	{
 		memcpy(buffer + i * nofIndices, BitmasksWithIthBitSet[i].data(), nofIndices * sizeof(u8));
 	}
@@ -434,7 +440,7 @@ void GpuSidesDrawer2::CreateBitmaskBuffer()
 
 void GpuSidesDrawer2::CreateDIBOs()
 {
-	typedef struct 
+	typedef struct
 	{
 		u32  num_groups_x;
 		u32  num_groups_y;
@@ -452,12 +458,12 @@ void GpuSidesDrawer2::CreateDIBOs()
 
 void GpuSidesDrawer2::CreateEdgeRangeBuffer()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree", "hssv.args.useExperimental");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree", "hssv.args.version");
 
 	u32 const edgeRangeItems = nodeEdgesIdBuffers.size() > 1 ? 3 : 2;
 	u32 const maxJobs = GetMaxNofJobs(vars.getUint32("hssv.args.wgSize"));
 
-	if(edgeRangesBuffer)
+	if (edgeRangesBuffer)
 	{
 		edgeRangesBuffer.reset(nullptr);
 	}
@@ -469,7 +475,7 @@ void GpuSidesDrawer2::CreateDrawBuffers()
 {
 	CreateIBO();
 	CreateVBO();
-	
+
 	VAO = std::make_unique<VertexArray>();
 	VAO->addAttrib(VBO, 0, 4, GL_FLOAT);
 }
@@ -484,7 +490,7 @@ void GpuSidesDrawer2::CreateIBO()
 
 void GpuSidesDrawer2::CreateVBO()
 {
-	VBO = std::make_shared<Buffer>(Ad->getNofEdges() * MaxMultiplicity * 2 * 4 * sizeof(float));
+	VBO = std::make_shared<Buffer>(Ad->getNofEdges() * MaxMultiplicity * 6 * 4 * sizeof(float));
 }
 
 void GpuSidesDrawer2::CalcBitMasks8(unsigned int minBits)
@@ -516,7 +522,7 @@ u32 GpuSidesDrawer2::GetMaxNodeNofJobsPotSil(u32 nodeID, u32 jobSize) const
 
 	if (node)
 	{
-		for(auto const& b : node->edgesAlwaysCastMap)
+		for (auto const& b : node->edgesAlwaysCastMap)
 		{
 			ret += (u32(b.second.size()) / jobSize) + u32((b.second.size() % jobSize) > 0);
 		}

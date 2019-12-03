@@ -10,11 +10,11 @@
 
 class Adjacency;
 
-class GpuSidesDrawer2 : public SidesDrawerBase
+class GpuSidesDrawer3 : public SidesDrawerBase
 {
 public:
-	GpuSidesDrawer2(Octree* octree, Adjacency* ad, u32 maxMultiplicity, vars::Vars& vars);
-	~GpuSidesDrawer2();
+	GpuSidesDrawer3(Octree* octree, Adjacency* ad, u32 maxMultiplicity, vars::Vars& vars);
+	~GpuSidesDrawer3();
 
 	void drawSides(const glm::mat4& mvp, const glm::vec4& light) override;
 
@@ -23,7 +23,7 @@ public:
 private:
 	void ComputeEdgeRanges(u32 lightNode);
 	void GenerateSidesFromRanges(glm::vec4 const& lightPosition);
-	void DrawSides(glm::mat4 const& mvp);
+	void DrawSides(glm::mat4 const& mvp, glm::vec4 const& lightPosition);
 
 	void CreateShaders();
 	void CreateSidesDrawProgram();
@@ -46,7 +46,7 @@ private:
 	u32 GetMaxNofJobs(u32 jobSize) const;
 	u32 GetMaxNofJobsInLevel(uint32_t level, u32 jobSize) const;
 	u32 GetMaxNodeNofJobsPotSil(uint32_t nodeID, u32 jobSize) const;
-
+	
 private:
 	struct DrawArraysIndirectCommand
 	{
@@ -82,8 +82,8 @@ private:
 	u32 MaxMultiplicity;
 
 	//skipping first 3 1-bit numbers
-	u32 TotalNofSubbuffers = 253;
-	u32 SubBufferCorrection = 3;
+	u32 TotalNofSubbuffers = 253; 
+	u32 SubBufferCorrection = 3; 
 	u32 NofBitsMultiplicity;
 
 	std::vector< std::vector<u8> > BitmasksWithIthBitSet;

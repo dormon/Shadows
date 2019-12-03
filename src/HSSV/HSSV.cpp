@@ -14,6 +14,7 @@
 #include <CPU/CpuSidesDrawer.h>
 #include <GPU/GpuSidesDrawer.h>
 #include <GPU/GpuSidesDrawer2.h>
+#include <GPU/GpuSidesDrawer3.h>
 
 HSSV::HSSV(vars::Vars& vars) : ShadowVolumes(vars)
 {
@@ -147,7 +148,7 @@ void HSSV::resetMultiplicity()
 
 void HSSV::createSidesDrawer()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree", "hssv.args.drawCpu", "hssv.args.useExperimental");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree", "hssv.args.drawCpu", "hssv.args.version");
 
 	Octree* octree = vars.get<Octree>("hssv.objects.octree");
 	Adjacency* ad = vars.get<Adjacency>("adjacency");
@@ -159,13 +160,20 @@ void HSSV::createSidesDrawer()
 	}
 	else
 	{
-		if (vars.getBool("hssv.args.useExperimental"))
+		
+		u32 const version = vars.getUint32("hssv.args.version");
+
+		if(version==1 || version > 3)
+		{
+			vars.reCreate<GpuSidesDrawer>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity, vars);
+		}
+		else if(version==2)
 		{
 			vars.reCreate<GpuSidesDrawer2>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity, vars);
 		}
-		else
+		else if(version == 3)
 		{
-			vars.reCreate<GpuSidesDrawer>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity, vars);
+			vars.reCreate<GpuSidesDrawer3>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity, vars);
 		}
 	}
 }

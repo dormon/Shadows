@@ -11,5 +11,6 @@ void loadHssvParams(vars::Vars& vars, std::shared_ptr<argumentViewer::ArgumentVi
 	vars.addBool  ("hssv.args.buildCpu") = arg->isPresent("--hssv-buildCpu", "Use CPU traversal rather than GPU");
 	vars.addBool  ("hssv.args.dontStoreOctree") = arg->isPresent("--hssv-dontStoreOctree", "Will not save generated octree to a file");
 	vars.addBool  ("hssv.args.noCompression") = arg->isPresent("--hssv-noCompression", "Turns off octree compression");
-	vars.addBool  ("hssv.args.useExperimental") = arg->isPresent("--hssv-useExperimental", "Use experimental version of traversal");
+	vars.addUint32("hssv.args.version") = arg->getu32("--hssv-version", 2, "1 - default, 2 - memory optimized, 3 - TS");
+	vars.addBool  ("hssv.args.testMode") = arg->isPresent("--hssv-testMode", "Disables sides drawing");
 }

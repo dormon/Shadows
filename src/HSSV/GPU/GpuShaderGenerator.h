@@ -34,5 +34,6 @@ std::string getComputeEdgeRangesCsSource(std::vector<u32> const& lastNodePerBuff
 
 std::string getComputeSidesFromEdgeRangesCsSource(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams const& params);
 std::string getComputeSidesFromEdgeRangesCsSource2(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams2 const& params);
+std::string getComputeSidesFromEdgeRangesCsSource3(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams2 const& params);
 
 std::string genEdgeBuffersMappingFn(std::vector<u32> const& lastNodePerBuffer);
