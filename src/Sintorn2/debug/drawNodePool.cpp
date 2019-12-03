@@ -194,6 +194,8 @@ uint divRoundUp(uint x,uint y){
     float mmaxX = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+1];
     float mminY = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+2];
     float mmaxY = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+3];
+    float mminZ = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+4];
+    float mmaxZ = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+5];
 
     if(doesNodeExist == 0)return;
 
@@ -211,14 +213,6 @@ uint divRoundUp(uint x,uint y){
     float endX = clamp(-1.f + 2.f * float(((x+1)<<xBitsToDiv)*TILE_X) / float(WINDOW_X),-1.f,1.f);
     float endY = clamp(-1.f + 2.f * float(((y+1)<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y),-1.f,1.f);
 
-    if(drawTightAABB != 0){
-      startX = mminX;
-      endX   = mmaxX;
-
-      startY = mminY;
-      endY   = mmaxY;
-    }
-
 #ifdef FAR_IS_INFINITE
     float e = -1.f;
     float f = -2.f * NEAR;
@@ -226,6 +220,18 @@ uint divRoundUp(uint x,uint y){
     float e = -(FAR + NEAR) / (FAR - NEAR);
     float f = -2.f * NEAR * FAR / (FAR - NEAR);
 #endif
+
+    if(drawTightAABB != 0){
+      startX = mminX;
+      endX   = mmaxX;
+
+      startY = mminY;
+      endY   = mmaxY;
+
+      startZ = depthToZ(mminZ);
+      endZ   = depthToZ(mmaxZ);
+    }
+
 
     mat4 M = proj*view*inverse(nodeView)*inverse(nodeProj);
     gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();

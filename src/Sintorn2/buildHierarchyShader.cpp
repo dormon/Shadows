@@ -46,11 +46,10 @@ layout(binding=2)buffer AABBCounter{uint  aabbCounter[];};
 
 layout(binding=1)uniform sampler2DRect depthTexture;
 
-uint getMorton(uvec2 coord){
+uint getMorton(uvec2 coord,float depth){
   const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
   const uint tileBitsY     = uint(ceil(log2(float(TILE_Y))));
 
-  float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
   float z = depthToZ(depth);
   uint  zQ = quantizeZ(z);
   uvec3 clusterCoord = uvec3(uvec2(coord) >> uvec2(tileBitsX,tileBitsY), zQ);
@@ -174,7 +173,8 @@ void compute(uvec2 coord){
   return;
   */
 
-  uint morton = getMorton(coord);
+  float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
+  uint morton = getMorton(coord,depth);
   sharedMortons[gl_LocalInvocationIndex] = morton;
 #line 120
   //if(uintsPerWarp == 1){
@@ -265,6 +265,7 @@ void compute(uvec2 coord){
 
 
 
+      ///XXX
       reductionArray[gl_LocalInvocationIndex] = -1.f + 2.f/float(WINDOW_X)*(coord.x+0.5f);
 
       if(referenceMorton != morton || activeThread == 0)
@@ -278,7 +279,7 @@ void compute(uvec2 coord){
         aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+1] = reductionArray[1];
       }
 
-
+      ///YYY
       reductionArray[gl_LocalInvocationIndex] = -1.f + 2.f/float(WINDOW_Y)*(coord.y+0.5f);
 
       if(referenceMorton != morton || activeThread == 0)
@@ -290,6 +291,20 @@ void compute(uvec2 coord){
         uint node = (referenceMorton >> (warpBits*0u));
         aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+2] = reductionArray[0];
         aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+3] = reductionArray[1];
+      }
+
+      ///ZZZ
+      reductionArray[gl_LocalInvocationIndex] = depth;
+
+      if(referenceMorton != morton || activeThread == 0)
+        reductionArray[gl_LocalInvocationIndex] = reductionArray[selectedBit];
+
+      reduce();
+
+      if(gl_LocalInvocationIndex == 0){
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+4] = reductionArray[0];
+        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+5] = reductionArray[1];
       }
 
 
