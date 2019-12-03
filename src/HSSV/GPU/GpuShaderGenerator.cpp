@@ -445,7 +445,6 @@ void main()
 	
 	if(isSil==SIL_INDEX)
 	{
-
 		const uint edgeId = getEdgeId(jobStart + localId, job.z);
 		const uint currentEdge = decodeEdgeFromEncoded(edgeId);
 		const int multiplicity = decodeEdgeMultiplicityFromId(edgeId);
@@ -510,3 +509,521 @@ std::string genEdgeBuffersMappingFn(std::vector<u32> const& lastNodePerBuffer)
 	return str.str();
 }
 
+
+std::string getComputeSidesFromEdgeRangesCsSource2(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams2 const& params)
+{
+	std::stringstream str;
+
+	bool const useExtendedVersion = lastNodePerBuffer.size() > 1;
+	u32 const nofEdgeBuffers = u32(lastNodePerBuffer.size());
+
+	str << R".(
+#version 450 core
+
+#extension GL_ARB_shader_ballot : enable
+#extension GL_KHR_shader_subgroup_basic : enable
+
+).";
+
+	str << "#define EDGERANGE_INFO_SIZE " << (useExtendedVersion ? 3 : 2) << "u\n";
+	str << "#define BITMASK_BUFFER_SIZE " << params.bitmaskBufferSize << "u\n";
+	str << "#define MULTIPLICITY_BITS " << params.nofBitsMultiplicity << "\n";
+	str << "#define MAX_MULTIPLICITY " << params.maxMultiplicity << "\n";
+	str << "#define WG_SIZE " << params.wgSize << "u\n";
+	str << "#define NOF_VEC4_EDGE " << params.edgeSizeNofVec4 << "u\n";
+
+	str << R".(
+#define NOF_VERTICES_PER_SIDE 6
+#define MULTIPLICITY_MASK ((uint(1) << MULTIPLICITY_BITS) - 1)
+#define POT_INDEX 0u
+#define SIL_INDEX 1u
+
+).";
+
+	u32 bindSlot = 0;
+	for (bindSlot; bindSlot < nofEdgeBuffers; ++bindSlot)
+	{
+		str << "layout(std430, binding = " << bindSlot << ") restrict readonly  buffer _edges" << bindSlot << " { uint edgeIndices" << bindSlot << "[]; };\n";
+	}
+
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict readonly  buffer _edgesInfos { vec4 edges[]; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict readonly  buffer _edgeRanges { uint edgeRanges[]; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict readonly  buffer _nofPotSilBuffers { uint nofPotSilJobs; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict writeonly buffer _indirectData { uint nofIndicesToDraw; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict writeonly buffer _generatedSides { vec4 sides[]; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict writeonly buffer _clr { uint clr; };\n";
+
+	str << R".(
+layout (local_size_x = WG_SIZE) in;
+
+uniform vec4 lightPosition;
+
+).";
+	if (useExtendedVersion)
+	{
+		str << R".(
+uvec3 getEdgeRange(uint index)
+{
+	const uint pos = index * EDGERANGE_INFO_SIZE;
+	return uvec3(edgeRanges[pos + 0], edgeRanges[pos + 1], edgeRanges[pos + 2]);
+}
+).";
+	}
+	else
+	{
+		str << R".(
+uvec3 getEdgeRange(uint index)
+{
+	const uint pos = index * EDGERANGE_INFO_SIZE;
+	return uvec3(edgeRanges[pos + 0], edgeRanges[pos + 1], 0);
+}
+).";
+	}
+
+	str << R".(
+
+int decodeEdgeMultiplicityFromId(uint edgeWithEncodedMultiplicity)
+{
+	int retval = int(edgeWithEncodedMultiplicity & MULTIPLICITY_MASK);
+	//sign extension
+	int m = int(1u << (MULTIPLICITY_BITS - 1));
+	return (retval ^ m) - m;
+}
+
+uint decodeEdgeFromEncoded(uint edgeWithEncodedMultiplicity)
+{
+	return edgeWithEncodedMultiplicity >> MULTIPLICITY_BITS;
+}
+).";
+
+	if (useExtendedVersion)
+	{
+		str << R".(
+uint getEdgeId(uint pos, uint buf)
+{	
+).";
+		for (u32 i = 0; i < nofEdgeBuffers; ++i)
+		{
+			str << "	if(buf== " << i << ") {return edgeIndices" << i << "[pos];}\n";
+		}
+		str << "	return 0;\n}\n";
+	}
+	else
+	{
+		str << R".(
+uint getEdgeId(uint pos, uint unused)
+{
+	return edgeIndices0[pos];
+}
+).";
+	}
+
+	str << R".(
+
+void pushEdge(vec4 edgeVertices[2], uint startingIndex, int multiplicity)
+{
+	const uint swapVertices = uint(multiplicity>0);
+	const uint absMultiplicity = abs(multiplicity);
+	
+	for(uint m = 0; m<absMultiplicity; ++m)
+	{
+		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 0] = vec4(edgeVertices[0^swapVertices].xyz, 1);
+		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 1] = vec4(edgeVertices[1^swapVertices].xyz - lightPosition.xyz, 0);
+		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 2] = vec4(edgeVertices[0^swapVertices].xyz - lightPosition.xyz, 0);
+		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 3] = vec4(edgeVertices[1^swapVertices].xyz - lightPosition.xyz, 0);
+		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 4] = vec4(edgeVertices[0^swapVertices].xyz, 1);
+		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 5] = vec4(edgeVertices[1^swapVertices].xyz, 1);
+	}
+}
+
+//------------------MULTIPLICITY------------------
+int greaterVec(vec3 a,vec3 b)
+{
+	return int(dot(ivec3(sign(a-b)),ivec3(4,2,1)));
+}
+
+int computeMult(vec3 A,vec3 B,vec3 C,vec3 L)
+{
+	vec3 n=cross(C-A,L-A);
+	return int(sign(dot(n,B-A)));
+}
+
+int currentMultiplicity(vec3 A, vec3 B, vec3 O, vec3 L)
+{
+	if(greaterVec(A,O)>0)
+		return computeMult(O,A,B,L);
+	
+	if(greaterVec(B,O)>0)
+		return -computeMult(A,O,B,L);
+	
+	return computeMult(A,B,O,L);
+}
+
+shared uint warpCounters[32]; //max 32 warps per WG on nV - 1024 threads
+
+uint decodeWorkSize(uint val)
+{
+	return val & 0x7FFFFFFF;
+}
+
+uint decodeIsSil(uint val)
+{
+	return uint((val & 0x80000000) !=0);
+}
+
+uint getEdgeStorePos(uint absMultiplicity, uint warpId)
+{
+	if(gl_SubGroupInvocationARB == 0)
+	{
+		warpCounters[warpId] = 0;
+	}
+	
+	const uint localOffset = atomicAdd(warpCounters[warpId], NOF_VERTICES_PER_SIDE * absMultiplicity);
+	
+	uint globalOffset = 0;
+	if(gl_SubGroupInvocationARB == 0)
+	{
+		globalOffset = atomicAdd(nofIndicesToDraw, warpCounters[warpId]);
+	}
+	
+	globalOffset = readFirstInvocationARB(globalOffset);
+	
+	return globalOffset + localOffset;
+}
+
+void main()
+{
+	const uint wgId = gl_WorkGroupID.x;
+	const uint localId = gl_LocalInvocationID.x;
+	const uint warpId = localId / gl_SubGroupSizeARB;
+	
+	if(wgId >= nofPotSilJobs)
+	{
+		return;
+	}
+	
+	if(gl_GlobalInvocationID.x == 0)
+	{
+		clr = 0;
+	}
+
+	const uvec3 job = getEdgeRange(wgId);
+	const uint jobSize = decodeWorkSize(job.y);
+	const uint jobStart = job.x;
+	const uint isSil = decodeIsSil(job.y);
+	
+	if(localId >= jobSize)
+	{
+		return;
+	}
+	
+	if(isSil==SIL_INDEX)
+	{
+		const uint edgeId = getEdgeId(jobStart + localId, job.z);
+		const uint currentEdge = decodeEdgeFromEncoded(edgeId);
+		const int multiplicity = decodeEdgeMultiplicityFromId(edgeId);
+		const uint edgeStart = currentEdge * NOF_VEC4_EDGE;
+		
+		vec4 v[2];
+		v[0] = edges[edgeStart + 0]; //edgeLow.xyz, edgeHigh.x
+		v[1] = edges[edgeStart + 1]; //edgeHigh.yz, nofOpposite, empty
+		
+		uint storeIndex = getEdgeStorePos(abs(multiplicity), warpId);
+		
+		pushEdge(v, storeIndex, multiplicity);
+	}
+	
+	else
+	{
+		const uint edgeId = getEdgeId(jobStart + localId, job.z);
+		const uint edgeStart = edgeId * NOF_VEC4_EDGE;
+		
+		vec4 opposite[MAX_MULTIPLICITY];
+		vec4 v[2];
+		
+		v[0] = edges[edgeStart + 0]; //edgeLow.xyz, empty
+		v[1] = edges[edgeStart + 1]; //edgeHigh.xyz, nofOpposite
+		
+		for(uint o = 0; o < MAX_MULTIPLICITY; ++o)
+		{
+			opposite[o] = edges[edgeStart + 2 + o];
+		}
+		
+		const uint nofOpposite = floatBitsToUint(v[1].w);
+		
+		int multiplicity = 0;
+		
+		for(uint ov = 0; ov < nofOpposite; ++ov)
+		{
+			multiplicity += currentMultiplicity(v[0].xyz, v[1].xyz, opposite[ov].xyz, lightPosition.xyz);
+		}
+		
+		const uint storeIndex = getEdgeStorePos(abs(multiplicity), warpId);
+		
+		if(multiplicity!=0)
+		{
+			pushEdge(v, storeIndex, multiplicity);
+		}
+	}
+}
+).";
+
+	return str.str();
+}
+
+std::string getComputeSidesFromEdgeRangesCsSource3(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams2 const& params)
+{
+	std::stringstream str;
+
+	bool const useExtendedVersion = lastNodePerBuffer.size() > 1;
+	u32 const nofEdgeBuffers = u32(lastNodePerBuffer.size());
+
+	str << R".(
+#version 450 core
+
+#extension GL_ARB_shader_ballot : enable
+#extension GL_KHR_shader_subgroup_basic : enable
+
+).";
+
+	str << "#define EDGERANGE_INFO_SIZE " << (useExtendedVersion ? 3 : 2) << "u\n";
+	str << "#define BITMASK_BUFFER_SIZE " << params.bitmaskBufferSize << "u\n";
+	str << "#define MULTIPLICITY_BITS " << params.nofBitsMultiplicity << "\n";
+	str << "#define MAX_MULTIPLICITY " << params.maxMultiplicity << "\n";
+	str << "#define WG_SIZE " << params.wgSize << "u\n";
+	str << "#define NOF_VEC4_EDGE " << params.edgeSizeNofVec4 << "u\n";
+
+	str << R".(
+#define NOF_VERTICES_PER_SIDE 2
+#define MULTIPLICITY_MASK ((uint(1) << MULTIPLICITY_BITS) - 1)
+#define POT_INDEX 0u
+#define SIL_INDEX 1u
+
+).";
+
+	u32 bindSlot = 0;
+	for (bindSlot; bindSlot < nofEdgeBuffers; ++bindSlot)
+	{
+		str << "layout(std430, binding = " << bindSlot << ") restrict readonly  buffer _edges" << bindSlot << " { uint edgeIndices" << bindSlot << "[]; };\n";
+	}
+
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict readonly  buffer _edgesInfos { vec4 edges[]; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict readonly  buffer _edgeRanges { uint edgeRanges[]; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict readonly  buffer _nofPotSilBuffers { uint nofPotSilJobs; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict writeonly buffer _indirectData { uint nofIndicesToDraw; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict writeonly buffer _generatedSides { vec4 sides[]; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict writeonly buffer _clr { uint clr; };\n";
+
+	str << R".(
+layout (local_size_x = WG_SIZE) in;
+
+uniform vec4 lightPosition;
+
+).";
+	if (useExtendedVersion)
+	{
+		str << R".(
+uvec3 getEdgeRange(uint index)
+{
+	const uint pos = index * EDGERANGE_INFO_SIZE;
+	return uvec3(edgeRanges[pos + 0], edgeRanges[pos + 1], edgeRanges[pos + 2]);
+}
+).";
+	}
+	else
+	{
+		str << R".(
+uvec3 getEdgeRange(uint index)
+{
+	const uint pos = index * EDGERANGE_INFO_SIZE;
+	return uvec3(edgeRanges[pos + 0], edgeRanges[pos + 1], 0);
+}
+).";
+	}
+
+	str << R".(
+
+int decodeEdgeMultiplicityFromId(uint edgeWithEncodedMultiplicity)
+{
+	int retval = int(edgeWithEncodedMultiplicity & MULTIPLICITY_MASK);
+	//sign extension
+	int m = int(1u << (MULTIPLICITY_BITS - 1));
+	return (retval ^ m) - m;
+}
+
+uint decodeEdgeFromEncoded(uint edgeWithEncodedMultiplicity)
+{
+	return edgeWithEncodedMultiplicity >> MULTIPLICITY_BITS;
+}
+).";
+
+	if (useExtendedVersion)
+	{
+		str << R".(
+uint getEdgeId(uint pos, uint buf)
+{	
+).";
+		for (u32 i = 0; i < nofEdgeBuffers; ++i)
+		{
+			str << "	if(buf== " << i << ") {return edgeIndices" << i << "[pos];}\n";
+		}
+		str << "	return 0;\n}\n";
+	}
+	else
+	{
+		str << R".(
+uint getEdgeId(uint pos, uint unused)
+{
+	return edgeIndices0[pos];
+}
+).";
+	}
+
+	str << R".(
+
+void pushEdge(vec4 edgeVertices[2], uint startingIndex, int multiplicity)
+{
+	const uint swapVertices = uint(multiplicity>0);
+	const uint absMultiplicity = abs(multiplicity);
+	
+	for(uint m = 0; m<absMultiplicity; ++m)
+	{
+		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 0] = vec4(edgeVertices[0^swapVertices].xyz, 1);
+		sides[startingIndex + m*NOF_VERTICES_PER_SIDE + 1] = vec4(edgeVertices[1^swapVertices].xyz, 1);
+	}
+}
+
+//------------------MULTIPLICITY------------------
+int greaterVec(vec3 a,vec3 b)
+{
+	return int(dot(ivec3(sign(a-b)),ivec3(4,2,1)));
+}
+
+int computeMult(vec3 A,vec3 B,vec3 C,vec3 L)
+{
+	vec3 n=cross(C-A,L-A);
+	return int(sign(dot(n,B-A)));
+}
+
+int currentMultiplicity(vec3 A, vec3 B, vec3 O, vec3 L)
+{
+	if(greaterVec(A,O)>0)
+		return computeMult(O,A,B,L);
+	
+	if(greaterVec(B,O)>0)
+		return -computeMult(A,O,B,L);
+	
+	return computeMult(A,B,O,L);
+}
+
+shared uint warpCounters[32]; //max 32 warps per WG on nV - 1024 threads
+
+uint decodeWorkSize(uint val)
+{
+	return val & 0x7FFFFFFF;
+}
+
+uint decodeIsSil(uint val)
+{
+	return uint((val & 0x80000000) !=0);
+}
+
+uint getEdgeStorePos(uint absMultiplicity, uint warpId)
+{
+	if(gl_SubGroupInvocationARB == 0)
+	{
+		warpCounters[warpId] = 0;
+	}
+	
+	const uint localOffset = atomicAdd(warpCounters[warpId], NOF_VERTICES_PER_SIDE * absMultiplicity);
+	
+	uint globalOffset = 0;
+	if(gl_SubGroupInvocationARB == 0)
+	{
+		globalOffset = atomicAdd(nofIndicesToDraw, warpCounters[warpId]);
+	}
+	
+	globalOffset = readFirstInvocationARB(globalOffset);
+	
+	return globalOffset + localOffset;
+}
+
+void main()
+{
+	const uint wgId = gl_WorkGroupID.x;
+	const uint localId = gl_LocalInvocationID.x;
+	const uint warpId = localId / gl_SubGroupSizeARB;
+	
+	if(wgId >= nofPotSilJobs)
+	{
+		return;
+	}
+	
+	if(gl_GlobalInvocationID.x == 0)
+	{
+		clr = 0;
+	}
+
+	const uvec3 job = getEdgeRange(wgId);
+	const uint jobSize = decodeWorkSize(job.y);
+	const uint jobStart = job.x;
+	const uint isSil = decodeIsSil(job.y);
+	
+	if(localId >= jobSize)
+	{
+		return;
+	}
+	
+	if(isSil==SIL_INDEX)
+	{
+		const uint edgeId = getEdgeId(jobStart + localId, job.z);
+		const uint currentEdge = decodeEdgeFromEncoded(edgeId);
+		const int multiplicity = decodeEdgeMultiplicityFromId(edgeId);
+		const uint edgeStart = currentEdge * NOF_VEC4_EDGE;
+		
+		vec4 v[2];
+		v[0] = edges[edgeStart + 0]; //edgeLow.xyz, edgeHigh.x
+		v[1] = edges[edgeStart + 1]; //edgeHigh.yz, nofOpposite, empty
+		
+		uint storeIndex = getEdgeStorePos(abs(multiplicity), warpId);
+		
+		pushEdge(v, storeIndex, multiplicity);
+	}
+	
+	else
+	{
+		const uint edgeId = getEdgeId(jobStart + localId, job.z);
+		const uint edgeStart = edgeId * NOF_VEC4_EDGE;
+		
+		vec4 opposite[MAX_MULTIPLICITY];
+		vec4 v[2];
+		
+		v[0] = edges[edgeStart + 0]; //edgeLow.xyz, empty
+		v[1] = edges[edgeStart + 1]; //edgeHigh.xyz, nofOpposite
+		
+		for(uint o = 0; o < MAX_MULTIPLICITY; ++o)
+		{
+			opposite[o] = edges[edgeStart + 2 + o];
+		}
+		
+		const uint nofOpposite = floatBitsToUint(v[1].w);
+		
+		int multiplicity = 0;
+		
+		for(uint ov = 0; ov < nofOpposite; ++ov)
+		{
+			multiplicity += currentMultiplicity(v[0].xyz, v[1].xyz, opposite[ov].xyz, lightPosition.xyz);
+		}
+		
+		const uint storeIndex = getEdgeStorePos(abs(multiplicity), warpId);
+		
+		if(multiplicity!=0)
+		{
+			pushEdge(v, storeIndex, multiplicity);
+		}
+	}
+}
+).";
+
+	return str.str();
+}

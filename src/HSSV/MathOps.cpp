@@ -123,6 +123,23 @@ s32 MathOps::ipow(s32 base, s32 exp)
 	return result;
 }
 
+u32 MathOps::roundUpTo(u32 numToRound, u32 multipleOf)
+{
+	if (multipleOf == 0)
+	{
+		return numToRound;
+	}
+
+	int remainder = numToRound % multipleOf;
+	
+	if (remainder == 0)
+	{
+		return numToRound;
+	}
+
+	return numToRound + multipleOf - remainder;
+}
+
 s8 MathOps::findFirstSet(u8 num)
 {
 	if(num==0)

@@ -45,6 +45,8 @@ namespace MathOps
 
 	s32 ipow(s32 base, s32 exp);
 
+	u32 roundUpTo(u32 numToRound, u32 multipleOf);
+
 	s8 findFirstSet(u8 num);
 
 	u32 getMaxNofSignedBits(u32 num);
