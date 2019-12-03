@@ -254,6 +254,7 @@ void sintorn2::drawDebug(vars::Vars&vars){
 
   auto&type         = vars.addOrGetUint32("sintorn2.method.debug.type",DEFAULT);
   auto&levelsToDraw = vars.addOrGetUint32("sintorn2.method.debug.levelsToDraw",0);
+  auto&drawTightAABB = vars.addOrGetBool  ("sintorn2.method.debug.drawTightAABB");
 
   if(ImGui::BeginMainMenuBar()){
     if(ImGui::BeginMenu("debug")){
@@ -270,6 +271,10 @@ void sintorn2::drawDebug(vars::Vars&vars){
         type = DRAW_SAMPLES;
       if(ImGui::MenuItem("drawNodePool"))
         type = DRAW_NODEPOOL;
+      if(ImGui::MenuItem("drawTightAABB"))
+        drawTightAABB = !drawTightAABB;
+      if(ImGui::MenuItem("printAABB")){
+      }
 
       if(type == DRAW_NODEPOOL){
         if(vars.has("sintorn2.method.debug.dump.nofLevels")){

@@ -65,23 +65,23 @@ shared float reductionArray[WARP];
 #if WARP == 64
 void reduce(){
 
-  if(gl_LocalInvocationIndex == 0){
-    float ab[2];
-    ab[0] = reductionArray[0];
-    ab[1] = reductionArray[0];
-    for(int i=1;i<64;++i){
-      ab[0] = min(ab[0],reductionArray[i]);
-      ab[1] = max(ab[1],reductionArray[i]);
-    }
-    reductionArray[0] = ab[0];
-    reductionArray[1] = ab[1];
-  }
-  return;
+  //if(gl_LocalInvocationIndex == 0){
+  //  float ab[2];
+  //  ab[0] = reductionArray[0];
+  //  ab[1] = reductionArray[0];
+  //  for(int i=1;i<64;++i){
+  //    ab[0] = min(ab[0],reductionArray[i]);
+  //    ab[1] = max(ab[1],reductionArray[i]);
+  //  }
+  //  reductionArray[0] = ab[0];
+  //  reductionArray[1] = ab[1];
+  //}
+  //return;
 
   float ab[2];
   ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1fu)+ 0u];
   ab[1] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1fu)+32u];
-  uint w = uint((ab[1]-ab[0])*(-1.f+2.f*float(uint(gl_LocalInvocationIndex)&1u)) > 0.f);
+  uint w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&20u)!=0)) > 0.f);
   reductionArray[gl_LocalInvocationIndex] = ab[w];
 
   if((uint(gl_LocalInvocationIndex)&0x10u) == 0u){

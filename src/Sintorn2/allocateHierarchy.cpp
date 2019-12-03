@@ -79,28 +79,34 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
   
 
   int32_t bits = allBits;
-  uint32_t nofNodes = 0;
+  uint32_t nodesSize = 0;
   while(bits>0){
-    nofNodes += 1<<bits;
+    nodesSize += divRoundUp(1u<<bits,wavefrontSize)*uintsPerWarp;
     bits -= warpBits;
   }
-  nofNodes += 1;
+  nodesSize += divRoundUp(1u,wavefrontSize)*uintsPerWarp;
+  nodesSize *= sizeof(uint32_t);
 
   uint32_t const floatsPerAABB = 6;
+  bits = allBits;
+  uint32_t aabbsSize = 0;
+  while(bits>0){
+    aabbsSize += (1u<<bits)*floatsPerAABB;
+    bits -= warpBits;
+  }
+  aabbsSize += 1*floatsPerAABB;
+  aabbsSize *= sizeof(float);
 
-  auto const nodesSize = divRoundUp(nofNodes,wavefrontSize) * sizeof(uint32_t) * uintsPerWarp;
-  
-  auto const aabbSize  = nofNodes * floatsPerAABB * sizeof(float);
 
-  vars.reCreate      <uint32_t>("sintorn2.method.allBits"    ,allBits);
-  vars.reCreate      <uint32_t>("sintorn2.method.warpBits"   ,warpBits );
-  vars.reCreate      <uint32_t>("sintorn2.method.xBits"      ,xBits    );
-  vars.reCreate      <uint32_t>("sintorn2.method.yBits"      ,yBits    );
-  vars.reCreate      <uint32_t>("sintorn2.method.zBits"      ,zBits    );
-  vars.reCreate      <uint32_t>("sintorn2.method.clustersX"  ,clustersX);
-  vars.reCreate      <uint32_t>("sintorn2.method.clustersY"  ,clustersY);
-  vars.reCreate      <uint32_t>("sintorn2.method.nofLevels"  ,nofLevels);
-  vars.reCreate      <Buffer  >("sintorn2.method.nodePool"   ,nodesSize );
-  vars.reCreate      <Buffer  >("sintorn2.method.aabbPool"   ,aabbSize  );
+  vars.reCreate      <uint32_t>("sintorn2.method.allBits"    ,allBits         );
+  vars.reCreate      <uint32_t>("sintorn2.method.warpBits"   ,warpBits        );
+  vars.reCreate      <uint32_t>("sintorn2.method.xBits"      ,xBits           );
+  vars.reCreate      <uint32_t>("sintorn2.method.yBits"      ,yBits           );
+  vars.reCreate      <uint32_t>("sintorn2.method.zBits"      ,zBits           );
+  vars.reCreate      <uint32_t>("sintorn2.method.clustersX"  ,clustersX       );
+  vars.reCreate      <uint32_t>("sintorn2.method.clustersY"  ,clustersY       );
+  vars.reCreate      <uint32_t>("sintorn2.method.nofLevels"  ,nofLevels       );
+  vars.reCreate      <Buffer  >("sintorn2.method.nodePool"   ,nodesSize       );
+  vars.reCreate      <Buffer  >("sintorn2.method.aabbPool"   ,aabbsSize       );
   vars.reCreate      <Buffer  >("sintorn2.method.aabbCounter",sizeof(uint32_t));
 }

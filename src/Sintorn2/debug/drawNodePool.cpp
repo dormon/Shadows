@@ -133,6 +133,8 @@ uint divRoundUp(uint x,uint y){
 #line 122
   uniform uint levelToDraw = 0;
 
+  uniform uint drawTightAABB = 0;
+
   void main(){
     const uint warpBits        = uint(ceil(log2(float(WARP))));
     const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
@@ -209,11 +211,13 @@ uint divRoundUp(uint x,uint y){
     float endX = clamp(-1.f + 2.f * float(((x+1)<<xBitsToDiv)*TILE_X) / float(WINDOW_X),-1.f,1.f);
     float endY = clamp(-1.f + 2.f * float(((y+1)<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y),-1.f,1.f);
 
-    startX = mminX;
-    endX   = mmaxX;
+    if(drawTightAABB != 0){
+      startX = mminX;
+      endX   = mmaxX;
 
-    startY = mminY;
-    endY   = mmaxY;
+      startY = mminY;
+      endY   = mmaxY;
+    }
 
 #ifdef FAR_IS_INFINITE
     float e = -1.f;
@@ -296,11 +300,13 @@ void drawNodePool(vars::Vars&vars){
   auto const nodeView       = *vars.get<glm::mat4>     ("sintorn2.method.debug.dump.viewMatrix"      );
   auto const nodeProj       = *vars.get<glm::mat4>     ("sintorn2.method.debug.dump.projectionMatrix");
   auto const nodePool       =  vars.get<Buffer>        ("sintorn2.method.debug.dump.nodePool"        );
+  auto const aabbPool       =  vars.get<Buffer>        ("sintorn2.method.debug.dump.aabbPool"        );
   auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"                              );
 
   auto const view           = *vars.get<glm::mat4>     ("sintorn2.method.debug.viewMatrix"           );
   auto const proj           = *vars.get<glm::mat4>     ("sintorn2.method.debug.projectionMatrix"     );
   auto const levelsToDraw   =  vars.getUint32          ("sintorn2.method.debug.levelsToDraw"         );
+  auto const drawTightAABB  =  vars.getBool            ("sintorn2.method.debug.drawTightAABB"        );
 
   auto vao = vars.get<VertexArray>("sintorn2.method.debug.vao");
 
@@ -310,12 +316,14 @@ void drawNodePool(vars::Vars&vars){
 
   vao->bind();
   nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
   prg->use();
   prg
     ->setMatrix4fv("nodeView"   ,glm::value_ptr(nodeView))
     ->setMatrix4fv("nodeProj"   ,glm::value_ptr(nodeProj))
     ->setMatrix4fv("view"       ,glm::value_ptr(view    ))
     ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
+    ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
     ;
 
 
