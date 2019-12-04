@@ -22,6 +22,14 @@ add_library(${PROJECT_NAME} STATIC
   quantizeZShader.cpp
   quantizeZShader.h
   config.h
+  propagateAABBShader.cpp
+  propagateAABBShader.h
+  propagateAABB.cpp
+  propagateAABB.h
+  createPropagateAABBProgram.cpp
+  createPropagateAABBProgram.h
+  computeConfig.cpp
+  computeConfig.h
   )
 
 add_subdirectory(debug)

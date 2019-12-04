@@ -26,19 +26,13 @@ namespace sintorn2::debug{
 void prepareDrawNodePool(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2.method.debug"
       "wavefrontSize"                        ,
-      "sintorn2.method.debug.dump.windowSize",
-      "sintorn2.method.debug.dump.minZBits"  ,
-      "sintorn2.method.debug.dump.tileX"     ,
-      "sintorn2.method.debug.dump.tileY"     ,
+      "sintorn2.method.debug.dump.config"    ,
       "sintorn2.method.debug.dump.near"      ,
       "sintorn2.method.debug.dump.far"       ,
       "sintorn2.method.debug.dump.fovy"      ,
       );
 
-  auto const windowSize     = *vars.get<glm::uvec2>    ("sintorn2.method.debug.dump.windowSize");
-  auto const minZBits       =  vars.getUint32          ("sintorn2.method.debug.dump.minZBits"  );
-  auto const tileX          =  vars.getUint32          ("sintorn2.method.debug.dump.tileX"     );
-  auto const tileY          =  vars.getUint32          ("sintorn2.method.debug.dump.tileY"     );
+  auto const cfg            = *vars.get<Config>        ("sintorn2.method.debug.dump.config"    );
   auto const nnear          =  vars.getFloat           ("sintorn2.method.debug.dump.near"      );
   auto const ffar           =  vars.getFloat           ("sintorn2.method.debug.dump.far"       );
   auto const fovy           =  vars.getFloat           ("sintorn2.method.debug.dump.fovy"      );
@@ -268,14 +262,14 @@ uint divRoundUp(uint x,uint y){
   auto gs = make_shared<Shader>(GL_GEOMETRY_SHADER,
       "#version 450\n",
       ge::gl::Shader::define("WARP"      ,(uint32_t)wavefrontSize),
-      ge::gl::Shader::define("WINDOW_X"  ,(uint32_t)windowSize.x ),
-      ge::gl::Shader::define("WINDOW_Y"  ,(uint32_t)windowSize.y ),
-      ge::gl::Shader::define("MIN_Z_BITS",(uint32_t)minZBits     ),
+      ge::gl::Shader::define("WINDOW_X"  ,(uint32_t)cfg.windowX  ),
+      ge::gl::Shader::define("WINDOW_Y"  ,(uint32_t)cfg.windowY  ),
+      ge::gl::Shader::define("MIN_Z_BITS",(uint32_t)cfg.minZBits ),
       ge::gl::Shader::define("NEAR"      ,nnear                  ),
       glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
       ge::gl::Shader::define("FOVY"      ,fovy                   ),
-      ge::gl::Shader::define("TILE_X"    ,tileX                  ),
-      ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
+      ge::gl::Shader::define("TILE_X"    ,cfg.tileX              ),
+      ge::gl::Shader::define("TILE_Y"    ,cfg.tileY              ),
 
       sintorn2::mortonShader,
       sintorn2::depthToZShader,
@@ -296,10 +290,8 @@ void drawNodePool(vars::Vars&vars){
   prepareDrawNodePool(vars);
 
 
-  auto const windowSize     = *vars.get<glm::uvec2>    ("sintorn2.method.debug.dump.windowSize"      );
-  auto const minZBits       =  vars.getUint32          ("sintorn2.method.debug.dump.minZBits"        );
-  auto const tileX          =  vars.getUint32          ("sintorn2.method.debug.dump.tileX"           );
-  auto const tileY          =  vars.getUint32          ("sintorn2.method.debug.dump.tileY"           );
+  auto const cfg            = *vars.get<Config>        ("sintorn2.method.debug.dump.config"          );
+
   auto const nnear          =  vars.getFloat           ("sintorn2.method.debug.dump.near"            );
   auto const ffar           =  vars.getFloat           ("sintorn2.method.debug.dump.far"             );
   auto const fovy           =  vars.getFloat           ("sintorn2.method.debug.dump.fovy"            );
@@ -315,8 +307,6 @@ void drawNodePool(vars::Vars&vars){
   auto const drawTightAABB  =  vars.getBool            ("sintorn2.method.debug.drawTightAABB"        );
 
   auto vao = vars.get<VertexArray>("sintorn2.method.debug.vao");
-
-  auto cfg = Config(wavefrontSize,windowSize.x,windowSize.y,tileX,tileY,minZBits,nnear,ffar,fovy);
 
   auto prg = vars.get<Program>("sintorn2.method.debug.drawNodePoolProgram");
 

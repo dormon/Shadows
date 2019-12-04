@@ -10,6 +10,7 @@
 #include <FunctionPrologue.h>
 #include <divRoundUp.h>
 
+#include <Sintorn2/config.h>
 #include <Sintorn2/debug/dumpData.h>
 
 using namespace ge::gl;
@@ -117,31 +118,23 @@ void dumpAABBPool(vars::Vars&vars){
 
 void dumpBasic(vars::Vars&vars){
   FUNCTION_CALLER();
-  auto ws        = *vars.get<glm::uvec2>("windowSize");
   auto lp        = *vars.get<glm::vec4>("sintorn2.method.debug.lightPosition"   );
   auto vm        = *vars.get<glm::mat4>("sintorn2.method.debug.viewMatrix"      );
   auto pm        = *vars.get<glm::mat4>("sintorn2.method.debug.projectionMatrix");
-  auto tx        = vars.getUint32("sintorn2.param.tileX");
-  auto ty        = vars.getUint32("sintorn2.param.tileY");
-  auto mz        = vars.getUint32("sintorn2.param.minZBits"  );
-  auto nofLevels = vars.getUint32("sintorn2.method.nofLevels");
-
   auto const nnear =  vars.getFloat("args.camera.near");
   auto const ffar  =  vars.getFloat("args.camera.far" );
   auto const fovy  =  vars.getFloat("args.camera.fovy");
 
+  auto cfg       = *vars.get<Config>("sintorn2.method.config");
 
-  vars.reCreate<glm::uvec2>("sintorn2.method.debug.dump.windowSize"      ,ws);
-  vars.reCreate<glm::vec4 >("sintorn2.method.debug.dump.lightPosition"   ,lp);
-  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.viewMatrix"      ,vm);
-  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.projectionMatrix",pm);
-  vars.reCreate<uint32_t  >("sintorn2.method.debug.dump.tileX"           ,tx);
-  vars.reCreate<uint32_t  >("sintorn2.method.debug.dump.tileY"           ,ty);
-  vars.reCreate<uint32_t  >("sintorn2.method.debug.dump.minZBits"        ,mz);
+
+  vars.reCreate<glm::vec4 >("sintorn2.method.debug.dump.lightPosition"   ,lp   );
+  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.viewMatrix"      ,vm   );
+  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.projectionMatrix",pm   );
   vars.reCreate<float     >("sintorn2.method.debug.dump.near"            ,nnear);
   vars.reCreate<float     >("sintorn2.method.debug.dump.far"             ,ffar );
   vars.reCreate<float     >("sintorn2.method.debug.dump.fovy"            ,fovy );
-  vars.reCreate<uint32_t  >("sintorn2.method.debug.dump.nofLevels"       ,nofLevels);
+  vars.reCreate<Config    >("sintorn2.method.debug.dump.config"          ,cfg  ); 
 }
 
 void dumpData(vars::Vars&vars){

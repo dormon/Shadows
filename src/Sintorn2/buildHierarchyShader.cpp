@@ -58,7 +58,12 @@ uint getMorton(uvec2 coord,float depth){
 
 uint activeThread = 0;
 
+#define USE_READ_INVOCATION
+
+#ifndef USE_READ_INVOCATION
 shared uint sharedMortons[WARP];
+#endif
+
 shared float reductionArray[WARP];
 
 #if WARP == 64
@@ -175,7 +180,9 @@ void compute(uvec2 coord){
 
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
   uint morton = getMorton(coord,depth);
+#ifndef USE_READ_INVOCATION
   sharedMortons[gl_LocalInvocationIndex] = morton;
+#endif
 #line 120
   //if(uintsPerWarp == 1){
   #if WARP == 32
@@ -226,7 +233,12 @@ void compute(uvec2 coord){
 
       uint selectedBit     = unpackUint2x32(notDone)[0]!=0?findLSB(unpackUint2x32(notDone)[0]):findLSB(unpackUint2x32(notDone)[1])+32u;
       //uint selectedBit     = (notDone&0xfffffffful)!=0?findLSB(uint(notDone)):findLSB(uint(notDone>>32u))+32u;
+      
+#ifndef USE_READ_INVOCATION
       uint referenceMorton = sharedMortons[selectedBit];
+#else
+      uint referenceMorton = readInvocationARB(morton,selectedBit);
+#endif
 
       if(gl_LocalInvocationIndex == 0){
         if(nofLevels>0){

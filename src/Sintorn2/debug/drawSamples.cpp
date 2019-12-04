@@ -10,6 +10,7 @@
 #include <divRoundUp.h>
 
 #include <Sintorn2/debug/drawSamples.h>
+#include <Sintorn2/config.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -80,23 +81,23 @@ void drawSamples(vars::Vars&vars){
   glEnable(GL_DEPTH_TEST);
   ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-  auto prg = vars.get<Program>("sintorn2.method.debug.drawSamplesProgram");
-  auto vao = vars.get<VertexArray>("sintorn2.method.debug.vao");
-  auto view = *vars.get<glm::mat4>("sintorn2.method.debug.viewMatrix");
-  auto proj = *vars.get<glm::mat4>("sintorn2.method.debug.projectionMatrix");
-  auto windowSize = *vars.get<glm::uvec2>("sintorn2.method.debug.dump.windowSize");
+  auto prg  =  vars.get<Program    >("sintorn2.method.debug.drawSamplesProgram");
+  auto vao  =  vars.get<VertexArray>("sintorn2.method.debug.vao");
+  auto view = *vars.get<glm::mat4  >("sintorn2.method.debug.viewMatrix");
+  auto proj = *vars.get<glm::mat4  >("sintorn2.method.debug.projectionMatrix");
+  auto cfg  = *vars.get<Config     >("sintorn2.method.debug.dump.config");
 
   auto buf = vars.get<Buffer>("sintorn2.method.debug.dump.samples");
   buf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   vao->bind();
   prg->use();
   prg
-    ->set2ui("windowSize",windowSize.x,windowSize.y)
+    ->set2ui("windowSize",cfg.windowX,cfg.windowY)
     ->setMatrix4fv("view",glm::value_ptr(view))
     ->setMatrix4fv("proj",glm::value_ptr(proj));
  
   
-  glDrawArrays(GL_POINTS,0,windowSize.x*windowSize.y);
+  glDrawArrays(GL_POINTS,0,cfg.windowX*cfg.windowY);
   vao->unbind();
 }
 
