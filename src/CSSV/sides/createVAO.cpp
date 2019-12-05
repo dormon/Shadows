@@ -15,9 +15,13 @@ void cssv::sides::createVAO(vars::Vars&vars){
       ,"cssv.param.dontExtractMultiplicity"
       );
 
-  bool dontExtMult = vars.getBool("cssv.param.dontExtractMultiplicity");
+  bool const dontExtMult = vars.getBool("cssv.param.dontExtractMultiplicity");
 
-  if(!dontExtMult){
+  if(dontExtMult){
+    auto silhouettes = vars.get<Buffer>("cssv.method.silhouettes");
+    auto vao = vars.reCreate<VertexArray>("cssv.method.sides.vao");
+    vao->addAttrib(silhouettes,0,componentsPerVertex4D,GL_FLOAT);
+  }else{
     auto vao = vars.reCreate<VertexArray>("cssv.method.sides.vao");
     std::vector<float>edges;
     auto adj = vars.get<Adjacency>("adjacency");
@@ -43,10 +47,6 @@ void cssv::sides::createVAO(vars::Vars&vars){
     vars.reCreate<uint32_t>("cssv.method.alignedNofEdges",anofE);
     
     vars.reCreate<Buffer>("cssv.method.edgeBuffer",edges);
-  }else{
-    auto silhouettes = vars.get<Buffer>("cssv.method.silhouettes");
-    auto vao = vars.reCreate<VertexArray>("cssv.method.sides.vao");
-    vao->addAttrib(silhouettes,0,componentsPerVertex4D,GL_FLOAT);
   }
 }
 

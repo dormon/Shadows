@@ -5,6 +5,10 @@
 const std::string computeSrc = R".(
 #line 6
 
+#ifndef WARP
+#define WARP 64
+#endif//WARP
+
 #ifndef MAX_MULTIPLICITY
 #define MAX_MULTIPLICITY 2
 #endif//MAX_MULTIPLICITY
@@ -46,12 +50,13 @@ layout(std430,binding=1)         buffer Silhouettes        {vec4  silhouettes[];
   layout(std430,binding=2)         buffer DrawIndirectBuffer{uint drawIndirectBuffer[4];};
 #endif
 
-#if EXTRACT_MULTIPLICITY == 1
-#if DONT_PACK_MULT == 1
-layout(std430,binding=3)buffer MultBuffer{int multBuffer[];};
+#if DONT_EXTRACT_MULTIPLICITY == 1
 #else
-layout(std430,binding=3)buffer MultBuffer{uint multBuffer[];};
-#endif
+  #if DONT_PACK_MULT == 1
+    layout(std430,binding=3)buffer MultBuffer{int multBuffer[];};
+  #else
+    layout(std430,binding=3)buffer MultBuffer{uint multBuffer[];};
+  #endif
 #endif
 
 uniform vec4 lightPosition = vec4(100,100,100,1);
@@ -154,38 +159,8 @@ void main(){
   #endif//USE_PLANES == 1
 
  
-    #if LOCAL_ATOMIC == 1
-
-  #if EXTRACT_MULTIPLICITY == 1
-    uint localOffset = atomicAdd(localCounter,uint(Multiplicity!=0));
-#if WORKGROUP_SIZE_X > 32
-    barrier();
-#endif
-    if(gl_LocalInvocationID.x==0){
-      globalOffset = atomicAdd(drawIndirectBuffer[0],localCounter);
-    }
-#if WORKGROUP_SIZE_X > 32
-    barrier();
-#endif
-    uint WH = globalOffset + localOffset;
-
-#if DONT_PACK_MULT == 1
-    WH*=2u;
-    if(Multiplicity != 0){
-      multBuffer[WH+0] = Multiplicity;
-      multBuffer[WH+1] = int(gl_GlobalInvocationID.x);
-    }
-#else
-    if(Multiplicity != 0){
-      uint res = 0;
-      res |= uint(Multiplicity<0) << 31u;
-      res |= abs(Multiplicity) << 29u;
-      res |= uint(gl_GlobalInvocationID.x);
-      multBuffer[WH] = res;
-    }
-#endif
-
-  #else
+  #if LOCAL_ATOMIC == 1
+    #if DONT_EXTRACT_MULTIPLICITY == 1
       uint localOffset = atomicAdd(localCounter,uint(2*abs(Multiplicity)));
       barrier();
       if(gl_LocalInvocationID.x==0){
@@ -207,28 +182,41 @@ void main(){
           silhouettes[WH++]=P[1];
         }
       }
-#endif
     #else
-  #if EXTRACT_MULTIPLICITY == 1
-    uint WH=atomicAdd(drawIndirectBuffer[0],uint(Multiplicity!=0));
-#if DONT_PACK_MULT == 1
-    WH*=2;
-    if(Multiplicity != 0){
-      multBuffer[WH+0] = Multiplicity;
-      multBuffer[WH+1] = int(gl_GlobalInvocationID.x);
-    }
-#else
+      uint localOffset = atomicAdd(localCounter,uint(Multiplicity!=0));
 
-    if(Multiplicity != 0){
-      uint res = 0;
-      res |= uint(Multiplicity<0) << 31u;
-      res |= abs(Multiplicity) << 29u;
-      res |= uint(gl_GlobalInvocationID.x);
-      multBuffer[WH] = res;
-    }
-#endif
+      #if WORKGROUP_SIZE_X > WARP
+        barrier();
+      #endif
+
+      if(gl_LocalInvocationID.x==0){
+        globalOffset = atomicAdd(drawIndirectBuffer[0],localCounter);
+      }
+
+      #if WORKGROUP_SIZE_X > WARP
+        barrier();
+      #endif
+
+      uint WH = globalOffset + localOffset;
+      
+      #if DONT_PACK_MULT == 1
+        WH*=2u;
+        if(Multiplicity != 0){
+          multBuffer[WH+0] = Multiplicity;
+          multBuffer[WH+1] = int(gl_GlobalInvocationID.x);
+        }
+      #else
+        if(Multiplicity != 0){
+          uint res = 0;
+          res |= uint(Multiplicity<0) << 31u;
+          res |= abs(Multiplicity) << 29u;
+          res |= uint(gl_GlobalInvocationID.x);
+          multBuffer[WH] = res;
+        }
+      #endif
+    #endif
   #else
-
+    #if DONT_EXTRACT_MULTIPLICITY == 1
       if(Multiplicity>0){
         uint WH=atomicAdd(drawIndirectBuffer[0],2*Multiplicity);
         for(int m=0;m<Multiplicity;++m){
@@ -244,7 +232,24 @@ void main(){
           silhouettes[WH++]=P[1];
         }
       }
-#endif
+    #else
+      uint WH=atomicAdd(drawIndirectBuffer[0],uint(Multiplicity!=0));
+      #if DONT_PACK_MULT == 1
+        WH*=2;
+        if(Multiplicity != 0){
+          multBuffer[WH+0] = Multiplicity;
+          multBuffer[WH+1] = int(gl_GlobalInvocationID.x);
+        }
+      #else
+        if(Multiplicity != 0){
+          uint res = 0;
+          res |= uint(Multiplicity<0) << 31u;
+          res |= abs(Multiplicity) << 29u;
+          res |= uint(gl_GlobalInvocationID.x);
+          multBuffer[WH] = res;
+        }
+      #endif
     #endif
+  #endif
 }).";
 

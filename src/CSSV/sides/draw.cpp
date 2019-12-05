@@ -87,7 +87,7 @@ void cssv::sides::draw(
   vao->bind();
   program->use();
 
-  bool dontExtMult = vars.getBool("cssv.param.dontExtractMultiplicity");
+  bool const dontExtMult = vars.getBool("cssv.param.dontExtractMultiplicity");
   if(!dontExtMult){
     auto multBuffer = vars.get<Buffer>("cssv.method.multBuffer");
     auto edgeBuffer = vars.get<Buffer>("cssv.method.edgeBuffer");
@@ -121,11 +121,11 @@ void cssv::sides::draw(
     ->setMatrix4fv("mvp"          ,value_ptr(mvp          ))
     ->set4fv      ("lightPosition",value_ptr(lightPosition));
 
-  if(!dontExtMult){
-    glDrawArraysIndirect(GL_POINTS,NULL);
-  }else{
+  if(dontExtMult){
     glPatchParameteri(GL_PATCH_VERTICES,2);
     glDrawArraysIndirect(GL_PATCHES,NULL);
+  }else{
+    glDrawArraysIndirect(GL_POINTS,NULL);
   }
   vao->unbind();
 

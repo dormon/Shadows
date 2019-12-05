@@ -54,6 +54,7 @@ layout(binding=3)buffer MultBuffer{int   multBuffer[];};
 #else
 layout(binding=3)buffer MultBuffer{uint   multBuffer[];};
 #endif
+
 layout(binding=4)buffer EdgeBuffer{float edgeBuffer[];};
 
 flat in uint vId[];
@@ -62,6 +63,7 @@ uniform mat4 mvp           = mat4(1)            ;
 uniform vec4 lightPosition = vec4(100,100,100,1);
 
 void main(){
+
 #if DONT_PACK_MULT == 1
   int mult = multBuffer[vId[0]*2+0];
   int edge = multBuffer[vId[0]*2+1];
