@@ -5,11 +5,11 @@
 #include <memory>
 #include <vector>
 
-std::shared_ptr<ge::gl::Shader> getDpsvBuildCS(unsigned int wgSiz, bool enableFrontFaceCulling, bool enableDepthOptim);
+std::shared_ptr<ge::gl::Shader> getDpsvBuildCS(unsigned int wgSiz, bool enableFrontFaceCulling);
 
-std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStackProgramShaders(bool enableDepthOptim);
-std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStacklessProgramShaders(bool enableDepthOptim);
-std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvHybridProgramShaders(bool enableDepthOptim);
+std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStackProgramShaders();
+std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStacklessProgramShaders();
+std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvHybridProgramShaders();
 
 //Helper function
 std::shared_ptr<ge::gl::Shader> getDpsvVertexShader();
