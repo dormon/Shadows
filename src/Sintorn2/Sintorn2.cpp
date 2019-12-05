@@ -21,6 +21,7 @@ void Sintorn2::create(glm::vec4 const& lightPosition,
                       glm::mat4 const& viewMatrix,
                       glm::mat4 const& projectionMatrix)
 {
+  FUNCTION_CALLER();
   //glFinish();
   ifExistStamp("");
   sintorn2::buildHierarchy(vars);
@@ -32,6 +33,7 @@ void Sintorn2::drawDebug(glm::vec4 const& lightPosition,
                       glm::mat4 const& viewMatrix,
                       glm::mat4 const& projectionMatrix)
 {
+  FUNCTION_CALLER();
   *vars.addOrGet<glm::vec4>("sintorn2.method.debug.lightPosition"   ) = lightPosition   ;
   *vars.addOrGet<glm::mat4>("sintorn2.method.debug.viewMatrix"      ) = viewMatrix      ;
   *vars.addOrGet<glm::mat4>("sintorn2.method.debug.projectionMatrix") = projectionMatrix;

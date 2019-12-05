@@ -109,6 +109,8 @@ void reduceMin(){
 #endif
 #line 110
 void main(){
+
+
   const uint warpBits        = uint(ceil(log2(float(WARP))));
   const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
   const uint clustersY       = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
@@ -118,29 +120,76 @@ void main(){
   const uint allBits         = xBits + yBits + zBits;
   const uint nofLevels       = uint(allBits/warpBits) + uint(allBits%warpBits != 0u);
   const uint uintsPerWarp    = uint(WARP/32u);
+  const uint floatsPerAABB   = 6u;
 
   const uint warpMask        = uint(WARP - 1u);
 
-  const uint levelSize[6] = {
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-0u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
+  const uint nodesPerLevel[6] = {
+    1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
   };
 
-  const uint levelOffset[6] = {
-    0,
-    0 + levelSize[0],
-    0 + levelSize[0] + levelSize[1],
-    0 + levelSize[0] + levelSize[1] + levelSize[2],
-    0 + levelSize[0] + levelSize[1] + levelSize[2] + levelSize[3],
-    0 + levelSize[0] + levelSize[1] + levelSize[2] + levelSize[3] + levelSize[4],
+  const uint nodeLevelSizeInUints[6] = {
+    (nodesPerLevel[0] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[1] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[2] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[3] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[4] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[5] >> warpBits) * uintsPerWarp,
   };
+
+  const uint nodeLevelOffsetInUints[6] = {
+    0,
+    0 + nodeLevelSizeInUints[0],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3] + nodeLevelSizeInUints[4],
+  };
+
+  const uint aabbLevelSizeInFloats[6] = {
+    nodesPerLevel[0] * floatsPerAABB,
+    nodesPerLevel[1] * floatsPerAABB,
+    nodesPerLevel[2] * floatsPerAABB,
+    nodesPerLevel[3] * floatsPerAABB,
+    nodesPerLevel[4] * floatsPerAABB,
+    nodesPerLevel[5] * floatsPerAABB,
+  };
+
+  const uint aabbLevelOffsetInFloats[6] = {
+    0,
+    0 + aabbLevelSizeInFloats[0],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
+  };
+
+
+
+
+
 #line 141
 #if WARP == 64
   uint node = gl_WorkGroupID.x;
+
+
+  if(gl_LocalInvocationIndex == 0){
+    aabbPool[aabbLevelSizeInFloats[destLevel]+node*6u+0u] = 1+(node+1)*100;//aabb[0];
+    aabbPool[aabbLevelSizeInFloats[destLevel]+node*6u+1u] = 2+(node+1)*100;//aabb[1];
+    aabbPool[aabbLevelSizeInFloats[destLevel]+node*6u+2u] = 3+(node+1)*100;//aabb[2];
+    aabbPool[aabbLevelSizeInFloats[destLevel]+node*6u+3u] = 4+(node+1)*100;//aabb[3];
+    aabbPool[aabbLevelSizeInFloats[destLevel]+node*6u+4u] = 5+(node+1)*100;//aabb[4];
+    aabbPool[aabbLevelSizeInFloats[destLevel]+node*6u+5u] = 6+(node+1)*100;//aabb[5];
+  }
+  return;
+
+/*
+
   uint bit = node & 0x3fu;
   if(uint(nodePool[levelOffset[destLevel]+(node>>6u)*2u + uint(bit>31u)]&(1u<<(bit&0x1fu))) == 0u)
     return;
@@ -204,16 +253,16 @@ void main(){
 
 
   if(gl_LocalInvocationIndex == 0){
-    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+0u] = aabb[0];
-    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+1u] = aabb[1];
-    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+2u] = aabb[2];
-    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+3u] = aabb[3];
-    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+4u] = aabb[4];
-    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+5u] = aabb[5];
+    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+0u] = 0;//aabb[0];
+    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+1u] = 1;//aabb[1];
+    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+2u] = 0;//aabb[2];
+    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+3u] = 1;//aabb[3];
+    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+4u] = 0;//aabb[4];
+    aabbPool[levelOffset[destLevel]*3u*64u+node*6u+5u] = 1;//aabb[5];
   }
 
+*/
 #endif
-
 }
 
 ).";

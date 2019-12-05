@@ -1,5 +1,6 @@
 #pragma once
 
+#include<iostream>
 #include<cstdint>
 #include<vector>
 #include<numeric>
@@ -17,7 +18,6 @@ inline std::vector<uint32_t>computeNofNodesPerLevel(uint32_t allBits,uint32_t wa
     nofNodesPerLevel.push_back(1u<<bits);
     bits -= warpBits;
   }
-  nofNodesPerLevel.push_back(1u);
   std::reverse(nofNodesPerLevel.begin(),nofNodesPerLevel.end());
   return nofNodesPerLevel;
 }
@@ -70,13 +70,47 @@ class Config{
       nofLevels        = divRoundUp(allBits,warpBits);
       uintsPerWarp     = wavefrontSize / (sizeof(uint32_t)*8);
       nofNodesPerLevel = computeNofNodesPerLevel(allBits,warpBits);
-      nodeLevelSize    = computeNodeLevelSizeInUints(nofNodesPerLevel,wavefrontSize,uintsPerWarp);
-      nodesSize        = sum(nodeLevelSize) * sizeof(uint32_t);
-      nodeLevelOffset  = getOffsets(nofNodesPerLevel);
+      nodeLevelSizeInUints    = computeNodeLevelSizeInUints(nofNodesPerLevel,wavefrontSize,uintsPerWarp);
+      nodesSize        = sum(nodeLevelSizeInUints) * sizeof(uint32_t);
+      nodeLevelOffsetInUints  = getOffsets(nofNodesPerLevel);
       aabbsSize        = sum(nofNodesPerLevel) * floatsPerAABB * sizeof(float);
+      for(auto const&x:nofNodesPerLevel)
+        aabbLevelSizeInFloats.push_back(x*floatsPerAABB);
+      aabbLevelOffsetInFloats = getOffsets(aabbLevelSizeInFloats);
       //nnear         = nn;
       //ffar          = ff;
       //fovy          = fo;
+    }
+    void print(){
+#define PRINT(x) std::cerr << #x << ": " << x << std::endl
+      PRINT(windowX      );
+      PRINT(windowY      );
+      PRINT(tileX        );
+      PRINT(tileY        );
+      PRINT(minZBits     );
+      PRINT(warpBits     );
+      PRINT(clustersX    );
+      PRINT(clustersY    );
+      PRINT(xBits        );
+      PRINT(yBits        );
+      PRINT(zBits        );
+      PRINT(clustersZ    );
+      PRINT(allBits      );
+      PRINT(nofLevels    );
+      PRINT(uintsPerWarp );
+      PRINT(floatsPerAABB);
+#undef PRINT
+#define PRINT(x) std::cerr << #x << ":" << std::endl;\
+  for(auto const&a:x)\
+    std::cerr << "  " << a << std::endl
+
+    PRINT(nofNodesPerLevel        );
+    PRINT(nodeLevelSizeInUints    );
+    PRINT(nodeLevelOffsetInUints  );
+    PRINT(aabbLevelSizeInFloats   );
+    PRINT(aabbLevelOffsetInFloats );
+#undef PRINT
+
     }
     uint32_t windowX     ;
     uint32_t windowY     ;
@@ -93,12 +127,14 @@ class Config{
     uint32_t allBits     ;
     uint32_t nofLevels   ;
     uint32_t uintsPerWarp;
-    std::vector<uint32_t>nofNodesPerLevel;
-    std::vector<uint32_t>nodeLevelSize   ;
-    uint32_t             nodesSize       ;
-    uint32_t             aabbsSize       ;
-    std::vector<uint32_t>nodeLevelOffset ;
+    uint32_t nodesSize       ;
+    uint32_t aabbsSize       ;
     uint32_t const floatsPerAABB = 6;
+    std::vector<uint32_t>nofNodesPerLevel        ;
+    std::vector<uint32_t>nodeLevelSizeInUints    ;
+    std::vector<uint32_t>nodeLevelOffsetInUints  ;
+    std::vector<uint32_t>aabbLevelSizeInFloats   ;
+    std::vector<uint32_t>aabbLevelOffsetInFloats ;
     //float    nnear       ;
     //float    ffar        ;
     //float    fovy        ;

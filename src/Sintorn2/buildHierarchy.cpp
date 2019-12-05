@@ -30,6 +30,7 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   auto cfg         = *vars.get<Config>("sintorn2.method.config");
 
   nodePool   ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  aabbPool   ->clear(GL_R32F ,GL_RED        ,GL_FLOAT       );
 
   nodePool   ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   aabbPool   ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
@@ -40,7 +41,15 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-  //propagateAABB(vars);
+  propagateAABB(vars);
+
+  std::vector<float>d;
+  aabbPool->getData(d);
+  cfg.print();
+  for(size_t i=cfg.aabbLevelOffsetInFloats[cfg.nofLevels-2];i<cfg.aabbLevelOffsetInFloats[cfg.nofLevels-2]+10000*6;++i)
+    std::cerr << d[i] << std::endl;
+
+  exit(0);
 
 
 }
