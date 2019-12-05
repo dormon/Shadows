@@ -19,6 +19,7 @@
 #include <Sintorn2/debug/drawNodePool.h>
 #include <Sintorn2/quantizeZShader.h>
 #include <Sintorn2/depthToZShader.h>
+#include <Sintorn2/config.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -277,9 +278,9 @@ void sintorn2::drawDebug(vars::Vars&vars){
       }
 
       if(type == DRAW_NODEPOOL){
-        if(vars.has("sintorn2.method.debug.dump.nofLevels")){
-          auto nofLevels = vars.getUint32("sintorn2.method.debug.dump.nofLevels");
-          for(uint32_t i=0;i<nofLevels;++i){
+        if(vars.has("sintorn2.method.debug.dump.config")){
+          auto const cfg = *vars.get<Config>        ("sintorn2.method.debug.dump.config"    );
+          for(uint32_t i=0;i<cfg.nofLevels;++i){
             std::stringstream ss;
             ss << "level" << i;
             if(ImGui::MenuItem(ss.str().c_str())){
