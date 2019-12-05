@@ -23,6 +23,12 @@ void cssv::sides::extractSilhouettes(vars::Vars&vars,glm::vec4 const&lightPositi
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
+
+  if(!vars.getBool("cssv.param.dontExtractMultiplicity")){
+    auto multBuffer  = vars.get<Buffer>   ("cssv.method.multBuffer");
+    multBuffer->bindBase(GL_SHADER_STORAGE_BUFFER,3);
+  }
+
   program
     ->set4fv    ("lightPosition"     ,glm::value_ptr(lightPosition))
     ->bindBuffer("Edges"             ,edges                        )

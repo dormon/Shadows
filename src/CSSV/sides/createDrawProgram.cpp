@@ -9,11 +9,29 @@ using namespace std;
 using namespace ge::gl;
 
 void cssv::sides::createDrawProgram(vars::Vars&vars){
-  FUNCTION_PROLOGUE("cssv.method");
+  FUNCTION_PROLOGUE("cssv.method"
+      ,"cssv.param.dontExtractMultiplicity"
+      ,"cssv.param.dontPackMult"
+      );
 
-  vars.reCreate<Program>("cssv.method.sides.drawProgram",
-      make_shared<Shader>(GL_VERTEX_SHADER         ,cssv::sides::drawVPSrc),
-      make_shared<Shader>(GL_TESS_CONTROL_SHADER   ,cssv::sides::drawCPSrc),
-      make_shared<Shader>(GL_TESS_EVALUATION_SHADER,cssv::sides::drawEPSrc));
+  bool dontExtMult         = vars.getBool("cssv.param.dontExtractMultiplicity");
+  bool dontPackMult    = vars.getBool("cssv.param.dontPackMult");
+  auto alignedNofEdges = vars.getUint32("cssv.method.alignedNofEdges");
+
+  if(!dontExtMult){
+    vars.reCreate<Program>("cssv.method.sides.drawProgram",
+        make_shared<Shader>(GL_VERTEX_SHADER         ,"#version 450 core\n",Shader::define("EXTRACT_MULTIPLICITY",1),cssv::sides::drawVPSrc),
+        //make_shared<Shader>(GL_GEOMETRY_SHADER       ,"#version 450 core\n",cssv::sides::drawGPSrc));
+        make_shared<Shader>(GL_GEOMETRY_SHADER       ,
+            "#version 450 core\n",
+            dontPackMult?Shader::define("DONT_PACK_MULT",1):"",
+            Shader::define("ALIGNED_NOF_EDGES",alignedNofEdges),
+            cssv::sides::drawGPSrc));
+  }else{
+    vars.reCreate<Program>("cssv.method.sides.drawProgram",
+        make_shared<Shader>(GL_VERTEX_SHADER         ,"#version 450 core\n",cssv::sides::drawVPSrc),
+        make_shared<Shader>(GL_TESS_CONTROL_SHADER   ,cssv::sides::drawCPSrc),
+        make_shared<Shader>(GL_TESS_EVALUATION_SHADER,cssv::sides::drawEPSrc));
+  }
 }
 

@@ -22,16 +22,22 @@ using namespace glm;
 using namespace ge::gl;
 using namespace std;
 
+#include <FastAdjacency.h>
+
 namespace cssv::sides{
+
+
 void createExtractSilhouetteMethod(vars::Vars&vars){
   FUNCTION_PROLOGUE("cssv.method"
-      ,"cssv.param.usePlanes"
-      ,"cssv.param.useInterleaving"
+      ,"cssv.param.dontUsePlanes"
+      ,"cssv.param.dontUseInterleaving"
       ,"cssv.param.alignment"
+      ,"cssv.param.dontExtractMultiplicity"
+      ,"cssv.param.dontPackMult"
       ,"adjacency"
       );
-  if(vars.getBool("cssv.param.usePlanes")){
-    if(vars.getBool("cssv.param.useInterleaving"))
+  if(!vars.getBool("cssv.param.dontUsePlanes")){
+    if(!vars.getBool("cssv.param.dontUseInterleaving"))
       createInterleavedPlanesEdges(vars);
     else
       createPlanesEdges(vars);
@@ -39,6 +45,14 @@ void createExtractSilhouetteMethod(vars::Vars&vars){
     createBasicEdges(vars);
   }
   createSilhouetteBuffer(vars);
+
+  if(!vars.getBool("cssv.param.dontExtractMultiplicity")){
+    auto const adj = vars.get<Adjacency>("adjacency");
+    if(vars.getBool("cssv.param.dontPackMult"))
+      vars.reCreate<Buffer>("cssv.method.multBuffer",sizeof(uint32_t)*2*adj->getNofEdges());
+    else
+      vars.reCreate<Buffer>("cssv.method.multBuffer",sizeof(uint32_t)*adj->getNofEdges());
+  }
 }
 }
 
@@ -65,15 +79,54 @@ void cssv::sides::draw(
   auto vao     = vars.get<VertexArray>("cssv.method.sides.vao"        );
   auto program = vars.get<Program    >("cssv.method.sides.drawProgram");
 
+
+
+
   auto mvp = projectionMatrix * viewMatrix;
   dibo->bind(GL_DRAW_INDIRECT_BUFFER);
   vao->bind();
   program->use();
+
+  bool dontExtMult = vars.getBool("cssv.param.dontExtractMultiplicity");
+  if(!dontExtMult){
+    auto multBuffer = vars.get<Buffer>("cssv.method.multBuffer");
+    auto edgeBuffer = vars.get<Buffer>("cssv.method.edgeBuffer");
+
+    //std::vector<int>mult;
+    //multBuffer->getData(mult);
+    //std::cerr << "########" << std::endl;
+    //for(auto const&x:mult)
+    //  std::cerr << x << std::endl;
+    //std::cerr << "########" << std::endl;
+
+    //std::vector<float>ed;
+    //edgeBuffer->getData(ed);
+    //std::cerr << "((((((((" << std::endl;
+    //for(size_t e=0;e<ed.size();e+=6){
+    //  for(int i=0;i<2;++i){
+    //    for(int j=0;j<3;++j)
+    //      std::cerr << ed[e+i*3+j] << " ";
+    //    std::cerr << " - ";
+    //  }
+    //  std::cerr << std::endl;
+    //}
+    //std::cerr << "))))))))" << std::endl;
+    
+
+    multBuffer->bindBase(GL_SHADER_STORAGE_BUFFER,3);
+    edgeBuffer->bindBase(GL_SHADER_STORAGE_BUFFER,4);
+  }
+
   program
     ->setMatrix4fv("mvp"          ,value_ptr(mvp          ))
     ->set4fv      ("lightPosition",value_ptr(lightPosition));
-  glPatchParameteri(GL_PATCH_VERTICES,2);
-  glDrawArraysIndirect(GL_PATCHES,NULL);
+
+  if(!dontExtMult){
+    glDrawArraysIndirect(GL_POINTS,NULL);
+  }else{
+    glPatchParameteri(GL_PATCH_VERTICES,2);
+    glDrawArraysIndirect(GL_PATCHES,NULL);
+  }
   vao->unbind();
 
   // */
