@@ -4,8 +4,6 @@
 
 //All shaders based on https://github.com/PSVcode/EGSR2016
 
-#define USE_OPTIMIZATION
-
 std::string const vsSource = R".(
 #version 450 core
 
@@ -65,7 +63,7 @@ void main()
 }
 ).";
 
-std::shared_ptr<ge::gl::Shader> getDpsvBuildCS(unsigned int wgSize, bool enableFrontFaceCulling, bool enableDepthOptim)
+std::shared_ptr<ge::gl::Shader> getDpsvBuildCS(unsigned int wgSize, bool enableFrontFaceCulling)
 {
 	std::stringstream str;
 	str << "#version 430 core\n";
@@ -215,20 +213,11 @@ void TOPTREE_mergeShadowVolumeCastByTriangle( in uint i )
 #endif
 			// slightly translate the capping plane away from the light to get ride of self shading artifacts
 			cp.plane.w += bias;
-).";
+			
+			const float distance = tri2LightDistance(A, B, C, vec3(0.0));
 
-	if (enableDepthOptim)
-	{
-		str << "			const uint distance = floatBitsToUint( tri2LightDistance(A, B, C, light) );\n";
-	}
-	else
-	{
-		str << "			const uint distance = 0;\n";
-	}
-	
-	str << R".(
 			// init nodes
-			sp1.link[0] = 0;		sp1.link[1] = 0;		sp1.link[2] = distance; 		sp1.link[3] = 0;
+			sp1.link[0] = 0;		sp1.link[1] = 0;		sp1.link[2] = floatBitsToUint(distance); 		sp1.link[3] = 0;
 			sp2.link[0] = 0;		sp2.link[1] = 0;		sp2.link[2] = 0;  	       		sp2.link[3] = 0;
 			sp3.link[0] = 0;		sp3.link[1] = 0;		sp3.link[2] = 0;        	    sp3.link[3] = 0;
 			cp.link[0]  = 0;	    cp.link[1]  = 0;    	cp.link[2]  = 0;			    cp.link[3]  = 0;
@@ -252,17 +241,11 @@ void TOPTREE_mergeShadowVolumeCastByTriangle( in uint i )
 			{
 				// compute the triangle position wrt the current plane
 				const int pos = trianglePosition(A, B, C, nodes[current].plane);
-).";
-	if (enableDepthOptim)
-	{
-		str << R".(
+
 				// [EGSR2106] - depth test support - update the distance from the light each time a new shadow volume is visited
 				if (current%4==0)
-					atomicMin(nodes[current].link[2], distance);
-).";
-	}
+					atomicMin(nodes[current].link[2], floatBitsToUint(distance));
 
-	str << R".(		
 				if(pos<0) // the triangle is fully in the negative halfspace, compute the negative index
 					if (current%4==3) current=0; // if the negative child is a leaf, the triangle is inside a shadow volume. This is an early termination case without merging the shadow volume.
 					else ++current;	// otherwise, continue in the negative child	
@@ -315,7 +298,7 @@ std::shared_ptr<ge::gl::Shader> getDpsvVertexShader()
 	return std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, vsSource);
 }
 
-std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStackProgramShaders(bool enableDepthOptim)
+std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStackProgramShaders()
 {
 	std::stringstream str;
 	str << R".(
@@ -335,19 +318,14 @@ float traverseToptree( in vec3 p)
 	{
 		// pop
 		const Node n = nodes[ current ];
-).";
-	if(enableDepthOptim)
-	{
-		str << R".(
+
 		// [EGSR2016] skip the current subtree if p is closest from the light than the geometry in the subtree
 		if (current % 4 == 0 && dist < uintBitsToFloat(n.link[2]))
 		{
 			current = stacksize > 0 ? stack[--stacksize] : 1;
 			continue;
 		}
-).";
-	}
-	str << R".(
+
 		// compute the signed distance from p to the current plane
 		const float offset = dot(n.plane.xyz, p) + n.plane.w;
 
@@ -377,7 +355,7 @@ float traverseToptree( in vec3 p)
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, fsPrologue + str.str() + fsEpilogue) };
 }
 
-std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStacklessProgramShaders(bool enableDepthOptim)
+std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStacklessProgramShaders()
 {
 	std::stringstream str;
 	str << R".(
@@ -396,20 +374,12 @@ float traverseToptree( in vec3 p)
 		
 		const Node n = nodes[ current ];
 		
-).";
-
-	if (enableDepthOptim)
-	{
-		str << R".(
 		// skip the current subtree if p is closest from the light than the geometry in the subtree
 		if ( current%4==0 && dist< uintBitsToFloat(n.link[2]) ) {
 			current = nodes[current+2].link[2];
 			secondVisit = true;
 		}
 		else
-).";
-	}
-	str << R".(	
 		{
 			// signed distance from p to the current plane
 			const float offset = dot(n.plane.xyz, p) + n.plane.w;
@@ -450,7 +420,7 @@ float traverseToptree( in vec3 p)
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, fsPrologue + str.str() + fsEpilogue) };
 }
 
-std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvHybridProgramShaders(bool enableDepthOptim)
+std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvHybridProgramShaders()
 {
 	std::stringstream str;
 	
@@ -464,20 +434,12 @@ bool DPSV_subQueryStackLess( in vec3 p, uint start, uint stop){
 	while(current!=stop){
 		
 		const Node n = nodes[ current ];
-).";
 
-	if (enableDepthOptim)
-	{
-		str << R".(
 		if (current % 4 == 0 && dist < uintBitsToFloat(n.link[2])) {
 			current = nodes[current + 2].link[2];
 			secondVisit = true;
 		}
 		else
-).";
-	}
-	
-	str << R".(
 		{
 			const float offset = dot(n.plane.xyz, p) + n.plane.w;
 	
@@ -524,20 +486,13 @@ float traverseToptree( in vec3 p)
 	{
 			// pop
 			const Node n = nodes[ current ];
-).";
 
-	if (enableDepthOptim)
-	{
-		str << R".(
 			// depth test
 			if ( current%4==0 && dist < uintBitsToFloat(n.link[2]) ){   
 				current = stacksize > 0 ? stack[ --stacksize ] : 1;
 				continue;
 			}
-).";
-	}
 
-	str << R".(		
 			const float offset = dot(n.plane.xyz, p) + n.plane.w;
 
 			// wedge test

@@ -16,6 +16,7 @@ using namespace ge::gl;
 
 DPSV::DPSV(vars::Vars& vars) : ShadowMethod(vars)
 {
+	createTraversalShaders();
 	createAuxBuffer();
 	createShadowMaskVao();
 }
@@ -28,7 +29,6 @@ DPSV::~DPSV()
 void DPSV::create(glm::vec4 const& lightPosition, glm::mat4 const&, glm::mat4 const&)
 {
 	createBuildShader();
-	createTraversalShaders();
 	createNodeBuffer();
 	createShadowMaskFbo();
 
@@ -59,24 +59,19 @@ void DPSV::createNodeBuffer()
 
 void DPSV::createBuildShader()
 {
-	FUNCTION_PROLOGUE("dpsv.objects", "dpsv.args.cullFront", "dpsv.args.wgSize", "dpsv.args.useDepthOptimization");
+	FUNCTION_PROLOGUE("dpsv.objects", "dpsv.args.cullFront", "dpsv.args.wgSize");
 
 	bool const cullFront = vars.getBool("dpsv.args.cullFront");
-	bool const useOptim = vars.getBool("dpsv.args.useDepthOptimization");
 	uint32_t wgSize = vars.getUint32("dpsv.args.wgSize");
 
-	vars.reCreate<Program>("dpsv.objects.buildCS", getDpsvBuildCS(wgSize, cullFront, useOptim));
+	vars.reCreate<Program>("dpsv.objects.buildCS", getDpsvBuildCS(wgSize, cullFront));
 }
 
 void DPSV::createTraversalShaders()
 {
-	FUNCTION_PROLOGUE("dpsv.objects", "dpsv.args.useDepthOptimization");
-
-	bool const useOptim = vars.getBool("dpsv.args.useDepthOptimization");
-
-	vars.reCreate<Program>("dpsv.objects.traverseStack", getDpsvStackProgramShaders(useOptim));
-	vars.reCreate<Program>("dpsv.objects.traverseStackless", getDpsvStacklessProgramShaders(useOptim));
-	vars.reCreate<Program>("dpsv.objects.traverseHybrid", getDpsvHybridProgramShaders(useOptim));
+	vars.reCreate<Program>("dpsv.objects.traverseStack", getDpsvStackProgramShaders());
+	vars.reCreate<Program>("dpsv.objects.traverseStackless", getDpsvStacklessProgramShaders());
+	vars.reCreate<Program>("dpsv.objects.traverseHybrid", getDpsvHybridProgramShaders());
 }
 
 void DPSV::createShadowMaskFbo()
