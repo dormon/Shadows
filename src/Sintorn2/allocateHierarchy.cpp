@@ -19,7 +19,7 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
 
   auto cfg = *vars.get<Config>("sintorn2.method.config");
 
-  vars.reCreate      <Buffer  >("sintorn2.method.nodePool"   ,cfg.nodesSize   );
-  vars.reCreate      <Buffer  >("sintorn2.method.aabbPool"   ,cfg.aabbsSize   );
-  vars.reCreate      <Buffer  >("sintorn2.method.aabbCounter",sizeof(uint32_t));
+  vars.reCreate      <Buffer  >("sintorn2.method.nodePool"   ,cfg.nodesSize                   );
+  vars.reCreate      <Buffer  >("sintorn2.method.aabbPool"   ,cfg.aabbsSize                   );
+  vars.reCreate      <Buffer  >("sintorn2.method.nodeCounter",sizeof(uint32_t)*cfg.clustersX*cfg.clustersY);
 }

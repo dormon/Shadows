@@ -41,6 +41,7 @@ layout(local_size_x=WARP)in;
 
 layout(binding=0)buffer NodePool   {uint  nodePool   [];};
 layout(binding=1)buffer AABBPool   {float aabbPool   [];};
+layout(binding=2)buffer NodeCounter{uint  nodeCounter[];};
 
 layout(binding=1)uniform sampler2DRect depthTexture;
 
@@ -57,14 +58,91 @@ uint getMorton(uvec2 coord,float depth){
 uint activeThread = 0;
 
 #define USE_READ_INVOCATION
+#define USE_ADVANCE_REDUCE
 
 #ifndef USE_READ_INVOCATION
 shared uint sharedMortons[WARP];
 #endif
 
+#ifndef USE_ADVANCE_REDUCE
 shared float reductionArray[WARP];
+#else
+shared float reductionArray[WARP*3u];
+#endif
 
 #if WARP == 64
+
+void advacedReduce(){
+  float ab[2];
+  uint w;
+
+  //////(64t -> 32 min + 32 max) * 3
+  ab[0] = reductionArray[64u*0u+(uint(gl_LocalInvocationIndex)&0x1fu)+ 0u];       
+  ab[1] = reductionArray[64u*0u+(uint(gl_LocalInvocationIndex)&0x1fu)+32u];       
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x20u)!=0u)) > 0.f);
+  reductionArray[64u*0u+gl_LocalInvocationIndex] = ab[w];                         
+
+  ab[0] = reductionArray[64u*1u+(uint(gl_LocalInvocationIndex)&0x1fu)+ 0u];       
+  ab[1] = reductionArray[64u*1u+(uint(gl_LocalInvocationIndex)&0x1fu)+32u];       
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x20u)!=0u)) > 0.f);
+  reductionArray[64u*1u+gl_LocalInvocationIndex] = ab[w];                         
+
+  ab[0] = reductionArray[64u*2u+(uint(gl_LocalInvocationIndex)&0x1fu)+ 0u];       
+  ab[1] = reductionArray[64u*2u+(uint(gl_LocalInvocationIndex)&0x1fu)+32u];       
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x20u)!=0u)) > 0.f);
+  reductionArray[64u*2u+gl_LocalInvocationIndex] = ab[w];                         
+
+
+  /////(32t -> 16 minx + 16 maxx) + (32t -> 16miny + 16 maxy)
+  ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0xfu) +  0u + (uint(gl_LocalInvocationIndex)&0x30u)*2u];                 
+  ab[1] = reductionArray[(uint(gl_LocalInvocationIndex)&0xfu) + 16u + (uint(gl_LocalInvocationIndex)&0x30u)*2u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x10u)!=0u)) > 0.f);
+  reductionArray[gl_LocalInvocationIndex] = ab[w];
+
+  /////(32t -> 16 minz + 16 maxz)
+  if(gl_LocalInvocationIndex < 32){                         
+    ab[0] = reductionArray[64u*2u+(uint(gl_LocalInvocationIndex)&0xfu) +  0u + (uint(gl_LocalInvocationIndex)&0x10u)*2u];                 
+    ab[1] = reductionArray[64u*2u+(uint(gl_LocalInvocationIndex)&0xfu) + 16u + (uint(gl_LocalInvocationIndex)&0x10u)*2u];                 
+    w = uint((ab[1]-ab[0])*(-1.f+2.f*float(gl_LocalInvocationIndex>15)) > 0.f);
+    reductionArray[64u + gl_LocalInvocationIndex] = ab[w];
+  }
+
+  /////(48t -> 8 minx + 8 maxx + 8miny + 8maxy + 8minz + 8maxz)
+  if(gl_LocalInvocationIndex < 6u*8u){                         
+    ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0x7u) +  0u + (uint(gl_LocalInvocationIndex)>>3u)*16u];                 
+    ab[1] = reductionArray[(uint(gl_LocalInvocationIndex)&0x7u) +  8u + (uint(gl_LocalInvocationIndex)>>3u)*16u];                 
+    w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x8u) != 0u)) > 0.f);
+    reductionArray[gl_LocalInvocationIndex] = ab[w];
+  }
+
+
+
+  /////(24t -> 4 minx + 4 maxx + 4miny + 4maxy + 4minz + 4maxz)
+  if(gl_LocalInvocationIndex < 6u*4u){                         
+    ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0x3u) +  0u + (uint(gl_LocalInvocationIndex)>>2u)*8u];                 
+    ab[1] = reductionArray[(uint(gl_LocalInvocationIndex)&0x3u) +  4u + (uint(gl_LocalInvocationIndex)>>2u)*8u];                 
+    w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x4u) != 0u)) > 0.f);
+    reductionArray[gl_LocalInvocationIndex] = ab[w];
+  }
+
+  /////(12t -> 2 minx + 2 maxx + 2miny + 2maxy + 2minz + 2maxz)
+  if(gl_LocalInvocationIndex < 6u*2u){                         
+    ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1u) +  0u + (uint(gl_LocalInvocationIndex)>>1u)*4u];                 
+    ab[1] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1u) +  2u + (uint(gl_LocalInvocationIndex)>>1u)*4u];                 
+    w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x2u) != 0u)) > 0.f);
+    reductionArray[gl_LocalInvocationIndex] = ab[w];
+  }
+
+  /////(6t -> 1 minx + 1 maxx + 1miny + 1maxy + 1minz + 1maxz)
+  if(gl_LocalInvocationIndex < 6u*1u){                         
+    ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0x0u) +  0u + (uint(gl_LocalInvocationIndex)>>0u)*2u];                 
+    ab[1] = reductionArray[(uint(gl_LocalInvocationIndex)&0x0u) +  1u + (uint(gl_LocalInvocationIndex)>>0u)*2u];                 
+    w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x1u) != 0u)) > 0.f);
+    reductionArray[gl_LocalInvocationIndex] = ab[w];
+  }
+
+}
+
 void reduce(){
 #line 67
   //if(gl_LocalInvocationIndex == 0){
@@ -302,8 +380,9 @@ void compute(uvec2 coord){
       
       uint64_t sameCluster = ballotARB(referenceMorton == morton && activeThread != 0);
 
+      //*
 
-
+#ifndef USE_ADVANCE_REDUCE
       ///XXX
       reductionArray[gl_LocalInvocationIndex] = -1.f + 2.f/float(WINDOW_X)*(coord.x+0.5f);
 
@@ -345,11 +424,31 @@ void compute(uvec2 coord){
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+4] = reductionArray[0];
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+5] = reductionArray[1];
       }
+      // */
+#else
+      reductionArray[gl_LocalInvocationIndex+64u*0u] = -1.f + 2.f/float(WINDOW_X)*(coord.x+0.5f);
+      reductionArray[gl_LocalInvocationIndex+64u*1u] = -1.f + 2.f/float(WINDOW_Y)*(coord.y+0.5f);
+      reductionArray[gl_LocalInvocationIndex+64u*2u] = depth;
 
+      if(referenceMorton != morton || activeThread == 0){
+        reductionArray[gl_LocalInvocationIndex+64u*0u] = reductionArray[selectedBit+64u*0u];
+        reductionArray[gl_LocalInvocationIndex+64u*1u] = reductionArray[selectedBit+64u*1u];
+        reductionArray[gl_LocalInvocationIndex+64u*2u] = reductionArray[selectedBit+64u*2u];
+      }
 
+      advacedReduce();
+
+      if(gl_LocalInvocationIndex < floatsPerAABB){
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
+      }
+#endif
 
       notDone ^= sameCluster;
     }
+    if(gl_LocalInvocationIndex == 0)
+      nodeCounter[gl_WorkGroupID.x + gl_WorkGroupID.y*gl_NumWorkGroups.x] = counter;
+    //atomicAdd(nodeCounter[0],1);
   #endif
   //}
 }

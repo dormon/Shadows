@@ -72,7 +72,7 @@ class Config{
       nofNodesPerLevel = computeNofNodesPerLevel(allBits,warpBits);
       nodeLevelSizeInUints    = computeNodeLevelSizeInUints(nofNodesPerLevel,wavefrontSize,uintsPerWarp);
       nodesSize        = sum(nodeLevelSizeInUints) * sizeof(uint32_t);
-      nodeLevelOffsetInUints  = getOffsets(nofNodesPerLevel);
+      nodeLevelOffsetInUints  = getOffsets(nodeLevelSizeInUints);
       aabbsSize        = sum(nofNodesPerLevel) * floatsPerAABB * sizeof(float);
       for(auto const&x:nofNodesPerLevel)
         aabbLevelSizeInFloats.push_back(x*floatsPerAABB);
