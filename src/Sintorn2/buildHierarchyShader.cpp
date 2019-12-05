@@ -115,8 +115,6 @@ void advacedReduce(){
     reductionArray[gl_LocalInvocationIndex] = ab[w];
   }
 
-
-
   /////(24t -> 4 minx + 4 maxx + 4miny + 4maxy + 4minz + 4maxz)
   if(gl_LocalInvocationIndex < 6u*4u){                         
     ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0x3u) +  0u + (uint(gl_LocalInvocationIndex)>>2u)*8u];                 
