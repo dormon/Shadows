@@ -41,8 +41,6 @@ layout(local_size_x=WARP)in;
 
 layout(binding=0)buffer NodePool   {uint  nodePool   [];};
 layout(binding=1)buffer AABBPool   {float aabbPool   [];};
-layout(binding=2)buffer AABBCounter{uint  aabbCounter[];};
-
 
 layout(binding=1)uniform sampler2DRect depthTexture;
 
@@ -142,24 +140,53 @@ void compute(uvec2 coord){
   const uint uintsPerWarp    = uint(WARP/32u);
 
   const uint warpMask        = uint(WARP - 1u);
+  const uint floatsPerAABB   = 6u;
 
-  const uint levelSize[6] = {
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-0u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
-    uintsPerWarp << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
+  const uint nodesPerLevel[6] = {
+    1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
   };
 
-  const uint levelOffset[6] = {
+  const uint nodeLevelSizeInUints[6] = {
+    (nodesPerLevel[0] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[1] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[2] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[3] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[4] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[5] >> warpBits) * uintsPerWarp,
+  };
+
+  const uint nodeLevelOffsetInUints[6] = {
     0,
-    0 + levelSize[0],
-    0 + levelSize[0] + levelSize[1],
-    0 + levelSize[0] + levelSize[1] + levelSize[2],
-    0 + levelSize[0] + levelSize[1] + levelSize[2] + levelSize[3],
-    0 + levelSize[0] + levelSize[1] + levelSize[2] + levelSize[3] + levelSize[4],
+    0 + nodeLevelSizeInUints[0],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3] + nodeLevelSizeInUints[4],
   };
+
+  const uint aabbLevelSizeInFloats[6] = {
+    nodesPerLevel[0] * floatsPerAABB,
+    nodesPerLevel[1] * floatsPerAABB,
+    nodesPerLevel[2] * floatsPerAABB,
+    nodesPerLevel[3] * floatsPerAABB,
+    nodesPerLevel[4] * floatsPerAABB,
+    nodesPerLevel[5] * floatsPerAABB,
+  };
+
+  const uint aabbLevelOffsetInFloats[6] = {
+    0,
+    0 + aabbLevelSizeInFloats[0],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
+  };
+
 
   /*
   if(gl_GlobalInvocationID.x == 0){
@@ -244,32 +271,32 @@ void compute(uvec2 coord){
         if(nofLevels>0){
           uint bit  = (referenceMorton >> (warpBits*0u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*1u));
-          atomicOr(nodePool[levelOffset[clamp(nofLevels-1u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-1u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
         }
         if(nofLevels>1){
           uint bit  = (referenceMorton >> (warpBits*1u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*2u));
-          atomicOr(nodePool[levelOffset[clamp(nofLevels-2u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-2u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
         }
         if(nofLevels>2){
           uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*3u));
-          atomicOr(nodePool[levelOffset[clamp(nofLevels-3u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-3u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
         }
         if(nofLevels>3){
           uint bit  = (referenceMorton >> (warpBits*3u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*4u));
-          atomicOr(nodePool[levelOffset[clamp(nofLevels-4u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-4u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
         }
         if(nofLevels>4){
           uint bit  = (referenceMorton >> (warpBits*4u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*5u));
-          atomicOr(nodePool[levelOffset[clamp(nofLevels-5u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-5u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
         }
         if(nofLevels>5){
           uint bit  = (referenceMorton >> (warpBits*5u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*6u));
-          atomicOr(nodePool[levelOffset[clamp(nofLevels-6u,0u,5u)]+node*2u+uint(bit>31u)],1u<<(bit&0x1fu));
+          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-6u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
         }
       }
       
@@ -287,8 +314,8 @@ void compute(uvec2 coord){
 
       if(gl_LocalInvocationIndex == 0){
         uint node = (referenceMorton >> (warpBits*0u));
-        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+0] = reductionArray[0];
-        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+1] = reductionArray[1];
+        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+0] = reductionArray[0];
+        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+1] = reductionArray[1];
       }
 
       ///YYY
@@ -301,8 +328,8 @@ void compute(uvec2 coord){
 
       if(gl_LocalInvocationIndex == 0){
         uint node = (referenceMorton >> (warpBits*0u));
-        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+2] = reductionArray[0];
-        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+3] = reductionArray[1];
+        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+2] = reductionArray[0];
+        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+3] = reductionArray[1];
       }
 
       ///ZZZ
@@ -315,8 +342,8 @@ void compute(uvec2 coord){
 
       if(gl_LocalInvocationIndex == 0){
         uint node = (referenceMorton >> (warpBits*0u));
-        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+4] = reductionArray[0];
-        aabbPool[levelOffset[clamp(nofLevels-1u,0u,5u)]*3u*64u+node*6u+5] = reductionArray[1];
+        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+4] = reductionArray[0];
+        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+5] = reductionArray[1];
       }
 
 

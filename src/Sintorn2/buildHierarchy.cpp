@@ -41,15 +41,15 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-  propagateAABB(vars);
+  //propagateAABB(vars);
 
-  std::vector<float>d;
-  aabbPool->getData(d);
-  cfg.print();
-  for(size_t i=cfg.aabbLevelOffsetInFloats[cfg.nofLevels-2];i<cfg.aabbLevelOffsetInFloats[cfg.nofLevels-2]+10000*6;++i)
-    std::cerr << d[i] << std::endl;
+  //std::vector<float>d;
+  //aabbPool->getData(d);
+  //cfg.print();
+  //for(size_t i=cfg.aabbLevelOffsetInFloats[cfg.nofLevels-2];i<cfg.aabbLevelOffsetInFloats[cfg.nofLevels-2]+10000*6;++i)
+  //  std::cerr << d[i] << std::endl;
 
-  exit(0);
+  //exit(0);
 
 
 }

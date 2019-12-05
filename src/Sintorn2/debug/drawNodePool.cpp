@@ -142,24 +142,54 @@ uint divRoundUp(uint x,uint y){
     const uint uintsPerWarp    = uint(WARP/32u);
 
     const uint warpMask        = uint(WARP - 1u);
+    const uint floatsPerAABB   = 6u;
 
-    const uint levelSize[6] = {
-      uintsPerWarp << uint(max(int(allBits) - int((nofLevels-0u)*warpBits),0)),
-      uintsPerWarp << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
-      uintsPerWarp << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
-      uintsPerWarp << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
-      uintsPerWarp << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
-      uintsPerWarp << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
+
+    const uint nodesPerLevel[6] = {
+      1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
+      1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
+      1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
+      1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
+      1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
+      1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
     };
 
-    const uint levelOffset[6] = {
+    const uint nodeLevelSizeInUints[6] = {
+      (nodesPerLevel[0] >> warpBits) * uintsPerWarp,
+      (nodesPerLevel[1] >> warpBits) * uintsPerWarp,
+      (nodesPerLevel[2] >> warpBits) * uintsPerWarp,
+      (nodesPerLevel[3] >> warpBits) * uintsPerWarp,
+      (nodesPerLevel[4] >> warpBits) * uintsPerWarp,
+      (nodesPerLevel[5] >> warpBits) * uintsPerWarp,
+    };
+
+    const uint nodeLevelOffsetInUints[6] = {
       0,
-      0 + levelSize[0],
-      0 + levelSize[0] + levelSize[1],
-      0 + levelSize[0] + levelSize[1] + levelSize[2],
-      0 + levelSize[0] + levelSize[1] + levelSize[2] + levelSize[3],
-      0 + levelSize[0] + levelSize[1] + levelSize[2] + levelSize[3] + levelSize[4],
+      0 + nodeLevelSizeInUints[0],
+      0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1],
+      0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2],
+      0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3],
+      0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3] + nodeLevelSizeInUints[4],
     };
+
+    const uint aabbLevelSizeInFloats[6] = {
+      nodesPerLevel[0] * floatsPerAABB,
+      nodesPerLevel[1] * floatsPerAABB,
+      nodesPerLevel[2] * floatsPerAABB,
+      nodesPerLevel[3] * floatsPerAABB,
+      nodesPerLevel[4] * floatsPerAABB,
+      nodesPerLevel[5] * floatsPerAABB,
+    };
+
+    const uint aabbLevelOffsetInFloats[6] = {
+      0,
+      0 + aabbLevelSizeInFloats[0],
+      0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1],
+      0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2],
+      0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3],
+      0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
+    };
+
     uint gId = vId[0];
 #line 157
     uint bitsToDiv = warpBits*(nofLevels-1-levelToDraw);
@@ -181,15 +211,15 @@ uint divRoundUp(uint x,uint y){
     uint node = (mor >> (warpBits*(nofLevels  -levelToDraw)));
 
 
-    uint doesNodeExist = nodePool[levelOffset[clamp(levelToDraw,0u,5u)]+node*2u+uint(bit>31u)]&(1u<<(bit&0x1fu));
+    uint doesNodeExist = nodePool[nodeLevelOffsetInUints[clamp(levelToDraw,0u,5u)]+node*uintsPerWarp+uint(bit>31u)]&(1u<<(bit&0x1fu));
 
     uint aabbNode = (mor >> (warpBits*(nofLevels-1-levelToDraw)));
-    float mminX = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+0];
-    float mmaxX = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+1];
-    float mminY = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+2];
-    float mmaxY = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+3];
-    float mminZ = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+4];
-    float mmaxZ = aabbPool[levelOffset[clamp(levelToDraw,0u,5u)]*3u*64u+aabbNode*6u+5];
+    float mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+0];
+    float mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+1];
+    float mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+2];
+    float mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+3];
+    float mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+4];
+    float mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+5];
 
     if(doesNodeExist == 0)return;
 
