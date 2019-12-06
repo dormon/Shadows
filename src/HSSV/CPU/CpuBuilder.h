@@ -15,7 +15,7 @@ class Adjacency;
 class CpuBuilder
 {
 public:
-	void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplicityBits, bool compressed, u32 minimumNofEdgesNode);
+	void fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplicityBits, bool compressed, u32 minimumNofEdgesNode);
 
 private:
 
