@@ -5,6 +5,7 @@
 const std::string computeSrc = R".(
 #line 6
 
+
 #ifndef WARP
 #define WARP 64
 #endif//WARP
@@ -136,8 +137,8 @@ void main(){
   #endif//CULL_SIDES
 
   precise int Multiplicity=0;
-  if(Num>20)Num=0;
-  if(Num<0)Num=0;
+  //if(Num>20)Num=0;
+  //if(Num<0)Num=0;
 
   #if     USE_PLANES == 1
     #if     USE_INTERLEAVING == 1
@@ -162,11 +163,19 @@ void main(){
   #if LOCAL_ATOMIC == 1
     #if DONT_EXTRACT_MULTIPLICITY == 1
       uint localOffset = atomicAdd(localCounter,uint(2*abs(Multiplicity)));
-      barrier();
+
+      #if WORKGROUP_SIZE_X > WARP
+        barrier();
+      #endif
+
       if(gl_LocalInvocationID.x==0){
         globalOffset = atomicAdd(drawIndirectBuffer[0],localCounter);
       }
-      barrier();
+
+      #if WORKGROUP_SIZE_X > WARP
+        barrier();
+      #endif
+
       uint WH = globalOffset + localOffset;
 
       if(Multiplicity>0){
@@ -183,6 +192,28 @@ void main(){
         }
       }
     #else
+
+      //uint bb = unpackUint2x32(ballotARB(Multiplicity!=0))[0];
+      //uint warpOffset;
+      //if((uint(gl_LocalInvocationIndex)&0x1fu) == 0u){
+      //  warpOffset = atomicAdd(localCounter,bitCount(bb));
+      //}
+
+      //#if WORKGROUP_SIZE_X > WARP
+      //  barrier();
+      //#endif
+
+      //uint localOffset = readFirstInvocationARB(warpOffset) + bitCount(bb&((1u<<uint(gl_LocalInvocationIndex))-1u));
+
+      //if(gl_LocalInvocationID.x==0){
+      //  globalOffset = atomicAdd(drawIndirectBuffer[0],localCounter);
+      //}
+
+      //#if WORKGROUP_SIZE_X > WARP
+      //  barrier();
+      //#endif
+
+
       uint localOffset = atomicAdd(localCounter,uint(Multiplicity!=0));
 
       #if WORKGROUP_SIZE_X > WARP
@@ -208,8 +239,10 @@ void main(){
       #else
         if(Multiplicity != 0){
           uint res = 0;
-          res |= uint(Multiplicity<0) << 31u;
-          res |= abs(Multiplicity) << 29u;
+          res |= uint(Multiplicity << 29);
+          //res |= floatBitsToUint(intBitsToFloat(Multiplicity * 536870912));
+          //res |= uint(Multiplicity<0) << 31u;
+          //res |= abs(Multiplicity) << 29u;
           res |= uint(gl_GlobalInvocationID.x);
           multBuffer[WH] = res;
         }
@@ -243,8 +276,10 @@ void main(){
       #else
         if(Multiplicity != 0){
           uint res = 0;
-          res |= uint(Multiplicity<0) << 31u;
-          res |= abs(Multiplicity) << 29u;
+          res |= uint(Multiplicity << 29);
+          //res |= floatBitsToUint(intBitsToFloat(Multiplicity * 536870912));
+          //res |= uint(Multiplicity<0) << 31u;
+          //res |= abs(Multiplicity) << 29u;
           res |= uint(gl_GlobalInvocationID.x);
           multBuffer[WH] = res;
         }

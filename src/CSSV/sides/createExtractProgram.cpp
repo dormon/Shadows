@@ -4,6 +4,7 @@
 #include <FunctionPrologue.h>
 #include <SilhouetteShaders.h>
 #include <FastAdjacency.h>
+#include <BallotShader.h>
 
 #include <CSSV/sides/extractShader.h>
 #include <CSSV/sides/createExtractProgram.h>
@@ -40,6 +41,7 @@ void cssv::sides::createExtractProgram(vars::Vars&vars){
         Shader::define("DONT_PACK_MULT"           ,int32_t ( vars.getBool  ("cssv.param.dontPackMult"           ))),
         Shader::define("MAX_MULTIPLICITY"         ,int32_t ( vars.getUint32("maxMultiplicity"                   ))),
         Shader::define("NOF_EDGES"                ,uint32_t( adj->getNofEdges()                                  )),
+        ballotSrc,
         silhouetteFunctions,
         computeSrc));
 }

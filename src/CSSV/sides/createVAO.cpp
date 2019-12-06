@@ -25,6 +25,7 @@ void cssv::sides::createVAO(vars::Vars&vars){
     auto vao = vars.reCreate<VertexArray>("cssv.method.sides.vao");
     std::vector<float>edges;
     auto adj = vars.get<Adjacency>("adjacency");
+    std::cerr << "nofEdges: " << adj->getNofEdges() << std::endl;
     auto&vert = adj->getVertices();
     //for(size_t e=0;e<adj->getNofEdges();++e){
     //  edges.push_back(vert[adj->getEdgeVertexA(e)+0]);

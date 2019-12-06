@@ -92,11 +92,11 @@ void cssv::sides::draw(
     auto multBuffer = vars.get<Buffer>("cssv.method.multBuffer");
     auto edgeBuffer = vars.get<Buffer>("cssv.method.edgeBuffer");
 
-    //std::vector<int>mult;
+    //std::vector<uint32_t>mult;
     //multBuffer->getData(mult);
     //std::cerr << "########" << std::endl;
     //for(auto const&x:mult)
-    //  std::cerr << x << std::endl;
+    //  std::cerr << std::hex << x << std::endl;
     //std::cerr << "########" << std::endl;
 
     //std::vector<float>ed;

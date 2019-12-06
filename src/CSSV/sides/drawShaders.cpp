@@ -70,7 +70,8 @@ void main(){
 #else
   uint res = multBuffer[vId[0]];
   uint edge = res & 0x1fffffffu;
-  int  mult = int((res >> 29u)&0x3u)*int(1-int((res>>31u)<<1u));
+  //int  mult = int((res >> 29u)&0x3u)*int(1-int((res>>31u)<<1u));
+  int  mult = int(res) >> 29;
 #endif
   
 
