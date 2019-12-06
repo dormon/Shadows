@@ -15,7 +15,7 @@ class Adjacency;
 class CpuBuilder
 {
 public:
-	void fillOctree(Octree* octree, Adjacency const* adjacency, u32 bitPerMultiplicity, bool IsCompressed);
+	void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplicityBits, bool compressed, u32 minimumNofEdgesNode);
 
 private:
 
@@ -58,6 +58,8 @@ private:
 	void createAllOctreeMasks();
 
 	void removeEmptyMasks();
+
+	void discardNodesWithLessThanEdges(u32 minNofEdges);
 
 private:
 	Octree* octree = nullptr;

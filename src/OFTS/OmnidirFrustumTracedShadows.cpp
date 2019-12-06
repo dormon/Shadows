@@ -38,14 +38,17 @@ void OmnidirFrustumTracedShadows::create(glm::vec4 const&, glm::mat4 const&, glm
 
 	updateConstants();
 	createBuffers();
+	createTriangleBuffer();
 	createVao();
 	createFbo();
 	createShaders();
 	createShadowMaskFbo();
 
+	ifExistStamp("");
 	renderIzb();
-
+	ifExistStamp("IZB Create");
 	createShadowMask();
+	ifExistStamp("IZB Traversal");
 }
 
 void OmnidirFrustumTracedShadows::createVao()
@@ -80,6 +83,25 @@ void OmnidirFrustumTracedShadows::createBuffers()
 	vars.reCreate<Buffer>("ofts.izb", NOF_SIDES * res * res * depth * sizeof(uint32_t));
 	vars.reCreate<Buffer>("ofts.atomicCounter", NOF_SIDES * res * res * sizeof(uint32_t));
 	vars.reCreate<Buffer>("ofts.frusta", (nofVertices / 3) * 4 * 4 * sizeof(float));
+}
+
+void OmnidirFrustumTracedShadows::createTriangleBuffer()
+{
+	FUNCTION_PROLOGUE("ofts", "args.ofts.resolution", "args.ofts.depth", "renderModel");
+
+	std::vector<float> const verts = vars.get<Model>("model")->getVertices();
+
+	size_t const nofVerts = verts.size() / 3;
+
+	std::vector<glm::vec4> v4;
+	v4.reserve(nofVerts);
+
+	for(size_t v = 0; v < nofVerts; ++v)
+	{
+		v4.push_back(glm::vec4(verts[3 * v + 0], verts[3 * v + 1], verts[3 * v + 2], 1));
+	}
+
+	vars.reCreate<Buffer>("ofts.triangleBuffer", 4 * nofVerts * sizeof(float), v4.data());
 }
 
 void OmnidirFrustumTracedShadows::createShaders()
@@ -182,7 +204,7 @@ void OmnidirFrustumTracedShadows::createShadowMask()
 	}
 	else
 	{
-		vertexOrFrustumBuffer = vars.get<RenderModel>("renderModel")->vertices.get();
+		vertexOrFrustumBuffer = vars.get<Buffer>("ofts.triangleBuffer");
 		raytraceOrFrustumProgram = vars.get<Program>("ofts.shadowMaskRaytrace");
 	}
 
