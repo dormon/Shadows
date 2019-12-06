@@ -61,7 +61,7 @@ shared float reductionArray[WARP*3u];
 
 #if WARP == 64
 
-void advacedReduce(){
+void reduce(){
   const uint halfWarp        = WARP / 2u;
   const uint halfWarpMask    = uint(halfWarp - 1u);
 
@@ -230,7 +230,7 @@ void compute(uvec2 coord){
     uint64_t notDone = ballotARB(activeThread != 0);
     while(notDone != 0){
 
-      if(counter >= 64)break;
+      if(counter >= WARP)break;
       counter++;
 
       uint selectedBit     = unpackUint2x32(notDone)[0]!=0?findLSB(unpackUint2x32(notDone)[0]):findLSB(unpackUint2x32(notDone)[1])+32u;
@@ -273,17 +273,17 @@ void compute(uvec2 coord){
       
       uint64_t sameCluster = ballotARB(referenceMorton == morton && activeThread != 0);
 
-      reductionArray[gl_LocalInvocationIndex+64u*0u] = -1.f + 2.f/float(WINDOW_X)*(coord.x+0.5f);
-      reductionArray[gl_LocalInvocationIndex+64u*1u] = -1.f + 2.f/float(WINDOW_Y)*(coord.y+0.5f);
-      reductionArray[gl_LocalInvocationIndex+64u*2u] = depth;
+      reductionArray[gl_LocalInvocationIndex+WARP*0u] = -1.f + 2.f/float(WINDOW_X)*(coord.x+0.5f);
+      reductionArray[gl_LocalInvocationIndex+WARP*1u] = -1.f + 2.f/float(WINDOW_Y)*(coord.y+0.5f);
+      reductionArray[gl_LocalInvocationIndex+WARP*2u] = depth;
 
       if(referenceMorton != morton || activeThread == 0){
-        reductionArray[gl_LocalInvocationIndex+64u*0u] = reductionArray[selectedBit+64u*0u];
-        reductionArray[gl_LocalInvocationIndex+64u*1u] = reductionArray[selectedBit+64u*1u];
-        reductionArray[gl_LocalInvocationIndex+64u*2u] = reductionArray[selectedBit+64u*2u];
+        reductionArray[gl_LocalInvocationIndex+WARP*0u] = reductionArray[selectedBit+WARP*0u];
+        reductionArray[gl_LocalInvocationIndex+WARP*1u] = reductionArray[selectedBit+WARP*1u];
+        reductionArray[gl_LocalInvocationIndex+WARP*2u] = reductionArray[selectedBit+WARP*2u];
       }
 
-      advacedReduce();
+      reduce();
 
       if(gl_LocalInvocationIndex < floatsPerAABB){
         uint node = (referenceMorton >> (warpBits*0u));
