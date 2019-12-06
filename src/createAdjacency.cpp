@@ -11,10 +11,10 @@ void createAdjacency(vars::Vars&vars){
 
   vector<float> vertices = vars.get<Model>("model")->getVertices();
 
-  size_t const constexpr verticesPerTriangle = 3;
-  size_t const constexpr componentsPerVertex3D = 3;
+  //size_t const constexpr verticesPerTriangle = 3;
+  //size_t const constexpr componentsPerVertex3D = 3;
 
-  size_t const nofTriangles = vertices.size() / (verticesPerTriangle*componentsPerVertex3D);
+  //size_t const nofTriangles = vertices.size() / (verticesPerTriangle*componentsPerVertex3D);
 
   vars.reCreate<Adjacency>("adjacency",vertices,vars.getSizeT("maxMultiplicity"));
 }

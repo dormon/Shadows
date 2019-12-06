@@ -303,7 +303,7 @@ void Octree::ExpandWholeOctree()
 		if (currentLevel < (deepestLevel - 1))
 		{
 			const auto startingChild = getChildrenStartingId(node);
-			for (s32 i = 0; i < OCTREE_NUM_CHILDREN; ++i)
+			for (s32 i = 0; i < (s32)OCTREE_NUM_CHILDREN; ++i)
 			{
 				nodeStack.push(startingChild + i);
 				levelStack.push(currentLevel + 1);

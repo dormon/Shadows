@@ -22,7 +22,7 @@ void cssv::sides::createVAO(vars::Vars&vars){
     auto vao = vars.reCreate<VertexArray>("cssv.method.sides.vao");
     vao->addAttrib(silhouettes,0,componentsPerVertex4D,GL_FLOAT);
   }else{
-    auto vao = vars.reCreate<VertexArray>("cssv.method.sides.vao");
+    vars.reCreate<VertexArray>("cssv.method.sides.vao");
     std::vector<float>edges;
     auto adj = vars.get<Adjacency>("adjacency");
     std::cerr << "nofEdges: " << adj->getNofEdges() << std::endl;

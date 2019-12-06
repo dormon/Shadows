@@ -24,9 +24,11 @@ bool OctreeSerializer::loadFromFile(Octree* octree, SerializerData const& data)
 
 	//Read num levels
 	u32 const numLevels = ReadUint32(input);
+  (void)numLevels;
 
 	//Read root AABB
 	AABB const rootVolume = ReadAabb(input);
+  (void)rootVolume;
 
 	//Read node data
 	u32 const numNodes = octree->getTotalNumNodes();

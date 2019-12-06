@@ -172,7 +172,7 @@ void FrustumTracedShadows::createLightProjMatrix()
 	float farZ = vars.getFloat("args.fts.far");
 	float fovY = vars.getFloat("args.fts.fovy");
 
-	glm::vec4 const pos = *vars.get<glm::vec4>("lightPosition");
+	//glm::vec4 const pos = *vars.get<glm::vec4>("lightPosition");
 
 	_lightProjMatrix = glm::perspective(fovY, 1.f, nearZ, farZ);
 }

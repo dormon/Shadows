@@ -30,6 +30,7 @@ void GSSV::createCapsDrawer(vars::Vars& vars)
 void GSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
 {
 	auto t = glIsEnabled(GL_CULL_FACE);
+  (void)t;
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_DEPTH_TEST);
     const glm::mat4 mvp = projectionMatrix * viewMatrix;
