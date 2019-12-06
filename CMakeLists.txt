@@ -199,6 +199,7 @@ set(INCLUDES
   src/GSCaps.h
   src/GSCapsShaders.h
   src/createAdjacency.h
+  src/Timer.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

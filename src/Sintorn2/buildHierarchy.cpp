@@ -44,7 +44,7 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-  propagateAABB(vars);
+  //propagateAABB(vars);
 
   /*
   std::vector<uint32_t>d;

@@ -37,6 +37,7 @@
 
 #include <FunctionPrologue.h>
 #include <Methods.h>
+#include <Timer.h>
 
 #define ___ std::cerr << __FILE__ << ": " << __LINE__ << std::endl
 
@@ -115,7 +116,7 @@ void Shadows::init() {
 
 void Shadows::draw() {
   FUNCTION_CALLER();
-
+  auto timer = Timer<float>();
   createGeometryBuffer(vars);
   createShadowMask(vars);
   createProjection(vars);
@@ -174,6 +175,12 @@ void Shadows::draw() {
 
 
   swap();
+
+  auto time = timer.elapsedFromStart();
+  auto&t = vars.addOrGetFloat("frameTime");
+  auto&fps = vars.addOrGetFloat("fps");
+  t = time;
+  fps = 1.f/time;
 }
 
 int main(int argc, char* argv[]) {

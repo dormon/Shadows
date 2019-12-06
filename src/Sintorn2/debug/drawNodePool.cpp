@@ -110,181 +110,176 @@ uint divRoundUp(uint x,uint y){
   return uint(x/y) + uint((x%y)>0);
 }
 
-  layout(points)in;
-  layout(line_strip,max_vertices=28)out;
+layout(points)in;
+layout(line_strip,max_vertices=28)out;
 
-  flat in uint vId[];
+flat in uint vId[];
 
-  layout(binding=0)buffer NodePool{uint nodePool[];};
-  layout(binding=1)buffer AABBPool{float aabbPool[];};
+layout(binding=0)buffer NodePool{uint nodePool[];};
+layout(binding=1)buffer AABBPool{float aabbPool[];};
 
-  uniform mat4 view;
-  uniform mat4 proj;
+uniform mat4 view;
+uniform mat4 proj;
 
-  uniform mat4 nodeView;
-  uniform mat4 nodeProj;
+uniform mat4 nodeView;
+uniform mat4 nodeProj;
 
 #line 122
-  uniform uint levelToDraw = 0;
+uniform uint levelToDraw = 0;
 
-  uniform uint drawTightAABB = 0;
+uniform uint drawTightAABB = 0;
 
-  void main(){
-    const uint warpBits        = uint(ceil(log2(float(WARP))));
-    const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
-    const uint clustersY       = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
-    const uint xBits           = uint(ceil(log2(float(clustersX))));
-    const uint yBits           = uint(ceil(log2(float(clustersY))));
-    const uint zBits           = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
-    const uint clustersZ       = uint(1u << zBits);
-    const uint allBits         = xBits + yBits + zBits;
-    const uint nofLevels       = uint(allBits/warpBits) + uint(allBits%warpBits != 0u);
-    const uint uintsPerWarp    = uint(WARP/32u);
+void main(){
+  const uint warpBits        = uint(ceil(log2(float(WARP))));
+  const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
+  const uint clustersY       = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
+  const uint xBits           = uint(ceil(log2(float(clustersX))));
+  const uint yBits           = uint(ceil(log2(float(clustersY))));
+  const uint zBits           = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
+  const uint clustersZ       = uint(1u << zBits);
+  const uint allBits         = xBits + yBits + zBits;
+  const uint nofLevels       = uint(allBits/warpBits) + uint(allBits%warpBits != 0u);
+  const uint uintsPerWarp    = uint(WARP/32u);
 
-    const uint warpMask        = uint(WARP - 1u);
-    const uint floatsPerAABB   = 6u;
+  const uint warpMask        = uint(WARP - 1u);
+  const uint floatsPerAABB   = 6u;
 
 
-    const uint nodesPerLevel[6] = {
-      1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
-      1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
-      1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
-      1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
-      1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
-      1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
-    };
+  const uint nodesPerLevel[6] = {
+    1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
+    1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
+  };
 
-    const uint nodeLevelSizeInUints[6] = {
-      (nodesPerLevel[0] >> warpBits) * uintsPerWarp,
-      (nodesPerLevel[1] >> warpBits) * uintsPerWarp,
-      (nodesPerLevel[2] >> warpBits) * uintsPerWarp,
-      (nodesPerLevel[3] >> warpBits) * uintsPerWarp,
-      (nodesPerLevel[4] >> warpBits) * uintsPerWarp,
-      (nodesPerLevel[5] >> warpBits) * uintsPerWarp,
-    };
+  const uint nodeLevelSizeInUints[6] = {
+    (nodesPerLevel[0] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[1] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[2] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[3] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[4] >> warpBits) * uintsPerWarp,
+    (nodesPerLevel[5] >> warpBits) * uintsPerWarp,
+  };
 
-    const uint nodeLevelOffsetInUints[6] = {
-      0,
-      0 + nodeLevelSizeInUints[0],
-      0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1],
-      0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2],
-      0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3],
-      0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3] + nodeLevelSizeInUints[4],
-    };
+  const uint nodeLevelOffsetInUints[6] = {
+    0,
+    0 + nodeLevelSizeInUints[0],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3],
+    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3] + nodeLevelSizeInUints[4],
+  };
 
-    const uint aabbLevelSizeInFloats[6] = {
-      nodesPerLevel[0] * floatsPerAABB,
-      nodesPerLevel[1] * floatsPerAABB,
-      nodesPerLevel[2] * floatsPerAABB,
-      nodesPerLevel[3] * floatsPerAABB,
-      nodesPerLevel[4] * floatsPerAABB,
-      nodesPerLevel[5] * floatsPerAABB,
-    };
+  const uint aabbLevelSizeInFloats[6] = {
+    nodesPerLevel[0] * floatsPerAABB,
+    nodesPerLevel[1] * floatsPerAABB,
+    nodesPerLevel[2] * floatsPerAABB,
+    nodesPerLevel[3] * floatsPerAABB,
+    nodesPerLevel[4] * floatsPerAABB,
+    nodesPerLevel[5] * floatsPerAABB,
+  };
 
-    const uint aabbLevelOffsetInFloats[6] = {
-      0,
-      0 + aabbLevelSizeInFloats[0],
-      0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1],
-      0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2],
-      0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3],
-      0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
-    };
+  const uint aabbLevelOffsetInFloats[6] = {
+    0,
+    0 + aabbLevelSizeInFloats[0],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3],
+    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
+  };
 
-    uint gId = vId[0];
+  uint gId = vId[0];
 #line 157
-    uint bitsToDiv = warpBits*(nofLevels-1-levelToDraw);
-    uint xBitsToDiv = divRoundUp(bitsToDiv , 3u);
-    uint yBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-1,0)) , 3u);
-    uint zBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-2,0)) , 3u);
+  uint bitsToDiv = warpBits*(nofLevels-1-levelToDraw);
+  uint xBitsToDiv = divRoundUp(bitsToDiv , 3u);
+  uint yBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-1,0)) , 3u);
+  uint zBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-2,0)) , 3u);
 
 #line 163
-    uint clusX = divRoundUp(clustersX,1u<<xBitsToDiv);
-    uint clusY = divRoundUp(clustersY,1u<<yBitsToDiv);
+  uint clusX = divRoundUp(clustersX,1u<<xBitsToDiv);
+  uint clusY = divRoundUp(clustersY,1u<<yBitsToDiv);
 
-    uint x = gId % clusX;
-    uint y = (gId / clusX) % clusY;
-    uint z = (gId / (clusX * clusY));
+  uint x = gId % clusX;
+  uint y = (gId / clusX) % clusY;
+  uint z = (gId / (clusX * clusY));
 
-    uint mor = morton(uvec3(x<<xBitsToDiv,y<<yBitsToDiv,z<<zBitsToDiv));
+  uint mor = morton(uvec3(x<<xBitsToDiv,y<<yBitsToDiv,z<<zBitsToDiv));
 
-    uint bit  = (mor >> (warpBits*(nofLevels-1-levelToDraw))) & warpMask;
-    uint node = (mor >> (warpBits*(nofLevels  -levelToDraw)));
-
-
-    uint doesNodeExist = nodePool[nodeLevelOffsetInUints[clamp(levelToDraw,0u,5u)]+node*uintsPerWarp+uint(bit>31u)]&(1u<<(bit&0x1fu));
-
-    uint aabbNode = (mor >> (warpBits*(nofLevels-1-levelToDraw)));
-    float mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+0];
-    float mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+1];
-    float mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+2];
-    float mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+3];
-    float mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+4];
-    float mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+5];
-
-    if(doesNodeExist == 0)return;
-
-    vec4 ndc  = vec4(0);
-    vec4 ndc2 = vec4(0);
+  uint bit  = (mor >> (warpBits*(nofLevels-1-levelToDraw))) & warpMask;
+  uint node = (mor >> (warpBits*(nofLevels  -levelToDraw)));
 
 
-    float startZ = clusterToZ(z<<zBitsToDiv);
-    float endZ   = clusterToZ((z+1)<<zBitsToDiv);
+  uint doesNodeExist = nodePool[nodeLevelOffsetInUints[clamp(levelToDraw,0u,5u)]+node*uintsPerWarp+uint(bit>31u)]&(1u<<(bit&0x1fu));
 
-    float startX = -1.f + 2.f * float((x<<xBitsToDiv)*TILE_X) / float(WINDOW_X);
-    float startY = -1.f + 2.f * float((y<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y);
+  if(doesNodeExist == 0)return;
 
+  uint aabbNode = (mor >> (warpBits*(nofLevels-1-levelToDraw)));
+  float mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+0];
+  float mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+1];
+  float mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+2];
+  float mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+3];
+  float mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+4];
+  float mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+5];
 
-    float endX = clamp(-1.f + 2.f * float(((x+1)<<xBitsToDiv)*TILE_X) / float(WINDOW_X),-1.f,1.f);
-    float endY = clamp(-1.f + 2.f * float(((y+1)<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y),-1.f,1.f);
+  float startZ = clusterToZ(z<<zBitsToDiv);
+  float endZ   = clusterToZ((z+1)<<zBitsToDiv);
+
+  float startX = -1.f + 2.f * float((x<<xBitsToDiv)*TILE_X) / float(WINDOW_X);
+  float startY = -1.f + 2.f * float((y<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y);
+
+  float endX = clamp(-1.f + 2.f * float(((x+1)<<xBitsToDiv)*TILE_X) / float(WINDOW_X),-1.f,1.f);
+  float endY = clamp(-1.f + 2.f * float(((y+1)<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y),-1.f,1.f);
 
 #ifdef FAR_IS_INFINITE
-    float e = -1.f;
-    float f = -2.f * NEAR;
+  float e = -1.f;
+  float f = -2.f * NEAR;
 #else
-    float e = -(FAR + NEAR) / (FAR - NEAR);
-    float f = -2.f * NEAR * FAR / (FAR - NEAR);
+  float e = -(FAR + NEAR) / (FAR - NEAR);
+  float f = -2.f * NEAR * FAR / (FAR - NEAR);
 #endif
 
-    if(drawTightAABB != 0){
-      startX = mminX;
-      endX   = mmaxX;
+  if(drawTightAABB != 0){
+    startX = mminX;
+    endX   = mmaxX;
 
-      startY = mminY;
-      endY   = mmaxY;
+    startY = mminY;
+    endY   = mmaxY;
 
-      startZ = depthToZ(mminZ);
-      endZ   = depthToZ(mmaxZ);
-    }
-
-
-    mat4 M = proj*view*inverse(nodeView)*inverse(nodeProj);
-    gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    EndPrimitive();
-#line 208
-    gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-    gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-    gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-    gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-    gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-    EndPrimitive();
-
-    gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-    EndPrimitive();
-    gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-    EndPrimitive();
-    gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-    EndPrimitive();
-    gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-    gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-    EndPrimitive();
+    startZ = depthToZ(mminZ);
+    endZ   = depthToZ(mmaxZ);
   }
+
+
+  mat4 M = proj*view*inverse(nodeView)*inverse(nodeProj);
+  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  EndPrimitive();
+#line 208
+  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  EndPrimitive();
+
+  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  EndPrimitive();
+  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  EndPrimitive();
+  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  EndPrimitive();
+  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  EndPrimitive();
+}
 
   ).";
 
@@ -318,7 +313,6 @@ uint divRoundUp(uint x,uint y){
 
 void drawNodePool(vars::Vars&vars){
   prepareDrawNodePool(vars);
-
 
   auto const cfg            = *vars.get<Config>        ("sintorn2.method.debug.dump.config"          );
 
@@ -355,11 +349,8 @@ void drawNodePool(vars::Vars&vars){
 
   for(uint32_t l=0;l<cfg.nofLevels;++l){
     if((levelsToDraw&(1u<<l)) == 0)continue;
-
-    int32_t bits = glm::max(((int)cfg.allBits)-(int)(cfg.warpBits*(cfg.nofLevels-1-l)),0);
-    uint32_t nofNodes = 1u << ((uint32_t)bits);
     prg->set1ui      ("levelToDraw",l);
-    glDrawArrays(GL_POINTS,0,nofNodes);
+    glDrawArrays(GL_POINTS,0,cfg.nofNodesPerLevel[l]);
   }
 
   vao->unbind();
