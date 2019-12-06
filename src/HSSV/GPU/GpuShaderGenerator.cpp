@@ -8,7 +8,6 @@ std::string getComputeEdgeRangesCsSource(std::vector<u32> const& lastNodePerBuff
 
 	bool const useExtendedVersion = lastNodePerBuffer.size() > 1;
 	u32 const numBuffers = u32(lastNodePerBuffer.size());
-  (void)numBuffers;
 
 	str << "#version 450 core\n\n";
 	str << "#define MAX_OCTREE_LEVEL " << info.maxOctreeLevel << "u\n";
@@ -268,8 +267,7 @@ std::string getComputeSidesFromEdgeRangesCsSource(std::vector<u32> const& lastNo
 ).";
 
 	u32 bindSlot = 0;
-	for (//bindSlot
-      ; bindSlot < nofEdgeBuffers; ++bindSlot)
+	for (bindSlot; bindSlot < nofEdgeBuffers; ++bindSlot)
 	{
 		str << "layout(std430, binding = " << bindSlot << ") restrict readonly  buffer _edges" << bindSlot << " { uint edgeIndices" << bindSlot << "[]; };\n";
 	}

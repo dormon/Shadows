@@ -178,7 +178,7 @@ void GpuSidesDrawer::DrawSides(glm::mat4 const& mvp, glm::vec4 const& lightPosit
 
 void GpuSidesDrawer::CreateShaders()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree", "hssv.args.drawCpu");
 
 	SidesGenShaderParams params;
 	params.bitmaskBufferSize = GetNofIndicesPerBitmask();
@@ -409,7 +409,7 @@ void GpuSidesDrawer::CreateDIBOs()
 
 void GpuSidesDrawer::CreateEdgeRangeBuffer()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree", "hssv.args.drawCpu");
 
 	u32 const edgeRangeItems = nodeEdgesIdBuffers.size() > 1 ? 3 : 2;
 	u32 const maxJobs = GetMaxNofJobs(vars.getUint32("hssv.args.wgSize"));
