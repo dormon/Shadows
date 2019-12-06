@@ -16,14 +16,6 @@ struct EdgeRangeShaderParams
 struct SidesGenShaderParams
 {
 	u32 nofBitsMultiplicity;
-	u32 bitmaskBufferSize;
-	u32 wgSize;
-	u32 maxOctreeLevel;
-};
-
-struct SidesGenShaderParams2
-{
-	u32 nofBitsMultiplicity;
 	u32 maxMultiplicity;
 	u32 bitmaskBufferSize;
 	u32 wgSize;
@@ -33,7 +25,7 @@ struct SidesGenShaderParams2
 std::string getComputeEdgeRangesCsSource(std::vector<u32> const& lastNodePerBuffer, EdgeRangeShaderParams const& params);
 
 std::string getComputeSidesFromEdgeRangesCsSource(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams const& params);
-std::string getComputeSidesFromEdgeRangesCsSource2(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams2 const& params);
-std::string getComputeSidesFromEdgeRangesCsSource3(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams2 const& params);
 
 std::string genEdgeBuffersMappingFn(std::vector<u32> const& lastNodePerBuffer);
+
+std::string genSilExtrusionGs(SidesGenShaderParams const& params);

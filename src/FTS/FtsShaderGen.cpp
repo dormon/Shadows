@@ -193,7 +193,7 @@ uniform mat4 lightVP;
 uniform vec4 lightPos;
 uniform float bias;
 
-#define NOF_FLOATS_TRIANGLE 9u
+#define NOF_FLOATS_TRIANGLE 12u
 ).";
 
     fs << "#define IZB_WIDTH "  << bufferDims.x << std::endl;
@@ -240,8 +240,8 @@ void main()
             //Construct a triangle
             vec3 verts[3];
             verts[0] = vec3(vertices[vertexIndexBase + 0], vertices[vertexIndexBase + 1], vertices[vertexIndexBase + 2]);
-            verts[1] = vec3(vertices[vertexIndexBase + 3], vertices[vertexIndexBase + 4], vertices[vertexIndexBase + 5]);
-            verts[2] = vec3(vertices[vertexIndexBase + 6], vertices[vertexIndexBase + 7], vertices[vertexIndexBase + 8]);
+            verts[1] = vec3(vertices[vertexIndexBase + 4], vertices[vertexIndexBase + 5], vertices[vertexIndexBase + 6]);
+            verts[2] = vec3(vertices[vertexIndexBase + 8], vertices[vertexIndexBase + 9], vertices[vertexIndexBase + 10]);
         
             //Test for intersection
             const bool isIntersecting = rayTriangleIntersect(verts[0], verts[1], verts[2], rayDir, viewSamplePosition, bias);
@@ -384,7 +384,7 @@ layout(std430, binding=2) buffer _vertices {float vertices[];};
 uniform vec4 lightPos;
 uniform float bias;
 
-#define NOF_FLOATS_TRIANGLE 9u
+#define NOF_FLOATS_TRIANGLE 12u
 ).";
 
     fs << "#define IZB_WIDTH " << bufferDims.x << std::endl;
@@ -427,8 +427,8 @@ void main()
         //Construct a triangle
         vec3 verts[3];
         verts[0] = vec3(vertices[vertexIndexBase + 0], vertices[vertexIndexBase + 1], vertices[vertexIndexBase + 2]);
-        verts[1] = vec3(vertices[vertexIndexBase + 3], vertices[vertexIndexBase + 4], vertices[vertexIndexBase + 5]);
-        verts[2] = vec3(vertices[vertexIndexBase + 6], vertices[vertexIndexBase + 7], vertices[vertexIndexBase + 8]);
+        verts[1] = vec3(vertices[vertexIndexBase + 4], vertices[vertexIndexBase + 5], vertices[vertexIndexBase + 6]);
+        verts[2] = vec3(vertices[vertexIndexBase + 8], vertices[vertexIndexBase + 9], vertices[vertexIndexBase + 10]);
     
         //Test for intersection
         const bool isIntersecting = rayTriangleIntersect(verts[0], verts[1], verts[2], -rayDir, viewSamplePosition, bias);

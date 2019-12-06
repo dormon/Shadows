@@ -35,6 +35,7 @@ void FrustumTracedShadows::create(glm::vec4 const& lightPosition, glm::mat4 cons
 	if (!_isValid) return;
 
 	createBuffers();
+	createTriangleBuffer();
 	createVao();
 	createFbo();
 	createShaders();
@@ -81,6 +82,26 @@ void FrustumTracedShadows::createBuffers()
 	vars.reCreate<Buffer>("fts.izb", res * res * depth * sizeof(uint32_t));
 	vars.reCreate<Buffer>("fts.atomicCounter", res * res * sizeof(uint32_t));
 }
+
+void FrustumTracedShadows::createTriangleBuffer()
+{
+	FUNCTION_PROLOGUE("ofts", "args.ofts.resolution", "args.ofts.depth", "renderModel");
+
+	std::vector<float> const verts = vars.get<Model>("model")->getVertices();
+
+	size_t const nofVerts = verts.size() / 3;
+
+	std::vector<glm::vec4> v4;
+	v4.reserve(nofVerts);
+
+	for (size_t v = 0; v < nofVerts; ++v)
+	{
+		v4.push_back(glm::vec4(verts[3 * v + 0], verts[3 * v + 1], verts[3 * v + 2], 1));
+	}
+
+	vars.reCreate<Buffer>("fts.triangleBuffer", 4 * nofVerts * sizeof(float), v4.data());
+}
+
 
 void FrustumTracedShadows::createVao()
 {
@@ -228,7 +249,7 @@ void FrustumTracedShadows::createShadowMask(glm::mat4 const& lightVP)
 
 	vars.get<Buffer>("fts.izb")->bindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	vars.get<Buffer>("fts.atomicCounter")->bindBase(GL_SHADER_STORAGE_BUFFER, 1);
-	vars.get<RenderModel>("renderModel")->vertices->bindBase(GL_SHADER_STORAGE_BUFFER, 2);
+	vars.get<Buffer>("fts.triangleBuffer")->bindBase(GL_SHADER_STORAGE_BUFFER, 2);
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -237,6 +258,6 @@ void FrustumTracedShadows::createShadowMask(glm::mat4 const& lightVP)
 
 	vars.get<Buffer>("fts.izb")->unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	vars.get<Buffer>("fts.atomicCounter")->unbindBase(GL_SHADER_STORAGE_BUFFER, 1);
-	vars.get<RenderModel>("renderModel")->vertices->unbindBase(GL_SHADER_STORAGE_BUFFER, 2);
+	vars.get<Buffer>("fts.triangleBuffer")->unbindBase(GL_SHADER_STORAGE_BUFFER, 2);
 }
 

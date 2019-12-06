@@ -18,7 +18,7 @@
 
 #define ENABLE_MULTITHREAD
 
-void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplicityBits, bool compressed)
+void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplicityBits, bool compressed, u32 minimumNofEdgesNode)
 {
 	assert(o != nullptr);
 	assert(multiplicityBits > 1);
@@ -54,7 +54,14 @@ void CpuBuilder::fillOctree(Octree* o, Adjacency const* adjacency, u32 multiplic
 	propagatePotEdges();
 
 	std::cerr << "Pot edges propagated in " << float(t.getElapsedTimeFromLastQuerySeconds()) << "s\n";
+	
+	if(!IsCompressed && minimumNofEdgesNode>0)
+	{
+		discardNodesWithLessThanEdges(256);
 
+		std::cerr << "insufficiently big buffers merged in " << float(t.getElapsedTimeFromLastQuerySeconds()) << "s\n";
+	}
+	
 	octree->makeNodesFit();
 
 	std::cerr << "Octree optimally allocated in " << float(t.getElapsedTimeFromLastQuerySeconds()) << "s\n";
@@ -343,6 +350,67 @@ void CpuBuilder::removeEmptyMasks()
 				n->edgesMayCastMap.erase(i);
 			}
 		}
+	}
+}
+
+void CpuBuilder::discardNodesWithLessThanEdges(u32 minNofEdges)
+{
+	u32 const nofNodes = octree->getTotalNumNodes();
+	for (u32 node = 0; node < nofNodes; ++node)
+	{
+		Node* n = octree->getNode(node);
+		s32 const startingChild = octree->getChildrenStartingId(node);
+
+		if(startingChild<0)
+		{
+			continue; //all following nodes are 
+		}
+
+		for(auto mask = n->edgesAlwaysCastMap.begin(); mask!=n->edgesAlwaysCastMap.end(); )
+		{
+			if ((mask->first != BITMASK_ALL_SET) && (mask->second.size() < minNofEdges))
+			{
+				for (u32 bit = 0; bit < 8; ++bit)
+				{
+					if((mask->first>>bit) & 1)
+					{
+						Node* child = octree->getNode(startingChild + bit);
+						child->edgesAlwaysCastMap[BITMASK_ALL_SET].insert(child->edgesAlwaysCastMap[BITMASK_ALL_SET].end(), mask->second.begin(), mask->second.end());
+					}
+				}
+
+				//erase mask from parent
+				n->edgesAlwaysCastMap.erase(mask++);
+			}
+			else
+			{
+				mask++;
+			}
+		}
+
+
+		for (auto mask = n->edgesMayCastMap.begin(); mask != n->edgesMayCastMap.end(); )
+		{
+			if ((mask->first != BITMASK_ALL_SET) && (mask->second.size() < minNofEdges))
+			{
+				for (u32 bit = 0; bit < 8; ++bit)
+				{
+					if ((mask->first >> bit) & 1)
+					{
+						Node* child = octree->getNode(startingChild + bit);
+						child->edgesMayCastMap[BITMASK_ALL_SET].insert(child->edgesMayCastMap[BITMASK_ALL_SET].end(), mask->second.begin(), mask->second.end());
+					}
+				}
+
+				//erase mask from parent
+				n->edgesMayCastMap.erase(mask++);
+			}
+			else
+			{
+				mask++;
+			}
+		}
+
 	}
 }
 
