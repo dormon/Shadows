@@ -36,7 +36,7 @@ void sintorn2::propagateAABB(vars::Vars&vars){
   //glDispatchCompute(divRoundUp(cfg.nofNodesPerLevel[cfg.nofLevels-2],1024),1024,1);
   //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-/*
+//*
   for(int32_t level=cfg.nofLevels-2;level>=0;--level){
     prg->set1ui("destLevel",level);
     if(cfg.nofNodesPerLevel[level]>1024)
