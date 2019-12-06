@@ -16,7 +16,6 @@ void cssv::sides::createDrawProgram(vars::Vars&vars){
 
   bool const dontExtMult     = vars.getBool("cssv.param.dontExtractMultiplicity");
   bool const dontPackMult    = vars.getBool("cssv.param.dontPackMult");
-  auto const alignedNofEdges = vars.getUint32("cssv.method.alignedNofEdges");
 
   if(dontExtMult){
     vars.reCreate<Program>("cssv.method.sides.drawProgram",
@@ -24,6 +23,7 @@ void cssv::sides::createDrawProgram(vars::Vars&vars){
         make_shared<Shader>(GL_TESS_CONTROL_SHADER   ,cssv::sides::drawCPSrc),
         make_shared<Shader>(GL_TESS_EVALUATION_SHADER,cssv::sides::drawEPSrc));
   }else{
+    auto const alignedNofEdges = vars.getUint32("cssv.method.alignedNofEdges");
     vars.reCreate<Program>("cssv.method.sides.drawProgram",
         make_shared<Shader>(GL_VERTEX_SHADER         ,"#version 450 core\n",Shader::define("EXTRACT_MULTIPLICITY",1),cssv::sides::drawVPSrc),
         //make_shared<Shader>(GL_GEOMETRY_SHADER       ,"#version 450 core\n",cssv::sides::drawGPSrc));
