@@ -1,61 +1,6 @@
 #include <Sintorn2/buildHierarchyShader.h>
 
-std::string const sintorn2::buildHierarchyShader = R".(
-#ifndef WARP
-#define WARP 64
-#endif//WARP
-
-#ifndef WINDOW_X
-#define WINDOW_X 512
-#endif//WINDOW_X
-
-#ifndef WINDOW_Y
-#define WINDOW_Y 512
-#endif//WINDOW_Y
-
-#ifndef TILE_X
-#define TILE_X 8
-#endif//TILE_X
-
-#ifndef TILE_Y
-#define TILE_Y 8
-#endif//TILE_Y
-
-#ifndef MIN_Z_BITS
-#define MIN_Z_BITS 9
-#endif//MIN_Z_BITS
-
-#ifndef NEAR
-#define NEAR 0.01f
-#endif//NEAR
-
-#ifndef FAR
-#define FAR 1000.f
-#endif//FAR
-
-#ifndef FOVY
-#define FOVY 1.5707963267948966f
-#endif//FOVY
-
-layout(local_size_x=WARP)in;
-
-layout(binding=0)buffer NodePool   {uint  nodePool   [];};
-layout(binding=1)buffer AABBPool   {float aabbPool   [];};
-layout(binding=2)buffer NodeCounter{uint  nodeCounter[];};
-
-layout(binding=1)uniform sampler2DRect depthTexture;
-
-uint getMorton(uvec2 coord,float depth){
-  const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
-  const uint tileBitsY     = uint(ceil(log2(float(TILE_Y))));
-
-  float z = depthToZ(depth);
-  uint  zQ = quantizeZ(z);
-  uvec3 clusterCoord = uvec3(uvec2(coord) >> uvec2(tileBitsX,tileBitsY), zQ);
-  return morton(clusterCoord);
-}
-
-
+std::string const sintorn2::reduceShader = R".(
 shared float reductionArray[(TILE_X*TILE_Y)*3u];
 
 #if WARP == 32
@@ -279,6 +224,65 @@ void reduce(){
 
 }
 #endif
+
+).";
+
+std::string const sintorn2::buildHierarchyShader = R".(
+#ifndef WARP
+#define WARP 64
+#endif//WARP
+
+#ifndef WINDOW_X
+#define WINDOW_X 512
+#endif//WINDOW_X
+
+#ifndef WINDOW_Y
+#define WINDOW_Y 512
+#endif//WINDOW_Y
+
+#ifndef TILE_X
+#define TILE_X 8
+#endif//TILE_X
+
+#ifndef TILE_Y
+#define TILE_Y 8
+#endif//TILE_Y
+
+#ifndef MIN_Z_BITS
+#define MIN_Z_BITS 9
+#endif//MIN_Z_BITS
+
+#ifndef NEAR
+#define NEAR 0.01f
+#endif//NEAR
+
+#ifndef FAR
+#define FAR 1000.f
+#endif//FAR
+
+#ifndef FOVY
+#define FOVY 1.5707963267948966f
+#endif//FOVY
+
+layout(local_size_x=WARP)in;
+
+layout(binding=0)buffer NodePool   {uint  nodePool   [];};
+layout(binding=1)buffer AABBPool   {float aabbPool   [];};
+layout(binding=2)buffer NodeCounter{uint  nodeCounter[];};
+
+layout(binding=1)uniform sampler2DRect depthTexture;
+
+uint getMorton(uvec2 coord,float depth){
+  const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
+  const uint tileBitsY     = uint(ceil(log2(float(TILE_Y))));
+
+  float z = depthToZ(depth);
+  uint  zQ = quantizeZ(z);
+  uvec3 clusterCoord = uvec3(uvec2(coord) >> uvec2(tileBitsX,tileBitsY), zQ);
+  return morton(clusterCoord);
+}
+
+
 
 #if WARP == 64
 uint activeThread = 0;

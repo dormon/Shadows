@@ -234,7 +234,7 @@ void CpuBuilder::storePotentialEdgesCompressed(BitSet8 const& potMask, u32 edgeI
 
 void CpuBuilder::storePotentialEdges(BitSet8 const& potMask, u32 edgeId, u32 parentNode)
 {
-	size_t const count = potMask.count();
+	//size_t const count = potMask.count();
 	u8 const bitMask = u8(potMask.to_ulong());
 
 	if (bitMask == BITMASK_ALL_SET)

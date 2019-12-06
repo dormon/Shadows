@@ -257,12 +257,12 @@ void drawPointCloud(vars::Vars&vars){
   glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
   glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-  auto window          = vars.get<uvec2      >("windowSize"                );
+  //auto window          = vars.get<uvec2      >("windowSize"                );
   auto program         = vars.get<Program    >("pointCloud.program"        );
   auto vao             = vars.get<VertexArray>("pointCloud.vao"            );
   auto pointCloud      = vars.get<Texture    >("pointCloud.positionTexture");
   auto pointCloudColor = vars.get<Texture    >("pointCloud.colorTexture"   );
-  auto pointCloudDepth = vars.get<Texture    >("pointCloud.depthTexture"   );
+  //auto pointCloudDepth = vars.get<Texture    >("pointCloud.depthTexture"   );
   auto pointCloudMVP   = vars.get<mat4       >("pointCloud.mvp"            );
   auto near            = vars.getFloat        ("pointCloud.near"           );
   auto far             = vars.getFloat        ("pointCloud.far"            );
@@ -270,7 +270,7 @@ void drawPointCloud(vars::Vars&vars){
   uint32_t selPointX = vars.addOrGetUint32("pointCloud.selPointX");
   uint32_t selPointY = vars.addOrGetUint32("pointCloud.selPointY");
   uint32_t selPoint  = vars.addOrGetUint32("pointCloud.selPoint" );
-  uint32_t selLevel  = vars.addOrGetUint32("pointCloud.selLevel",2);
+  //uint32_t selLevel  = vars.addOrGetUint32("pointCloud.selLevel",2);
   bool     useDepth  = vars.addOrGetBool  ("pointCloud.useDepth",true);
   bool     usePointID     = vars.addOrGetBool  ("pointCloud.usePointID"     );
   bool     drawColors     = vars.addOrGetBool  ("pointCloud.drawColors");

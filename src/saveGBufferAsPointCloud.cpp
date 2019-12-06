@@ -59,6 +59,7 @@ void saveGBufferAsPointCloud(vars::Vars&vars){
   auto const depthToZ = [](float d,float near,float far){
     return 2*near*far/(d*(far-near)-far-near);
   };
+  (void)depthToZ;
 
   auto const depthToZInf = [](float d,float near,float far){
     return 2.f*near / (d - 1.f);

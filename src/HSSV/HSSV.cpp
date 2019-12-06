@@ -58,6 +58,7 @@ void HSSV::getOctree()
 
 	AABB const volume = createOctreeVolume();
 	Octree* octree = vars.reCreate<Octree>("hssv.objects.octree", vars.getUint32("hssv.args.octreeDepth"), volume); 
+  (void)octree;
 	
 	bool const forceBuild = vars.getBool("hssv.args.forceBuild");
 	

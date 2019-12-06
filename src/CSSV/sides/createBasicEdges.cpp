@@ -21,13 +21,13 @@ void cssv::sides::createBasicEdges(vars::Vars&vars){
       dst[e*(nV*4)+1*4+i] = verts[adj->getEdgeVertexB(e)+i];
     dst[e*(nV*4)+1*4+3] = 1;
 
-    for(int o=0;o<adj->getNofOpposite(e);++o){
+    for(uint32_t o=0;o<adj->getNofOpposite(e);++o){
       for(int i=0;i<3;++i)
         dst[e*(nV*4)+(2+o)*4+i] = verts[adj->getOpposite(e,o)+i];
       dst[e*(nV*4)+(2+o)*4+3] = 1;
     }
 
-    for(int o=adj->getNofOpposite(e);o<adj->getMaxMultiplicity();++o){
+    for(uint32_t o=adj->getNofOpposite(e);o<adj->getMaxMultiplicity();++o){
       for(int i=0;i<4;++i)
         dst[e*(nV*4)+(2+o)*4+i] = 0;
     }

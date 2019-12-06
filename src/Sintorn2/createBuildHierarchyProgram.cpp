@@ -61,6 +61,7 @@ void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
         sintorn2::mortonShader,
         sintorn2::depthToZShader,
         sintorn2::quantizeZShader,
+        sintorn2::reduceShader,
         sintorn2::buildHierarchyShader
         ));
 }

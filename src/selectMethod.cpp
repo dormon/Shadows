@@ -20,7 +20,7 @@ void selectMethod(vars::Vars&vars){
   
   ImGui::ListBox("method",&newMethodId,names.data(),(int32_t)names.size());
   if(newMethodId != oldMethodId){
-    if(newMethodId < methods->getNofMethods())
+    if(newMethodId < (int)methods->getNofMethods())
       vars.getString("methodName") = methods->getName(newMethodId);
     else
       vars.getString("methodName") = "no shadow";

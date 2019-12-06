@@ -83,6 +83,7 @@ void BuildStupidHierarchy::buildNextLevel(size_t i){
   auto const windowSize    = vars.get<uvec2>("windowSize");
   auto const wavefrontSize = vars.getSizeT("wavefrontSize");
   auto const nofPixels     = nofPixelsPerLevel.at(i);
+  (void)windowSize;
 
   buildNextLevelProgram
     ->bindBuffer("inputLevel"            ,hierarchy.at(i  )                         )

@@ -316,14 +316,10 @@ void drawNodePool(vars::Vars&vars){
 
   auto const cfg            = *vars.get<Config>        ("sintorn2.method.debug.dump.config"          );
 
-  auto const nnear          =  vars.getFloat           ("sintorn2.method.debug.dump.near"            );
-  auto const ffar           =  vars.getFloat           ("sintorn2.method.debug.dump.far"             );
-  auto const fovy           =  vars.getFloat           ("sintorn2.method.debug.dump.fovy"            );
   auto const nodeView       = *vars.get<glm::mat4>     ("sintorn2.method.debug.dump.viewMatrix"      );
   auto const nodeProj       = *vars.get<glm::mat4>     ("sintorn2.method.debug.dump.projectionMatrix");
   auto const nodePool       =  vars.get<Buffer>        ("sintorn2.method.debug.dump.nodePool"        );
   auto const aabbPool       =  vars.get<Buffer>        ("sintorn2.method.debug.dump.aabbPool"        );
-  auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"                              );
 
   auto const view           = *vars.get<glm::mat4>     ("sintorn2.method.debug.viewMatrix"           );
   auto const proj           = *vars.get<glm::mat4>     ("sintorn2.method.debug.projectionMatrix"     );

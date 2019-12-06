@@ -116,9 +116,9 @@ void ShadowMapping::createLightProjMatrix()
 	float nearZ = vars.getFloat("args.sm.near");
 	float farZ = vars.getFloat("args.sm.far");
 	float fovY = vars.getFloat("args.sm.fovy");
-	float resolution = float(vars.getUint32("args.sm.resolution"));
+	//float resolution = float(vars.getUint32("args.sm.resolution"));
 
-	glm::vec4 const pos = *vars.get<glm::vec4>("lightPosition");
+	//glm::vec4 const pos = *vars.get<glm::vec4>("lightPosition");
 
 	_lightProjMatrix = glm::perspective(fovY, 1.f, nearZ, farZ);
 }

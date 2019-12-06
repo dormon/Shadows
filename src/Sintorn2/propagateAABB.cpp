@@ -27,16 +27,13 @@ void sintorn2::propagateAABB(vars::Vars&vars){
   nodePool   ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   aabbPool   ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
 
-  auto level = cfg.nofLevels - 2;
-  //auto level = 0;
-
   prg->use();
 
   //prg->set1ui("destLevel",cfg.nofLevels-2);
   //glDispatchCompute(divRoundUp(cfg.nofNodesPerLevel[cfg.nofLevels-2],1024),1024,1);
   //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-/*
+//*
   for(int32_t level=cfg.nofLevels-2;level>=0;--level){
     prg->set1ui("destLevel",level);
     if(cfg.nofNodesPerLevel[level]>1024)
