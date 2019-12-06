@@ -270,6 +270,10 @@ layout(binding=0)buffer NodePool   {uint  nodePool   [];};
 layout(binding=1)buffer AABBPool   {float aabbPool   [];};
 layout(binding=2)buffer NodeCounter{uint  nodeCounter[];};
 
+
+layout(binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
+layout(binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
+
 layout(binding=1)uniform sampler2DRect depthTexture;
 
 uint getMorton(uvec2 coord,float depth){

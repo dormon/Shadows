@@ -40,17 +40,6 @@ uniform uint destLevel = 0;
 shared float reductionArray[WARP*6u];
 
 void reduce(){
-  //for(uint k=0;k<6;++k){
-  //  float ext = +1e10f * (-1.f+2.f*float((k%2u)==0u));
-  //  for(uint i=0;i<WARP;++i)
-  //    if((k%2u) == 0u)
-  //      ext = min(ext,reductionArray[WARP*k+i]);
-  //    else
-  //      ext = max(ext,reductionArray[WARP*k+i]);
-  //  reductionArray[k] = ext;
-  //}
-  //return;
-  
   float ab[2];
   uint w;
 
@@ -70,17 +59,6 @@ void reduce(){
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&32u)!=0u)) > 0.f);
   reductionArray[WARP*2u + gl_LocalInvocationIndex] = ab[w];
   
-  //for(uint k=0;k<6;++k){
-  //  float ext = +1e10f * (-1.f+2.f*float((k%2u)==0u));
-  //  for(uint i=0;i<32;++i)
-  //    if((k%2u) == 0u)
-  //      ext = min(ext,reductionArray[32*k+i]);
-  //    else
-  //      ext = max(ext,reductionArray[32*k+i]);
-  //  reductionArray[k] = ext;
-  //}
-  //return;
-  
   //6*32 -> 6*16
   ab[0] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
   ab[1] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
@@ -92,17 +70,6 @@ void reduce(){
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&16u)!=0u)) > 0.f);
   reductionArray[WARP*1u + gl_LocalInvocationIndex] = ab[w];
 
-  //for(uint k=0;k<6;++k){
-  //  float ext = +1e10f * (-1.f+2.f*float((k%2u)==0u));
-  //  for(uint i=0;i<16;++i)
-  //    if((k%2u) == 0u)
-  //      ext = min(ext,reductionArray[16*k+i]);
-  //    else
-  //      ext = max(ext,reductionArray[16*k+i]);
-  //  reductionArray[k] = ext;
-  //}
-  //return;
-  
   //6*16 -> 6*8
   ab[0] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
   ab[1] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
@@ -128,123 +95,6 @@ void reduce(){
   reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
 }
 
-//shared float reductionArray[WARP];
-//void reduceMax(){
-//  //if(gl_LocalInvocationIndex == 0){
-//  //  float ab;
-//  //  ab = reductionArray[0];
-//  //  for(int i=1;i<64;++i)
-//  //    ab = max(ab,reductionArray[i]);
-//  //  reductionArray[0] = ab;
-//  //}
-//  //return;
-//
-//  float ab[2];
-//  uint w;
-//
-//  if(gl_LocalInvocationIndex < 32){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex + 32u];                 
-//    w = uint(ab[1]>ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 16){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex + 16u];                 
-//    w = uint(ab[1]>ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 8){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex +  8u];                 
-//    w = uint(ab[1]>ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 4){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex +  4u];                 
-//    w = uint(ab[1]>ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 2){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex +  2u];                 
-//    w = uint(ab[1]>ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 1){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex +  1u];                 
-//    w = uint(ab[1]>ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//}
-//
-//void reduceMin(){
-//#line 52
-//  //if(gl_LocalInvocationIndex == 0){
-//  //  float ab;
-//  //  ab = reductionArray[0];
-//  //  for(int i=1;i<64;++i)
-//  //    ab = min(ab,reductionArray[i]);
-//  //  reductionArray[0] = ab;
-//  //}
-//  //return;
-//
-////*
-//  float ab[2];
-//  uint w;
-//
-//  if(gl_LocalInvocationIndex < 32){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex + 32u];                 
-//    w = uint(ab[1]<ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 16){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex + 16u];                 
-//    w = uint(ab[1]<ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 8){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex +  8u];                 
-//    w = uint(ab[1]<ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 4){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex +  4u];                 
-//    w = uint(ab[1]<ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 2){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex +  2u];                 
-//    w = uint(ab[1]<ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//  if(gl_LocalInvocationIndex < 1){                         
-//    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-//    ab[1] = reductionArray[gl_LocalInvocationIndex +  1u];                 
-//    w = uint(ab[1]<ab[0]);
-//    reductionArray[gl_LocalInvocationIndex] = ab[w];
-//  }                                                                        
-//
-//// */
-//}
 #endif
 #line 110
 void main(){
@@ -316,17 +166,6 @@ void main(){
 #if WARP == 64
   uint node = gl_WorkGroupID.x + gl_WorkGroupID.y*gl_NumWorkGroups.x;
 
-
-  //if(gl_LocalInvocationIndex == 0){
-  //  aabbPool[aabbLevelOffsetInFloats[destLevel]+node*6u+0u] = 1+(node+1)*100;//aabb[0];
-  //  aabbPool[aabbLevelOffsetInFloats[destLevel]+node*6u+1u] = 2+(node+1)*100;//aabb[1];
-  //  aabbPool[aabbLevelOffsetInFloats[destLevel]+node*6u+2u] = 3+(node+1)*100;//aabb[2];
-  //  aabbPool[aabbLevelOffsetInFloats[destLevel]+node*6u+3u] = 4+(node+1)*100;//aabb[3];
-  //  aabbPool[aabbLevelOffsetInFloats[destLevel]+node*6u+4u] = 5+(node+1)*100;//aabb[4];
-  //  aabbPool[aabbLevelOffsetInFloats[destLevel]+node*6u+5u] = 6+(node+1)*100;//aabb[5];
-  //}
-  //return;
-
 //*
 
   uint bit = node & warpMask;
@@ -362,75 +201,6 @@ void main(){
 
   if(gl_LocalInvocationIndex < floatsPerAABB)
     aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
-
-  /*
-  float aabb[6] = {1337,1337,1337,1337,1337,1337};
-
-  if(isActive != 0){
-    aabb[0] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+0u];
-    aabb[1] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+1u];
-    aabb[2] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+2u];
-    aabb[3] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+3u];
-    aabb[4] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+4u];
-    aabb[5] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+5u];
-  }
-
-  if(isActive == 0){
-    aabb[0] = readInvocationARB(aabb[0],selectedBit);
-    aabb[1] = readInvocationARB(aabb[1],selectedBit);
-    aabb[2] = readInvocationARB(aabb[2],selectedBit);
-    aabb[3] = readInvocationARB(aabb[3],selectedBit);
-    aabb[4] = readInvocationARB(aabb[4],selectedBit);
-    aabb[5] = readInvocationARB(aabb[5],selectedBit);
-  }
-
-  reductionArray[gl_LocalInvocationIndex] = aabb[0];
-  reduceMin();
-  if(gl_LocalInvocationIndex == 0)
-    aabb[0] = reductionArray[0];
-
-  reductionArray[gl_LocalInvocationIndex] = aabb[1];
-  reduceMax();
-  if(gl_LocalInvocationIndex == 0)
-    aabb[1] = reductionArray[0];
-
-  reductionArray[gl_LocalInvocationIndex] = aabb[2];
-  reduceMin();
-  if(gl_LocalInvocationIndex == 0)
-    aabb[2] = reductionArray[0];
-
-  reductionArray[gl_LocalInvocationIndex] = aabb[3];
-  reduceMax();
-  if(gl_LocalInvocationIndex == 0)
-    aabb[3] = reductionArray[0];
-
-  reductionArray[gl_LocalInvocationIndex] = aabb[4];
-  reduceMin();
-  if(gl_LocalInvocationIndex == 0)
-    aabb[4] = reductionArray[0];
-
-  reductionArray[gl_LocalInvocationIndex] = aabb[5];
-  reduceMax();
-  if(gl_LocalInvocationIndex == 0)
-    aabb[5] = reductionArray[0];
-
-
-  if(gl_LocalInvocationIndex == 0){
-    //aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+0u] = (node+1)*100 + 1;//aabb[0];
-    //aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+1u] = (node+1)*100 + 2;//aabb[1];
-    //aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+2u] = (node+1)*100 + 3;//aabb[2];
-    //aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+3u] = (node+1)*100 + 4;//aabb[3];
-    //aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+4u] = (node+1)*100 + 5;//aabb[4];
-    //aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+5u] = (node+1)*100 + 6;//aabb[5];
-
-    aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+0u] = aabb[0];
-    aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+1u] = aabb[1];
-    aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+2u] = aabb[2];
-    aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+3u] = aabb[3];
-    aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+4u] = aabb[4];
-    aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+5u] = aabb[5];
-  }
-  // */
 
 // */
 #endif
