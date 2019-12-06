@@ -29,8 +29,6 @@ uniform mat4 proj = mat4(1);
 
 layout(binding=0)buffer Samples{float samples[];};
 
-uniform uvec2 windowSize = uvec2(512,512);
-
 out vec3 vColor;
 out vec3 vNormal;
 
@@ -92,7 +90,6 @@ void drawSamples(vars::Vars&vars){
   vao->bind();
   prg->use();
   prg
-    ->set2ui("windowSize",cfg.windowX,cfg.windowY)
     ->setMatrix4fv("view",glm::value_ptr(view))
     ->setMatrix4fv("proj",glm::value_ptr(proj));
  
