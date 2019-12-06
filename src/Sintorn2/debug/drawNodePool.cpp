@@ -355,11 +355,8 @@ void drawNodePool(vars::Vars&vars){
 
   for(uint32_t l=0;l<cfg.nofLevels;++l){
     if((levelsToDraw&(1u<<l)) == 0)continue;
-
-    int32_t bits = glm::max(((int)cfg.allBits)-(int)(cfg.warpBits*(cfg.nofLevels-1-l)),0);
-    uint32_t nofNodes = 1u << ((uint32_t)bits);
     prg->set1ui      ("levelToDraw",l);
-    glDrawArrays(GL_POINTS,0,nofNodes);
+    glDrawArrays(GL_POINTS,0,cfg.nofNodesPerLevel[l]);
   }
 
   vao->unbind();
