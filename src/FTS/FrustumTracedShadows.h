@@ -17,6 +17,7 @@ protected:
     bool IsConservativeRasterizationSupported() const;
 
 	void createBuffers();
+	void createTriangleBuffer();
 	void createVao();
 	void createFbo();
 	void createShaders();

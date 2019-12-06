@@ -9,6 +9,8 @@
 #include<Vars/Vars.h>
 
 class Adjacency;
+struct SidesGenShaderParams;
+
 
 class GpuSidesDrawer : public SidesDrawerBase
 {
@@ -23,23 +25,22 @@ public:
 private:
 	void ComputeEdgeRanges(u32 lightNode);
 	void GenerateSidesFromRanges(glm::vec4 const& lightPosition);
-	void DrawSides(glm::mat4 const& mvp);
+	void DrawSides(glm::mat4 const& mvp, glm::vec4 const& lightPosition);
 
 	void CreateShaders();
-	void CreateSidesDrawProgram();
+	void CreateSidesDrawProgram(SidesGenShaderParams const& params);
 	void CreateEdgeRangeProgram();
-	void CreateSidesGenerationProgram();
+	void CreateSidesGenerationProgram(SidesGenShaderParams const& params);
 
 	void CreateBuffers();
 	void CreateLoadOctreeBuffers();
-	void CreateEdgeBufferOLD();
-	void CreateEdgeBuffers();
+	void CreateEdgeBuffer();
 	void CreateBitmaskBuffer();
 	void CreateDIBOs();
 	void CreateEdgeRangeBuffer();
 	void CreateDrawBuffers();
 	void CreateIBO();
-	void CreateVBO();
+	void CreateMultiplicityBuffer();
 
 	u32 GetNofIndicesPerBitmask() const;
 	void CalcBitMasks8(unsigned int minBits);
@@ -47,7 +48,7 @@ private:
 	u32 GetMaxNofJobs(u32 jobSize) const;
 	u32 GetMaxNofJobsInLevel(uint32_t level, u32 jobSize) const;
 	u32 GetMaxNodeNofJobsPotSil(uint32_t nodeID, u32 jobSize) const;
-	
+
 private:
 	struct DrawArraysIndirectCommand
 	{
@@ -63,7 +64,6 @@ private:
 
 	//Edges
 	std::unique_ptr<ge::gl::Buffer> edgesBuffer;
-	std::unique_ptr<ge::gl::Buffer> oppositeVertices;
 
 	//Octree
 	std::vector <std::shared_ptr<ge::gl::Buffer>> nodeEdgesIdBuffers;
@@ -76,7 +76,7 @@ private:
 
 	//Drawing stuff
 	std::unique_ptr<ge::gl::Buffer>      IBO;
-	std::shared_ptr<ge::gl::Buffer>      VBO;
+	std::shared_ptr<ge::gl::Buffer>      multiplicityBuffer;
 	std::unique_ptr<ge::gl::VertexArray> VAO;
 
 	Adjacency* Ad;
@@ -84,8 +84,8 @@ private:
 	u32 MaxMultiplicity;
 
 	//skipping first 3 1-bit numbers
-	u32 TotalNofSubbuffers = 253; 
-	u32 SubBufferCorrection = 3; 
+	u32 TotalNofSubbuffers = 253;
+	u32 SubBufferCorrection = 3;
 	u32 NofBitsMultiplicity;
 
 	std::vector< std::vector<u8> > BitmasksWithIthBitSet;

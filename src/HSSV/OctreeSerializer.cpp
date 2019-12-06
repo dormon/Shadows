@@ -7,16 +7,16 @@
 #include <sstream>
 #include <functional>
 
-std::string OctreeSerializer::GenerateFileName(std::string const& modelName, float sceneScale, u32 deepestLevel, bool isCompressed) const
+std::string OctreeSerializer::GenerateFileName(SerializerData const& data) const
 {
-	size_t const hashedParams = HashParams(modelName, sceneScale, deepestLevel, isCompressed);
+	size_t const hashedParams = HashParams(data);
 
-	return modelName + "_" + std::to_string(hashedParams) + ".hssv";
+	return data.modelName + "_" + std::to_string(hashedParams) + ".hssv";
 }
 
-bool OctreeSerializer::loadFromFile(Octree* octree, std::string const& modelName, float sceneScale, bool isCompressed)
+bool OctreeSerializer::loadFromFile(Octree* octree, SerializerData const& data)
 {
-	FILE* input = fopen(GenerateFileName(modelName, sceneScale, octree->getDeepestLevel(), isCompressed).c_str(), "rb");
+	FILE* input = fopen(GenerateFileName(data).c_str(), "rb");
 	if (!input)
 	{
 		return false;
@@ -77,9 +77,9 @@ bool OctreeSerializer::loadFromFile(Octree* octree, std::string const& modelName
 	return octree;
 }
 
-void OctreeSerializer::storeToFile(Octree* octree, std::string const& modelName, float sceneScale, bool isCompressed)
+void OctreeSerializer::storeToFile(Octree* octree, SerializerData const& data)
 {
-	FILE* output = fopen(GenerateFileName(modelName, sceneScale, octree->getDeepestLevel(), isCompressed).c_str(), "wb");
+	FILE* output = fopen(GenerateFileName(data).c_str(), "wb");
 	if (!output)
 	{
 		return;
@@ -203,14 +203,15 @@ void OctreeSerializer::WriteUint32Buffer(FILE* output, const std::vector<u32>& b
 	fwrite(buffer.data(), sizeof(u32), buffer.size(), output);
 }
 
-size_t OctreeSerializer::HashParams(std::string const& modelFilename, float sceneScale, u32 deepestLevel, bool isCompressed) const
+size_t OctreeSerializer::HashParams(SerializerData const& data) const
 {
 	size_t seed = 0;
 	
-	combineHash(seed, modelFilename);
-	combineHash(seed, sceneScale);
-	combineHash(seed, deepestLevel);
-	combineHash(seed, isCompressed);
+	combineHash(seed, data.modelName);
+	combineHash(seed, data.sceneScale);
+	combineHash(seed, data.deepestLevel);
+	combineHash(seed, data.isCompressed);
+	combineHash(seed, data.minNofEdgesInSubnodes);
 
 	return seed;
 }

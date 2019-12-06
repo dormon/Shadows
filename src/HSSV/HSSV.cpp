@@ -13,8 +13,6 @@
 
 #include <CPU/CpuSidesDrawer.h>
 #include <GPU/GpuSidesDrawer.h>
-#include <GPU/GpuSidesDrawer2.h>
-#include <GPU/GpuSidesDrawer3.h>
 
 HSSV::HSSV(vars::Vars& vars) : ShadowVolumes(vars)
 {
@@ -55,7 +53,8 @@ void HSSV::getOctree()
 		"hssv.args.buildCpu", 
 		"hssv.args.octreeDepth", 
 		"hssv.args.sceneScale", 
-		"hssv.args.noCompression");
+		"hssv.args.noCompression",
+		"hssv.args.minNofEdgesNode");
 
 	AABB const volume = createOctreeVolume();
 	Octree* octree = vars.reCreate<Octree>("hssv.objects.octree", vars.getUint32("hssv.args.octreeDepth"), volume); 
@@ -95,32 +94,41 @@ void HSSV::buildOctree()
 	Octree* octree = vars.get<Octree>("hssv.objects.octree");
 	Adjacency* ad = vars.get<Adjacency>("adjacency");
 	u32 const multiplicityBits = MathOps::getMaxNofSignedBits(vars.getUint32("maxMultiplicity"));
+	u32 const minNofEdges = vars.getUint32("hssv.args.minNofEdgesNode");
 	bool const isCompressed = !vars.getBool("hssv.args.noCompression");
 	
 	CpuBuilder builder;
-	builder.fillOctree(octree, ad, multiplicityBits, isCompressed);
+	builder.fillOctree(octree, ad, multiplicityBits, isCompressed, minNofEdges);
 }
 
 bool HSSV::loadOctreeFromFile()
 {
 	Octree* octree = vars.get<Octree>("hssv.objects.octree");
-	std::string const file = vars.get<Model>("model")->getName();
-	float const sceneScale = vars.getFloat("hssv.args.sceneScale");
-	bool const isCompressed = !vars.getBool("hssv.args.noCompression");
-
+	
 	OctreeSerializer serializer;
-	return serializer.loadFromFile(octree, file, sceneScale, isCompressed);
+	SerializerData data;
+	data.modelName = vars.get<Model>("model")->getName();
+	data.sceneScale = vars.getFloat("hssv.args.sceneScale");
+	data.isCompressed = !vars.getBool("hssv.args.noCompression");
+	data.deepestLevel = vars.getUint32("hssv.args.octreeDepth");
+	data.minNofEdgesInSubnodes = vars.getUint32("hssv.args.minNofEdgesNode");
+
+	return serializer.loadFromFile(octree, data);
 }
 
 void HSSV::storeOctree()
 {
 	Octree* octree = vars.get<Octree>("hssv.objects.octree");
-	std::string const file = vars.get<Model>("model")->getName();
-	float const sceneScale = vars.getFloat("hssv.args.sceneScale");
-	bool const isCompressed = !vars.getBool("hssv.args.noCompression");
-
+	
 	OctreeSerializer serializer;
-	serializer.storeToFile(octree, file, sceneScale, isCompressed);
+	SerializerData data;
+	data.modelName = vars.get<Model>("model")->getName();
+	data.sceneScale = vars.getFloat("hssv.args.sceneScale");
+	data.isCompressed = !vars.getBool("hssv.args.noCompression");
+	data.deepestLevel = vars.getUint32("hssv.args.octreeDepth");
+	data.minNofEdgesInSubnodes = vars.getUint32("hssv.args.minNofEdgesNode");
+
+	serializer.storeToFile(octree, data);
 }
 
 void HSSV::createCapsDrawer()
@@ -148,7 +156,7 @@ void HSSV::resetMultiplicity()
 
 void HSSV::createSidesDrawer()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree", "hssv.args.drawCpu", "hssv.args.version");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.objects.octree", "hssv.args.drawCpu",);
 
 	Octree* octree = vars.get<Octree>("hssv.objects.octree");
 	Adjacency* ad = vars.get<Adjacency>("adjacency");
@@ -160,21 +168,7 @@ void HSSV::createSidesDrawer()
 	}
 	else
 	{
-		
-		u32 const version = vars.getUint32("hssv.args.version");
-
-		if(version==1 || version > 3)
-		{
-			vars.reCreate<GpuSidesDrawer>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity, vars);
-		}
-		else if(version==2)
-		{
-			vars.reCreate<GpuSidesDrawer2>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity, vars);
-		}
-		else if(version == 3)
-		{
-			vars.reCreate<GpuSidesDrawer3>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity, vars);
-		}
+		vars.reCreate<GpuSidesDrawer>("hssv.objects.sidesDrawer", octree, ad, maxMultiplicity, vars);
 	}
 }
 
