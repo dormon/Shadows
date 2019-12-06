@@ -57,18 +57,7 @@ uint getMorton(uvec2 coord,float depth){
 
 uint activeThread = 0;
 
-#define USE_READ_INVOCATION
-#define USE_ADVANCE_REDUCE
-
-#ifndef USE_READ_INVOCATION
-shared uint sharedMortons[WARP];
-#endif
-
-#ifndef USE_ADVANCE_REDUCE
-shared float reductionArray[WARP];
-#else
 shared float reductionArray[WARP*3u];
-#endif
 
 #if WARP == 64
 
@@ -141,67 +130,6 @@ void advacedReduce(){
 
 }
 
-void reduce(){
-#line 67
-  //if(gl_LocalInvocationIndex == 0){
-  //  float ab[2];
-  //  ab[0] = reductionArray[0];
-  //  ab[1] = reductionArray[0];
-  //  for(int i=1;i<64;++i){
-  //    ab[0] = min(ab[0],reductionArray[i]);
-  //    ab[1] = max(ab[1],reductionArray[i]);
-  //  }
-  //  reductionArray[0] = ab[0];
-  //  reductionArray[1] = ab[1];
-  //}
-  //return;
-
-  float ab[2];
-  uint w;
-
-
-  ab[0] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1fu)+ 0u];       
-  ab[1] = reductionArray[(uint(gl_LocalInvocationIndex)&0x1fu)+32u];       
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x20u)!=0)) > 0.f);
-  reductionArray[gl_LocalInvocationIndex] = ab[w];                         
-
-
-  if((uint(gl_LocalInvocationIndex)&0x10u) == 0u){                         
-    ab[0] = reductionArray[gl_LocalInvocationIndex +  0u];                 
-    ab[1] = reductionArray[gl_LocalInvocationIndex + 16u];                 
-    w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x20u)!=0u)) > 0.f);
-    reductionArray[gl_LocalInvocationIndex - uint(uint((gl_LocalInvocationIndex)&0x20u) != 0u)*16u] = ab[w];
-  }                                                                        
-                                                                           
-  if((uint(gl_LocalInvocationIndex)&0x28u) == 0u){                         
-    ab[0] = reductionArray[gl_LocalInvocationIndex + 0u];                  
-    ab[1] = reductionArray[gl_LocalInvocationIndex + 8u];                  
-    w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x10u)!=0u)) > 0.f);
-    reductionArray[gl_LocalInvocationIndex - uint(uint((gl_LocalInvocationIndex)&0x10u) != 0u)*8u] = ab[w];
-  }                                                                        
-                                                                           
-  if((uint(gl_LocalInvocationIndex)&0x34u) == 0u){                         
-    ab[0] = reductionArray[gl_LocalInvocationIndex + 0u];                  
-    ab[1] = reductionArray[gl_LocalInvocationIndex + 4u];                  
-    w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x8u)!=0u)) > 0.f);
-    reductionArray[gl_LocalInvocationIndex - uint(uint((gl_LocalInvocationIndex)&0x8u) != 0u)*4u] = ab[w];
-  }                                                                        
-                                                                           
-  if((uint(gl_LocalInvocationIndex)&0x3au) == 0u){                         
-    ab[0] = reductionArray[gl_LocalInvocationIndex + 0u];                  
-    ab[1] = reductionArray[gl_LocalInvocationIndex + 2u];                  
-    w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x4u)!=0u)) > 0.f);
-    reductionArray[gl_LocalInvocationIndex - uint(uint((gl_LocalInvocationIndex)&0x4u) != 0u)*2u] = ab[w];
-  }                                                                        
-                                                                           
-  if((uint(gl_LocalInvocationIndex)&0x3du) == 0u){                         
-    ab[0] = reductionArray[gl_LocalInvocationIndex + 0u];                  
-    ab[1] = reductionArray[gl_LocalInvocationIndex + 1u];                  
-    w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&0x2u)!=0u)) > 0.f);
-    reductionArray[gl_LocalInvocationIndex - uint(uint((gl_LocalInvocationIndex)&0x2u) != 0u)*1u] = ab[w];
-  }
-
-}
 #endif
 
 void compute(uvec2 coord){
@@ -264,28 +192,9 @@ void compute(uvec2 coord){
   };
 
 
-  /*
-  if(gl_GlobalInvocationID.x == 0){
-    uint sx=300;
-    uint sy=300;
-    for(uint x=sx;x<512;++x)
-      for(uint y=sx;y<512;++y){
-
-        float depth = texelFetch(depthTexture,ivec2(x,y)).x*2.f-1.f;
-        float z = depthToZ(depth);
-        //nodePool[(y-sy)*(512-sx)+(x-sx)] = floatBitsToUint(z);
-        uint  zQ = quantizeZ(z);
-        nodePool[(y-sy)*(512-sx)+(x-sx)] = zQ;
-      }
-  }
-  return;
-  */
-
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
   uint morton = getMorton(coord,depth);
-#ifndef USE_READ_INVOCATION
-  sharedMortons[gl_LocalInvocationIndex] = morton;
-#endif
+
 #line 120
   //if(uintsPerWarp == 1){
   #if WARP == 32
@@ -318,15 +227,6 @@ void compute(uvec2 coord){
 #line 166
   //if(uintsPerWarp == 2){
   #if WARP == 64
-    //if(gl_GlobalInvocationID.x == 0){
-    //  nodePool[0] = levelSize[0];
-    //  nodePool[1] = levelSize[1];
-    //  nodePool[2] = levelSize[2];
-    //  nodePool[3] = levelSize[3];
-    //  nodePool[4] = levelSize[4];
-    //  nodePool[5] = levelSize[5];
-    //}
-    //return;
     uint counter = 0;
     uint64_t notDone = ballotARB(activeThread != 0);
     while(notDone != 0){
@@ -337,11 +237,7 @@ void compute(uvec2 coord){
       uint selectedBit     = unpackUint2x32(notDone)[0]!=0?findLSB(unpackUint2x32(notDone)[0]):findLSB(unpackUint2x32(notDone)[1])+32u;
       //uint selectedBit     = (notDone&0xfffffffful)!=0?findLSB(uint(notDone)):findLSB(uint(notDone>>32u))+32u;
       
-#ifndef USE_READ_INVOCATION
-      uint referenceMorton = sharedMortons[selectedBit];
-#else
       uint referenceMorton = readInvocationARB(morton,selectedBit);
-#endif
 
       if(gl_LocalInvocationIndex == 0){
         if(nofLevels>0){
@@ -378,52 +274,6 @@ void compute(uvec2 coord){
       
       uint64_t sameCluster = ballotARB(referenceMorton == morton && activeThread != 0);
 
-      //*
-
-#ifndef USE_ADVANCE_REDUCE
-      ///XXX
-      reductionArray[gl_LocalInvocationIndex] = -1.f + 2.f/float(WINDOW_X)*(coord.x+0.5f);
-
-      if(referenceMorton != morton || activeThread == 0)
-        reductionArray[gl_LocalInvocationIndex] = reductionArray[selectedBit];
-
-      reduce();
-
-      if(gl_LocalInvocationIndex == 0){
-        uint node = (referenceMorton >> (warpBits*0u));
-        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+0] = reductionArray[0];
-        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+1] = reductionArray[1];
-      }
-
-      ///YYY
-      reductionArray[gl_LocalInvocationIndex] = -1.f + 2.f/float(WINDOW_Y)*(coord.y+0.5f);
-
-      if(referenceMorton != morton || activeThread == 0)
-        reductionArray[gl_LocalInvocationIndex] = reductionArray[selectedBit];
-
-      reduce();
-
-      if(gl_LocalInvocationIndex == 0){
-        uint node = (referenceMorton >> (warpBits*0u));
-        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+2] = reductionArray[0];
-        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+3] = reductionArray[1];
-      }
-
-      ///ZZZ
-      reductionArray[gl_LocalInvocationIndex] = depth;
-
-      if(referenceMorton != morton || activeThread == 0)
-        reductionArray[gl_LocalInvocationIndex] = reductionArray[selectedBit];
-
-      reduce();
-
-      if(gl_LocalInvocationIndex == 0){
-        uint node = (referenceMorton >> (warpBits*0u));
-        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+4] = reductionArray[0];
-        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+5] = reductionArray[1];
-      }
-      // */
-#else
       reductionArray[gl_LocalInvocationIndex+64u*0u] = -1.f + 2.f/float(WINDOW_X)*(coord.x+0.5f);
       reductionArray[gl_LocalInvocationIndex+64u*1u] = -1.f + 2.f/float(WINDOW_Y)*(coord.y+0.5f);
       reductionArray[gl_LocalInvocationIndex+64u*2u] = depth;
@@ -440,7 +290,6 @@ void compute(uvec2 coord){
         uint node = (referenceMorton >> (warpBits*0u));
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
       }
-#endif
 
       notDone ^= sameCluster;
     }
