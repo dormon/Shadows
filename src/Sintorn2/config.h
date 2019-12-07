@@ -77,6 +77,7 @@ class Config{
       for(auto const&x:nofNodesPerLevel)
         aabbLevelSizeInFloats.push_back(x*floatsPerAABB);
       aabbLevelOffsetInFloats = getOffsets(aabbLevelSizeInFloats);
+      nodeLevelOffset  = getOffsets(nofNodesPerLevel);
       //nnear         = nn;
       //ffar          = ff;
       //fovy          = fo;
@@ -131,6 +132,7 @@ class Config{
     uint32_t aabbsSize       ;
     uint32_t const floatsPerAABB = 6;
     std::vector<uint32_t>nofNodesPerLevel        ;
+    std::vector<uint32_t>nodeLevelOffset         ;
     std::vector<uint32_t>nodeLevelSizeInUints    ;
     std::vector<uint32_t>nodeLevelOffsetInUints  ;
     std::vector<uint32_t>aabbLevelSizeInFloats   ;

@@ -294,6 +294,9 @@ uint activeThread = 0;
 uint activeThread[2] = {0,0};
 #endif
 
+shared uint uniqueMortons[TILE_X*TILE_Y];
+shared uint shouldStore[2] = {0u,0u};
+
 #if WARP == 64
 void compute(uvec2 coord){
 #else
@@ -321,6 +324,15 @@ void compute(uvec2 coord,uvec2 coord2){
     1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
     1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
     1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
+  };
+
+  const uint nodeLevelOffset[6] = {
+    0,
+    0 + nodesPerLevel[0],
+    0 + nodesPerLevel[0] + nodesPerLevel[1],
+    0 + nodesPerLevel[0] + nodesPerLevel[1] + nodesPerLevel[2],
+    0 + nodesPerLevel[0] + nodesPerLevel[1] + nodesPerLevel[2] + nodesPerLevel[3],
+    0 + nodesPerLevel[0] + nodesPerLevel[1] + nodesPerLevel[2] + nodesPerLevel[3] + nodesPerLevel[4],
   };
 
   const uint nodeLevelSizeInUints[6] = {
@@ -464,7 +476,6 @@ void compute(uvec2 coord,uvec2 coord2){
     while(notDone != 0){
 
       if(counter >= WARP)break;
-      counter++;
 
       uint selectedBit     = unpackUint2x32(notDone)[0]!=0?findLSB(unpackUint2x32(notDone)[0]):findLSB(unpackUint2x32(notDone)[1])+32u;
       //uint selectedBit     = (notDone&0xfffffffful)!=0?findLSB(uint(notDone)):findLSB(uint(notDone>>32u))+32u;
@@ -472,35 +483,60 @@ void compute(uvec2 coord,uvec2 coord2){
       uint referenceMorton = readInvocationARB(morton,selectedBit);
 
       if(gl_LocalInvocationIndex == 0){
+        uniqueMortons[counter] = referenceMorton;
         if(nofLevels>0){
           uint bit  = (referenceMorton >> (warpBits*0u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*1u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-1u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-1u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          if(mm == 0){
+            mm = atomicAdd(levelNodeCounter[clamp(nofLevels-1u,0u,5u)*3u],1);
+            activeNodes[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)]+mm] = referenceMorton;
+          }
         }
         if(nofLevels>1){
           uint bit  = (referenceMorton >> (warpBits*1u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*2u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-2u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-2u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          if(mm == 0){
+            mm = atomicAdd(levelNodeCounter[clamp(nofLevels-2u,0u,5u)*3u],1);
+            activeNodes[nodeLevelOffset[clamp(nofLevels-2u,0u,5u)]+mm] = referenceMorton;
+          }
         }
         if(nofLevels>2){
           uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*3u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-3u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-3u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          if(mm == 0){
+            mm = atomicAdd(levelNodeCounter[clamp(nofLevels-3u,0u,5u)*3u],1);
+            activeNodes[nodeLevelOffset[clamp(nofLevels-3u,0u,5u)]+mm] = referenceMorton;
+          }
         }
         if(nofLevels>3){
           uint bit  = (referenceMorton >> (warpBits*3u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*4u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-4u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-4u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          if(mm == 0){
+            mm = atomicAdd(levelNodeCounter[clamp(nofLevels-4u,0u,5u)*3u],1);
+            activeNodes[nodeLevelOffset[clamp(nofLevels-4u,0u,5u)]+mm] = referenceMorton;
+          }
         }
         if(nofLevels>4){
           uint bit  = (referenceMorton >> (warpBits*4u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*5u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-5u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-5u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          if(mm == 0){
+            mm = atomicAdd(levelNodeCounter[clamp(nofLevels-5u,0u,5u)*3u],1);
+            activeNodes[nodeLevelOffset[clamp(nofLevels-5u,0u,5u)]+mm] = referenceMorton;
+          }
         }
         if(nofLevels>5){
           uint bit  = (referenceMorton >> (warpBits*5u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*6u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-6u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-6u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          if(mm == 0){
+            mm = atomicAdd(levelNodeCounter[clamp(nofLevels-6u,0u,5u)*3u],1);
+            activeNodes[nodeLevelOffset[clamp(nofLevels-6u,0u,5u)]+mm] = referenceMorton;
+          }
         }
       }
       
@@ -524,6 +560,7 @@ void compute(uvec2 coord,uvec2 coord2){
       }
 
       notDone ^= sameCluster;
+      counter++;
     }
     if(gl_LocalInvocationIndex == 0)
       nodeCounter[gl_WorkGroupID.x + gl_WorkGroupID.y*gl_NumWorkGroups.x] = counter;
