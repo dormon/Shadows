@@ -8,6 +8,7 @@
 
 #include <Sintorn2/createPropagateAABBProgram.h>
 #include <Sintorn2/propagateAABBShader.h>
+#include <Sintorn2/configShader.h>
 
 void sintorn2::createPropagateAABBProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2",
@@ -36,6 +37,7 @@ void sintorn2::createPropagateAABBProgram(vars::Vars&vars){
         ge::gl::Shader::define("TILE_X"    ,tileX                  ),
         ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
         ballotSrc,
+        sintorn2::configShader,
         sintorn2::propagateAABBShader
         ));
 }

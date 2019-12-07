@@ -14,6 +14,7 @@
 #include <Sintorn2/mortonShader.h>
 #include <Sintorn2/quantizeZShader.h>
 #include <Sintorn2/depthToZShader.h>
+#include <Sintorn2/configShader.h>
 
 void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2",
@@ -58,6 +59,7 @@ void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
         ge::gl::Shader::define("TILE_X"    ,tileX                  ),
         ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
         ballotSrc,
+        sintorn2::configShader,
         sintorn2::mortonShader,
         sintorn2::depthToZShader,
         sintorn2::quantizeZShader,

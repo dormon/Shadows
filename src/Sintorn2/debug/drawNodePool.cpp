@@ -16,7 +16,9 @@
 #include <Sintorn2/mortonShader.h>
 #include <Sintorn2/quantizeZShader.h>
 #include <Sintorn2/depthToZShader.h>
+#include <Sintorn2/configShader.h>
 #include <Sintorn2/config.h>
+
 
 using namespace ge::gl;
 using namespace std;
@@ -130,66 +132,6 @@ uniform uint levelToDraw = 0;
 uniform uint drawTightAABB = 0;
 
 void main(){
-  const uint warpBits        = uint(ceil(log2(float(WARP))));
-  const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
-  const uint clustersY       = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
-  const uint xBits           = uint(ceil(log2(float(clustersX))));
-  const uint yBits           = uint(ceil(log2(float(clustersY))));
-  const uint zBits           = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
-  const uint clustersZ       = uint(1u << zBits);
-  const uint allBits         = xBits + yBits + zBits;
-  const uint nofLevels       = uint(allBits/warpBits) + uint(allBits%warpBits != 0u);
-  const uint uintsPerWarp    = uint(WARP/32u);
-
-  const uint warpMask        = uint(WARP - 1u);
-  const uint floatsPerAABB   = 6u;
-
-
-  const uint nodesPerLevel[6] = {
-    1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
-    1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
-    1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
-    1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
-    1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
-    1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
-  };
-
-  const uint nodeLevelSizeInUints[6] = {
-    max(nodesPerLevel[0] >> warpBits,1u) * uintsPerWarp,
-    max(nodesPerLevel[1] >> warpBits,1u) * uintsPerWarp,
-    max(nodesPerLevel[2] >> warpBits,1u) * uintsPerWarp,
-    max(nodesPerLevel[3] >> warpBits,1u) * uintsPerWarp,
-    max(nodesPerLevel[4] >> warpBits,1u) * uintsPerWarp,
-    max(nodesPerLevel[5] >> warpBits,1u) * uintsPerWarp,
-  };
-
-  const uint nodeLevelOffsetInUints[6] = {
-    0,
-    0 + nodeLevelSizeInUints[0],
-    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1],
-    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2],
-    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3],
-    0 + nodeLevelSizeInUints[0] + nodeLevelSizeInUints[1] + nodeLevelSizeInUints[2] + nodeLevelSizeInUints[3] + nodeLevelSizeInUints[4],
-  };
-
-  const uint aabbLevelSizeInFloats[6] = {
-    nodesPerLevel[0] * floatsPerAABB,
-    nodesPerLevel[1] * floatsPerAABB,
-    nodesPerLevel[2] * floatsPerAABB,
-    nodesPerLevel[3] * floatsPerAABB,
-    nodesPerLevel[4] * floatsPerAABB,
-    nodesPerLevel[5] * floatsPerAABB,
-  };
-
-  const uint aabbLevelOffsetInFloats[6] = {
-    0,
-    0 + aabbLevelSizeInFloats[0],
-    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1],
-    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2],
-    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3],
-    0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
-  };
-
   uint gId = vId[0];
 #line 157
   uint bitsToDiv = warpBits*(nofLevels-1-levelToDraw);
@@ -296,6 +238,7 @@ void main(){
       ge::gl::Shader::define("TILE_X"    ,cfg.tileX              ),
       ge::gl::Shader::define("TILE_Y"    ,cfg.tileY              ),
 
+      sintorn2::configShader,
       sintorn2::mortonShader,
       sintorn2::depthToZShader,
       sintorn2::quantizeZShader,

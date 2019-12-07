@@ -30,6 +30,8 @@ add_library(${PROJECT_NAME} STATIC
   createPropagateAABBProgram.h
   computeConfig.cpp
   computeConfig.h
+  configShader.cpp
+  configShader.h
   )
 
 add_subdirectory(debug)
