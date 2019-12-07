@@ -354,7 +354,7 @@ uint decodeIsSil(uint val)
 	return uint((val & 0x80000000) !=0);
 }
 
-uint getEdgeStorePos(uint dataPerSide, uint warpId)
+uint getPotEdgeStorePos(uint dataPerSide, uint warpId)
 {
 	if(gl_SubGroupInvocationARB == 0)
 	{
@@ -372,6 +372,18 @@ uint getEdgeStorePos(uint dataPerSide, uint warpId)
 	globalOffset = readFirstInvocationARB(globalOffset);
 	
 	return globalOffset + localOffset;
+}
+
+uint getSilEdgeStorePos(uint localId, uint jobSize)
+{
+	if(localId == 0)
+	{
+		warpCounters[0] = atomicAdd(nofIndicesToDraw, jobSize);
+	}
+
+	barrier();
+
+	return localId + warpCounters[0];
 }
 
 void main()
@@ -403,7 +415,7 @@ void main()
 	if(isSil==SIL_INDEX)
 	{
 		const uint edgeId = getEdgeId(jobStart + localId, job.z);
-		uint storeIndex = getEdgeStorePos(NOF_DATA_PER_SIDE, warpId);
+		uint storeIndex = getSilEdgeStorePos(localId, jobSize);
 		
 		pushEdge(storeIndex, edgeId);
 	}
@@ -430,7 +442,7 @@ void main()
 			multiplicity += int(sign(dot(oppositePlanes[ov],lightPosition)));
 		}
 		
-		const uint storeIndex = getEdgeStorePos(uint(multiplicity!=0)*NOF_DATA_PER_SIDE, warpId);
+		const uint storeIndex = getPotEdgeStorePos(uint(multiplicity!=0)*NOF_DATA_PER_SIDE, warpId);
 		
 		if(multiplicity!=0)
 		{
