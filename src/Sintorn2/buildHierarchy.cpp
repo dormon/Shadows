@@ -23,28 +23,51 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   sintorn2::allocateHierarchy(vars);
   sintorn2::createBuildHierarchyProgram(vars);
   //exit(0);
-  auto depth       =  vars.get<GBuffer>("gBuffer")->depth;
-  auto prg         =  vars.get<Program>("sintorn2.method.buildHierarchyProgram");
-  auto nodePool    =  vars.get<Buffer >("sintorn2.method.nodePool");
-  auto aabbPool    =  vars.get<Buffer >("sintorn2.method.aabbPool");
-  auto nodeCounter =  vars.get<Buffer >("sintorn2.method.nodeCounter");
-  auto cfg         = *vars.get<Config>("sintorn2.method.config");
+  auto depth            =  vars.get<GBuffer>("gBuffer")->depth;
+  auto prg              =  vars.get<Program>("sintorn2.method.buildHierarchyProgram");
+  auto nodePool         =  vars.get<Buffer >("sintorn2.method.nodePool");
+  auto aabbPool         =  vars.get<Buffer >("sintorn2.method.aabbPool");
+  //auto nodeCounter      =  vars.get<Buffer >("sintorn2.method.nodeCounter");
+  auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter");
+  auto activeNodes      =  vars.get<Buffer >("sintorn2.method.activeNodes");
+  auto cfg              = *vars.get<Config >("sintorn2.method.config");
 
-  nodePool   ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  nodeCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  nodePool        ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  levelNodeCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  //nodeCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
   //aabbPool   ->clear(GL_R32F ,GL_RED        ,GL_FLOAT       );
 
   nodePool   ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   aabbPool   ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
-  nodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+  //nodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+  levelNodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
+  activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   
   depth->bind(1);
   
   prg->use();
   glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
 
+  //std::vector<uint32_t>lc;
+  //levelNodeCounter->getData(lc);
+  //for(auto const&x:lc)
+  //  std::cerr << x << std::endl;
+
+  //std::vector<uint32_t>an;
+  //activeNodes->getData(an);
+  //for(uint32_t l=0;l<cfg.nofLevels;++l){
+  //  std::cerr << "L" << l << ": ";
+  //  for(uint32_t i=0;i<lc[l*3];++i)
+  //    std::cerr << an[cfg.nodeLevelOffset[l]+i] << " ";
+  //  std::cerr << std::endl;
+  //}
+
+  //exit(0);
+
+  
+
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-  propagateAABB(vars);
+  //propagateAABB(vars);
 
   /*
   std::vector<uint32_t>d;
