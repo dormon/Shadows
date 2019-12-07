@@ -155,12 +155,12 @@ void main(){
   };
 
   const uint nodeLevelSizeInUints[6] = {
-    (nodesPerLevel[0] >> warpBits) * uintsPerWarp,
-    (nodesPerLevel[1] >> warpBits) * uintsPerWarp,
-    (nodesPerLevel[2] >> warpBits) * uintsPerWarp,
-    (nodesPerLevel[3] >> warpBits) * uintsPerWarp,
-    (nodesPerLevel[4] >> warpBits) * uintsPerWarp,
-    (nodesPerLevel[5] >> warpBits) * uintsPerWarp,
+    max(nodesPerLevel[0] >> warpBits,1u) * uintsPerWarp,
+    max(nodesPerLevel[1] >> warpBits,1u) * uintsPerWarp,
+    max(nodesPerLevel[2] >> warpBits,1u) * uintsPerWarp,
+    max(nodesPerLevel[3] >> warpBits,1u) * uintsPerWarp,
+    max(nodesPerLevel[4] >> warpBits,1u) * uintsPerWarp,
+    max(nodesPerLevel[5] >> warpBits,1u) * uintsPerWarp,
   };
 
   const uint nodeLevelOffsetInUints[6] = {

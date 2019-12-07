@@ -16,6 +16,58 @@ using namespace ge::gl;
 
 #include <iomanip>
 
+namespace sintorn2{
+  void prepareFixIndirectComputeBuffer(vars::Vars&vars){
+    FUNCTION_PROLOGUE("sintorn2.method"
+        ,"sintorn2.method.config"
+        ,"wavefrontSize"
+        );
+
+    auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"         );
+    auto const cfg            = *vars.get<Config>        ("sintorn2.method.config");
+    std::string const src = R".(
+    layout(local_size_x=32)in;
+    layout(binding = 3)buffer LevelNodeCounter{uint levelNodeCounter[];};
+    
+    void main(){
+      const uint warpBits        = uint(ceil(log2(float(WARP))));
+      const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
+      const uint clustersY       = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
+      const uint xBits           = uint(ceil(log2(float(clustersX))));
+      const uint yBits           = uint(ceil(log2(float(clustersY))));
+      const uint zBits           = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
+      const uint allBits         = xBits + yBits + zBits;
+      const uint nofLevels       = uint(allBits/warpBits) + uint(allBits%warpBits != 0u);
+
+      if(gl_LocalInvocationIndex >= 4*nofLevels)return;
+      uint m = uint(gl_LocalInvocationIndex) % 4u;
+      if(m>0)
+        levelNodeCounter[gl_LocalInvocationIndex] = 1u;
+    }
+
+    ).";
+    vars.reCreate<Program>("sintorn2.method.fixIndirectComputeProgram",
+        std::make_shared<Shader>(GL_COMPUTE_SHADER,
+          "#version 450\n",
+          Shader::define("WARP"      ,(uint32_t)wavefrontSize),
+          Shader::define("WINDOW_X"  ,(uint32_t)cfg.windowX  ),
+          Shader::define("WINDOW_Y"  ,(uint32_t)cfg.windowY  ),
+          Shader::define("MIN_Z_BITS",(uint32_t)cfg.minZBits ),
+          Shader::define("TILE_X"    ,cfg.tileX              ),
+          Shader::define("TILE_Y"    ,cfg.tileY              ),
+          src));
+  }
+  void fixIndirectComputeBuffer(vars::Vars&vars){
+    prepareFixIndirectComputeBuffer(vars);
+    auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter");
+    auto prg              =  vars.get<Program>("sintorn2.method.fixIndirectComputeProgram");
+    prg->use();
+    levelNodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
+    glDispatchCompute(1,1,1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  }
+}
+
 void sintorn2::buildHierarchy(vars::Vars&vars){
   FUNCTION_CALLER();
 
@@ -30,6 +82,13 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   //auto nodeCounter      =  vars.get<Buffer >("sintorn2.method.nodeCounter");
   auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter");
   auto activeNodes      =  vars.get<Buffer >("sintorn2.method.activeNodes");
+
+#if 0
+  auto debugBuffer      =  vars.get<Buffer >("sintorn2.method.debugBuffer");
+  debugBuffer        ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  debugBuffer->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+#endif
+
   auto cfg              = *vars.get<Config >("sintorn2.method.config");
 
   nodePool        ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
@@ -47,27 +106,47 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   
   prg->use();
   glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+  fixIndirectComputeBuffer(vars);
+
+  
+
+#if 0
+  cfg.print();
+  std::vector<uint32_t>nodes;
+  nodePool->getData(nodes);
 
   std::vector<uint32_t>lc;
   levelNodeCounter->getData(lc);
-  for(auto const&x:lc)
-    std::cerr << x << std::endl;
+  for(uint32_t l=0;l<cfg.nofLevels;++l){
+    std::cerr << "L" << l << ": ";
+    for(uint32_t i=0;i<4;++i)
+      std::cerr << lc[l*4+i] << " ";
+    std::cerr << std::endl;
+  }
 
   std::vector<uint32_t>an;
   activeNodes->getData(an);
   for(uint32_t l=0;l<cfg.nofLevels;++l){
-    std::cerr << "L" << l << ": ";
-    for(uint32_t i=0;i<lc[l*3];++i)
-      std::cerr << an[cfg.nodeLevelOffset[l]+i] << " ";
+    std::vector<uint32_t>ll;
+    for(uint32_t i=0;i<lc[l*4];++i)
+      ll.push_back(an[cfg.nodeLevelOffset[l]+i]);
+    //std::sort(ll.begin(),ll.end());
+
+    std::cerr << "L" << l << ": " << std::endl;;
+    for(uint32_t i=0;i<ll.size();++i)
+      std::cerr << " " << ll[i] << "-" << nodes[cfg.nodeLevelOffsetInUints[l]+ll[i]] << std::endl;
+      //std::cerr << " " << ll[i] << "-" << nodes[ll[i]] << std::endl;
     std::cerr << std::endl;
   }
 
   exit(0);
+#endif
 
   
 
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-  //propagateAABB(vars);
+  propagateAABB(vars);
 
   /*
   std::vector<uint32_t>d;
