@@ -10,6 +10,7 @@
 #include <Sintorn2/createBuildHierarchyProgram.h>
 #include <Sintorn2/propagateAABB.h>
 #include <Sintorn2/computeConfig.h>
+#include <Sintorn2/configShader.h>
 #include <Sintorn2/config.h>
 
 using namespace ge::gl;
@@ -30,15 +31,6 @@ namespace sintorn2{
     layout(binding = 3)buffer LevelNodeCounter{uint levelNodeCounter[];};
     
     void main(){
-      const uint warpBits        = uint(ceil(log2(float(WARP))));
-      const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
-      const uint clustersY       = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
-      const uint xBits           = uint(ceil(log2(float(clustersX))));
-      const uint yBits           = uint(ceil(log2(float(clustersY))));
-      const uint zBits           = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
-      const uint allBits         = xBits + yBits + zBits;
-      const uint nofLevels       = uint(allBits/warpBits) + uint(allBits%warpBits != 0u);
-
       if(gl_LocalInvocationIndex >= 4*nofLevels)return;
       uint m = uint(gl_LocalInvocationIndex) % 4u;
       if(m>0)
@@ -55,6 +47,7 @@ namespace sintorn2{
           Shader::define("MIN_Z_BITS",(uint32_t)cfg.minZBits ),
           Shader::define("TILE_X"    ,cfg.tileX              ),
           Shader::define("TILE_Y"    ,cfg.tileY              ),
+          sintorn2::configShader,
           src));
   }
   void fixIndirectComputeBuffer(vars::Vars&vars){
