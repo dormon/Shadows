@@ -28,4 +28,5 @@ std::string getComputeSidesFromEdgeRangesCsSource(std::vector<u32> const& lastNo
 
 std::string genEdgeBuffersMappingFn(std::vector<u32> const& lastNodePerBuffer);
 
+std::string genSilExtrusionVs();
 std::string genSilExtrusionGs(SidesGenShaderParams const& params);
