@@ -161,16 +161,14 @@ void GpuSidesDrawer::DrawSides(glm::mat4 const& mvp, glm::vec4 const& lightPosit
 	drawSidesProgram->setMatrix4fv("mvp", glm::value_ptr(mvp));
 	drawSidesProgram->set4fv("lightPosition", glm::value_ptr(lightPosition));
 
-	multiplicityBuffer->bindBase(GL_SHADER_STORAGE_BUFFER, 0);
-	edgesBuffer->bindBase(GL_SHADER_STORAGE_BUFFER, 1);
+	edgesBuffer->bindBase(GL_SHADER_STORAGE_BUFFER, 0);
 
 	VAO->bind();
 	IBO->bind(GL_DRAW_INDIRECT_BUFFER);
 
 	glDrawArraysIndirect(GL_POINTS, NULL);
 
-	multiplicityBuffer->unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
-	edgesBuffer->unbindBase(GL_SHADER_STORAGE_BUFFER, 1);
+	edgesBuffer->unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
 
 	VAO->unbind();
 	IBO->unbind(GL_DRAW_INDIRECT_BUFFER);
@@ -195,8 +193,9 @@ void GpuSidesDrawer::CreateShaders()
 void GpuSidesDrawer::CreateSidesDrawProgram(SidesGenShaderParams const& params)
 {
 	drawSidesProgram = std::make_unique<Program>(
-		std::make_shared<Shader>(GL_VERTEX_SHADER, "#version 450 core\n", Shader::define("EXTRACT_MULTIPLICITY", 1), cssv::sides::drawVPSrc)
-		, std::make_shared<Shader>(GL_GEOMETRY_SHADER, genSilExtrusionGs(params))
+		//std::make_shared<Shader>(GL_VERTEX_SHADER, "#version 450 core\n", Shader::define("EXTRACT_MULTIPLICITY", 1), cssv::sides::drawVPSrc)
+		std::make_shared<Shader>(GL_VERTEX_SHADER, genSilExtrusionVs()),
+		std::make_shared<Shader>(GL_GEOMETRY_SHADER, genSilExtrusionGs(params))
 		);
 }
 
@@ -428,6 +427,7 @@ void GpuSidesDrawer::CreateDrawBuffers()
 	CreateMultiplicityBuffer();
 
 	VAO = std::make_unique<VertexArray>();
+	VAO->addAttrib(multiplicityBuffer, 0, 1, GL_UNSIGNED_INT, 0, 0, GL_FALSE, 0, VertexArray::I);
 }
 
 void GpuSidesDrawer::CreateIBO()

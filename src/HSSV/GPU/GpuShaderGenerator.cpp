@@ -339,30 +339,8 @@ uint getEdgeId(uint pos, uint unused)
 
 void pushEdge(uint storeIndex, uint encodedEdgeId)
 {
+	//mults[storeIndex] = uvec4(encodedEdgeId, 0, 0, 0);
 	mults[storeIndex] = encodedEdgeId;
-}
-
-//------------------MULTIPLICITY------------------
-int greaterVec(vec3 a,vec3 b)
-{
-	return int(dot(ivec3(sign(a-b)),ivec3(4,2,1)));
-}
-
-int computeMult(vec3 A,vec3 B,vec3 C,vec3 L)
-{
-	vec3 n=cross(C-A,L-A);
-	return int(sign(dot(n,B-A)));
-}
-
-int currentMultiplicity(vec3 A, vec3 B, vec3 O, vec3 L)
-{
-	if(greaterVec(A,O)>0)
-		return computeMult(O,A,B,L);
-	
-	if(greaterVec(B,O)>0)
-		return -computeMult(A,O,B,L);
-	
-	return computeMult(A,B,O,L);
 }
 
 shared uint warpCounters[32]; //max 32 warps per WG on nV - 1024 threads
@@ -466,6 +444,22 @@ void main()
 	return str.str();
 }
 
+std::string genSilExtrusionVs()
+{
+	return R".(
+#version 450 core
+
+in uint edgeId;
+
+out flat uint oe;
+
+void main()
+{
+	oe = edgeId;
+}
+).";
+}
+
 std::string genSilExtrusionGs(SidesGenShaderParams const& params)
 {
 	std::stringstream str;
@@ -482,16 +476,15 @@ std::string genSilExtrusionGs(SidesGenShaderParams const& params)
 layout(points)in;
 ).";
 
-	str << "layout(triangle_strip,max_vertices=4* " << params.maxMultiplicity <<")out;\n";
+	str << "layout(triangle_strip,max_vertices= " << 4*params.maxMultiplicity <<")out;\n";
 
 	str << R".(
-layout(binding=0)buffer MultBuffer{uint multBuffer[];};
-layout(binding=1)buffer EdgeBuffer{vec4 edgeBuffer[];};
+layout(binding=0) restrict readonly buffer EdgeBuffer{vec4 edgeBuffer[];};
 
-flat in uint vId[];
+uniform mat4 mvp;
+uniform vec4 lightPosition;
 
-uniform mat4 mvp           = mat4(1);
-uniform vec4 lightPosition = vec4(100,100,100,1);
+in flat uint oe[];
 
 int decodeEdgeMultiplicityFromId(uint edgeWithEncodedMultiplicity)
 {
@@ -506,59 +499,67 @@ uint decodeEdgeFromEncoded(uint edgeWithEncodedMultiplicity)
 	return edgeWithEncodedMultiplicity >> MULTIPLICITY_BITS;
 }
 
+void swap(inout vec4 v1, inout vec4 v2)
+{
+	vec4 v3 = v1;
+	v1 = v2;
+	v2 = v3;
+}
+
 void main()
 {
-	const uint res = multBuffer[vId[0]];
-	const uint edgeId =  decodeEdgeFromEncoded(res);
+	const uint res = oe[0];
+	const uint edgeId = decodeEdgeFromEncoded(res);
 	const int multiplicity = decodeEdgeMultiplicityFromId(res);
+	const uint absMultiplicity = uint(abs(multiplicity));
 	vec4 P[4];
-	P[0][0] = edgeBuffer[edgeId*NOF_VEC4_EDGE + 0].x;
-	P[0][1] = edgeBuffer[edgeId*NOF_VEC4_EDGE + 0].y;
-	P[0][2] = edgeBuffer[edgeId*NOF_VEC4_EDGE + 0].z;
-	P[0][3] = 1.f;
-	P[1][0] = edgeBuffer[edgeId*NOF_VEC4_EDGE + 1].x;
-	P[1][1] = edgeBuffer[edgeId*NOF_VEC4_EDGE + 1].y;
-	P[1][2] = edgeBuffer[edgeId*NOF_VEC4_EDGE + 1].z;
-	P[1][3] = 1.f;
 
+	P[0] = edgeBuffer[edgeId*NOF_VEC4_EDGE + 0];
+	P[1] = edgeBuffer[edgeId*NOF_VEC4_EDGE + 1];
 	P[2] = vec4(P[0].xyz*lightPosition.w-lightPosition.xyz,0);
 	P[3] = vec4(P[1].xyz*lightPosition.w-lightPosition.xyz,0);
+	P[0].w = P[1].w = 1.f;
 
-	uint swap = uint(multiplicity > 0);
-	gl_Position = mvp * P[ +swap];EmitVertex();
-	gl_Position = mvp * P[1-swap];EmitVertex();
-	gl_Position = mvp * P[2+swap];EmitVertex();
-	gl_Position = mvp * P[3-swap];EmitVertex();
+	if(multiplicity > 0)
+	{
+		swap(P[0], P[1]);
+		swap(P[2], P[3]);
+	}
+
+	gl_Position = mvp * P[0];EmitVertex();
+	gl_Position = mvp * P[1];EmitVertex();
+	gl_Position = mvp * P[2];EmitVertex();
+	gl_Position = mvp * P[3];EmitVertex();
 	EndPrimitive();
 ).";
-
+	
 	if(params.maxMultiplicity==2)
 	{
 		str << R".(
-	if(abs(multiplicity) > 1)
+	if(absMultiplicity > 1)
 	{
-		gl_Position = mvp * P[ +swap];EmitVertex();
-		gl_Position = mvp * P[1-swap];EmitVertex();
-		gl_Position = mvp * P[2+swap];EmitVertex();
-		gl_Position = mvp * P[3-swap];EmitVertex();
+		gl_Position = mvp * P[0];EmitVertex();
+		gl_Position = mvp * P[1];EmitVertex();
+		gl_Position = mvp * P[2];EmitVertex();
+		gl_Position = mvp * P[3];EmitVertex();
 		EndPrimitive();
-	}
-}).";
+	}).";
+
 	}
 	else
 	{
 		str << R".(
-	for(int i = 1; i<abs(multiplicity); ++i)
+	for(uint i = 1; i<absMultiplicity; ++i)
 	{
-		gl_Position = mvp * P[ +swap];EmitVertex();
-		gl_Position = mvp * P[1-swap];EmitVertex();
-		gl_Position = mvp * P[2+swap];EmitVertex();
-		gl_Position = mvp * P[3-swap];EmitVertex();
+		gl_Position = mvp * P[0];EmitVertex();
+		gl_Position = mvp * P[1];EmitVertex();
+		gl_Position = mvp * P[2];EmitVertex();
+		gl_Position = mvp * P[3];EmitVertex();
 		EndPrimitive();
+	}).";
 	}
-}).";
-	}
-
+	//*/
+	str << "\n}";
 
 	return str.str();
 }
