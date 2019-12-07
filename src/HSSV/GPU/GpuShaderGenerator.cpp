@@ -339,7 +339,6 @@ uint getEdgeId(uint pos, uint unused)
 
 void pushEdge(uint storeIndex, uint encodedEdgeId)
 {
-	//mults[storeIndex] = uvec4(encodedEdgeId, 0, 0, 0);
 	mults[storeIndex] = encodedEdgeId;
 }
 
