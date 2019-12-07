@@ -13,4 +13,5 @@ void loadHssvParams(vars::Vars& vars, std::shared_ptr<argumentViewer::ArgumentVi
 	vars.addBool  ("hssv.args.dontStoreOctree") = arg->isPresent("--hssv-dontStoreOctree", "Will not save generated octree to a file");
 	vars.addBool  ("hssv.args.noCompression") = arg->isPresent("--hssv-noCompression", "Turns off octree compression");
 	vars.addBool  ("hssv.args.testMode") = arg->isPresent("--hssv-testMode", "Disables sides drawing");
+	vars.addBool  ("hssv.args.advancedTraversal") = arg->isPresent("--hssv-advancedTraversal", "Uses advanced traversal shader");
 }
