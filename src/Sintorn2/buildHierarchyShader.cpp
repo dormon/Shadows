@@ -488,10 +488,10 @@ void compute(uvec2 coord,uvec2 coord2){
           uint bit  = (referenceMorton >> (warpBits*0u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*1u));
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-1u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
-          if(mm == 0){
-            mm = atomicAdd(levelNodeCounter[clamp(nofLevels-1u,0u,5u)*3u],1);
-            activeNodes[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)]+mm] = referenceMorton;
-          }
+          //if(mm == 0){
+          //  mm = atomicAdd(levelNodeCounter[clamp(nofLevels-1u,0u,5u)*3u],1);
+          //  activeNodes[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)]+mm] = referenceMorton;
+          //}
         }
         if(nofLevels>1){
           uint bit  = (referenceMorton >> (warpBits*1u)) & warpMask;
@@ -499,7 +499,7 @@ void compute(uvec2 coord,uvec2 coord2){
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-2u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-2u,0u,5u)*3u],1);
-            activeNodes[nodeLevelOffset[clamp(nofLevels-2u,0u,5u)]+mm] = referenceMorton;
+            activeNodes[nodeLevelOffset[clamp(nofLevels-2u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
         }
         if(nofLevels>2){
@@ -508,7 +508,7 @@ void compute(uvec2 coord,uvec2 coord2){
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-3u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-3u,0u,5u)*3u],1);
-            activeNodes[nodeLevelOffset[clamp(nofLevels-3u,0u,5u)]+mm] = referenceMorton;
+            activeNodes[nodeLevelOffset[clamp(nofLevels-3u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
         }
         if(nofLevels>3){
@@ -517,7 +517,7 @@ void compute(uvec2 coord,uvec2 coord2){
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-4u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-4u,0u,5u)*3u],1);
-            activeNodes[nodeLevelOffset[clamp(nofLevels-4u,0u,5u)]+mm] = referenceMorton;
+            activeNodes[nodeLevelOffset[clamp(nofLevels-4u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
         }
         if(nofLevels>4){
@@ -526,7 +526,7 @@ void compute(uvec2 coord,uvec2 coord2){
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-5u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-5u,0u,5u)*3u],1);
-            activeNodes[nodeLevelOffset[clamp(nofLevels-5u,0u,5u)]+mm] = referenceMorton;
+            activeNodes[nodeLevelOffset[clamp(nofLevels-5u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
         }
         if(nofLevels>5){
@@ -535,7 +535,7 @@ void compute(uvec2 coord,uvec2 coord2){
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-6u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-6u,0u,5u)*3u],1);
-            activeNodes[nodeLevelOffset[clamp(nofLevels-6u,0u,5u)]+mm] = referenceMorton;
+            activeNodes[nodeLevelOffset[clamp(nofLevels-6u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
         }
       }

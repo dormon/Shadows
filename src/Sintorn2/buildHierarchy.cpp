@@ -48,21 +48,21 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   prg->use();
   glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
 
-  //std::vector<uint32_t>lc;
-  //levelNodeCounter->getData(lc);
-  //for(auto const&x:lc)
-  //  std::cerr << x << std::endl;
+  std::vector<uint32_t>lc;
+  levelNodeCounter->getData(lc);
+  for(auto const&x:lc)
+    std::cerr << x << std::endl;
 
-  //std::vector<uint32_t>an;
-  //activeNodes->getData(an);
-  //for(uint32_t l=0;l<cfg.nofLevels;++l){
-  //  std::cerr << "L" << l << ": ";
-  //  for(uint32_t i=0;i<lc[l*3];++i)
-  //    std::cerr << an[cfg.nodeLevelOffset[l]+i] << " ";
-  //  std::cerr << std::endl;
-  //}
+  std::vector<uint32_t>an;
+  activeNodes->getData(an);
+  for(uint32_t l=0;l<cfg.nofLevels;++l){
+    std::cerr << "L" << l << ": ";
+    for(uint32_t i=0;i<lc[l*3];++i)
+      std::cerr << an[cfg.nodeLevelOffset[l]+i] << " ";
+    std::cerr << std::endl;
+  }
 
-  //exit(0);
+  exit(0);
 
   
 
