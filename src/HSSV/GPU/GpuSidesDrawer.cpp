@@ -176,7 +176,7 @@ void GpuSidesDrawer::DrawSides(glm::mat4 const& mvp, glm::vec4 const& lightPosit
 
 void GpuSidesDrawer::CreateShaders()
 {
-	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree", "hssv.args.drawCpu");
+	FUNCTION_PROLOGUE("hssv.objects", "hssv.args.wgSize", "hssv.objects.octree", "hssv.args.drawCpu", "hssv.args.advancedTraversal");
 
 	SidesGenShaderParams params;
 	params.bitmaskBufferSize = GetNofIndicesPerBitmask();
@@ -222,8 +222,16 @@ void GpuSidesDrawer::CreateSidesGenerationProgram(SidesGenShaderParams const& pa
 	std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\generateEdges2.glsl");
 	std::string program((std::istreambuf_iterator<char>(t1)), std::istreambuf_iterator<char>());
 	//*/
-
-	std::string program = getComputeSidesFromEdgeRangesCsSource(LastNodePerBuffer, params);
+	std::string program;
+	if(vars.getBool("hssv.args.advancedTraversal"))
+	{
+		 program = getComputeSidesFromEdgeRangesCsSourceAdvanced(LastNodePerBuffer, params);
+	}
+	else
+	{
+		program = getComputeSidesFromEdgeRangesCsSource(LastNodePerBuffer, params);
+	}
+	
 	//*/
 	generateSidesCs = std::make_unique<Program>(std::make_shared<Shader>(GL_COMPUTE_SHADER, program));
 }

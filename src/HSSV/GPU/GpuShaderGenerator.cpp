@@ -455,6 +455,311 @@ void main()
 	return str.str();
 }
 
+std::string getComputeSidesFromEdgeRangesCsSourceAdvanced(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams const& params)
+{
+	std::stringstream str;
+
+	bool const useExtendedVersion = lastNodePerBuffer.size() > 1;
+	u32 const nofEdgeBuffers = u32(lastNodePerBuffer.size());
+
+	str << R".(
+#version 450 core
+
+#extension GL_ARB_shader_ballot : enable
+#extension GL_KHR_shader_subgroup_basic : enable
+
+).";
+
+	str << "#define EDGERANGE_INFO_SIZE " << (useExtendedVersion ? 3 : 2) << "u\n";
+	str << "#define BITMASK_BUFFER_SIZE " << params.bitmaskBufferSize << "u\n";
+	str << "#define MULTIPLICITY_BITS " << params.nofBitsMultiplicity << "\n";
+	str << "#define MAX_MULTIPLICITY " << params.maxMultiplicity << "\n";
+	str << "#define WG_SIZE " << params.wgSize << "u\n";
+	str << "#define NOF_VEC4_EDGE " << params.edgeSizeNofVec4 << "u\n";
+
+	str << R".(
+#define NOF_DATA_PER_SIDE 1
+#define MULTIPLICITY_MASK ((uint(1) << MULTIPLICITY_BITS) - 1)
+
+#define BIG_POT_ITERS ((2+MAX_MULTIPLICITY) / 4)
+#define BIG_LEFTOVER ((2+MAX_MULTIPLICITY) % 4)
+#define SMALL_POT_ITERS ((BIG_LEFTOVER/2) + (BIG_LEFTOVER & 1))
+
+#define POT_INDEX 0u
+#define SIL_INDEX 1u
+
+).";
+
+	u32 bindSlot = 0;
+	for (bindSlot; bindSlot < nofEdgeBuffers; ++bindSlot)
+	{
+		str << "layout(std430, binding = " << bindSlot << ") restrict readonly  buffer _edges" << bindSlot << " { uint edgeIndices" << bindSlot << "[]; };\n";
+	}
+
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict readonly  buffer _edgesInfos { vec4 edges[]; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict readonly  buffer _edgeRanges { uint edgeRanges[]; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict readonly  buffer _nofPotSilBuffers { uint nofPotSilJobs; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict writeonly buffer _indirectData { uint nofIndicesToDraw; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict writeonly buffer _computedMults { uint mults[]; };\n";
+	str << "layout(std430, binding = " << bindSlot++ << ") restrict writeonly buffer _clr { uint clr; };\n";
+
+	str << R".(
+layout (local_size_x = WG_SIZE) in;
+
+uniform vec4 lightPosition;
+
+).";
+	if (useExtendedVersion)
+	{
+		str << R".(
+uvec3 getEdgeRange(uint index)
+{
+	const uint pos = index * EDGERANGE_INFO_SIZE;
+	return uvec3(edgeRanges[pos + 0], edgeRanges[pos + 1], edgeRanges[pos + 2]);
+}
+).";
+	}
+	else
+	{
+		str << R".(
+uvec3 getEdgeRange(uint index)
+{
+	const uint pos = index * EDGERANGE_INFO_SIZE;
+	return uvec3(edgeRanges[pos + 0], edgeRanges[pos + 1], 0);
+}
+).";
+	}
+
+	str << R".(
+uint encodeEdgeMultiplicityToId(uint edgeID, int multiplicity)
+{
+	return uint(edgeID << MULTIPLICITY_BITS) | (multiplicity & MULTIPLICITY_MASK);
+}
+).";
+
+	if (useExtendedVersion)
+	{
+		str << R".(
+uint getEdgeId(uint pos, uint buf)
+{	
+).";
+		for (u32 i = 0; i < nofEdgeBuffers; ++i)
+		{
+			str << "	if(buf== " << i << ") {return edgeIndices" << i << "[pos];}\n";
+		}
+		str << "	return 0;\n}\n";
+	}
+	else
+	{
+		str << R".(
+uint getEdgeId(uint pos, uint unused)
+{
+	return edgeIndices0[pos];
+}
+).";
+	}
+
+	str << R".(
+
+void pushEdge(uint storeIndex, uint encodedEdgeId)
+{
+	mults[storeIndex] = encodedEdgeId;
+}
+
+shared uint warpCounters[32]; //max 32 warps per WG on nV - 1024 threads
+shared uint edgeStartLocal[WG_SIZE];
+shared float tempData[WG_SIZE * 4 + 4]; //pre multiplicitu 2
+
+uint decodeWorkSize(uint val)
+{
+	return val & 0x7FFFFFFF;
+}
+
+uint decodeIsSil(uint val)
+{
+	return uint((val & 0x80000000) !=0);
+}
+
+uint getPotEdgeStorePos(uint dataPerSide, uint warpId)
+{
+	if(gl_SubGroupInvocationARB == 0)
+	{
+		warpCounters[warpId] = 0;
+	}
+	
+	const uint localOffset = atomicAdd(warpCounters[warpId], dataPerSide);
+	
+	uint globalOffset = 0;
+	if(gl_SubGroupInvocationARB == 0)
+	{
+		globalOffset = atomicAdd(nofIndicesToDraw, warpCounters[warpId]);
+	}
+	
+	globalOffset = readFirstInvocationARB(globalOffset);
+	
+	return globalOffset + localOffset;
+}
+
+uint getSilEdgeStorePos(uint localId, uint jobSize)
+{
+	if(localId == 0)
+	{
+		warpCounters[0] = atomicAdd(nofIndicesToDraw, jobSize);
+	}
+
+	barrier();
+
+	return localId + warpCounters[0];
+}
+
+void load32B(uint localId, out vec4 d0, out vec4 d1)
+{
+	const uint thread_block_start = localId & 0xFFFFFFFE;
+	const uint thread_block_offset = localId & 0x00000001;
+	vec4 act_data[2];
+	act_data[0] = edges[edgeStartLocal[thread_block_start + 0] + thread_block_offset];
+	act_data[1] = edges[edgeStartLocal[thread_block_start + 1] + thread_block_offset];
+
+	tempData[localId + 0 * WG_SIZE + 0] = act_data[0].x;
+	tempData[localId + 1 * WG_SIZE + 1] = act_data[1].x;
+	d0.x = tempData[thread_block_offset * WG_SIZE + localId + 0];
+	d1.x = tempData[thread_block_offset * WG_SIZE + localId + 1];
+	
+	tempData[localId + 0 * WG_SIZE + 0] = act_data[0].y;
+	tempData[localId + 1 * WG_SIZE + 1] = act_data[1].y;
+	d0.y = tempData[thread_block_offset * WG_SIZE + localId + 0];
+	d1.y = tempData[thread_block_offset * WG_SIZE + localId + 1];
+	
+	tempData[localId + 0 * WG_SIZE + 0] = act_data[0].z;
+	tempData[localId + 1 * WG_SIZE + 1] = act_data[1].z;
+	d0.z = tempData[thread_block_offset * WG_SIZE + localId + 0];
+	d1.z = tempData[thread_block_offset * WG_SIZE + localId + 1];
+	
+	tempData[localId + 0 * WG_SIZE + 0] = act_data[0].w;
+	tempData[localId + 1 * WG_SIZE + 1] = act_data[1].w;
+	d0.w = tempData[thread_block_offset * WG_SIZE + localId + 0];
+	d1.w = tempData[thread_block_offset * WG_SIZE + localId + 1];
+}
+
+void load64B(uint localId, out vec4 d0, out vec4 d1, out vec4 d2, out vec4 d3)
+{
+	const uint thread_block_start = localId & 0xFFFFFFFC;
+	const uint thread_block_offset = localId & 0x00000003;
+	vec4 act_data[4];
+	act_data[0] = edges[edgeStartLocal[thread_block_start + 0] + thread_block_offset];
+	act_data[1] = edges[edgeStartLocal[thread_block_start + 1] + thread_block_offset];
+	act_data[2] = edges[edgeStartLocal[thread_block_start + 2] + thread_block_offset];
+	act_data[3] = edges[edgeStartLocal[thread_block_start + 3] + thread_block_offset];
+
+	tempData[localId + 0 * WG_SIZE + 0] = act_data[0].x;
+	tempData[localId + 1 * WG_SIZE + 1] = act_data[1].x;
+	tempData[localId + 2 * WG_SIZE + 2] = act_data[2].x;
+	tempData[localId + 3 * WG_SIZE + 3] = act_data[3].x;
+	d0.x = tempData[thread_block_offset * WG_SIZE + localId + 0];
+	d1.x = tempData[thread_block_offset * WG_SIZE + localId + 1];
+	d2.x = tempData[thread_block_offset * WG_SIZE + localId + 2];
+	d3.x = tempData[thread_block_offset * WG_SIZE + localId + 3];
+	tempData[localId + 0 * WG_SIZE + 0] = act_data[0].y;
+	tempData[localId + 1 * WG_SIZE + 1] = act_data[1].y;
+	tempData[localId + 2 * WG_SIZE + 2] = act_data[2].y;
+	tempData[localId + 3 * WG_SIZE + 3] = act_data[3].y;
+	d0.y = tempData[thread_block_offset * WG_SIZE + localId + 0];
+	d1.y = tempData[thread_block_offset * WG_SIZE + localId + 1];
+	d2.y = tempData[thread_block_offset * WG_SIZE + localId + 2];
+	d3.y = tempData[thread_block_offset * WG_SIZE + localId + 3];
+	tempData[localId + 0 * WG_SIZE + 0] = act_data[0].z;
+	tempData[localId + 1 * WG_SIZE + 1] = act_data[1].z;
+	tempData[localId + 2 * WG_SIZE + 2] = act_data[2].z;
+	tempData[localId + 3 * WG_SIZE + 3] = act_data[3].z;
+	d0.z = tempData[thread_block_offset * WG_SIZE + localId + 0];
+	d1.z = tempData[thread_block_offset * WG_SIZE + localId + 1];
+	d2.z = tempData[thread_block_offset * WG_SIZE + localId + 2];
+	d3.z = tempData[thread_block_offset * WG_SIZE + localId + 3];
+	tempData[localId + 0 * WG_SIZE + 0] = act_data[0].w;
+	tempData[localId + 1 * WG_SIZE + 1] = act_data[1].w;
+	tempData[localId + 2 * WG_SIZE + 2] = act_data[2].w;
+	tempData[localId + 3 * WG_SIZE + 3] = act_data[3].w;
+	d0.w = tempData[thread_block_offset * WG_SIZE + localId + 0];
+	d1.w = tempData[thread_block_offset * WG_SIZE + localId + 1];
+	d2.w = tempData[thread_block_offset * WG_SIZE + localId + 2];
+	d3.w = tempData[thread_block_offset * WG_SIZE + localId + 3];
+}
+
+void main()
+{
+	const uint wgId = gl_WorkGroupID.x;
+	const uint localId = gl_LocalInvocationID.x;
+	const uint warpId = localId / gl_SubGroupSizeARB;
+	
+	if(wgId >= nofPotSilJobs)
+	{
+		return;
+	}
+	
+	if(gl_GlobalInvocationID.x == 0)
+	{
+		clr = 0;
+	}
+
+	const uvec3 job = getEdgeRange(wgId);
+	const uint jobSize = decodeWorkSize(job.y);
+	const uint jobStart = job.x;
+	const uint isSil = decodeIsSil(job.y);
+	const bool isActive = localId < jobSize;
+	const uint actLocalId = (isActive || bool(isSil)) ? localId : (jobSize - 1); 
+
+	if((localId >= ((jobSize + 3) & 0xFFFFFFFC)) || (bool(isSil) && !isActive))
+	{
+		return;
+	}
+	
+	if(isSil==SIL_INDEX)
+	{
+		const uint edgeId = getEdgeId(jobStart + localId, job.z);
+		uint storeIndex = getSilEdgeStorePos(localId, jobSize);
+		
+		pushEdge(storeIndex, edgeId);
+	}
+	else
+	{
+		const uint edgeId = getEdgeId(jobStart + actLocalId, job.z);
+		const uint edgeStart = edgeId * NOF_VEC4_EDGE;
+		
+		vec4 data[MAX_MULTIPLICITY+2];
+		vec4 v[2];
+		
+		edgeStartLocal[localId] = edgeStart;
+
+		for(uint i = 0; i<BIG_POT_ITERS; ++i)
+		{
+			load64B(localId, data[4*i + 0], data[4*i + 1], data[4*i + 2], data[4*i + 3]);
+		}
+
+		for(uint i = 0; i<SMALL_POT_ITERS; ++i)
+		{
+			load32B(localId, data[4*BIG_POT_ITERS + 2*i + 0], data[4*BIG_POT_ITERS + 2*i + 1]);
+		}
+
+		int multiplicity = 0;
+		
+		for(uint ov = 0; ov < MAX_MULTIPLICITY; ++ov)
+		{
+			multiplicity += int(sign(dot(data[2+ov],lightPosition)));
+		}
+		
+		const uint storeIndex = getPotEdgeStorePos(uint(multiplicity!=0)*NOF_DATA_PER_SIDE, warpId);
+		
+		if(multiplicity!=0)
+		{
+			pushEdge(storeIndex, encodeEdgeMultiplicityToId(edgeId, multiplicity));
+		}
+	}
+}
+).";
+
+	return str.str();
+}
+
 std::string genSilExtrusionVs()
 {
 	return R".(
