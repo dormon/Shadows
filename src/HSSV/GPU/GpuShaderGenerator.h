@@ -25,6 +25,7 @@ struct SidesGenShaderParams
 std::string getComputeEdgeRangesCsSource(std::vector<u32> const& lastNodePerBuffer, EdgeRangeShaderParams const& params);
 
 std::string getComputeSidesFromEdgeRangesCsSource(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams const& params);
+std::string getComputeSidesFromEdgeRangesCsSourceAdvanced(std::vector<u32> const& lastNodePerBuffer, SidesGenShaderParams const& params);
 
 std::string genEdgeBuffersMappingFn(std::vector<u32> const& lastNodePerBuffer);
 
