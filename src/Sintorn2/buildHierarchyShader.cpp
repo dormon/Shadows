@@ -266,11 +266,8 @@ std::string const sintorn2::buildHierarchyShader = R".(
 
 layout(local_size_x=WARP)in;
 
-layout(binding=0)buffer NodePool   {uint  nodePool   [];};
-layout(binding=1)buffer AABBPool   {float aabbPool   [];};
-layout(binding=2)buffer NodeCounter{uint  nodeCounter[];};
-
-
+layout(binding=0)buffer NodePool        {uint  nodePool        [];};
+layout(binding=1)buffer AABBPool        {float aabbPool        [];};
 layout(binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 
@@ -402,7 +399,6 @@ void compute(uvec2 coord,uvec2 coord2){
  
 
 #line 166
-  //if(uintsPerWarp == 2){
   #if WARP == 64
     uint counter = 0;
     uint64_t notDone = ballotARB(activeThread != 0);

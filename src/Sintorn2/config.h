@@ -34,6 +34,14 @@ T sum(std::vector<T>const&v){
   return std::accumulate(v.begin(),v.end(),0);
 }
 
+template<typename T>
+std::vector<T> mul(std::vector<T>const&v,T const&c){
+  std::vector<T>r;
+  for(auto const&x:v)
+    r.push_back(x*c);
+  return r;
+}
+
 inline std::vector<uint32_t>getOffsets(std::vector<uint32_t>const&sizes){
   std::vector<uint32_t>offsets(sizes.size()+1);
   offsets[0] = 0;
@@ -51,61 +59,59 @@ class Config{
         uint32_t tX            = 8u     ,
         uint32_t tY            = 8u     ,
         uint32_t minZ          = 9u     ){
-        //float    nn            = 0.01f  ,
-        //float    ff            = 1000.f ,
-        //float    fo            = 3.1415f){
-      windowX          = winX;
-      windowY          = winY;
-      tileX            = tX;
-      tileY            = tY;
-      minZBits         = minZ;
-      warpBits         = requiredBits(wavefrontSize);
-      clustersX        = divRoundUp(windowX,tileX);
-      clustersY        = divRoundUp(windowY,tileY);
-      xBits            = requiredBits(clustersX);
-      yBits            = requiredBits(clustersY);
-      zBits            = minZBits>0?minZBits:glm::max(glm::max(xBits,yBits),minZBits);
-      clustersZ        = 1 << zBits;
-      allBits          = xBits + yBits + zBits;
-      nofLevels        = divRoundUp(allBits,warpBits);
-      uintsPerWarp     = wavefrontSize / (sizeof(uint32_t)*8);
-      nofNodesPerLevel = computeNofNodesPerLevel(allBits,warpBits);
+      windowX                 = winX;
+      windowY                 = winY;
+      tileX                   = tX;
+      tileY                   = tY;
+      minZBits                = minZ;
+      warpBits                = requiredBits(wavefrontSize);
+      clustersX               = divRoundUp(windowX,tileX);
+      clustersY               = divRoundUp(windowY,tileY);
+      xBits                   = requiredBits(clustersX);
+      yBits                   = requiredBits(clustersY);
+      zBits                   = minZBits>0?minZBits:glm::max(glm::max(xBits,yBits),minZBits);
+      clustersZ               = 1 << zBits;
+      allBits                 = xBits + yBits + zBits;
+      nofLevels               = divRoundUp(allBits,warpBits);
+      uintsPerWarp            = wavefrontSize / (sizeof(uint32_t)*8);
+      nofNodesPerLevel        = computeNofNodesPerLevel(allBits,warpBits);
       nodeLevelSizeInUints    = computeNodeLevelSizeInUints(nofNodesPerLevel,wavefrontSize,uintsPerWarp);
-      nodesSize        = sum(nodeLevelSizeInUints) * sizeof(uint32_t);
+      nodesSize               = sum(nodeLevelSizeInUints) * sizeof(uint32_t);
       nodeLevelOffsetInUints  = getOffsets(nodeLevelSizeInUints);
-      aabbsSize        = sum(nofNodesPerLevel) * floatsPerAABB * sizeof(float);
-      for(auto const&x:nofNodesPerLevel)
-        aabbLevelSizeInFloats.push_back(x*floatsPerAABB);
+      nofNodes                = sum(nofNodesPerLevel);
+      aabbsSize               = nofNodes * floatsPerAABB * sizeof(float);
+      aabbLevelSizeInFloats   = mul(nofNodesPerLevel,floatsPerAABB);
       aabbLevelOffsetInFloats = getOffsets(aabbLevelSizeInFloats);
-      nodeLevelOffset  = getOffsets(nofNodesPerLevel);
-      //nnear         = nn;
-      //ffar          = ff;
-      //fovy          = fo;
+      nodeLevelOffset         = getOffsets(nofNodesPerLevel);
     }
     void print(){
 #define PRINT(x) std::cerr << #x << ": " << x << std::endl
-      PRINT(windowX      );
-      PRINT(windowY      );
-      PRINT(tileX        );
-      PRINT(tileY        );
-      PRINT(minZBits     );
-      PRINT(warpBits     );
-      PRINT(clustersX    );
-      PRINT(clustersY    );
-      PRINT(xBits        );
-      PRINT(yBits        );
-      PRINT(zBits        );
-      PRINT(clustersZ    );
-      PRINT(allBits      );
-      PRINT(nofLevels    );
-      PRINT(uintsPerWarp );
+      PRINT(windowX     );
+      PRINT(windowY     );
+      PRINT(tileX       );
+      PRINT(tileY       );
+      PRINT(minZBits    );
+      PRINT(warpBits    );
+      PRINT(clustersX   );
+      PRINT(clustersY   );
+      PRINT(xBits       );
+      PRINT(yBits       );
+      PRINT(zBits       );
+      PRINT(clustersZ   );
+      PRINT(allBits     );
+      PRINT(nofLevels   );
+      PRINT(uintsPerWarp);
+      PRINT(nodesSize   );
+      PRINT(aabbsSize   );
+      PRINT(nofNodes    );
+
       PRINT(floatsPerAABB);
 #undef PRINT
 #define PRINT(x) std::cerr << #x << ":" << std::endl;\
   for(auto const&a:x)\
     std::cerr << "  " << a << std::endl
-
     PRINT(nofNodesPerLevel        );
+    PRINT(nodeLevelOffset         );
     PRINT(nodeLevelSizeInUints    );
     PRINT(nodeLevelOffsetInUints  );
     PRINT(aabbLevelSizeInFloats   );
@@ -128,8 +134,9 @@ class Config{
     uint32_t allBits     ;
     uint32_t nofLevels   ;
     uint32_t uintsPerWarp;
-    uint32_t nodesSize       ;
-    uint32_t aabbsSize       ;
+    uint32_t nodesSize   ;
+    uint32_t aabbsSize   ;
+    uint32_t nofNodes    ;
     uint32_t const floatsPerAABB = 6;
     std::vector<uint32_t>nofNodesPerLevel        ;
     std::vector<uint32_t>nodeLevelOffset         ;
@@ -137,9 +144,6 @@ class Config{
     std::vector<uint32_t>nodeLevelOffsetInUints  ;
     std::vector<uint32_t>aabbLevelSizeInFloats   ;
     std::vector<uint32_t>aabbLevelOffsetInFloats ;
-    //float    nnear       ;
-    //float    ffar        ;
-    //float    fovy        ;
 };
 
 }

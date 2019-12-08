@@ -26,7 +26,11 @@ std::string const sintorn2::propagateAABBShader = R".(
 #define MIN_Z_BITS 9
 #endif//MIN_Z_BITS
 
+#ifndef NOF_WARPS
 #define NOF_WARPS 4
+#endif//NOF_WARPS
+
+
 #define THREAD_IN_WARP (gl_LocalInvocationID.x)
 #if NOF_WARPS > 1
   #define WARP_ID        (gl_LocalInvocationID.y)
@@ -34,7 +38,6 @@ std::string const sintorn2::propagateAABBShader = R".(
   #define WARP_ID        0
 #endif
 #define WARP_OFFSET    (WARP_ID*6u*WARP)
-
 
 layout(local_size_x=WARP,local_size_y=NOF_WARPS)in;
 
