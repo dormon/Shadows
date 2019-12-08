@@ -34,6 +34,8 @@ add_library(${PROJECT_NAME} STATIC
   configShader.h
   computeShadowFrusta.cpp
   computeShadowFrusta.h
+  shadowFrustaShader.cpp
+  shadowFrustaShader.h
   )
 
 add_subdirectory(debug)
