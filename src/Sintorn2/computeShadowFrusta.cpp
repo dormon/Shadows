@@ -25,26 +25,29 @@ void createShadowFrustaProgram(vars::Vars&vars){
       ,"sintorn2.param.sfAlignment"
       ,"sintorn2.param.bias"
       ,"sintorn2.param.sfInterleave"
+      ,"sintorn2.param.triangleInterleave"
       );
 
-  auto const wavefrontSize       = vars.getSizeT ("wavefrontSize"                   );
-  auto const nofTriangles        = vars.getUint32("sintorn2.method.nofTriangles"    );
-  auto const sfWGS               = vars.getUint32("sintorn2.param.sfWGS"            );
-  auto const triangleAlignment   = vars.getUint32("sintorn2.param.triangleAlignment");
-  auto const sfAlignment         = vars.getUint32("sintorn2.param.sfAlignment"      );
-  auto const bias                = vars.getFloat ("sintorn2.param.bias"             );
-  auto const sfInterleave        = vars.getBool  ("sintorn2.param.sfInterleave"     );
+  auto const wavefrontSize       = vars.getSizeT ("wavefrontSize"                    );
+  auto const nofTriangles        = vars.getUint32("sintorn2.method.nofTriangles"     );
+  auto const sfWGS               = vars.getUint32("sintorn2.param.sfWGS"             );
+  auto const triangleAlignment   = vars.getUint32("sintorn2.param.triangleAlignment" );
+  auto const sfAlignment         = vars.getUint32("sintorn2.param.sfAlignment"       );
+  auto const bias                = vars.getFloat ("sintorn2.param.bias"              );
+  auto const sfInterleave        = vars.getInt32 ("sintorn2.param.sfInterleave"      );
+  auto const triangleInterleave  = vars.getInt32 ("sintorn2.param.triangleInterleave");
 
   vars.reCreate<ge::gl::Program>("sintorn2.method.shadowFrustaProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
         "#version 450\n",
-        Shader::define("WARP"              ,(uint32_t)wavefrontSize     ),
-        Shader::define("NOF_TRIANGLES"     ,(uint32_t)nofTriangles      ),
-        Shader::define("WGS"               ,(uint32_t)sfWGS             ),
-        Shader::define("TRIANGLE_ALIGNMENT",(uint32_t)triangleAlignment ),
-        Shader::define("SF_ALIGNMENT"      ,(uint32_t)sfAlignment       ),
-        Shader::define("BIAS"              ,(float   )bias              ),
-        Shader::define("SF_INTERLEAVE"     ,(int)     sfInterleave      ),
+        Shader::define("WARP"               ,(uint32_t)wavefrontSize     ),
+        Shader::define("NOF_TRIANGLES"      ,(uint32_t)nofTriangles      ),
+        Shader::define("WGS"                ,(uint32_t)sfWGS             ),
+        Shader::define("TRIANGLE_ALIGNMENT" ,(uint32_t)triangleAlignment ),
+        Shader::define("SF_ALIGNMENT"       ,(uint32_t)sfAlignment       ),
+        Shader::define("BIAS"               ,(float   )bias              ),
+        Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
+        Shader::define("TRIANGLE_INTERLEAVE",(int)     triangleInterleave),
         sintorn2::shadowFrustaShader
         ));
 }
@@ -54,11 +57,13 @@ void allocateShadowFrusta(vars::Vars&vars){
       ,"wavefrontSize"
       ,"sintorn2.param.triangleAlignment"
       ,"sintorn2.param.sfAlignment"
+      ,"sintorn2.param.triangleInterleave"
       ,"model"
       );
 
   auto const triangleAlignment   = vars.getUint32("sintorn2.param.triangleAlignment");
   auto const sfAlignment         = vars.getUint32("sintorn2.param.sfAlignment"      );
+  auto const triangleInterleave  = vars.getInt32 ("sintorn2.param.triangleInterleave");
 
   vector<float>vertices = vars.get<Model>("model")->getVertices();
   auto nofTriangles = (uint32_t)(vertices.size()/3/3);
@@ -71,9 +76,16 @@ void allocateShadowFrusta(vars::Vars&vars){
 
   std::vector<float>triData(aNofT * 3 * 3);
 
-  for(uint32_t p=0;p<3;++p)
-    for(uint32_t k=0;k<3;++k)
-      for(uint32_t t=0;t<nofTriangles;++t)triData[aNofT*(p*3+k)+t] = vertices[(t*3+p)*3+k];
+  if(triangleInterleave == 1){
+    for(uint32_t p=0;p<3;++p)
+      for(uint32_t k=0;k<3;++k)
+        for(uint32_t t=0;t<nofTriangles;++t)triData[aNofT*(p*3+k)+t] = vertices[(t*3+p)*3+k];
+  }else{
+    for(uint32_t t=0;t<nofTriangles;++t)
+      for(uint32_t p=0;p<3;++p)
+        for(uint32_t k=0;k<3;++k)
+          triData[(t*3+p)*3+k] = vertices[(t*3+p)*3+k];
+  }
 
   auto const aNofSF = align(nofTriangles,(uint32_t)sfAlignment);
   uint32_t const sfSize = sizeof(float)*floatsPerFS*aNofSF;
