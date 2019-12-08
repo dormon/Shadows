@@ -294,8 +294,15 @@ uint activeThread = 0;
 uint activeThread[2] = {0,0};
 #endif
 
+
+#define DO_BASIC_NODES
+
+#ifdef DO_BASIC_NODES
+#else
 shared uint uniqueMortons[TILE_X*TILE_Y];
-shared uint shouldStore[2] = {0u,0u};
+shared uint shouldStore[TILE_X*TILE_Y];
+#endif
+
 
 
 #if WARP == 64
@@ -403,11 +410,15 @@ void compute(uvec2 coord,uvec2 coord2){
   #endif
   //}
  
+
 #line 166
   //if(uintsPerWarp == 2){
   #if WARP == 64
     uint counter = 0;
     uint64_t notDone = ballotARB(activeThread != 0);
+#ifndef DO_BASIC_NODES
+    uint mortonCounter = 0;
+#endif
     while(notDone != 0){
 
       if(counter >= WARP)break;
@@ -418,61 +429,95 @@ void compute(uvec2 coord,uvec2 coord2){
       uint referenceMorton = readInvocationARB(morton,selectedBit);
 
       if(gl_LocalInvocationIndex == 0){
-        uniqueMortons[counter] = referenceMorton;
+
+#ifndef DO_BASIC_NODES
+        shouldStore  [mortonCounter] = 0u;
+        uniqueMortons[mortonCounter] = referenceMorton;
+#endif
+
         if(nofLevels>0){
           uint bit  = (referenceMorton >> (warpBits*0u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*1u));
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-1u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
-          //if(mm == 0){
-          //  mm = atomicAdd(levelNodeCounter[clamp(nofLevels-1u,0u,5u)*3u],1);
-          //  activeNodes[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)]+mm] = referenceMorton;
-          //}
         }
         if(nofLevels>1){
           uint bit  = (referenceMorton >> (warpBits*1u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*2u));
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-2u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+#ifdef DO_BASIC_NODES
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-2u,0u,5u)*4u],1);
             activeNodes[nodeLevelOffset[clamp(nofLevels-2u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
+#else
+          if(mm == 0){
+            shouldStore  [mortonCounter] |= 1u << 0u;
+          }
+#endif
         }
         if(nofLevels>2){
           uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*3u));
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-3u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+#ifdef DO_BASIC_NODES
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-3u,0u,5u)*4u],1);
             activeNodes[nodeLevelOffset[clamp(nofLevels-3u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
+#else
+          if(mm == 0){
+            shouldStore  [mortonCounter] |= 1u << 1u;
+          }
+#endif
         }
         if(nofLevels>3){
           uint bit  = (referenceMorton >> (warpBits*3u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*4u));
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-4u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+#ifdef DO_BASIC_NODES
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-4u,0u,5u)*4u],1);
             activeNodes[nodeLevelOffset[clamp(nofLevels-4u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
+#else
+          if(mm == 0){
+            shouldStore  [mortonCounter] |= 1u << 2u;
+          }
+#endif
         }
         if(nofLevels>4){
           uint bit  = (referenceMorton >> (warpBits*4u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*5u));
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-5u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+#ifdef DO_BASIC_NODES
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-5u,0u,5u)*4u],1);
             activeNodes[nodeLevelOffset[clamp(nofLevels-5u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
+#else
+          if(mm == 0){
+            shouldStore  [mortonCounter] |= 1u << 3u;
+          }
+#endif
         }
         if(nofLevels>5){
           uint bit  = (referenceMorton >> (warpBits*5u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*6u));
           uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-6u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+#ifdef DO_BASIC_NODES
           if(mm == 0){
             mm = atomicAdd(levelNodeCounter[clamp(nofLevels-6u,0u,5u)*4u],1);
             activeNodes[nodeLevelOffset[clamp(nofLevels-6u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
           }
+#else
+          if(mm == 0){
+            shouldStore  [mortonCounter] |= 1u << 4u;
+          }
+#endif
         }
+#ifndef DO_BASIC_NODES
+        mortonCounter++;
+#endif
       }
       
       uint64_t sameCluster = ballotARB(referenceMorton == morton && activeThread != 0);
@@ -497,8 +542,32 @@ void compute(uvec2 coord,uvec2 coord2){
       notDone ^= sameCluster;
       counter++;
     }
-    if(gl_LocalInvocationIndex == 0)
-      nodeCounter[gl_WorkGroupID.x + gl_WorkGroupID.y*gl_NumWorkGroups.x] = counter;
+
+#ifndef DO_BASIC_NODES
+    if(gl_LocalInvocationIndex == 0){
+      for(uint l=0u;l<5u;++l){
+        uint toAdd = 0u;
+        for(uint i=0;i<mortonCounter;++i){
+          toAdd += uint(uint(shouldStore[i] & (1u << l)) != 0u);
+        }
+        if(toAdd == 0)continue;
+
+        uint mm = atomicAdd(levelNodeCounter[clamp(nofLevels-l-2u,0u,5u)*4u],toAdd);
+
+        uint cc = 0u;
+        for(uint i=0;i<mortonCounter;++i){
+          if(uint(shouldStore[i] & (1u << l)) == 0u)continue;
+          uint bit  = (uniqueMortons[i] >> (warpBits*(1u+l))) & warpMask;
+          uint node = (uniqueMortons[i] >> (warpBits*(2u+l)));
+          activeNodes[nodeLevelOffset[clamp(nofLevels-l-2u,0u,5u)]+mm+cc] = node*uintsPerWarp+uint(bit>31u);
+          cc++;
+        }
+      }
+    }
+#endif
+
+    //if(gl_LocalInvocationIndex == 0)
+    //  nodeCounter[gl_WorkGroupID.x + gl_WorkGroupID.y*gl_NumWorkGroups.x] = counter;
   #endif
 }
 

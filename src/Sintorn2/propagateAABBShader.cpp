@@ -26,7 +26,16 @@ std::string const sintorn2::propagateAABBShader = R".(
 #define MIN_Z_BITS 9
 #endif//MIN_Z_BITS
 
-layout(local_size_x=WARP)in;
+#define NOF_WARPS 4
+#define THREAD_IN_WARP (gl_LocalInvocationID.x)
+#if NOF_WARPS > 1
+  #define WARP_ID        (gl_LocalInvocationID.y)
+#else
+  #define WARP_ID        0
+#endif
+#define WARP_OFFSET    (WARP_ID*6u*WARP)
+
+layout(local_size_x=WARP,local_size_y=NOF_WARPS)in;
 
 layout(binding=0)buffer NodePool   {uint  nodePool   [];};
 layout(binding=1)buffer AABBPool   {float aabbPool   [];};
@@ -39,62 +48,64 @@ uniform uint destLevel = 0;
 
 #if WARP == 64
 
-shared float reductionArray[WARP*6u];
+shared float reductionArray[WARP*6u*NOF_WARPS];
+
+
 
 void reduce(){
   float ab[2];
   uint w;
 
   //6*64 -> 6*32
-  ab[0] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
-  ab[1] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&32u)!=0u)) > 0.f);
-  reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
+  ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
+  ab[1] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&32u)!=0u)) > 0.f);
+  reductionArray[WARP_OFFSET+WARP*0u + THREAD_IN_WARP] = ab[w];
   
-  ab[0] = reductionArray[WARP*2u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
-  ab[1] = reductionArray[WARP*2u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&32u)!=0u)) > 0.f);
-  reductionArray[WARP*1u + gl_LocalInvocationIndex] = ab[w];
+  ab[0] = reductionArray[WARP_OFFSET+WARP*2u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
+  ab[1] = reductionArray[WARP_OFFSET+WARP*2u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&32u)!=0u)) > 0.f);
+  reductionArray[WARP_OFFSET+WARP*1u + THREAD_IN_WARP] = ab[w];
 
-  ab[0] = reductionArray[WARP*4u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
-  ab[1] = reductionArray[WARP*4u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&32u)!=0u)) > 0.f);
-  reductionArray[WARP*2u + gl_LocalInvocationIndex] = ab[w];
+  ab[0] = reductionArray[WARP_OFFSET+WARP*4u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
+  ab[1] = reductionArray[WARP_OFFSET+WARP*4u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&32u)!=0u)) > 0.f);
+  reductionArray[WARP_OFFSET+WARP*2u + THREAD_IN_WARP] = ab[w];
   
   //6*32 -> 6*16
-  ab[0] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
-  ab[1] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&16u)!=0u)) > 0.f);
-  reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
+  ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
+  ab[1] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&16u)!=0u)) > 0.f);
+  reductionArray[WARP_OFFSET+WARP*0u + THREAD_IN_WARP] = ab[w];
   
-  ab[0] = reductionArray[WARP*2u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
-  ab[1] = reductionArray[WARP*2u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&16u)!=0u)) > 0.f);
-  reductionArray[WARP*1u + gl_LocalInvocationIndex] = ab[w];
+  ab[0] = reductionArray[WARP_OFFSET+WARP*2u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
+  ab[1] = reductionArray[WARP_OFFSET+WARP*2u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&16u)!=0u)) > 0.f);
+  reductionArray[WARP_OFFSET+WARP*1u + THREAD_IN_WARP] = ab[w];
 
   //6*16 -> 6*8
-  ab[0] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
-  ab[1] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&8u)!=0u)) > 0.f);
-  reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
+  ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
+  ab[1] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&8u)!=0u)) > 0.f);
+  reductionArray[WARP_OFFSET+WARP*0u + THREAD_IN_WARP] = ab[w];
 
   //6*8 -> 6*4
-  ab[0] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
-  ab[1] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&4u)!=0u)) > 0.f);
-  reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
+  ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
+  ab[1] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&4u)!=0u)) > 0.f);
+  reductionArray[WARP_OFFSET+WARP*0u + THREAD_IN_WARP] = ab[w];
 
   //6*4 -> 6*2
-  ab[0] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
-  ab[1] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&2u)!=0u)) > 0.f);
-  reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
+  ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
+  ab[1] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&2u)!=0u)) > 0.f);
+  reductionArray[WARP_OFFSET+WARP*0u + THREAD_IN_WARP] = ab[w];
 
   //6*2 -> 6*1
-  ab[0] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 0u];                 
-  ab[1] = reductionArray[WARP*0u + (uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
-  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&1u)!=0u)) > 0.f);
-  reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
+  ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
+  ab[1] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
+  w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&1u)!=0u)) > 0.f);
+  reductionArray[WARP_OFFSET+WARP*0u + THREAD_IN_WARP] = ab[w];
 }
 
 #endif
@@ -113,6 +124,10 @@ void main(){
   //  debugBuffer[wid*2+1] = nodeUint;
   //}
 
+#if NOF_WARPS > 1
+  nodeUint &= uint((1u<<uint(32/NOF_WARPS))-1u) << (uint(32/NOF_WARPS)*WARP_ID);
+#endif
+
   uint counter = 0;
   while(nodeUint != 0){
     if(counter >=32)break;
@@ -122,33 +137,33 @@ void main(){
     //if(uint(nodePool[nodeLevelOffsetInUints[destLevel]+(node>>warpBits)*uintsPerWarp + uint(bit>31u)]&(1u<<(bit&0x1fu))) == 0u)
     //  return;
 
-    uint isActive = uint(nodePool[nodeLevelOffsetInUints[destLevel+1u]+node*uintsPerWarp + uint(gl_LocalInvocationIndex>31)] & uint(1u<<(uint(gl_LocalInvocationIndex)&0x1fu)));
+    uint isActive = uint(nodePool[nodeLevelOffsetInUints[destLevel+1u]+node*uintsPerWarp + uint(THREAD_IN_WARP>31)] & uint(1u<<(uint(THREAD_IN_WARP)&0x1fu)));
 
     uint64_t activeThreads = ballotARB(isActive != 0);
     uint selectedBit       = unpackUint2x32(activeThreads)[0]!=0u?findLSB(unpackUint2x32(activeThreads)[0]):findLSB(unpackUint2x32(activeThreads)[1])+32u;
 
     if(isActive != 0){
-      reductionArray[WARP*0u+uint(gl_LocalInvocationIndex)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+0u];
-      reductionArray[WARP*1u+uint(gl_LocalInvocationIndex)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+1u];
-      reductionArray[WARP*2u+uint(gl_LocalInvocationIndex)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+2u];
-      reductionArray[WARP*3u+uint(gl_LocalInvocationIndex)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+3u];
-      reductionArray[WARP*4u+uint(gl_LocalInvocationIndex)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+4u];
-      reductionArray[WARP*5u+uint(gl_LocalInvocationIndex)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(gl_LocalInvocationIndex)*floatsPerAABB+5u];
+      reductionArray[WARP_OFFSET+WARP*0u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+0u];
+      reductionArray[WARP_OFFSET+WARP*1u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+1u];
+      reductionArray[WARP_OFFSET+WARP*2u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+2u];
+      reductionArray[WARP_OFFSET+WARP*3u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+3u];
+      reductionArray[WARP_OFFSET+WARP*4u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+4u];
+      reductionArray[WARP_OFFSET+WARP*5u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+5u];
     }
 
     if(isActive == 0){
-      reductionArray[WARP*0u+uint(gl_LocalInvocationIndex)] = reductionArray[WARP*0u+selectedBit];
-      reductionArray[WARP*1u+uint(gl_LocalInvocationIndex)] = reductionArray[WARP*1u+selectedBit];
-      reductionArray[WARP*2u+uint(gl_LocalInvocationIndex)] = reductionArray[WARP*2u+selectedBit];
-      reductionArray[WARP*3u+uint(gl_LocalInvocationIndex)] = reductionArray[WARP*3u+selectedBit];
-      reductionArray[WARP*4u+uint(gl_LocalInvocationIndex)] = reductionArray[WARP*4u+selectedBit];
-      reductionArray[WARP*5u+uint(gl_LocalInvocationIndex)] = reductionArray[WARP*5u+selectedBit];
+      reductionArray[WARP_OFFSET+WARP*0u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*0u+selectedBit];
+      reductionArray[WARP_OFFSET+WARP*1u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*1u+selectedBit];
+      reductionArray[WARP_OFFSET+WARP*2u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*2u+selectedBit];
+      reductionArray[WARP_OFFSET+WARP*3u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*3u+selectedBit];
+      reductionArray[WARP_OFFSET+WARP*4u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*4u+selectedBit];
+      reductionArray[WARP_OFFSET+WARP*5u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*5u+selectedBit];
     }
 
     reduce();
 
-    if(gl_LocalInvocationIndex < floatsPerAABB)
-      aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
+    if(THREAD_IN_WARP < floatsPerAABB)
+      aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+THREAD_IN_WARP] = reductionArray[WARP_OFFSET+THREAD_IN_WARP];
 
     nodeUint ^= 1u << bit;
     counter++;
