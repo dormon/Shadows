@@ -128,14 +128,19 @@ void main(){
   nodeUint &= uint((1u<<uint(32/NOF_WARPS))-1u) << (uint(32/NOF_WARPS)*WARP_ID);
 #endif
 
+
+#ifdef BE_SAFE
   uint counter = 0;
+#endif
+
   while(nodeUint != 0){
+
+#ifdef BE_SAFE
     if(counter >=32)break;
+#endif
 
     uint bit = findLSB(nodeUint);
     uint node = (activeNodeUint>>1u)*WARP + (activeNodeUint&1u)*halfWarp + bit;
-    //if(uint(nodePool[nodeLevelOffsetInUints[destLevel]+(node>>warpBits)*uintsPerWarp + uint(bit>31u)]&(1u<<(bit&0x1fu))) == 0u)
-    //  return;
 
     uint isActive = uint(nodePool[nodeLevelOffsetInUints[destLevel+1u]+node*uintsPerWarp + uint(THREAD_IN_WARP>31)] & uint(1u<<(uint(THREAD_IN_WARP)&0x1fu)));
 
@@ -166,7 +171,10 @@ void main(){
       aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+THREAD_IN_WARP] = reductionArray[WARP_OFFSET+THREAD_IN_WARP];
 
     nodeUint ^= 1u << bit;
+
+#ifdef BE_SAFE
     counter++;
+#endif
   }
 
 #endif

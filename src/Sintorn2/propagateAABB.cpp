@@ -43,9 +43,12 @@ void sintorn2::propagateAABB(vars::Vars&vars){
 
   levelNodeCounter->bind(GL_DISPATCH_INDIRECT_BUFFER);
   activeNodes->bindBase(GL_SHADER_STORAGE_BUFFER,4);
-  prg->set1ui("destLevel",cfg.nofLevels-2);
-  glDispatchComputeIndirect(((cfg.nofLevels-2)*4u)*sizeof(uint32_t));
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+  for(int32_t level=cfg.nofLevels-2;level>=0;--level){
+    prg->set1ui("destLevel",level);
+    glDispatchComputeIndirect(((level)*4u)*sizeof(uint32_t));
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  }
 
 #if 0
   std::vector<uint32_t>debugData;
