@@ -294,6 +294,7 @@ uint activeThread = 0;
 uint activeThread[2] = {0,0};
 #endif
 
+//#define PROPAGATE_NODE_BITS
 
 #define DO_BASIC_NODES
 
@@ -455,6 +456,8 @@ void compute(uvec2 coord,uvec2 coord2){
           }
 #endif
         }
+
+#ifdef PROPAGATE_NODE_BITS
         if(nofLevels>2){
           uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*3u));
@@ -515,6 +518,8 @@ void compute(uvec2 coord,uvec2 coord2){
           }
 #endif
         }
+#endif//PROPAGATE_NODE_BITS
+
 #ifndef DO_BASIC_NODES
         mortonCounter++;
 #endif

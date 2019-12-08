@@ -17,50 +17,6 @@ using namespace ge::gl;
 
 #include <iomanip>
 
-namespace sintorn2{
-  void prepareFixIndirectComputeBuffer(vars::Vars&vars){
-    FUNCTION_PROLOGUE("sintorn2.method"
-        ,"sintorn2.method.config"
-        ,"wavefrontSize"
-        );
-
-    auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"         );
-    auto const cfg            = *vars.get<Config>        ("sintorn2.method.config");
-    std::string const src = R".(
-    layout(local_size_x=32)in;
-    layout(binding = 3)buffer LevelNodeCounter{uint levelNodeCounter[];};
-    
-    void main(){
-      if(gl_LocalInvocationIndex >= 4*nofLevels)return;
-      uint m = uint(gl_LocalInvocationIndex) % 4u;
-      if(m>0)
-        levelNodeCounter[gl_LocalInvocationIndex] = 1u;
-    }
-
-    ).";
-    vars.reCreate<Program>("sintorn2.method.fixIndirectComputeProgram",
-        std::make_shared<Shader>(GL_COMPUTE_SHADER,
-          "#version 450\n",
-          Shader::define("WARP"      ,(uint32_t)wavefrontSize),
-          Shader::define("WINDOW_X"  ,(uint32_t)cfg.windowX  ),
-          Shader::define("WINDOW_Y"  ,(uint32_t)cfg.windowY  ),
-          Shader::define("MIN_Z_BITS",(uint32_t)cfg.minZBits ),
-          Shader::define("TILE_X"    ,cfg.tileX              ),
-          Shader::define("TILE_Y"    ,cfg.tileY              ),
-          sintorn2::configShader,
-          src));
-  }
-  void fixIndirectComputeBuffer(vars::Vars&vars){
-    prepareFixIndirectComputeBuffer(vars);
-    auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter");
-    auto prg              =  vars.get<Program>("sintorn2.method.fixIndirectComputeProgram");
-    prg->use();
-    levelNodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
-    glDispatchCompute(1,1,1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-  }
-}
-
 void sintorn2::buildHierarchy(vars::Vars&vars){
   FUNCTION_CALLER();
 
@@ -72,26 +28,17 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   auto prg              =  vars.get<Program>("sintorn2.method.buildHierarchyProgram");
   auto nodePool         =  vars.get<Buffer >("sintorn2.method.nodePool");
   auto aabbPool         =  vars.get<Buffer >("sintorn2.method.aabbPool");
-  //auto nodeCounter      =  vars.get<Buffer >("sintorn2.method.nodeCounter");
   auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter");
   auto activeNodes      =  vars.get<Buffer >("sintorn2.method.activeNodes");
 
-#if 0
-  auto debugBuffer      =  vars.get<Buffer >("sintorn2.method.debugBuffer");
-  debugBuffer        ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  debugBuffer->bindBase(GL_SHADER_STORAGE_BUFFER,7);
-#endif
-
   auto cfg              = *vars.get<Config >("sintorn2.method.config");
 
+  uint32_t dci[4] = {0,1,1,0};
   nodePool        ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  levelNodeCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  //nodeCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  //aabbPool   ->clear(GL_R32F ,GL_RED        ,GL_FLOAT       );
+  levelNodeCounter->clear(GL_RGBA32UI,GL_RGBA_INTEGER,GL_UNSIGNED_INT,dci);
 
-  nodePool   ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  aabbPool   ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
-  //nodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+  nodePool        ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  aabbPool        ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
   levelNodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   
@@ -99,11 +46,7 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   
   prg->use();
   glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-  fixIndirectComputeBuffer(vars);
-
-  
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT|GL_COMMAND_BARRIER_BIT);
 
 #if 0
   cfg.print();
@@ -140,6 +83,40 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   
 
   propagateAABB(vars);
+
+
+#if 0
+  cfg.print();
+  std::vector<uint32_t>nodes;
+  nodePool->getData(nodes);
+
+  std::vector<uint32_t>lc;
+  levelNodeCounter->getData(lc);
+  for(uint32_t l=0;l<cfg.nofLevels;++l){
+    std::cerr << "L" << l << ": ";
+    for(uint32_t i=0;i<4;++i)
+      std::cerr << lc[l*4+i] << " ";
+    std::cerr << std::endl;
+  }
+
+  std::vector<uint32_t>an;
+  activeNodes->getData(an);
+  for(uint32_t l=0;l<cfg.nofLevels;++l){
+    std::vector<uint32_t>ll;
+    for(uint32_t i=0;i<lc[l*4];++i)
+      ll.push_back(an[cfg.nodeLevelOffset[l]+i]);
+    //std::sort(ll.begin(),ll.end());
+
+    std::cerr << "L" << l << ": " << std::endl;;
+    for(uint32_t i=0;i<ll.size();++i)
+      std::cerr << " " << ll[i] << "-" << nodes[cfg.nodeLevelOffsetInUints[l]+ll[i]] << std::endl;
+      //std::cerr << " " << ll[i] << "-" << nodes[ll[i]] << std::endl;
+    std::cerr << std::endl;
+  }
+
+  exit(0);
+#endif
+
 
   /*
   std::vector<uint32_t>d;

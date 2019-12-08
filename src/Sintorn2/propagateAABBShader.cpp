@@ -35,11 +35,14 @@ std::string const sintorn2::propagateAABBShader = R".(
 #endif
 #define WARP_OFFSET    (WARP_ID*6u*WARP)
 
+//#define PROPAGATE_NODE_BITS
+
 layout(local_size_x=WARP,local_size_y=NOF_WARPS)in;
 
-layout(binding=0)buffer NodePool   {uint  nodePool   [];};
-layout(binding=1)buffer AABBPool   {float aabbPool   [];};
-layout(binding=4)buffer ActiveNodes{uint  activeNodes[];};
+layout(binding=0)buffer NodePool        {uint  nodePool        [];};
+layout(binding=1)buffer AABBPool        {float aabbPool        [];};
+layout(binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
+layout(binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 
 layout(binding=7)buffer DebugBuffer{uint debugBuffer[];};
 
@@ -176,6 +179,34 @@ void main(){
     counter++;
 #endif
   }
+
+#ifdef PROPAGATE_NODE_BITS
+#else
+  if(gl_LocalInvocationIndex == 0){
+
+    uint bit  = (activeNodeUint>>1u)& warpMask;
+    uint node = (activeNodeUint>>1u)>>warpBits;
+
+    if(destLevel > 0){
+      uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[destLevel-1]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+      if(mm == 0){
+        mm = atomicAdd(levelNodeCounter[(destLevel-1)*4u],1);
+        activeNodes[nodeLevelOffset[destLevel-1]+mm] = node*uintsPerWarp+uint(bit>31u);
+      }
+    }
+
+
+    //if(nofLevels>2){
+    //  uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
+    //  uint node = (referenceMorton >> (warpBits*3u));
+    //  uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-3u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+    //  if(mm == 0){
+    //    mm = atomicAdd(levelNodeCounter[clamp(nofLevels-3u,0u,5u)*4u],1);
+    //    activeNodes[nodeLevelOffset[clamp(nofLevels-3u,0u,5u)]+mm] = node*uintsPerWarp+uint(bit>31u);
+    //  }
+    //}
+  }
+#endif//PROPAGATE_NODE_BITS
 
 #endif
 }
