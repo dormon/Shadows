@@ -32,7 +32,7 @@ layout(std430,binding=3)buffer JobCounter  {uint  jobCounter  [];};
 
 const uint alignedNofSF = (uint(NOF_TRIANGLES / SF_ALIGNMENT) + uint((NOF_TRIANGLES % SF_ALIGNMENT) != 0u)) * SF_ALIGNMENT;
 
-float shadowFrustaPlanes[4*4];
+float shadowFrustaPlanes[FLOATS_PER_SF];
 #line 36
 void main(){
   uint job;
@@ -51,6 +51,25 @@ void main(){
       shadowFrustaPlanes[gl_LocalInvocationIndex] = shadowFrusta[job*FLOATS_PER_SF+gl_LocalInvocationIndex];
 #endif
     }
+
+    uint level = 0u;
+    uint64_t intersection[nofLevels];
+
+    if(level == nofLevels){
+      //do sample tests
+    }else{
+      uint intersects = uint(nodePool[nodeLevelOffsetInUints[level]+uint(gl_LocalInvocationIndex>31)]&uint(1u<<(gl_LocalInvocationIndex&0x1fu)));
+      if(intersects != 0u){
+
+      }
+      intersection[level] = ballotARB(intersects != 0);
+
+    }
+
+
+
+
+
 
   }
 }
