@@ -17,7 +17,7 @@
 #include <Sintorn2/configShader.h>
 
 void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
-  FUNCTION_PROLOGUE("sintorn2",
+  FUNCTION_PROLOGUE("sintorn2.method",
       "windowSize",
       "wavefrontSize",
       "args.camera.near",

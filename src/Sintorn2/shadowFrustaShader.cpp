@@ -1,9 +1,6 @@
 #include <Sintorn2/shadowFrustaShader.h>
 
 std::string const sintorn2::shadowFrustaShader = R".(
-//"methods/Sintorn/shadowfrustum.comp";
-//DO NOT EDIT ANYTHING BELOW THIS LINE
-
 #ifndef WARP
 #define WARP 64
 #endif//WARP

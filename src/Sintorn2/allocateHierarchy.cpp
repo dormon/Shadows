@@ -15,7 +15,7 @@
 using namespace ge::gl;
 
 void sintorn2::allocateHierarchy(vars::Vars&vars){
-  FUNCTION_PROLOGUE("sintorn2","sintorn2.method.config");
+  FUNCTION_PROLOGUE("sintorn2.method","sintorn2.method.config");
 
   auto cfg = *vars.get<Config>("sintorn2.method.config");
 

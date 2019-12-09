@@ -17,7 +17,7 @@ using namespace std;
 
 namespace sintorn2{
 void createShadowFrustaProgram(vars::Vars&vars){
-  FUNCTION_PROLOGUE("sintorn2"
+  FUNCTION_PROLOGUE("sintorn2.method"
       ,"wavefrontSize"
       ,"sintorn2.method.nofTriangles"
       ,"sintorn2.param.sfWGS"
@@ -53,7 +53,7 @@ void createShadowFrustaProgram(vars::Vars&vars){
 }
 
 void allocateShadowFrusta(vars::Vars&vars){
-  FUNCTION_PROLOGUE("sintorn2"
+  FUNCTION_PROLOGUE("sintorn2.method"
       ,"wavefrontSize"
       ,"sintorn2.param.triangleAlignment"
       ,"sintorn2.param.sfAlignment"
