@@ -52,25 +52,32 @@ void createRasterizeProgram(vars::Vars&vars){
 
 void createJobCounter(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2.method");
-  vars.reCreate<Buffer>("sintorn2.method.jobCounter;",sizeof(uint32_t));
+  vars.reCreate<Buffer>("sintorn2.method.jobCounter",sizeof(uint32_t));
 }
 
 }
 
 
 void sintorn2::rasterize(vars::Vars&vars){
-  //createRasterizeProgram(vars);
-  //createJobCounter(vars);
+  FUNCTION_CALLER();
+  createRasterizeProgram(vars);
+  createJobCounter(vars);
 
-  //auto jobCounter = vars.get<Buffer> ("sintorn2.method.jobCounter"      );
-  //auto prg        = vars.get<Program>("sintorn2.method.rasterizeProgram");
+  auto prg        = vars.get<Program>("sintorn2.method.rasterizeProgram");
+  auto nodePool   = vars.get<Buffer >("sintorn2.method.nodePool"        );
+  auto aabbPool   = vars.get<Buffer >("sintorn2.method.aabbPool"        );
+  auto sf         = vars.get<Buffer >("sintorn2.method.shadowFrusta"    );
+  auto jobCounter = vars.get<Buffer >("sintorn2.method.jobCounter"      );
 
 
-  //jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
 
-  //jobCounter->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+  nodePool  ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  aabbPool  ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  sf        ->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+  jobCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
 
 
-  //prg->use();
+  prg->use();
 
 }
