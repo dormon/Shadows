@@ -41,12 +41,12 @@ std::string const sintorn2::propagateAABBShader = R".(
 
 layout(local_size_x=WARP,local_size_y=NOF_WARPS)in;
 
-layout(binding=0)buffer NodePool        {uint  nodePool        [];};
-layout(binding=1)buffer AABBPool        {float aabbPool        [];};
-layout(binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
-layout(binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
+layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
+layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
+layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
+layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 
-layout(binding=7)buffer DebugBuffer{uint debugBuffer[];};
+layout(std430,binding=7)buffer DebugBuffer{uint debugBuffer[];};
 
 uniform uint destLevel = 0;
 

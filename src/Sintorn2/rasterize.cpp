@@ -50,17 +50,9 @@ void createRasterizeProgram(vars::Vars&vars){
 
 }
 
-void createJobBuffer(vars::Vars&vars){
-  FUNCTION_PROLOGUE("sintorn2.method"
-      ,"wavefrontSize"
-      ,"sintorn2.method.nofTriangles"
-      ,"sintorn2.param.sfWGS"
-      ,"sintorn2.param.triangleAlignment"
-      ,"sintorn2.param.sfAlignment"
-      ,"sintorn2.param.bias"
-      ,"sintorn2.param.sfInterleave"
-      ,"sintorn2.param.triangleInterleave"
-      );
+void createJobCounter(vars::Vars&vars){
+  FUNCTION_PROLOGUE("sintorn2.method");
+  vars.reCreate<Buffer>("sintorn2.method.jobCounter;",sizeof(uint32_t));
 }
 
 }
@@ -68,8 +60,17 @@ void createJobBuffer(vars::Vars&vars){
 
 void sintorn2::rasterize(vars::Vars&vars){
   //createRasterizeProgram(vars);
+  //createJobCounter(vars);
 
-  //auto prg = vars.get<Program>("sintorn2.method.rasterizeProgram");
+  //auto jobCounter = vars.get<Buffer> ("sintorn2.method.jobCounter"      );
+  //auto prg        = vars.get<Program>("sintorn2.method.rasterizeProgram");
+
+
+  //jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+
+  //jobCounter->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+
 
   //prg->use();
+
 }

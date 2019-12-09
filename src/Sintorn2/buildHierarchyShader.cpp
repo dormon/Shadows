@@ -266,10 +266,10 @@ std::string const sintorn2::buildHierarchyShader = R".(
 
 layout(local_size_x=WARP)in;
 
-layout(binding=0)buffer NodePool        {uint  nodePool        [];};
-layout(binding=1)buffer AABBPool        {float aabbPool        [];};
-layout(binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
-layout(binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
+layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
+layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
+layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
+layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 
 layout(binding=1)uniform sampler2DRect depthTexture;
 
