@@ -15,7 +15,7 @@ void sintorn2::loadParams(
   vars.addUint32("sintorn2.param.triangleAlignment"      ) = c->getu32   ("triangleAlignment" ,128 ,"alignment of triangles"                                                          );
   vars.addUint32("sintorn2.param.sfAlignment"            ) = c->getu32   ("sfAlignment"       ,128 ,"shadow frusta alignment"                                                         );
   vars.addUint32("sintorn2.param.sfWGS"                  ) = c->getu32   ("sfWGS"             ,64  ,"shadow frusta work group size"                                                   );
-  vars.addInt32 ("sintorn2.param.sfInterleave"           ) = c->geti32   ("sfInterleave"      ,0   ,"interleave shadow frusta floats"                                                 );
+  vars.addInt32 ("sintorn2.param.sfInterleave"           ) = c->geti32   ("sfInterleave"      ,1   ,"interleave shadow frusta floats"                                                 );
   vars.addInt32 ("sintorn2.param.triangleInterleave"     ) = c->geti32   ("triangleInterleave",1   ,"interleave triangle floats"                                                      );
 
 }
