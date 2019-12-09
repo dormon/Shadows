@@ -10,6 +10,7 @@
 
 #include <Sintorn2/buildHierarchy.h>
 #include <Sintorn2/computeShadowFrusta.h>
+#include <Sintorn2/rasterize.h>
 #include <Sintorn2/debug/drawDebug.h>
 
 Sintorn2::Sintorn2(vars::Vars& vars) : ShadowMethod(vars) {}
@@ -33,7 +34,8 @@ void Sintorn2::create(glm::vec4 const& lightPosition,
   ifExistStamp("computeShadowFrusta");
   sintorn2::buildHierarchy(vars);
   ifExistStamp("buildHierarchy");
-
+  sintorn2::rasterize(vars);
+  ifExistStamp("rasterize");
 
 }
 

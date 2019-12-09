@@ -36,6 +36,10 @@ add_library(${PROJECT_NAME} STATIC
   computeShadowFrusta.h
   shadowFrustaShader.cpp
   shadowFrustaShader.h
+  rasterize.cpp
+  rasterize.h
+  rasterizeShader.cpp
+  rasterizeShader.h
   )
 
 add_subdirectory(debug)
