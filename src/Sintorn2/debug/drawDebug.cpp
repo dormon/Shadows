@@ -256,6 +256,7 @@ void sintorn2::drawDebug(vars::Vars&vars){
   auto&type         = vars.addOrGetUint32("sintorn2.method.debug.type",DEFAULT);
   auto&levelsToDraw = vars.addOrGetUint32("sintorn2.method.debug.levelsToDraw",0);
   auto&drawTightAABB = vars.addOrGetBool  ("sintorn2.method.debug.drawTightAABB");
+  auto&wireframe     = vars.addOrGetBool  ("sintorn2.method.debug.wireframe",true);
 
   if(ImGui::BeginMainMenuBar()){
     if(ImGui::BeginMenu("debug")){
@@ -274,7 +275,9 @@ void sintorn2::drawDebug(vars::Vars&vars){
         type = DRAW_NODEPOOL;
       if(ImGui::MenuItem("drawTightAABB"))
         drawTightAABB = !drawTightAABB;
-      if(ImGui::MenuItem("printAABB")){
+      if(ImGui::MenuItem("wireframe")){
+        wireframe = !wireframe;
+        vars.updateTicks("sintorn2.method.debug.wireframe");
       }
 
       if(type == DRAW_NODEPOOL){
