@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-std::shared_ptr<ge::gl::Shader> getDpsvBuildCS(unsigned int wgSiz, bool enableFrontFaceCulling);
+std::shared_ptr<ge::gl::Shader> getDpsvBuildCS(unsigned int wgSiz);
 
 std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStackProgramShaders();
 std::vector<std::shared_ptr<ge::gl::Shader>> getDpsvStacklessProgramShaders();
