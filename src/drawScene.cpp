@@ -14,7 +14,10 @@ void drawScene(vars::Vars&vars){
 
   renderModelToGBuffer(vars);
 
-  ifExistStamp(vars,"gBuffer");
+  if(!vars.getBool("dontTimeGbuffer"))
+  {
+    ifExistStamp(vars, "gBuffer");
+  }
 
   ifMethodExistCreateShadowMask(vars);
 
