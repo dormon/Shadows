@@ -10,6 +10,7 @@
 #include <Sintorn2/createBuildHierarchyProgram.h>
 #include <Sintorn2/propagateAABB.h>
 #include <Sintorn2/computeConfig.h>
+#include <Sintorn2/configShader.h>
 #include <Sintorn2/config.h>
 
 using namespace ge::gl;
@@ -27,19 +28,17 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   auto prg              =  vars.get<Program>("sintorn2.method.buildHierarchyProgram");
   auto nodePool         =  vars.get<Buffer >("sintorn2.method.nodePool");
   auto aabbPool         =  vars.get<Buffer >("sintorn2.method.aabbPool");
-  //auto nodeCounter      =  vars.get<Buffer >("sintorn2.method.nodeCounter");
   auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter");
   auto activeNodes      =  vars.get<Buffer >("sintorn2.method.activeNodes");
+
   auto cfg              = *vars.get<Config >("sintorn2.method.config");
 
+  uint32_t dci[4] = {0,1,1,0};
   nodePool        ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  levelNodeCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  //nodeCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  //aabbPool   ->clear(GL_R32F ,GL_RED        ,GL_FLOAT       );
+  levelNodeCounter->clear(GL_RGBA32UI,GL_RGBA_INTEGER,GL_UNSIGNED_INT,dci);
 
-  nodePool   ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  aabbPool   ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
-  //nodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+  nodePool        ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  aabbPool        ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
   levelNodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   
@@ -47,27 +46,77 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   
   prg->use();
   glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT|GL_COMMAND_BARRIER_BIT);
 
-  //std::vector<uint32_t>lc;
-  //levelNodeCounter->getData(lc);
-  //for(auto const&x:lc)
-  //  std::cerr << x << std::endl;
+#if 0
+  cfg.print();
+  std::vector<uint32_t>nodes;
+  nodePool->getData(nodes);
 
-  //std::vector<uint32_t>an;
-  //activeNodes->getData(an);
-  //for(uint32_t l=0;l<cfg.nofLevels;++l){
-  //  std::cerr << "L" << l << ": ";
-  //  for(uint32_t i=0;i<lc[l*3];++i)
-  //    std::cerr << an[cfg.nodeLevelOffset[l]+i] << " ";
-  //  std::cerr << std::endl;
-  //}
+  std::vector<uint32_t>lc;
+  levelNodeCounter->getData(lc);
+  for(uint32_t l=0;l<cfg.nofLevels;++l){
+    std::cerr << "L" << l << ": ";
+    for(uint32_t i=0;i<4;++i)
+      std::cerr << lc[l*4+i] << " ";
+    std::cerr << std::endl;
+  }
 
-  //exit(0);
+  std::vector<uint32_t>an;
+  activeNodes->getData(an);
+  for(uint32_t l=0;l<cfg.nofLevels;++l){
+    std::vector<uint32_t>ll;
+    for(uint32_t i=0;i<lc[l*4];++i)
+      ll.push_back(an[cfg.nodeLevelOffset[l]+i]);
+    //std::sort(ll.begin(),ll.end());
+
+    std::cerr << "L" << l << ": " << std::endl;;
+    for(uint32_t i=0;i<ll.size();++i)
+      std::cerr << " " << ll[i] << "-" << nodes[cfg.nodeLevelOffsetInUints[l]+ll[i]] << std::endl;
+      //std::cerr << " " << ll[i] << "-" << nodes[ll[i]] << std::endl;
+    std::cerr << std::endl;
+  }
+
+  exit(0);
+#endif
 
   
 
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-  //propagateAABB(vars);
+  propagateAABB(vars);
+
+
+#if 0
+  cfg.print();
+  std::vector<uint32_t>nodes;
+  nodePool->getData(nodes);
+
+  std::vector<uint32_t>lc;
+  levelNodeCounter->getData(lc);
+  for(uint32_t l=0;l<cfg.nofLevels;++l){
+    std::cerr << "L" << l << ": ";
+    for(uint32_t i=0;i<4;++i)
+      std::cerr << lc[l*4+i] << " ";
+    std::cerr << std::endl;
+  }
+
+  std::vector<uint32_t>an;
+  activeNodes->getData(an);
+  for(uint32_t l=0;l<cfg.nofLevels;++l){
+    std::vector<uint32_t>ll;
+    for(uint32_t i=0;i<lc[l*4];++i)
+      ll.push_back(an[cfg.nodeLevelOffset[l]+i]);
+    //std::sort(ll.begin(),ll.end());
+
+    std::cerr << "L" << l << ": " << std::endl;;
+    for(uint32_t i=0;i<ll.size();++i)
+      std::cerr << " " << ll[i] << "-" << nodes[cfg.nodeLevelOffsetInUints[l]+ll[i]] << std::endl;
+      //std::cerr << " " << ll[i] << "-" << nodes[ll[i]] << std::endl;
+    std::cerr << std::endl;
+  }
+
+  exit(0);
+#endif
+
 
   /*
   std::vector<uint32_t>d;

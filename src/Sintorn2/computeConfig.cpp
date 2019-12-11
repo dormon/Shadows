@@ -10,7 +10,7 @@
 #include <Sintorn2/config.h>
 
 void sintorn2::computeConfig(vars::Vars&vars){
-  FUNCTION_PROLOGUE("sintorn2"
+  FUNCTION_PROLOGUE("sintorn2.method"
       ,"wavefrontSize"
       ,"windowSize"
       ,"sintorn2.param.minZBits"

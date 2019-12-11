@@ -30,6 +30,16 @@ add_library(${PROJECT_NAME} STATIC
   createPropagateAABBProgram.h
   computeConfig.cpp
   computeConfig.h
+  configShader.cpp
+  configShader.h
+  computeShadowFrusta.cpp
+  computeShadowFrusta.h
+  shadowFrustaShader.cpp
+  shadowFrustaShader.h
+  rasterize.cpp
+  rasterize.h
+  rasterizeShader.cpp
+  rasterizeShader.h
   )
 
 add_subdirectory(debug)
