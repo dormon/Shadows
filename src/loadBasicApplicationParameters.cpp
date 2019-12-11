@@ -28,4 +28,5 @@ void loadBasicApplicationParameters(vars::Vars&vars,std::shared_ptr<argumentView
   auto stats = args->getContext("modelStats","model stats parameters");
   *vars.add<glm::uvec3> ("modelStatsGrid" ) = vector2uvec3(stats->getu32v("grid",{10,10,10},"grid size"));
   vars.addFloat         ("modelStatsScale") = stats->getf32("scale",10.f,"scale factor");
+  vars.addBool          ("dontTimeGbuffer") = args->isPresent("--dontTimeGbuffer", "GBuffer creation will not be timed");
 }
