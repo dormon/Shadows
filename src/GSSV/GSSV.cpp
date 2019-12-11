@@ -17,35 +17,33 @@ GSSV::GSSV( vars::Vars& vars) : ShadowVolumes(vars)
 
 GSSV::~GSSV()
 {
-	vars.erase("gssv");
+	vars.erase("gssv.objects");
 }
 
 void GSSV::createCapsDrawer(vars::Vars& vars)
 {
-	FUNCTION_PROLOGUE("gssv", "model", "maxMultiplicity");
+	FUNCTION_PROLOGUE("gssv.objects", "model", "maxMultiplicity");
 
-	vars.reCreate<GSCaps>("gssv.capsDrawer", vars);
+	vars.reCreate<GSCaps>("gssv.objects.capsDrawer", vars);
 }
 
 void GSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
 {
-	auto t = glIsEnabled(GL_CULL_FACE);
-  (void)t;
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_DEPTH_TEST);
     const glm::mat4 mvp = projectionMatrix * viewMatrix;
 
-	vars.get<VertexArray>("gssv.sidesVAO")->bind();
-	Program* program = vars.get<Program>("gssv.sidesVisualizationProgram");
+	vars.get<VertexArray>("gssv.objects.sidesVAO")->bind();
+	Program* program = vars.get<Program>("gssv.objects.sidesVisualizationProgram");
     program->use();
     program->setMatrix4fv("mvp", glm::value_ptr(mvp), 1, GL_FALSE);
     program->set4fv("LightPosition", glm::value_ptr(lightPosition), 1);
 
     glDrawArrays(GL_POINTS, 0, GLsizei(NofEdges));
 
-	vars.get<VertexArray>("gssv.sidesVAO")->unbind();
+	vars.get<VertexArray>("gssv.objects.sidesVAO")->unbind();
 
-	GSCaps* capsDrawer = vars.get<GSCaps>("gssv.capsDrawer");
+	GSCaps* capsDrawer = vars.get<GSCaps>("gssv.objects.capsDrawer");
 
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -62,7 +60,7 @@ void GSSV::drawUser(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix,
 
 void GSSV::createSidesVBO(vars::Vars& vars)
 {
-	FUNCTION_PROLOGUE("gssv", "model", "adjacency");
+	FUNCTION_PROLOGUE("gssv.objects", "model", "adjacency");
 
 	Model* model = vars.get<Model>("model");
 	std::vector<float> verts = model->getVertices();
@@ -72,7 +70,7 @@ void GSSV::createSidesVBO(vars::Vars& vars)
 	NofEdges = ad->getNofEdges();
 	unsigned const NumV = getNofAttributes();
 
-	Buffer* vbo = vars.reCreate<Buffer>("gssv.sidesVBO");
+	Buffer* vbo = vars.reCreate<Buffer>("gssv.objects.sidesVBO");
 	vbo->alloc(sizeof(float) * 4 * NumV * NofEdges);
 
 	float* Ptr = (float*)vbo->map();
@@ -109,10 +107,10 @@ void GSSV::createSidesVBO(vars::Vars& vars)
 
 void GSSV::createSidesVAO(vars::Vars& vars)
 {
-	FUNCTION_PROLOGUE("gssv", "model", "maxMultiplicity");
+	FUNCTION_PROLOGUE("gssv.objects", "model", "maxMultiplicity");
 
-	Buffer* vbo = vars.get<Buffer>("gssv.sidesVBO");
-	VertexArray* vao = vars.reCreate<VertexArray>("gssv.sidesVAO");
+	Buffer* vbo = vars.get<Buffer>("gssv.objects.sidesVBO");
+	VertexArray* vao = vars.reCreate<VertexArray>("gssv.objects.sidesVAO");
 	unsigned int const NumV = getNofAttributes();
 
 	for (unsigned a = 0; a < NumV; ++a)
@@ -123,20 +121,20 @@ void GSSV::createSidesVAO(vars::Vars& vars)
 
 void GSSV::createSidesPrograms(vars::Vars& vars)
 {
-	FUNCTION_PROLOGUE("gssv", "maxMultiplicity", "args.gssv.useRefEdge", "args.gssv.cullSides", "args.gssv.useStencilExport");
+	FUNCTION_PROLOGUE("gssv.objects", "maxMultiplicity", "gssv.args.useRefEdge", "gssv.args.cullSides", "gssv.args.useStencilExport");
 	
 	SGSSilTemplate TGS;
 
 	TGS.Deterministic = true;
-	TGS.ReferenceEdge = vars.getBool("args.gssv.useRefEdge");
+	TGS.ReferenceEdge = vars.getBool("gssv.args.useRefEdge");
 	TGS.Universal = true;
 	TGS.UseVS2GSArray = true;
 	TGS.UseVertexArray = true;
 	TGS.UseLayouts = true;
-	TGS.UseStencilValueExport = vars.getBool("args.gssv.useStencilExport");
+	TGS.UseStencilValueExport = vars.getBool("gssv.args.useStencilExport");
 	TGS.CCWIsFrontFace = true;
 	TGS.FrontFaceInside = false;
-	TGS.CullSides = vars.getBool("args.gssv.cullSides");
+	TGS.CullSides = vars.getBool("gssv.args.cullSides");
 	TGS.Visualize = false;
 	TGS.FrontCapToInfinity = false;
 	TGS.GenerateSides = true;
@@ -150,10 +148,10 @@ void GSSV::createSidesPrograms(vars::Vars& vars)
 	std::shared_ptr<ge::gl::Shader>GSSilGeom = std::make_shared<ge::gl::Shader>(GL_GEOMETRY_SHADER, genGsSilGeometryShader(TGS));
 	std::shared_ptr<ge::gl::Shader>GSSilFrag = std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, genGsSilFragmentShader(TGS));
 
-	vars.reCreate<Program>("gssv.sidesProgram", GSSilVer, GSSilGeom, GSSilFrag);
+	vars.reCreate<Program>("gssv.objects.sidesProgram", GSSilVer, GSSilGeom, GSSilFrag);
 
     TGS.Visualize = true;
-	vars.reCreate<Program>("gssv.sidesVisualizationProgram",
+	vars.reCreate<Program>("gssv.objects.sidesVisualizationProgram",
 		std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, genGsSilVertexShader(TGS)),
 		std::make_shared<ge::gl::Shader>(GL_GEOMETRY_SHADER, genGsSilGeometryShader(TGS)),
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, genGsSilFragmentShader(TGS)));
@@ -169,8 +167,8 @@ void GSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 	
 	const glm::mat4 mvp = projectionMatrix * viewMatrix;
 	 
-	vars.get<VertexArray>("gssv.sidesVAO")->bind();
-	Program* program = vars.get<Program>("gssv.sidesProgram");
+	vars.get<VertexArray>("gssv.objects.sidesVAO")->bind();
+	Program* program = vars.get<Program>("gssv.objects.sidesProgram");
 
 	program->use();
 	program->setMatrix4fv("mvp", glm::value_ptr(mvp), 1, GL_FALSE);
@@ -178,14 +176,14 @@ void GSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 
 	glDrawArrays(GL_POINTS,0, GLsizei(NofEdges));
 
-	vars.get<VertexArray>("gssv.sidesVAO")->unbind();
+	vars.get<VertexArray>("gssv.objects.sidesVAO")->unbind();
 }
 
 void GSSV::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
 {
 	createCapsDrawer(vars);
 
-	vars.get<GSCaps>("gssv.capsDrawer")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
+	vars.get<GSCaps>("gssv.objects.capsDrawer")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
 }
 
 unsigned int GSSV::getNofAttributes() const
