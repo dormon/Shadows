@@ -64,11 +64,11 @@ class Config{
       tileX                   = tX;
       tileY                   = tY;
       minZBits                = minZ;
-      warpBits                = requiredBits(wavefrontSize);
+      warpBits                = uint32_t(requiredBits(wavefrontSize));
       clustersX               = divRoundUp(windowX,tileX);
       clustersY               = divRoundUp(windowY,tileY);
-      xBits                   = requiredBits(clustersX);
-      yBits                   = requiredBits(clustersY);
+      xBits                   = uint32_t(requiredBits(clustersX));
+      yBits                   = uint32_t(requiredBits(clustersY));
       zBits                   = minZBits>0?minZBits:glm::max(glm::max(xBits,yBits),minZBits);
       clustersZ               = 1 << zBits;
       allBits                 = xBits + yBits + zBits;
