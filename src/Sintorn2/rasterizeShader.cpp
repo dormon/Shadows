@@ -119,6 +119,7 @@ void traverse(){
   uint64_t intersection[nofLevels];
 
   uint node = 0;
+  uvec2 tileCoord = uvec2(0);
   while(level >= 0){
     if(level == int(nofLevels)){
       //test pixels
@@ -181,8 +182,11 @@ void main(){
 
     loadShadowFrustum(job);
 
-
-    imageStore(shadowMask,ivec2(100+job%100,100+job/100),vec4(1));
+    {
+      uint xx = job % 100;
+      uint yy = job / 100;
+      imageStore(shadowMask,ivec2(xx,yy),vec4(0));
+    }
     //traverse();
 
   }

@@ -98,4 +98,8 @@ const uint aabbLevelOffsetInFloats[6] = {
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
 };
 
+//const uint xBitsPerLevel[6] = {
+//  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-0,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-0,0))%3) != 0)),0)),
+//};
+
 ).";

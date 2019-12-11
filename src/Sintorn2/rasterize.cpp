@@ -82,9 +82,12 @@ void sintorn2::rasterize(vars::Vars&vars){
   depth     ->bind(0);
   shadowMask->bindImage(1);
 
+  float data[1] = {1.f};
+  vars.get<ge::gl::Texture>("shadowMask")->clear(0,GL_RED,GL_FLOAT,data);
 
   prg->use();
 
   glDispatchCompute(1024,1,1);
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 }
