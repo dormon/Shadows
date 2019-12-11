@@ -7,6 +7,7 @@
 #include <FunctionPrologue.h>
 #include <divRoundUp.h>
 #include <BallotShader.h>
+#include <Deferred.h>
 
 #include <Sintorn2/rasterize.h>
 #include <Sintorn2/rasterizeShader.h>
@@ -68,6 +69,8 @@ void sintorn2::rasterize(vars::Vars&vars){
   auto aabbPool   = vars.get<Buffer >("sintorn2.method.aabbPool"        );
   auto sf         = vars.get<Buffer >("sintorn2.method.shadowFrusta"    );
   auto jobCounter = vars.get<Buffer >("sintorn2.method.jobCounter"      );
+  auto depth      = vars.get<GBuffer>("gBuffer")->depth;
+  auto shadowMask = vars.get<Texture>("shadowMask");
 
 
   jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
@@ -76,8 +79,12 @@ void sintorn2::rasterize(vars::Vars&vars){
   aabbPool  ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
   sf        ->bindBase(GL_SHADER_STORAGE_BUFFER,2);
   jobCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
+  depth     ->bind(0);
+  shadowMask->bindImage(1);
 
 
   prg->use();
+
+  glDispatchCompute(1024,1,1);
 
 }

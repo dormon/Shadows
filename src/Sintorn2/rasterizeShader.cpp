@@ -20,7 +20,7 @@ std::string const sintorn2::rasterizeShader = R".(
 
 #define PLANES_PER_SF 4
 
-const uint floatsPerPlane = 4;
+const uint floatsPerPlane = 4u;
 const uint floatsPerSF    = floatsPerPlane * PLANES_PER_SF;
 
 layout(local_size_x=WARP)in;
@@ -36,6 +36,8 @@ layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
 
 const uint alignedNofSF = (uint(NOF_TRIANGLES / SF_ALIGNMENT) + uint((NOF_TRIANGLES % SF_ALIGNMENT) != 0u)) * SF_ALIGNMENT;
 
+shared float shadowFrustaPlanes[floatsPerSF];
+
 void loadShadowFrustum(uint job){
   if(gl_LocalInvocationIndex < floatsPerSF){
 #if TRIANGLE_INTERLEAVE == 1
@@ -46,7 +48,6 @@ void loadShadowFrustum(uint job){
   }
 }
 
-shared float shadowFrustaPlanes[floatsPerSF];
 
 vec3 trivialRejectCorner3D(vec3 Normal){
   return vec3((ivec3(sign(Normal))+1)/2);
@@ -124,7 +125,7 @@ void traverse(){
       node >>= warpBits;
       level--;
     }else{
-      uint status = uint(nodePool[nodeLevelOffsetInUints[level]+ node*uintsPerWarp + uint(gl_LocalInvocationIndex>31u)]&uint(1u<<(gl_LocalInvocationIndex&0x1fu)));
+      uint status = uint(nodePool[nodeLevelOffsetInUints[level] + node*uintsPerWarp + uint(gl_LocalInvocationIndex>31u)]&uint(1u<<(gl_LocalInvocationIndex&0x1fu)));
       if(status != 0u){
         vec3 minCorner;
         vec3 aabbSize;
@@ -149,7 +150,7 @@ void traverse(){
       }
     }
 
-    if(intersection[level] == 0){
+    if(intersection[level] == 0ul){
       node >>= warpBits;
       level--;
     }else{
@@ -157,7 +158,10 @@ void traverse(){
       node <<= warpBits   ;
       node  += selectedBit;
 
-      intersection[level] ^= 1u << selectedBit;
+      uint64_t mask = 1ul;
+      mask <<= selectedBit;
+      intersection[level] ^= mask;
+
       level++;
     }
   }
@@ -177,7 +181,9 @@ void main(){
 
     loadShadowFrustum(job);
 
-    traverse();
+
+    imageStore(shadowMask,ivec2(100+job%100,100+job/100),vec4(1));
+    //traverse();
 
   }
 }
