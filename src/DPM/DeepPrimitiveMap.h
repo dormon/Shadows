@@ -2,12 +2,12 @@
 
 #include <ShadowMethod.h>
 
-class FrustumTracedShadows : public ShadowMethod
+class DeepPrimitiveMap : public ShadowMethod
 {
 public:
-    FrustumTracedShadows(vars::Vars& vars);
+    DeepPrimitiveMap(vars::Vars& vars);
 
-    virtual ~FrustumTracedShadows();
+    virtual ~DeepPrimitiveMap();
 
 	virtual void create( glm::vec4 const& lightPosition,
 						 glm::mat4 const& viewMatrix,

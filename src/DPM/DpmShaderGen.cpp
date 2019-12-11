@@ -1,51 +1,51 @@
-#include "FtsShaderGen.h"
+#include "DpmShaderGen.h"
 
 #include <string>
 #include <sstream>
 
 #include <geGL/Program.h>
 
-std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbFillProgram(glm::uvec3 const& bufferDims)
+std::unique_ptr<ge::gl::Program> DpmShaderGen::GetDpmFillProgram(glm::uvec3 const& bufferDims)
 {   
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        GetIzbFillProgramShaders(bufferDims));
+        GetDpmFillProgramShaders(bufferDims));
     
     return std::move(program);
 }
 
-std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbTraversalProgram(glm::uvec3 const& bufferDims)
+std::unique_ptr<ge::gl::Program> DpmShaderGen::GetDpmTraversalProgram(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        GetIzbTraversalProgramShaders(bufferDims));
+        GetDpmTraversalProgramShaders(bufferDims));
 
     return std::move(program);
 }
 
-std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbFillProgramOmnidir(glm::uvec3 const& bufferDims)
+std::unique_ptr<ge::gl::Program> DpmShaderGen::GetDpmFillProgramOmnidir(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        GetIzbFillProgramOmnidirShaders(bufferDims));
+        GetDpmFillProgramOmnidirShaders(bufferDims));
 
     return std::move(program);
 }
 
-std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbTraversalProgramOmnidirRaytrace(glm::uvec3 const& bufferDims)
+std::unique_ptr<ge::gl::Program> DpmShaderGen::GetDpmTraversalProgramOmnidirRaytrace(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        GetIzbTraversalProgramOmnidirRaytraceShaders(bufferDims));
+        GetDpmTraversalProgramOmnidirRaytraceShaders(bufferDims));
 
     return std::move(program);
 }
 
-std::unique_ptr<ge::gl::Program> FtsShaderGen::GetIzbTraversalProgramOmnidirFrusta(glm::uvec3 const& bufferDims)
+std::unique_ptr<ge::gl::Program> DpmShaderGen::GetDpmTraversalProgramOmnidirFrusta(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
-        GetIzbTraversalProgramOmnidirFrustaShaders(bufferDims));
+        GetDpmTraversalProgramOmnidirFrustaShaders(bufferDims));
 
     return std::move(program);
 }
 
-std::unique_ptr<ge::gl::Program> FtsShaderGen::GetTrianglePreprocessCS(uint32_t wgSize)
+std::unique_ptr<ge::gl::Program> DpmShaderGen::GetTrianglePreprocessCS(uint32_t wgSize)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
         GetTrianglePreprocessCSShader(wgSize));
@@ -53,7 +53,7 @@ std::unique_ptr<ge::gl::Program> FtsShaderGen::GetTrianglePreprocessCS(uint32_t 
     return std::move(program);
 }
 
-std::unique_ptr<ge::gl::Program> FtsShaderGen::GetEtsTraversalProgram(glm::uvec3 const& bufferDims)
+std::unique_ptr<ge::gl::Program> DpmShaderGen::GetEtsTraversalProgram(glm::uvec3 const& bufferDims)
 {
     std::unique_ptr<ge::gl::Program> program = std::make_unique<ge::gl::Program>(
         GetEtsTraversalProgramShaders(bufferDims));
@@ -62,49 +62,49 @@ std::unique_ptr<ge::gl::Program> FtsShaderGen::GetEtsTraversalProgram(glm::uvec3
 }
 
 //As shader vectors
-std::vector<std::shared_ptr<ge::gl::Shader>> FtsShaderGen::GetIzbFillProgramShaders(glm::uvec3 const& bufferDims)
+std::vector<std::shared_ptr<ge::gl::Shader>> DpmShaderGen::GetDpmFillProgramShaders(glm::uvec3 const& bufferDims)
 {
 	return { std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSFill()),
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSFill(bufferDims)) };
 }
 
-std::vector<std::shared_ptr<ge::gl::Shader>> FtsShaderGen::GetIzbTraversalProgramShaders(glm::uvec3 const& bufferDims)
+std::vector<std::shared_ptr<ge::gl::Shader>> DpmShaderGen::GetDpmTraversalProgramShaders(glm::uvec3 const& bufferDims)
 {
 	return { std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSTraversal()),
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSTraversal(bufferDims)) };
 }
 
-std::vector<std::shared_ptr<ge::gl::Shader>> FtsShaderGen::GetIzbFillProgramOmnidirShaders(glm::uvec3 const& bufferDims)
+std::vector<std::shared_ptr<ge::gl::Shader>> DpmShaderGen::GetDpmFillProgramOmnidirShaders(glm::uvec3 const& bufferDims)
 {
 	return { std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSFillOmnidir()),
 		std::make_shared<ge::gl::Shader>(GL_GEOMETRY_SHADER, GetGSFillOmnidir()),
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSFillOmnidir(bufferDims)) };
 }
 
-std::vector<std::shared_ptr<ge::gl::Shader>> FtsShaderGen::GetIzbTraversalProgramOmnidirRaytraceShaders(glm::uvec3 const& bufferDims)
+std::vector<std::shared_ptr<ge::gl::Shader>> DpmShaderGen::GetDpmTraversalProgramOmnidirRaytraceShaders(glm::uvec3 const& bufferDims)
 {
 	return { std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSTraversal()),
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSTraversalOmnidirRaytrace(bufferDims)) };
 }
 
-std::vector<std::shared_ptr<ge::gl::Shader>> FtsShaderGen::GetIzbTraversalProgramOmnidirFrustaShaders(glm::uvec3 const& bufferDims)
+std::vector<std::shared_ptr<ge::gl::Shader>> DpmShaderGen::GetDpmTraversalProgramOmnidirFrustaShaders(glm::uvec3 const& bufferDims)
 {
 	return { std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSTraversal()),
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFSTraversalOmnidirFrusta(bufferDims))};
 }
 
-std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetTrianglePreprocessCSShader(uint32_t wgSize)
+std::shared_ptr<ge::gl::Shader> DpmShaderGen::GetTrianglePreprocessCSShader(uint32_t wgSize)
 {
 	return std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER, GetCSPreprocess(wgSize));
 }
 
-std::vector<std::shared_ptr<ge::gl::Shader>> FtsShaderGen::GetEtsTraversalProgramShaders(glm::uvec3 const& bufferDims)
+std::vector<std::shared_ptr<ge::gl::Shader>> DpmShaderGen::GetEtsTraversalProgramShaders(glm::uvec3 const& bufferDims)
 {
 	return { std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER, GetVSTraversal()),
 		std::make_shared<ge::gl::Shader>(GL_FRAGMENT_SHADER, GetFsEtsFill(bufferDims)) };
 }
 
-std::string FtsShaderGen::GetVSFill() const
+std::string DpmShaderGen::GetVSFill() const
 {
     return R".(
 #version 450 core
@@ -123,7 +123,7 @@ void main()
 ).";
 }
 
-std::string FtsShaderGen::GetFSFill(glm::uvec3 const& bufferDims) const
+std::string DpmShaderGen::GetFSFill(glm::uvec3 const& bufferDims) const
 {
     std::stringstream fs;
 
@@ -142,7 +142,7 @@ flat in uint primitiveId;
     fs << "#define IZB_HEIGHT " << bufferDims.y << std::endl;
     fs << "#define IZB_DEPTH "  << bufferDims.z << std::endl << std::endl;
 
-    fs << GetIzbAddressingFunction();
+    fs << GetDpmAddressingFunction();
 
     fs << R".(
 void main()
@@ -153,7 +153,7 @@ void main()
 
     if(depth < IZB_DEPTH)
     {
-        const uint izbIndex = GetIzbIndex(uvec4(uvec2(fragCoord.xy), depth, 0));//IZB_WIDTH * IZB_DEPTH * fragCoord.y + IZB_DEPTH * fragCoord.x + depth;
+        const uint izbIndex = GetDpmIndex(uvec4(uvec2(fragCoord.xy), depth, 0));//IZB_WIDTH * IZB_DEPTH * fragCoord.y + IZB_DEPTH * fragCoord.x + depth;
         izb[izbIndex] = primitiveId;
     }
 }
@@ -162,7 +162,7 @@ void main()
     return fs.str();
 }
 
-std::string FtsShaderGen::GetVSTraversal() const
+std::string DpmShaderGen::GetVSTraversal() const
 {
     return R".(
 #version 450 core
@@ -174,7 +174,7 @@ void main()
 ).";
 }
 
-std::string FtsShaderGen::GetFSTraversal(glm::uvec3 const& bufferDims) const
+std::string DpmShaderGen::GetFSTraversal(glm::uvec3 const& bufferDims) const
 {
     std::stringstream fs;
 
@@ -204,7 +204,7 @@ uniform float bias;
     
     fs << GetRayInersectFunction();
 
-    fs << GetIzbAddressingFunction();
+    fs << GetDpmAddressingFunction();
 
     fs << R".(
 
@@ -233,7 +233,7 @@ void main()
 
         for(uint i = 0; i<nofTriangles; ++i)
         {
-            const uint izbCoords = GetIzbIndex(uvec4(izbIndex, i, 0));//izbCoordBase + i;
+            const uint izbCoords = GetDpmIndex(uvec4(izbIndex, i, 0));//izbCoordBase + i;
             const uint triangleId = izb[izbCoords];
             const uint vertexIndexBase = triangleId * NOF_FLOATS_TRIANGLE;
         
@@ -263,7 +263,7 @@ void main()
 
 //----------------------------------------------------------------------
 
-std::string FtsShaderGen::GetVSFillOmnidir() const
+std::string DpmShaderGen::GetVSFillOmnidir() const
 {
     return R".(
 #version 450 core
@@ -302,7 +302,7 @@ void main()
 ).";
 }
 
-std::string FtsShaderGen::GetGSFillOmnidir() const
+std::string DpmShaderGen::GetGSFillOmnidir() const
 {
     return R".(
 #version 450 core
@@ -326,7 +326,7 @@ void main()
 }).";
 }
 
-std::string FtsShaderGen::GetFSFillOmnidir(glm::uvec3 const& bufferDims) const
+std::string DpmShaderGen::GetFSFillOmnidir(glm::uvec3 const& bufferDims) const
 {
     std::stringstream fs;
 
@@ -345,7 +345,7 @@ flat in uint gPrimitiveId;
     fs << "#define IZB_HEIGHT " << bufferDims.y << std::endl;
     fs << "#define IZB_DEPTH " << bufferDims.z << std::endl << std::endl;
 
-    fs << GetIzbAddressingFunction();
+    fs << GetDpmAddressingFunction();
 
     fs << R".(
 void main()
@@ -357,7 +357,7 @@ void main()
 
     if(depth < IZB_DEPTH)
     {
-        const uint izbIndex = GetIzbIndex(uvec4(uvec2(fragCoord.xy), depth, outLayer));
+        const uint izbIndex = GetDpmIndex(uvec4(uvec2(fragCoord.xy), depth, outLayer));
         izb[izbIndex] = gPrimitiveId;
     }
 }
@@ -366,7 +366,7 @@ void main()
     return fs.str();
 }
 
-std::string FtsShaderGen::GetFSTraversalOmnidirRaytrace(glm::uvec3 const& bufferDims) const
+std::string DpmShaderGen::GetFSTraversalOmnidirRaytrace(glm::uvec3 const& bufferDims) const
 {
     std::stringstream fs;
 
@@ -393,7 +393,7 @@ uniform float bias;
 
     fs << "const vec2 izbDim = uvec2(IZB_WIDTH, IZB_HEIGHT);" << std::endl;
 
-    fs << GetIzbAddressingFunction();
+    fs << GetDpmAddressingFunction();
 
     fs << GetRayInersectFunction();
 
@@ -420,7 +420,7 @@ void main()
     
     for(uint i = 0; i<nofTriangles; ++i)
     {
-        const uint izbTriangleCoords = GetIzbIndex(uvec4(izbIndex, i, cubeFaceIndex));
+        const uint izbTriangleCoords = GetDpmIndex(uvec4(izbIndex, i, cubeFaceIndex));
         const uint triangleId = izb[izbTriangleCoords];
         const uint vertexIndexBase = triangleId * NOF_FLOATS_TRIANGLE;
     
@@ -447,7 +447,7 @@ void main()
     return fs.str();
 }
 
-std::string FtsShaderGen::GetFSTraversalOmnidirFrusta(glm::uvec3 const& bufferDims) const
+std::string DpmShaderGen::GetFSTraversalOmnidirFrusta(glm::uvec3 const& bufferDims) const
 {
     std::stringstream fs;
 
@@ -473,7 +473,7 @@ uniform vec4 lightPos;
 
     fs << "const vec2 izbDim = uvec2(IZB_WIDTH, IZB_HEIGHT);" << std::endl;
 
-    fs << GetIzbAddressingFunction();
+    fs << GetDpmAddressingFunction();
 
     fs << GetCubeAddressingFunction();
 
@@ -503,7 +503,7 @@ void main()
     
     for(uint i = 0; i<nofTriangles; ++i)
     {
-        const uint izbTriangleCoords = GetIzbIndex(uvec4(izbIndex, i, cubeFaceIndex));
+        const uint izbTriangleCoords = GetDpmIndex(uvec4(izbIndex, i, cubeFaceIndex));
         const uint triangleId = izb[izbTriangleCoords];
         const uint planeIndexBase = triangleId * NOF_PLANES_TRIANGLE;
     
@@ -524,7 +524,7 @@ void main()
     return fs.str();
 }
 
-std::string FtsShaderGen::GetCSPreprocess(uint32_t wgSize) const
+std::string DpmShaderGen::GetCSPreprocess(uint32_t wgSize) const
 {
     std::stringstream cs;
     cs << R".(
@@ -610,7 +610,7 @@ void main()
 }
 
 
-std::string FtsShaderGen::GetFsEtsFill(glm::uvec3 const& bufferDims) const
+std::string DpmShaderGen::GetFsEtsFill(glm::uvec3 const& bufferDims) const
 {
     std::stringstream fs;
 
@@ -641,7 +641,7 @@ uniform float bias;
 
     fs << GetRayInersectFunction();
 
-    fs << GetIzbAddressingFunction();
+    fs << GetDpmAddressingFunction();
 
     fs << R".(
 
@@ -678,7 +678,7 @@ void main()
 
             for(uint i = 0; i<nofTriangles; ++i)
             {
-                const uint izbCoords = GetIzbIndex(uvec4(izbIndex, i, 0));//izbCoordBase + i;
+                const uint izbCoords = GetDpmIndex(uvec4(izbIndex, i, 0));//izbCoordBase + i;
                 const uint triangleId = izb[izbCoords];
                 const uint vertexIndexBase = triangleId * NOF_FLOATS_TRIANGLE;
         
@@ -707,12 +707,12 @@ void main()
     return fs.str();
 }
 
-std::string FtsShaderGen::GetIzbAddressingFunction() const
+std::string DpmShaderGen::GetDpmAddressingFunction() const
 {
     return R".(
 
 //XYZ - coords in a cube, w - cube index
-uint GetIzbIndex(uvec4 coords)
+uint GetDpmIndex(uvec4 coords)
 {
     return (IZB_WIDTH * IZB_HEIGHT * IZB_DEPTH * coords.w) + (IZB_WIDTH * IZB_HEIGHT * coords.z) + (IZB_WIDTH * coords.y) + coords.x;
     //return (IZB_WIDTH * IZB_HEIGHT * 6 * coords.z) + (IZB_WIDTH * IZB_HEIGHT * coords.w) + (IZB_WIDTH * coords.y) + coords.x;
@@ -721,7 +721,7 @@ uint GetIzbIndex(uvec4 coords)
 ).";
 }
 
-std::string FtsShaderGen::GetCubeAddressingFunction() const
+std::string DpmShaderGen::GetCubeAddressingFunction() const
 {
     return R".(
 //https://www.gamedev.net/forums/topic/687535-implementing-a-cube-map-lookup-function/?do=findComment&comment=5337472
@@ -755,7 +755,7 @@ vec2 getCubeTcoords(const vec3 v, out uint faceIndex)
 ).";
 }
 
-std::string FtsShaderGen::GetRayInersectFunction() const
+std::string DpmShaderGen::GetRayInersectFunction() const
 {
     return R".(
 //https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
