@@ -12,8 +12,8 @@
 #include <GSSV/GSSV_params.h>
 #include <TSSV/TSSV_Params.h>
 #include <SM/ShadowMappingParams.h>
-#include <FTS/FtsParams.h>
-#include <OFTS/OftsParams.h>
+#include <DPM/DpmParams.h>
+#include <ODPM/OdpmParams.h>
 #include <DPSV/DpsvParams.h>
 #include <HSSV/HssvParams.h>
 #include <Sintorn2/param.h>
@@ -31,10 +31,10 @@ void parseArguments(vars::Vars&vars){
   rssv::loadParams              (vars,arg);
   loadTestParams                (vars,arg);
   loadCameraParams              (vars,arg);
-  loadGSSVParams				        (vars,arg);
+  loadGSSVParams				(vars,arg);
   loadTSSVParams                (vars,arg);
   loadShadowMappingParams       (vars,arg);
-  loadFtsParams                 (vars,arg);
+  loadDpmParams                 (vars,arg);
   loadOftsParams                (vars,arg);
   loadDpsvParams                (vars,arg);
   loadHssvParams                (vars,arg);

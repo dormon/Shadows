@@ -28,6 +28,8 @@ GpuSidesDrawer::GpuSidesDrawer(Octree* o, Adjacency* ad, u32 maxMultiplicity, va
 	CalcBitMasks8(2);
 	CreateBuffers();
 
+	std::cout << "Octree size " << (o->getOctreeSizeBytes() >> 20) << "MB\n";
+	std::cout << "Nof Edges: " << (ad->getNofEdges()) << "\n";
 	std::cout << "GpuSidesDrawer consumes " << getGpuMemoryConsumptionMB() << "MB VRAM\n";
 }
 

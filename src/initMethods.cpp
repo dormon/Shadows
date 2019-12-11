@@ -12,8 +12,8 @@
 #include <GSSV/GSSV.hpp>
 #include <TSSV/TSSV.hpp>
 #include <SM/ShadowMapping.h>
-#include <FTS/FrustumTracedShadows.h>
-#include <OFTS/OmnidirFrustumTracedShadows.h>
+#include <DPM/DeepPrimitiveMap.h>
+#include <ODPM/OmnidirDPM.h>
 #include <DPSV/DPSV.h>
 #include <HSSV/HSSV.h>
 
@@ -30,8 +30,8 @@ void initMethods(vars::Vars&vars){
   methods->add<GSSV				          >("gssv"             );
   methods->add<TSSV				          >("tssv"             );
   methods->add<ShadowMapping	          >("sm"               );
-  methods->add<FrustumTracedShadows	      >("fts"              );
-  methods->add<OmnidirFrustumTracedShadows>("ofts"             );
+  methods->add<DeepPrimitiveMap	          >("dpm"              );
+  methods->add<OmnidirDpm                 >("odpm"             );
   methods->add<DPSV                       >("dpsv"             );
   methods->add<HSSV                       >("hssv"             );
 }

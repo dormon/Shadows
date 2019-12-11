@@ -2,13 +2,13 @@
 
 #include <ShadowMethod.h>
 
-class OmnidirFrustumTracedShadows : public ShadowMethod
+class OmnidirDpm : public ShadowMethod
 {
 public:
 
-    OmnidirFrustumTracedShadows(vars::Vars& vars);
+    OmnidirDpm(vars::Vars& vars);
 
-    virtual ~OmnidirFrustumTracedShadows();
+    virtual ~OmnidirDpm();
 
     virtual void create(glm::vec4 const& lightPosition,
         glm::mat4 const& viewMatrix,

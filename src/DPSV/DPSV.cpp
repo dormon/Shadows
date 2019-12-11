@@ -59,12 +59,11 @@ void DPSV::createNodeBuffer()
 
 void DPSV::createBuildShader()
 {
-	FUNCTION_PROLOGUE("dpsv.objects", "dpsv.args.cullFront", "dpsv.args.wgSize");
+	FUNCTION_PROLOGUE("dpsv.objects", "dpsv.args.wgSize");
 
-	bool const cullFront = vars.getBool("dpsv.args.cullFront");
 	uint32_t wgSize = vars.getUint32("dpsv.args.wgSize");
 
-	vars.reCreate<Program>("dpsv.objects.buildCS", getDpsvBuildCS(wgSize, cullFront));
+	vars.reCreate<Program>("dpsv.objects.buildCS", getDpsvBuildCS(wgSize));
 }
 
 void DPSV::createTraversalShaders()
