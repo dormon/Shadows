@@ -12,7 +12,9 @@
 #include <Sintorn2/rasterize.h>
 #include <Sintorn2/rasterizeShader.h>
 #include <Sintorn2/configShader.h>
+#include <Sintorn2/mortonShader.h>
 
+#include <iomanip>
 
 using namespace ge::gl;
 using namespace std;
@@ -45,6 +47,7 @@ void createRasterizeProgram(vars::Vars&vars){
         Shader::define("SF_ALIGNMENT"       ,(uint32_t)sfAlignment       ),
         Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
         ballotSrc,
+        sintorn2::demortonShader,
         sintorn2::configShader,
         sintorn2::rasterizeShader
         ));
@@ -87,7 +90,46 @@ void sintorn2::rasterize(vars::Vars&vars){
 
   prg->use();
 
+  auto deb = make_shared<Buffer>(sizeof(float)*7*10000);
+  auto debc = make_shared<Buffer>(sizeof(uint32_t));
+  debc->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  deb->bindBase(GL_SHADER_STORAGE_BUFFER,6);
+  debc->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+
+#if 1
   glDispatchCompute(1024,1,1);
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
+#else
 
+  glDispatchCompute(1,1,1);
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+  //*
+  std::vector<float>debData;
+  std::vector<uint32_t>debcData;
+  deb->getData(debData);
+  debc->getData(debcData);
+  for(size_t i=0;i<debcData[0];++i){
+    uint32_t const N=17;
+    float*dd = debData.data()+i*N;
+#define FF std::setprecision(4) << std::fixed << std::showpos
+    std::cerr << "aabb: " << FF << dd[0] << " "<< dd[1] << " "<< dd[2] << " - ";
+    std::cerr << FF << dd[3] << " "<< dd[4] << " "<< dd[5] << " # ";
+    std::cerr << "plane: " << FF << dd[6] << " "<< dd[7] << " "<< dd[8] << " "<< dd[9] << " ";
+    std::cerr << "tr: " << FF << dd[10] << " "<< dd[11] << " "<< dd[12] << " ";
+    std::cerr << "ta: " << FF << dd[13] << " "<< dd[14] << " "<< dd[15] << " ";
+
+    auto plane = glm::vec4(dd[6],dd[7],dd[8],dd[9]);
+    auto tr = glm::vec4(dd[10],dd[11],dd[12],1.f);
+    auto ta = glm::vec4(dd[13],dd[14],dd[15],1.f);
+
+    std::cerr << "dot: " << glm::dot(plane,tr) <<  " - " << glm::dot(plane,ta) << " ";
+    std::cerr << "thread: " << dd[16] << " ";
+    std::cerr << std::endl;
+  }
+
+  // */
+
+  exit(1);
+#endif
 }

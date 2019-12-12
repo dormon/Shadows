@@ -116,6 +116,13 @@ void dumpAABBPool(vars::Vars&vars){
   buf->copy(*aabbPool);
 }
 
+void dumpSF(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto sf = vars.get<Buffer>("sintorn2.method.shadowFrusta");
+  auto buf = vars.reCreate<Buffer>("sintorn2.method.debug.dump.shadowFrusta",sf->getSize());
+  buf->copy(*sf);
+}
+
 void dumpBasic(vars::Vars&vars){
   FUNCTION_CALLER();
   auto lp        = *vars.get<glm::vec4>("sintorn2.method.debug.lightPosition"   );
@@ -143,6 +150,7 @@ void dumpData(vars::Vars&vars){
   dumpBasic(vars);
   dumpNodePool(vars);
   dumpAABBPool(vars);
+  dumpSF(vars);
   std::cerr << "dump" << std::endl;
 }
 
