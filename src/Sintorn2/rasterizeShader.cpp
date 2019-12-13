@@ -129,6 +129,25 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   tr = 1.f-tr;
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1.f),plane)>0.f);
 
+#if MORE_PLANES == 1
+  if(status == INTERSECTS){
+    plane = vec4(shadowFrustaPlanes[16],shadowFrustaPlanes[17],shadowFrustaPlanes[18],shadowFrustaPlanes[19]);
+    tr    = trivialRejectCorner3D(plane.xyz);
+    if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+      return TRIVIAL_REJECT;
+
+    plane = vec4(shadowFrustaPlanes[20],shadowFrustaPlanes[21],shadowFrustaPlanes[22],shadowFrustaPlanes[23]);
+    tr    = trivialRejectCorner3D(plane.xyz);
+    if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+      return TRIVIAL_REJECT;
+
+    plane = vec4(shadowFrustaPlanes[24],shadowFrustaPlanes[25],shadowFrustaPlanes[26],shadowFrustaPlanes[27]);
+    tr    = trivialRejectCorner3D(plane.xyz);
+    if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+      return TRIVIAL_REJECT;
+  }
+#endif
+
   return status;
 }
 
