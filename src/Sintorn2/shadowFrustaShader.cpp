@@ -125,6 +125,25 @@ void main(){
 			v1 + BIAS*normalize(v1*lightPosition.w-lightPosition.xyz),
 			v2 + BIAS*normalize(v2*lightPosition.w-lightPosition.xyz));
 
+
+#if MORE_PLANES == 1
+  vec4 f0;
+  vec4 f1;
+  vec4 f2;
+  vec3 l0 = normalize(lightPosition.xyz-v0*lightPosition.w);
+  vec3 l1 = normalize(lightPosition.xyz-v1*lightPosition.w);
+  vec3 l2 = normalize(lightPosition.xyz-v2*lightPosition.w);
+  f0.xyz = normalize(cross(cross(l0,normalize(v0-v1)+normalize(v0-v2)),l0));
+  f1.xyz = normalize(cross(cross(l1,normalize(v1-v0)+normalize(v1-v2)),l1));
+  f2.xyz = normalize(cross(cross(l2,normalize(v2-v0)+normalize(v2-v1)),l2));
+  f0.w = -dot(f0.xyz,v0);
+  f1.w = -dot(f1.xyz,v1);
+  f2.w = -dot(f2.xyz,v2);
+  f0 = transposeInverseModelViewProjection*f0;
+  f1 = transposeInverseModelViewProjection*f1;
+  f2 = transposeInverseModelViewProjection*f2;
+#endif
+
 	bool backFacing=false;
 	if(dot(e3,lightPosition)>0){
 		backFacing=true;
@@ -132,9 +151,16 @@ void main(){
 		e1=-e1;
 		e2=-e2;
 		e3=-e3;
+#if MORE_PLANES == 1
+    f0=-f0;
+    f1=-f1;
+    f2=-f2;
+#endif
 	}
 	e3=transposeInverseModelViewProjection*e3;
 #endif
+
+
 
 #if SF_INTERLEAVE == 1
   shadowFrusta[alignedNofSF* 0u + gid] = e0[0];
@@ -156,6 +182,22 @@ void main(){
   shadowFrusta[alignedNofSF*13u + gid] = e3[1];
   shadowFrusta[alignedNofSF*14u + gid] = e3[2];
   shadowFrusta[alignedNofSF*15u + gid] = e3[3];
+  #if MORE_PLANES == 1
+    shadowFrusta[alignedNofSF*16u + gid] = f0[0];
+    shadowFrusta[alignedNofSF*17u + gid] = f0[1];
+    shadowFrusta[alignedNofSF*18u + gid] = f0[2];
+    shadowFrusta[alignedNofSF*19u + gid] = f0[3];
+
+    shadowFrusta[alignedNofSF*20u + gid] = f1[0];
+    shadowFrusta[alignedNofSF*21u + gid] = f1[1];
+    shadowFrusta[alignedNofSF*22u + gid] = f1[2];
+    shadowFrusta[alignedNofSF*23u + gid] = f1[3];
+
+    shadowFrusta[alignedNofSF*24u + gid] = f2[0];
+    shadowFrusta[alignedNofSF*25u + gid] = f2[1];
+    shadowFrusta[alignedNofSF*26u + gid] = f2[2];
+    shadowFrusta[alignedNofSF*27u + gid] = f2[3];
+  #endif
 #else
   shadowFrusta[gid*floatsPerSF+ 0u] = e0[0];
   shadowFrusta[gid*floatsPerSF+ 1u] = e0[1];
@@ -173,6 +215,20 @@ void main(){
   shadowFrusta[gid*floatsPerSF+13u] = e3[1];
   shadowFrusta[gid*floatsPerSF+14u] = e3[2];
   shadowFrusta[gid*floatsPerSF+15u] = e3[3];
+  #if MORE_PLANES == 1
+    shadowFrusta[gid*floatsPerSF+16u] = f0[0];
+    shadowFrusta[gid*floatsPerSF+17u] = f0[1];
+    shadowFrusta[gid*floatsPerSF+18u] = f0[2];
+    shadowFrusta[gid*floatsPerSF+19u] = f0[3];
+    shadowFrusta[gid*floatsPerSF+20u] = f1[0];
+    shadowFrusta[gid*floatsPerSF+21u] = f1[1];
+    shadowFrusta[gid*floatsPerSF+22u] = f1[2];
+    shadowFrusta[gid*floatsPerSF+23u] = f1[3];
+    shadowFrusta[gid*floatsPerSF+24u] = f2[0];
+    shadowFrusta[gid*floatsPerSF+25u] = f2[1];
+    shadowFrusta[gid*floatsPerSF+26u] = f2[2];
+    shadowFrusta[gid*floatsPerSF+27u] = f2[3];
+  #endif
 #endif
 }
 

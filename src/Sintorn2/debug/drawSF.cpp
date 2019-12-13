@@ -82,7 +82,7 @@ uint divRoundUp(uint x,uint y){
 }
 
 layout(points)in;
-layout(line_strip,max_vertices=28)out;
+layout(line_strip,max_vertices=49)out;
 
 flat in uint vId[];
 
@@ -106,6 +106,12 @@ void main(){
   vec4 e2;
   vec4 e3;
 
+#if MORE_PLANES == 1
+  vec4 f0;
+  vec4 f1;
+  vec4 f2;
+#endif
+
 #if SF_INTERLEAVE == 1
   e0[0] = shadowFrusta[alignedNofSF* 0u + gid];
   e0[1] = shadowFrusta[alignedNofSF* 1u + gid];
@@ -126,6 +132,23 @@ void main(){
   e3[1] = shadowFrusta[alignedNofSF*13u + gid];
   e3[2] = shadowFrusta[alignedNofSF*14u + gid];
   e3[3] = shadowFrusta[alignedNofSF*15u + gid];
+
+  #if MORE_PLANES == 1
+    f0[0] = shadowFrusta[alignedNofSF*16u + gid];
+    f0[1] = shadowFrusta[alignedNofSF*17u + gid];
+    f0[2] = shadowFrusta[alignedNofSF*18u + gid];
+    f0[3] = shadowFrusta[alignedNofSF*19u + gid];
+                                                
+    f1[0] = shadowFrusta[alignedNofSF*20u + gid];
+    f1[1] = shadowFrusta[alignedNofSF*21u + gid];
+    f1[2] = shadowFrusta[alignedNofSF*22u + gid];
+    f1[3] = shadowFrusta[alignedNofSF*23u + gid];
+                                                
+    f2[0] = shadowFrusta[alignedNofSF*24u + gid];
+    f2[1] = shadowFrusta[alignedNofSF*25u + gid];
+    f2[2] = shadowFrusta[alignedNofSF*26u + gid];
+    f2[3] = shadowFrusta[alignedNofSF*27u + gid];
+  #endif
 #else
   e0[0] = shadowFrusta[gid*floatsPerSF+ 0u];
   e0[1] = shadowFrusta[gid*floatsPerSF+ 1u];
@@ -143,6 +166,20 @@ void main(){
   e3[1] = shadowFrusta[gid*floatsPerSF+13u];
   e3[2] = shadowFrusta[gid*floatsPerSF+14u];
   e3[3] = shadowFrusta[gid*floatsPerSF+15u];
+  #if MORE_PLANES == 1
+    f0[0] = shadowFrusta[gid*floatsPerSF+16u];
+    f0[1] = shadowFrusta[gid*floatsPerSF+17u];
+    f0[2] = shadowFrusta[gid*floatsPerSF+18u];
+    f0[3] = shadowFrusta[gid*floatsPerSF+19u];
+    f1[0] = shadowFrusta[gid*floatsPerSF+20u];
+    f1[1] = shadowFrusta[gid*floatsPerSF+21u];
+    f1[2] = shadowFrusta[gid*floatsPerSF+22u];
+    f1[3] = shadowFrusta[gid*floatsPerSF+23u];
+    f2[0] = shadowFrusta[gid*floatsPerSF+24u];
+    f2[1] = shadowFrusta[gid*floatsPerSF+25u];
+    f2[2] = shadowFrusta[gid*floatsPerSF+26u];
+    f2[3] = shadowFrusta[gid*floatsPerSF+27u];
+  #endif
 #endif
 
 
@@ -152,12 +189,17 @@ void main(){
   //inv(M) * A = B
   //
 
-
   mat4 back = transpose(nodeProj*nodeView);
   e0 = back*e0;
   e1 = back*e1;
   e2 = back*e2;
   e3 = back*e3;
+
+#if MORE_PLANES == 1
+  f0 = back*f0;
+  f1 = back*f1;
+  f2 = back*f2;
+#endif 
 
   vec3 n0 = normalize(e0.xyz);
   vec3 n1 = normalize(e1.xyz);
@@ -214,10 +256,6 @@ void main(){
   gl_Position = M*vec4(v2,1);EmitVertex();
   EndPrimitive();
 
-
-  //n0 = normalize(cross(v1-v0,w0-v0));
-  //n1 = normalize(cross(v2-v1,w1-v1));
-  //n2 = normalize(cross(v0-v2,w2-v2));
   gColor = vec3(0,1,0);
   gl_Position = M*vec4((v0+v1+w0+w1)/4.f   ,1);EmitVertex();
   gl_Position = M*vec4((v0+v1+w0+w1)/4.f+n0,1);EmitVertex();
@@ -234,6 +272,48 @@ void main(){
   gl_Position = M*vec4((v0+v1+v2)/3.f   ,1);EmitVertex();
   gl_Position = M*vec4((v0+v1+v2)/3.f+n3,1);EmitVertex();
   EndPrimitive();
+
+#if MORE_PLANES == 1
+  vec3 vv0 = normalize(cross(v0l,f0.xyz));
+  vec3 vv1 = normalize(cross(v1l,f1.xyz));
+  vec3 vv2 = normalize(cross(v2l,f2.xyz));
+
+  gColor = vec3(0,1,1);
+
+  gl_Position = M*vec4(v0+vv0       ,1);EmitVertex();
+  gl_Position = M*vec4(v0-vv0       ,1);EmitVertex();
+  gl_Position = M*vec4(v0-vv0+v0l*30,1);EmitVertex();
+  gl_Position = M*vec4(v0+vv0+v0l*30,1);EmitVertex();
+  gl_Position = M*vec4(v0+vv0       ,1);EmitVertex();
+  EndPrimitive();
+
+  gl_Position = M*vec4(v1+vv1       ,1);EmitVertex();
+  gl_Position = M*vec4(v1-vv1       ,1);EmitVertex();
+  gl_Position = M*vec4(v1-vv1+v1l*30,1);EmitVertex();
+  gl_Position = M*vec4(v1+vv1+v1l*30,1);EmitVertex();
+  gl_Position = M*vec4(v1+vv1       ,1);EmitVertex();
+  EndPrimitive();
+
+  gl_Position = M*vec4(v2+vv2       ,1);EmitVertex();
+  gl_Position = M*vec4(v2-vv2       ,1);EmitVertex();
+  gl_Position = M*vec4(v2-vv2+v2l*30,1);EmitVertex();
+  gl_Position = M*vec4(v2+vv2+v2l*30,1);EmitVertex();
+  gl_Position = M*vec4(v2+vv2       ,1);EmitVertex();
+  EndPrimitive();
+
+  gl_Position = M*vec4(v0+v0l       ,1);EmitVertex();
+  gl_Position = M*vec4(v0+v0l+f0.xyz,1);EmitVertex();
+  EndPrimitive();
+
+  gl_Position = M*vec4(v1+v1l       ,1);EmitVertex();
+  gl_Position = M*vec4(v1+v1l+f1.xyz,1);EmitVertex();
+  EndPrimitive();
+
+  gl_Position = M*vec4(v2+v2l       ,1);EmitVertex();
+  gl_Position = M*vec4(v2+v2l+f2.xyz,1);EmitVertex();
+  EndPrimitive();
+#endif
+
 }
 
   ).";
