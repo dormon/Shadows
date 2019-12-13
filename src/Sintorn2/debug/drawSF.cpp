@@ -32,16 +32,9 @@ void prepareDrawSF(vars::Vars&vars){
       "sintorn2.method.debug.dump.near"      ,
       "sintorn2.method.debug.dump.far"       ,
       "sintorn2.method.debug.dump.fovy"      ,
-      "sintorn2.method.debug.wireframe"      ,
       );
 
   auto const cfg            = *vars.get<Config>        ("sintorn2.method.debug.dump.config"    );
-  auto const nnear          =  vars.getFloat           ("sintorn2.method.debug.dump.near"      );
-  auto const ffar           =  vars.getFloat           ("sintorn2.method.debug.dump.far"       );
-  auto const fovy           =  vars.getFloat           ("sintorn2.method.debug.dump.fovy"      );
-  auto const wireframe      =  vars.getBool            ("sintorn2.method.debug.wireframe"      );
-
-  auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"                        );
 
 
   std::string const vsSrc = R".(
@@ -55,87 +48,38 @@ void prepareDrawSF(vars::Vars&vars){
   ).";
 
   std::string const fsSrc = R".(
-  uniform uint levelToDraw = 0;
 
-  #if WIREFRAME == 0
-  in vec3 gNormal;
-  #endif
-
-  const vec4 colors[6] = {
-    vec4(1,1,1,1),
-    vec4(1,0,0,1),
-    vec4(0,1,0,1),
-    vec4(0,0,1,1),
-    vec4(1,1,0,1),
-    vec4(1,0,1,1),
-  };
   layout(location=0)out vec4 fColor;
+  in vec3 gColor;
   void main(){
-
-    #if WIREFRAME == 1
-    fColor = vec4(colors[levelToDraw]);
-    #else
-    float df = max(dot(normalize(gNormal),normalize(vec3(1,1,1))),0.1f);
-    fColor = vec4(colors[levelToDraw]*df);
-    #endif
+    fColor = vec4(gColor,1);
   }
   ).";
 
   std::string const gsSrc = R".(
-#ifndef WARP
-#define WARP 64
-#endif//WARP
-#line 72
-#ifndef WINDOW_X
-#define WINDOW_X 512
-#endif//WINDOW_X
 
-#ifndef WINDOW_Y
-#define WINDOW_Y 512
-#endif//WINDOW_Y
+#ifndef SF_ALIGNMENT
+#define SF_ALIGNMENT 128
+#endif//SF_ALIGNMENT
 
-#ifndef TILE_X
-#define TILE_X 8
-#endif//TILE_X
+#ifndef SF_INTERLEAVE
+#define SF_INTERLEAVE 0
+#endif//SF_INTERLEAVE
 
-#ifndef TILE_Y
-#define TILE_Y 8
-#endif//TILE_Y
+#define PLANES_PER_SF 4
 
-#ifndef MIN_Z_BITS
-#define MIN_Z_BITS 9
-#endif//MIN_Z_BITS
-
-#ifndef NEAR
-#define NEAR 0.01f
-#endif//NEAR
-
-#ifndef FAR
-#define FAR 1000.f
-#endif//FAR
-
-#ifndef FOVY
-#define FOVY 1.5707963267948966f
-#endif//FOVY
+const uint alignedNofSF = (uint(NOF_TRIANGLES / SF_ALIGNMENT) + uint((NOF_TRIANGLES % SF_ALIGNMENT) != 0u)) * SF_ALIGNMENT;
 
 uint divRoundUp(uint x,uint y){
   return uint(x/y) + uint((x%y)>0);
 }
 
-
 layout(points)in;
-
-#if WIREFRAME == 1
 layout(line_strip,max_vertices=28)out;
-#else
-layout(triangle_strip,max_vertices=24)out;
-out vec3 gNormal;
-#endif
 
 flat in uint vId[];
 
-layout(binding=0)buffer NodePool{uint nodePool[];};
-layout(binding=1)buffer AABBPool{float aabbPool[];};
+layout(std430,binding=0)buffer ShadowFrusta{float shadowFrusta[];};
 
 uniform mat4 view;
 uniform mat4 proj;
@@ -143,172 +87,163 @@ uniform mat4 proj;
 uniform mat4 nodeView;
 uniform mat4 nodeProj;
 
-#line 122
-uniform uint levelToDraw = 0;
+uniform vec4 lightPosition;
 
-uniform uint drawTightAABB = 0;
+out vec3 gColor;
 
 void main(){
-  uint gId = vId[0];
-#line 157
-  uint bitsToDiv = warpBits*(nofLevels-1-levelToDraw);
-  uint xBitsToDiv = divRoundUp(bitsToDiv , 3u);
-  uint yBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-1,0)) , 3u);
-  uint zBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-2,0)) , 3u);
+  uint gid = vId[0];
 
-#line 163
-  uint clusX = divRoundUp(clustersX,1u<<xBitsToDiv);
-  uint clusY = divRoundUp(clustersY,1u<<yBitsToDiv);
+  vec4 e0;
+  vec4 e1;
+  vec4 e2;
+  vec4 e3;
 
-  uint x = gId % clusX;
-  uint y = (gId / clusX) % clusY;
-  uint z = (gId / (clusX * clusY));
-
-  uint mor = morton(uvec3(x<<xBitsToDiv,y<<yBitsToDiv,z<<zBitsToDiv));
-
-  uint bit  = (mor >> (warpBits*(nofLevels-1-levelToDraw))) & warpMask;
-  uint node = (mor >> (warpBits*(nofLevels  -levelToDraw)));
-
-
-  uint doesNodeExist = nodePool[nodeLevelOffsetInUints[clamp(levelToDraw,0u,5u)]+node*uintsPerWarp+uint(bit>31u)]&(1u<<(bit&0x1fu));
-
-  if(doesNodeExist == 0)return;
-
-  uint aabbNode = (mor >> (warpBits*(nofLevels-1-levelToDraw)));
-  float mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+0];
-  float mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+1];
-  float mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+2];
-  float mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+3];
-  float mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+4];
-  float mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+5];
-
-  float startZ = clusterToZ(z<<zBitsToDiv);
-  float endZ   = clusterToZ((z+1)<<zBitsToDiv);
-
-  float startX = -1.f + 2.f * float((x<<xBitsToDiv)*TILE_X) / float(WINDOW_X);
-  float startY = -1.f + 2.f * float((y<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y);
-
-  float endX = clamp(-1.f + 2.f * float(((x+1)<<xBitsToDiv)*TILE_X) / float(WINDOW_X),-1.f,1.f);
-  float endY = clamp(-1.f + 2.f * float(((y+1)<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y),-1.f,1.f);
-
-#ifdef FAR_IS_INFINITE
-  float e = -1.f;
-  float f = -2.f * NEAR;
+#if SF_INTERLEAVE == 1
+  e0[0] = shadowFrusta[alignedNofSF* 0u + gid];
+  e0[1] = shadowFrusta[alignedNofSF* 1u + gid];
+  e0[2] = shadowFrusta[alignedNofSF* 2u + gid];
+  e0[3] = shadowFrusta[alignedNofSF* 3u + gid];
+                                              
+  e1[0] = shadowFrusta[alignedNofSF* 4u + gid];
+  e1[1] = shadowFrusta[alignedNofSF* 5u + gid];
+  e1[2] = shadowFrusta[alignedNofSF* 6u + gid];
+  e1[3] = shadowFrusta[alignedNofSF* 7u + gid];
+                                              
+  e2[0] = shadowFrusta[alignedNofSF* 8u + gid];
+  e2[1] = shadowFrusta[alignedNofSF* 9u + gid];
+  e2[2] = shadowFrusta[alignedNofSF*10u + gid];
+  e2[3] = shadowFrusta[alignedNofSF*11u + gid];
+                                              
+  e3[0] = shadowFrusta[alignedNofSF*12u + gid];
+  e3[1] = shadowFrusta[alignedNofSF*13u + gid];
+  e3[2] = shadowFrusta[alignedNofSF*14u + gid];
+  e3[3] = shadowFrusta[alignedNofSF*15u + gid];
 #else
-  float e = -(FAR + NEAR) / (FAR - NEAR);
-  float f = -2.f * NEAR * FAR / (FAR - NEAR);
+  e0[0] = shadowFrusta[gid*16u+ 0u];
+  e0[1] = shadowFrusta[gid*16u+ 1u];
+  e0[2] = shadowFrusta[gid*16u+ 2u];
+  e0[3] = shadowFrusta[gid*16u+ 3u];
+  e1[0] = shadowFrusta[gid*16u+ 4u];
+  e1[1] = shadowFrusta[gid*16u+ 5u];
+  e1[2] = shadowFrusta[gid*16u+ 6u];
+  e1[3] = shadowFrusta[gid*16u+ 7u];
+  e2[0] = shadowFrusta[gid*16u+ 8u];
+  e2[1] = shadowFrusta[gid*16u+ 9u];
+  e2[2] = shadowFrusta[gid*16u+10u];
+  e2[3] = shadowFrusta[gid*16u+11u];
+  e3[0] = shadowFrusta[gid*16u+12u];
+  e3[1] = shadowFrusta[gid*16u+13u];
+  e3[2] = shadowFrusta[gid*16u+14u];
+  e3[3] = shadowFrusta[gid*16u+15u];
 #endif
 
-  if(drawTightAABB != 0){
-    startX = mminX;
-    endX   = mmaxX;
 
-    startY = mminY;
-    endY   = mmaxY;
-
-    startZ = depthToZ(mminZ);
-    endZ   = depthToZ(mmaxZ);
-  }
+  //A = inverse(transpose(proj * view)) * B
+  //A = M * B
+  //inv(M) * A = inv(M) * M * B
+  //inv(M) * A = B
+  //
 
 
-  mat4 M = proj*view*inverse(nodeView)*inverse(nodeProj);
-#if WIREFRAME == 1
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  mat4 back = transpose(nodeProj*nodeView);
+  e0 = back*e0;
+  e1 = back*e1;
+  e2 = back*e2;
+  e3 = back*e3;
+
+  vec3 n0 = normalize(e0.xyz);
+  vec3 n1 = normalize(e1.xyz);
+  vec3 n2 = normalize(e2.xyz);
+  vec3 n3 = normalize(e3.xyz);
+
+  vec3 l0 = normalize(cross(e2.xyz,e0.xyz));
+  vec3 l1 = normalize(cross(e0.xyz,e1.xyz));
+  vec3 l2 = normalize(cross(e1.xyz,e2.xyz));
+
+  //dot(e3.xyz,(lightPosition.xyz + t*l0)) + e3.w == 0
+  //dot(e3.xyz,lightPosition.xyz) + t*dot(l0,e3.xyz + e3.w == 0
+  //t = (-e3.w - dot(e3.xyz,lightPosition.xyz)) / dot(l0,e3.xyz))
+
+  float t0 = (-e3.w - dot(e3.xyz,lightPosition.xyz)) / dot(l0,e3.xyz);
+  float t1 = (-e3.w - dot(e3.xyz,lightPosition.xyz)) / dot(l1,e3.xyz);
+  float t2 = (-e3.w - dot(e3.xyz,lightPosition.xyz)) / dot(l2,e3.xyz);
+
+
+  vec3 v0 = lightPosition.xyz + t0*l0;
+  vec3 v1 = lightPosition.xyz + t1*l1;
+  vec3 v2 = lightPosition.xyz + t2*l2;
+
+  vec3 v0l = normalize(v0 - lightPosition.xyz);
+  vec3 v1l = normalize(v1 - lightPosition.xyz);
+  vec3 v2l = normalize(v2 - lightPosition.xyz);
+
+  vec3 w0 = v0 + v0l*30;
+  vec3 w1 = v1 + v1l*30;
+  vec3 w2 = v2 + v2l*30;
+
+
+  mat4 M = proj*view;
+
+  gColor = vec3(1,0,1);
+  gl_Position = M*vec4(v0,1);EmitVertex();
+  gl_Position = M*vec4(v1,1);EmitVertex();
+  gl_Position = M*vec4(w1,1);EmitVertex();
+  gl_Position = M*vec4(w0,1);EmitVertex();
+  gl_Position = M*vec4(v0,1);EmitVertex();
   EndPrimitive();
 
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*vec4(v1,1);EmitVertex();
+  gl_Position = M*vec4(v2,1);EmitVertex();
+  gl_Position = M*vec4(w2,1);EmitVertex();
+  gl_Position = M*vec4(w1,1);EmitVertex();
+  gl_Position = M*vec4(v1,1);EmitVertex();
   EndPrimitive();
 
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  EndPrimitive();
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  EndPrimitive();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  EndPrimitive();
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  EndPrimitive();
-#else
-  mat4 N = inverse(nodeView)*inverse(nodeProj);
-  gNormal = (N*vec4(0,0,-1,0)).xyz;
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4(v2,1);EmitVertex();
+  gl_Position = M*vec4(v0,1);EmitVertex();
+  gl_Position = M*vec4(w0,1);EmitVertex();
+  gl_Position = M*vec4(w2,1);EmitVertex();
+  gl_Position = M*vec4(v2,1);EmitVertex();
   EndPrimitive();
 
-  gNormal = (N*vec4(1,0,0,0)).xyz;
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+
+  //n0 = normalize(cross(v1-v0,w0-v0));
+  //n1 = normalize(cross(v2-v1,w1-v1));
+  //n2 = normalize(cross(v0-v2,w2-v2));
+  gColor = vec3(0,1,0);
+  gl_Position = M*vec4((v0+v1+w0+w1)/4.f   ,1);EmitVertex();
+  gl_Position = M*vec4((v0+v1+w0+w1)/4.f+n0,1);EmitVertex();
   EndPrimitive();
 
-  gNormal = (N*vec4(0,0,1,0)).xyz;
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*vec4((v1+v2+w1+w2)/4.f   ,1);EmitVertex();
+  gl_Position = M*vec4((v1+v2+w1+w2)/4.f+n1,1);EmitVertex();
   EndPrimitive();
 
-  gNormal = (N*vec4(-1,0,0,0)).xyz;
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*vec4((v0+v2+w0+w2)/4.f   ,1);EmitVertex();
+  gl_Position = M*vec4((v0+v2+w0+w2)/4.f+n2,1);EmitVertex();
   EndPrimitive();
 
-  gNormal = (N*vec4(0,1,0,0)).xyz;
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*vec4((v0+v1+v2)/3.f   ,1);EmitVertex();
+  gl_Position = M*vec4((v0+v1+v2)/3.f+n3,1);EmitVertex();
   EndPrimitive();
-
-  gNormal = (N*vec4(0,-1,0,0)).xyz;
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  EndPrimitive();
-#endif
 }
 
   ).";
 
+  auto const sfAlignment         = vars.getUint32("sintorn2.param.sfAlignment"       );
+  auto const sfInterleave        = vars.getInt32 ("sintorn2.param.sfInterleave"      );
+  auto const nofTriangles        = vars.getUint32("sintorn2.method.nofTriangles"      );
+
   auto vs = make_shared<Shader>(GL_VERTEX_SHADER,vsSrc);
   auto gs = make_shared<Shader>(GL_GEOMETRY_SHADER,
       "#version 450\n",
-      ge::gl::Shader::define("WARP"      ,(uint32_t)wavefrontSize),
-      ge::gl::Shader::define("WINDOW_X"  ,(uint32_t)cfg.windowX  ),
-      ge::gl::Shader::define("WINDOW_Y"  ,(uint32_t)cfg.windowY  ),
-      ge::gl::Shader::define("MIN_Z_BITS",(uint32_t)cfg.minZBits ),
-      ge::gl::Shader::define("NEAR"      ,nnear                  ),
-      glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
-      ge::gl::Shader::define("FOVY"      ,fovy                   ),
-      ge::gl::Shader::define("TILE_X"    ,cfg.tileX              ),
-      ge::gl::Shader::define("TILE_Y"    ,cfg.tileY              ),
-      ge::gl::Shader::define("WIREFRAME",(int)wireframe),
-
-      sintorn2::configShader,
-      sintorn2::mortonShader,
-      sintorn2::depthToZShader,
-      sintorn2::quantizeZShader,
+      Shader::define("SF_ALIGNMENT"       ,(uint32_t)sfAlignment       ),
+      Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
+      Shader::define("NOF_TRIANGLES"      ,(uint32_t)nofTriangles      ),
       gsSrc);
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",
-      ge::gl::Shader::define("WIREFRAME",(int)wireframe),
       fsSrc);
 
   vars.reCreate<Program>(
@@ -323,40 +258,31 @@ void main(){
 void drawSF(vars::Vars&vars){
   prepareDrawSF(vars);
 
-  auto const cfg            = *vars.get<Config>        ("sintorn2.method.debug.dump.config"          );
-
   auto const nodeView       = *vars.get<glm::mat4>     ("sintorn2.method.debug.dump.viewMatrix"      );
   auto const nodeProj       = *vars.get<glm::mat4>     ("sintorn2.method.debug.dump.projectionMatrix");
-  auto const nodePool       =  vars.get<Buffer>        ("sintorn2.method.debug.dump.nodePool"        );
-  auto const aabbPool       =  vars.get<Buffer>        ("sintorn2.method.debug.dump.aabbPool"        );
+  auto const sf             =  vars.get<Buffer>        ("sintorn2.method.debug.dump.shadowFrusta"    );
 
   auto const view           = *vars.get<glm::mat4>     ("sintorn2.method.debug.viewMatrix"           );
   auto const proj           = *vars.get<glm::mat4>     ("sintorn2.method.debug.projectionMatrix"     );
-  auto const levelsToDraw   =  vars.getUint32          ("sintorn2.method.debug.levelsToDraw"         );
-  auto const drawTightAABB  =  vars.getBool            ("sintorn2.method.debug.drawTightAABB"        );
+  auto const nofTriangles   = vars.getUint32           ("sintorn2.method.nofTriangles"               );
+  auto const lightPosition  = *vars.get<glm::vec4 >    ("sintorn2.method.debug.dump.lightPosition"   );
 
   auto vao = vars.get<VertexArray>("sintorn2.method.debug.vao");
 
   auto prg = vars.get<Program>("sintorn2.method.debug.drawSFProgram");
 
   vao->bind();
-  nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  sf->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   prg->use();
   prg
-    ->setMatrix4fv("nodeView"   ,glm::value_ptr(nodeView))
-    ->setMatrix4fv("nodeProj"   ,glm::value_ptr(nodeProj))
-    ->setMatrix4fv("view"       ,glm::value_ptr(view    ))
-    ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
-    ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
+    ->setMatrix4fv("nodeView"     ,glm::value_ptr(nodeView))
+    ->setMatrix4fv("nodeProj"     ,glm::value_ptr(nodeProj))
+    ->setMatrix4fv("view"         ,glm::value_ptr(view    ))
+    ->setMatrix4fv("proj"         ,glm::value_ptr(proj    ))
+    ->set4fv      ("lightPosition",glm::value_ptr(lightPosition))
     ;
 
-
-  for(uint32_t l=0;l<cfg.nofLevels;++l){
-    if((levelsToDraw&(1u<<l)) == 0)continue;
-    prg->set1ui      ("levelToDraw",l);
-    glDrawArrays(GL_POINTS,0,cfg.nofNodesPerLevel[l]);
-  }
+  glDrawArrays(GL_POINTS,0,nofTriangles);
 
   vao->unbind();
 

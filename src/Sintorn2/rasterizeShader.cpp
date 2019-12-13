@@ -60,6 +60,7 @@ const uint INTERSECTS     = 2u;
 layout(std430,binding=6)buffer Deb{float deb[];};
 layout(std430,binding=7)buffer Debc{uint debc[];};
 
+/*
 void debugStoreAABB(vec3 minCorner,vec3 size,vec4 plane){
   return;
   uint w = atomicAdd(debc[0],1);
@@ -86,42 +87,44 @@ void debugStoreAABB(vec3 minCorner,vec3 size,vec4 plane){
   deb[w*NN+16] = float(gl_LocalInvocationIndex);
 }
 
+// */
+
 uint trivialRejectAccept(vec3 minCorner,vec3 size){
   uint status = TRIVIAL_ACCEPT;
   vec4 plane;
   vec3 tr;
 
   plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
-  debugStoreAABB(minCorner,size,plane);
+  //debugStoreAABB(minCorner,size,plane);
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = 1.f-tr;
-  status &= uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
+  status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
 
   plane = vec4(shadowFrustaPlanes[4],shadowFrustaPlanes[5],shadowFrustaPlanes[6],shadowFrustaPlanes[7]);
-  debugStoreAABB(minCorner,size,plane);
+  //debugStoreAABB(minCorner,size,plane);
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = 1.f-tr;
-  status &= uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
+  status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
 
   plane = vec4(shadowFrustaPlanes[8],shadowFrustaPlanes[9],shadowFrustaPlanes[10],shadowFrustaPlanes[11]);
-  debugStoreAABB(minCorner,size,plane);
+  //debugStoreAABB(minCorner,size,plane);
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = 1.f-tr;
-  status &= uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
+  status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
 
   plane = vec4(shadowFrustaPlanes[12],shadowFrustaPlanes[13],shadowFrustaPlanes[14],shadowFrustaPlanes[15]);
-  debugStoreAABB(minCorner,size,plane);
+  //debugStoreAABB(minCorner,size,plane);
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = 1.f-tr;
-  status &= uint(dot(vec4(minCorner + tr*size,1.f),plane)>0.f);
+  status &= 2u+uint(dot(vec4(minCorner + tr*size,1.f),plane)>0.f);
 
   return status;
 }
@@ -155,9 +158,8 @@ void traverse(){
   while(level >= 0){
     if(level == int(nofLevels)){
       //test pixels
-      uvec2 tileCoord = demorton(node).xy;
-
-      imageStore(shadowMask,ivec2(0,0) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
+      //uvec2 tileCoord = demorton(node).xy;
+      //imageStore(shadowMask,ivec2(0,0) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
       node >>= warpBits;
       level--;
     }else{
@@ -178,6 +180,7 @@ void traverse(){
       intersection[level] = ballotARB(status == INTERSECTS    );
       uint64_t trA        = ballotARB(status == TRIVIAL_ACCEPT);
 
+      //imageStore(shadowMask,ivec2(64+level*16,64) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
       //if(status == INTERSECTS)
       //  imageStore(shadowMask,ivec2(64+level*16,64) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
 
@@ -189,7 +192,9 @@ void traverse(){
       }
 
       //if(intersection[level] != 0)
-      //  imageStore(shadowMask,ivec2(64,64) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
+      //  imageStore(shadowMask,ivec2(256,256) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
+      //if(trA != 0)
+      //  imageStore(shadowMask,ivec2(128,128) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
       //if(trA != 0)
       //  imageStore(shadowMask,ivec2(128,64) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
       //if(trA != 0)

@@ -15,6 +15,7 @@
 #include <Sintorn2/mortonShader.h>
 
 #include <iomanip>
+#include <Timer.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -61,11 +62,16 @@ void createJobCounter(vars::Vars&vars){
 
 }
 
+#define ___ std::cerr << __FILE__ << "/" << __LINE__ << std::endl
 
 void sintorn2::rasterize(vars::Vars&vars){
+  ___;
   FUNCTION_CALLER();
+  ___;
   createRasterizeProgram(vars);
+  ___;
   createJobCounter(vars);
+  ___;
 
   auto prg        = vars.get<Program>("sintorn2.method.rasterizeProgram");
   auto nodePool   = vars.get<Buffer >("sintorn2.method.nodePool"        );
@@ -74,9 +80,11 @@ void sintorn2::rasterize(vars::Vars&vars){
   auto jobCounter = vars.get<Buffer >("sintorn2.method.jobCounter"      );
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
+  ___;
 
 
   jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  ___;
 
   nodePool  ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   aabbPool  ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
@@ -84,21 +92,38 @@ void sintorn2::rasterize(vars::Vars&vars){
   jobCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   depth     ->bind(0);
   shadowMask->bindImage(1);
+  ___;
 
   float data[1] = {1.f};
   vars.get<ge::gl::Texture>("shadowMask")->clear(0,GL_RED,GL_FLOAT,data);
 
   prg->use();
+  ___;
 
-  auto deb = make_shared<Buffer>(sizeof(float)*7*10000);
-  auto debc = make_shared<Buffer>(sizeof(uint32_t));
-  debc->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  deb->bindBase(GL_SHADER_STORAGE_BUFFER,6);
-  debc->bindBase(GL_SHADER_STORAGE_BUFFER,7);
-
+  //auto deb = make_shared<Buffer>(sizeof(float)*7*10000);
+  //auto debc = make_shared<Buffer>(sizeof(uint32_t));
+  //debc->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  //deb->bindBase(GL_SHADER_STORAGE_BUFFER,6);
+  //debc->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+  static int cc = 0;
+  ___;
 #if 1
-  glDispatchCompute(1024,1,1);
+  Timer<float>t;
+  ___;
+  glFinish();
+  ___;
+  std::cerr << "rasterize: " << cc << std::endl;
+  ___;
+  t.reset();
+  ___;
+  glDispatchCompute(1,1,1);
+  ___;
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
+  ___;
+  std::cerr << "time: " << t.elapsedFromStart() << std::endl;
+  if(cc > 0)
+    exit(1);
+  cc++;
 #else
 
   glDispatchCompute(1,1,1);
@@ -127,6 +152,7 @@ void sintorn2::rasterize(vars::Vars&vars){
     std::cerr << "thread: " << dd[16] << " ";
     std::cerr << std::endl;
   }
+  std::cerr << std::endl;
 
   // */
 
