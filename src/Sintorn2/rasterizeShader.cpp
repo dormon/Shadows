@@ -172,8 +172,20 @@ void traverse(){
 
     if(level == int(nofLevels)){
       //test pixels
-      uvec2 tileCoord = demorton(node).xy;
-      imageStore(shadowMask,ivec2(tileCoord*8u) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
+      uvec2 sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+      vec4 clipCoord;
+
+      clipCoord.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
+      clipCoord.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
+      clipCoord.w = 1.f;
+      vec4 e0 = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
+      vec4 e1 = vec4(shadowFrustaPlanes[4],shadowFrustaPlanes[5],shadowFrustaPlanes[6],shadowFrustaPlanes[7]);
+      vec4 e2 = vec4(shadowFrustaPlanes[8],shadowFrustaPlanes[9],shadowFrustaPlanes[10],shadowFrustaPlanes[11]);
+      vec4 e3 = vec4(shadowFrustaPlanes[12],shadowFrustaPlanes[13],shadowFrustaPlanes[14],shadowFrustaPlanes[15]);
+
+      if(dot(e0,clipCoord) >= 0 && dot(e1,clipCoord) >= 0 && dot(e2,clipCoord) >= 0 && dot(e3,clipCoord) >= 0)
+        imageStore(shadowMask,ivec2(sampleCoord),vec4(0));
+
       node >>= warpBits;
       level--;
     }else{

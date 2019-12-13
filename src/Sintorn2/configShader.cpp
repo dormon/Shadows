@@ -27,7 +27,10 @@ std::string const sintorn2::configShader = R".(
 #endif//MIN_Z_BITS
 
 
-
+const uint tileBitsX       = uint(ceil(log2(float(TILE_X))));
+const uint tileBitsY       = uint(ceil(log2(float(TILE_Y))));
+const uint tileMaskX       = uint(TILE_X-1u);
+const uint tileMaskY       = uint(TILE_Y-1u);
 const uint warpBits        = uint(ceil(log2(float(WARP))));
 const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
 const uint clustersY       = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
