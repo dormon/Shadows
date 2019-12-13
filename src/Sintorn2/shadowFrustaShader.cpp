@@ -37,7 +37,13 @@ std::string const sintorn2::shadowFrustaShader = R".(
 #define VEC4_PER_SHADOWFRUSTUM 4
 #endif//VEC4_PER_SHADOWFRUSTUM
 
-#define FLOATS_PER_SHADOWFRUSTUM (VEC4_PER_SHADOWFRUSTUM*4)
+#ifndef MORE_PLANES
+#define MORE_PLANES 0
+#endif//MORE_PLANES
+
+const uint planesPerSF = 4u + MORE_PLANES*3u;
+const uint floatsPerPlane = 4u;
+const uint floatsPerSF = planesPerSF * floatsPerPlane;
 
 #line 38
 
@@ -151,22 +157,22 @@ void main(){
   shadowFrusta[alignedNofSF*14u + gid] = e3[2];
   shadowFrusta[alignedNofSF*15u + gid] = e3[3];
 #else
-  shadowFrusta[gid*16u+ 0u] = e0[0];
-  shadowFrusta[gid*16u+ 1u] = e0[1];
-  shadowFrusta[gid*16u+ 2u] = e0[2];
-  shadowFrusta[gid*16u+ 3u] = e0[3];
-  shadowFrusta[gid*16u+ 4u] = e1[0];
-  shadowFrusta[gid*16u+ 5u] = e1[1];
-  shadowFrusta[gid*16u+ 6u] = e1[2];
-  shadowFrusta[gid*16u+ 7u] = e1[3];
-  shadowFrusta[gid*16u+ 8u] = e2[0];
-  shadowFrusta[gid*16u+ 9u] = e2[1];
-  shadowFrusta[gid*16u+10u] = e2[2];
-  shadowFrusta[gid*16u+11u] = e2[3];
-  shadowFrusta[gid*16u+12u] = e3[0];
-  shadowFrusta[gid*16u+13u] = e3[1];
-  shadowFrusta[gid*16u+14u] = e3[2];
-  shadowFrusta[gid*16u+15u] = e3[3];
+  shadowFrusta[gid*floatsPerSF+ 0u] = e0[0];
+  shadowFrusta[gid*floatsPerSF+ 1u] = e0[1];
+  shadowFrusta[gid*floatsPerSF+ 2u] = e0[2];
+  shadowFrusta[gid*floatsPerSF+ 3u] = e0[3];
+  shadowFrusta[gid*floatsPerSF+ 4u] = e1[0];
+  shadowFrusta[gid*floatsPerSF+ 5u] = e1[1];
+  shadowFrusta[gid*floatsPerSF+ 6u] = e1[2];
+  shadowFrusta[gid*floatsPerSF+ 7u] = e1[3];
+  shadowFrusta[gid*floatsPerSF+ 8u] = e2[0];
+  shadowFrusta[gid*floatsPerSF+ 9u] = e2[1];
+  shadowFrusta[gid*floatsPerSF+10u] = e2[2];
+  shadowFrusta[gid*floatsPerSF+11u] = e2[3];
+  shadowFrusta[gid*floatsPerSF+12u] = e3[0];
+  shadowFrusta[gid*floatsPerSF+13u] = e3[1];
+  shadowFrusta[gid*floatsPerSF+14u] = e3[2];
+  shadowFrusta[gid*floatsPerSF+15u] = e3[3];
 #endif
 }
 

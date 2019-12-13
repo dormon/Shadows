@@ -36,17 +36,19 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"sintorn2.param.minZBits"
       ,"sintorn2.param.tileX"   
       ,"sintorn2.param.tileY"   
+      ,"sintorn2.param.morePlanes"
       );
 
-  auto const wavefrontSize       =  vars.getSizeT ("wavefrontSize"                    );
-  auto const nofTriangles        =  vars.getUint32("sintorn2.method.nofTriangles"     );
-  auto const triangleAlignment   =  vars.getUint32("sintorn2.param.triangleAlignment" );
-  auto const sfAlignment         =  vars.getUint32("sintorn2.param.sfAlignment"       );
-  auto const sfInterleave        =  vars.getInt32 ("sintorn2.param.sfInterleave"      );
-  auto const windowSize          = *vars.get<glm::uvec2>    ("windowSize"             );
-  auto const tileX               =  vars.getUint32          ("sintorn2.param.tileX"   );
-  auto const tileY               =  vars.getUint32          ("sintorn2.param.tileY"   );
-  auto const minZBits            =  vars.getUint32          ("sintorn2.param.minZBits");
+  auto const wavefrontSize       =  vars.getSizeT           ("wavefrontSize"                    );
+  auto const nofTriangles        =  vars.getUint32          ("sintorn2.method.nofTriangles"     );
+  auto const triangleAlignment   =  vars.getUint32          ("sintorn2.param.triangleAlignment" );
+  auto const sfAlignment         =  vars.getUint32          ("sintorn2.param.sfAlignment"       );
+  auto const sfInterleave        =  vars.getInt32           ("sintorn2.param.sfInterleave"      );
+  auto const windowSize          = *vars.get<glm::uvec2>    ("windowSize"                       );
+  auto const tileX               =  vars.getUint32          ("sintorn2.param.tileX"             );
+  auto const tileY               =  vars.getUint32          ("sintorn2.param.tileY"             );
+  auto const minZBits            =  vars.getUint32          ("sintorn2.param.minZBits"          );
+  auto const morePlanes          =  vars.getInt32           ("sintorn2.param.morePlanes"        );
 
   vars.reCreate<ge::gl::Program>("sintorn2.method.rasterizeProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
@@ -61,6 +63,7 @@ void createRasterizeProgram(vars::Vars&vars){
         Shader::define("MIN_Z_BITS"         ,(uint32_t)minZBits          ),
         Shader::define("TILE_X"             ,tileX                       ),
         Shader::define("TILE_Y"             ,tileY                       ),
+        Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
         ballotSrc,
         sintorn2::demortonShader,
         sintorn2::configShader,

@@ -18,10 +18,13 @@ std::string const sintorn2::rasterizeShader = R".(
 #define SF_INTERLEAVE 0
 #endif//SF_INTERLEAVE
 
-#define PLANES_PER_SF 4
+#ifndef MORE_PLANES
+#define MORE_PLANES 0
+#endif//MORE_PLANES
 
+const uint planesPerSF = 4u + MORE_PLANES*3u;
 const uint floatsPerPlane = 4u;
-const uint floatsPerSF    = floatsPerPlane * PLANES_PER_SF;
+const uint floatsPerSF = planesPerSF * floatsPerPlane;
 
 layout(local_size_x=WARP)in;
 
@@ -58,7 +61,7 @@ const uint TRIVIAL_ACCEPT =    3u;
 const uint INTERSECTS     =    2u;
 
 //layout(std430,binding=6)buffer Deb{float deb[];};
-layout(std430,binding=7)buffer Debc{uint debc[];};
+//layout(std430,binding=7)buffer Debc{uint debc[];};
 
 /*
 void debugStoreAABB(vec3 minCorner,vec3 size,vec4 plane){
@@ -150,6 +153,30 @@ void JOIN(TestShadowFrustumHDB,LEVEL)(uvec2 coord,vec2 clipCoord){\
 */
 //imageStore(shadowMask,ivec2(gl_GlobalInvocationID.xy),vec4(1-S));
 
+void lastLevel(uint node){
+  uvec2 sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+  vec4 clipCoord;
+
+  clipCoord.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
+  clipCoord.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
+  clipCoord.w = 1.f;
+
+  bool inside = true;
+  vec4 plane;
+
+  plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
+  inside = inside && (dot(plane,clipCoord) >= 0);
+  plane = vec4(shadowFrustaPlanes[4],shadowFrustaPlanes[5],shadowFrustaPlanes[6],shadowFrustaPlanes[7]);
+  inside = inside && (dot(plane,clipCoord) >= 0);
+  plane = vec4(shadowFrustaPlanes[8],shadowFrustaPlanes[9],shadowFrustaPlanes[10],shadowFrustaPlanes[11]);
+  inside = inside && (dot(plane,clipCoord) >= 0);
+  plane = vec4(shadowFrustaPlanes[12],shadowFrustaPlanes[13],shadowFrustaPlanes[14],shadowFrustaPlanes[15]);
+  inside = inside && (dot(plane,clipCoord) >= 0);
+
+  if(inside)
+    imageStore(shadowMask,ivec2(sampleCoord),vec4(0));
+}
+
 void traverse(){
   int level = 0;
   uint64_t intersection[nofLevels];
@@ -172,20 +199,9 @@ void traverse(){
 
     if(level == int(nofLevels)){
       //test pixels
-      uvec2 sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
-      vec4 clipCoord;
-
-      clipCoord.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
-      clipCoord.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
-      clipCoord.w = 1.f;
-      vec4 e0 = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
-      vec4 e1 = vec4(shadowFrustaPlanes[4],shadowFrustaPlanes[5],shadowFrustaPlanes[6],shadowFrustaPlanes[7]);
-      vec4 e2 = vec4(shadowFrustaPlanes[8],shadowFrustaPlanes[9],shadowFrustaPlanes[10],shadowFrustaPlanes[11]);
-      vec4 e3 = vec4(shadowFrustaPlanes[12],shadowFrustaPlanes[13],shadowFrustaPlanes[14],shadowFrustaPlanes[15]);
-
-      if(dot(e0,clipCoord) >= 0 && dot(e1,clipCoord) >= 0 && dot(e2,clipCoord) >= 0 && dot(e3,clipCoord) >= 0)
-        imageStore(shadowMask,ivec2(sampleCoord),vec4(0));
-
+#if 1
+      lastLevel(node);
+#endif
       node >>= warpBits;
       level--;
     }else{
@@ -206,31 +222,22 @@ void traverse(){
       intersection[level] = ballotARB(status == INTERSECTS    );
       uint64_t trA        = ballotARB(status == TRIVIAL_ACCEPT);
 
-      //imageStore(shadowMask,ivec2(64+level*16,64) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
-      //if(status == INTERSECTS)
-      //  imageStore(shadowMask,ivec2(64+level*16,64) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
-
+#if 1
       if(gl_LocalInvocationIndex == 0u){
         if(unpackUint2x32(trA)[0] != 0u)
           atomicAnd(nodePool[nodeLevelOffsetInUints[level]+node*uintsPerWarp+0],~unpackUint2x32(trA)[0]);
         if(unpackUint2x32(trA)[1] != 0u)
           atomicAnd(nodePool[nodeLevelOffsetInUints[level]+node*uintsPerWarp+1],~unpackUint2x32(trA)[1]);
       }
+#endif
 
-      //if(intersection[level] != 0)
-      //  imageStore(shadowMask,ivec2(256,256) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
-      //if(trA != 0)
-      //  imageStore(shadowMask,ivec2(128,128) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
-      //if(trA != 0)
-      //  imageStore(shadowMask,ivec2(128,64) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
-      //if(trA != 0)
-      //  imageStore(shadowMask,ivec2(128,64) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
     }
 
     while(level >= 0 && intersection[level] == 0ul){
       node >>= warpBits;
       level--;
     }
+    if(level < 0)break;
     if(level>=0){
       uint selectedBit = unpackUint2x32(intersection[level])[0]!=0?findLSB(unpackUint2x32(intersection[level])[0]):findLSB(unpackUint2x32(intersection[level])[1])+32u;
       node <<= warpBits   ;
