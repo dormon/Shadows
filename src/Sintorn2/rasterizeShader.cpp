@@ -172,8 +172,8 @@ void traverse(){
 
     if(level == int(nofLevels)){
       //test pixels
-      //uvec2 tileCoord = demorton(node).xy;
-      //imageStore(shadowMask,ivec2(0,0) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
+      uvec2 tileCoord = demorton(node).xy;
+      imageStore(shadowMask,ivec2(tileCoord*8u) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
       node >>= warpBits;
       level--;
     }else{
