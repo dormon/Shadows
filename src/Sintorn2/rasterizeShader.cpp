@@ -53,11 +53,11 @@ vec3 trivialRejectCorner3D(vec3 Normal){
   return vec3((ivec3(sign(Normal))+1)/2);
 }
 
-const uint TRIVIAL_REJECT = 4u;
-const uint TRIVIAL_ACCEPT = 3u;
-const uint INTERSECTS     = 2u;
+const uint TRIVIAL_REJECT = 0xf0u;
+const uint TRIVIAL_ACCEPT =    3u;
+const uint INTERSECTS     =    2u;
 
-layout(std430,binding=6)buffer Deb{float deb[];};
+//layout(std430,binding=6)buffer Deb{float deb[];};
 layout(std430,binding=7)buffer Debc{uint debc[];};
 
 /*
@@ -153,9 +153,23 @@ void JOIN(TestShadowFrustumHDB,LEVEL)(uvec2 coord,vec2 clipCoord){\
 void traverse(){
   int level = 0;
   uint64_t intersection[nofLevels];
+  //uvec2 intersection[nofLevels];
+  //if(nofLevels > 0)intersection[0] = uvec2(0);
+  //if(nofLevels > 1)intersection[1] = uvec2(0);
+  //if(nofLevels > 2)intersection[2] = uvec2(0);
+  //if(nofLevels > 3)intersection[3] = uvec2(0);
 
   uint node = 0;
   while(level >= 0){
+    //if(gl_LocalInvocationIndex==0){
+    //  uint w = atomicAdd(debc[0],1);
+    //  if(w<100){
+    //    debc[w*3+1+0] = uint(level);
+    //    debc[w*3+1+1] = uint(intersection[0]);
+    //    debc[w*3+1+2] = uint(intersection[1]);
+    //  }
+    //}
+
     if(level == int(nofLevels)){
       //test pixels
       //uvec2 tileCoord = demorton(node).xy;
@@ -201,10 +215,11 @@ void traverse(){
       //  imageStore(shadowMask,ivec2(128,64) + ivec2(gl_LocalInvocationIndex%8,gl_LocalInvocationIndex/8),vec4(0));
     }
 
-    if(intersection[level] == 0ul){
+    while(level >= 0 && intersection[level] == 0ul){
       node >>= warpBits;
       level--;
-    }else{
+    }
+    if(level>=0){
       uint selectedBit = unpackUint2x32(intersection[level])[0]!=0?findLSB(unpackUint2x32(intersection[level])[0]):findLSB(unpackUint2x32(intersection[level])[1])+32u;
       node <<= warpBits   ;
       node  += selectedBit;

@@ -16,6 +16,7 @@
 
 #include <iomanip>
 #include <Timer.h>
+#include <bitset>
 
 using namespace ge::gl;
 using namespace std;
@@ -24,6 +25,7 @@ namespace sintorn2{
 void createRasterizeProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2.method"
       ,"wavefrontSize"
+      ,"windowSize"
       ,"sintorn2.method.nofTriangles"
       ,"sintorn2.param.sfWGS"
       ,"sintorn2.param.triangleAlignment"
@@ -31,13 +33,20 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"sintorn2.param.bias"
       ,"sintorn2.param.sfInterleave"
       ,"sintorn2.param.triangleInterleave"
+      ,"sintorn2.param.minZBits"
+      ,"sintorn2.param.tileX"   
+      ,"sintorn2.param.tileY"   
       );
 
-  auto const wavefrontSize       = vars.getSizeT ("wavefrontSize"                    );
-  auto const nofTriangles        = vars.getUint32("sintorn2.method.nofTriangles"     );
-  auto const triangleAlignment   = vars.getUint32("sintorn2.param.triangleAlignment" );
-  auto const sfAlignment         = vars.getUint32("sintorn2.param.sfAlignment"       );
-  auto const sfInterleave        = vars.getInt32 ("sintorn2.param.sfInterleave"      );
+  auto const wavefrontSize       =  vars.getSizeT ("wavefrontSize"                    );
+  auto const nofTriangles        =  vars.getUint32("sintorn2.method.nofTriangles"     );
+  auto const triangleAlignment   =  vars.getUint32("sintorn2.param.triangleAlignment" );
+  auto const sfAlignment         =  vars.getUint32("sintorn2.param.sfAlignment"       );
+  auto const sfInterleave        =  vars.getInt32 ("sintorn2.param.sfInterleave"      );
+  auto const windowSize          = *vars.get<glm::uvec2>    ("windowSize"             );
+  auto const tileX               =  vars.getUint32          ("sintorn2.param.tileX"   );
+  auto const tileY               =  vars.getUint32          ("sintorn2.param.tileY"   );
+  auto const minZBits            =  vars.getUint32          ("sintorn2.param.minZBits");
 
   vars.reCreate<ge::gl::Program>("sintorn2.method.rasterizeProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
@@ -47,6 +56,11 @@ void createRasterizeProgram(vars::Vars&vars){
         Shader::define("TRIANGLE_ALIGNMENT" ,(uint32_t)triangleAlignment ),
         Shader::define("SF_ALIGNMENT"       ,(uint32_t)sfAlignment       ),
         Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
+        Shader::define("WINDOW_X"           ,(uint32_t)windowSize.x      ),
+        Shader::define("WINDOW_Y"           ,(uint32_t)windowSize.y      ),
+        Shader::define("MIN_Z_BITS"         ,(uint32_t)minZBits          ),
+        Shader::define("TILE_X"             ,tileX                       ),
+        Shader::define("TILE_Y"             ,tileY                       ),
         ballotSrc,
         sintorn2::demortonShader,
         sintorn2::configShader,
@@ -62,16 +76,11 @@ void createJobCounter(vars::Vars&vars){
 
 }
 
-#define ___ std::cerr << __FILE__ << "/" << __LINE__ << std::endl
 
 void sintorn2::rasterize(vars::Vars&vars){
-  ___;
   FUNCTION_CALLER();
-  ___;
   createRasterizeProgram(vars);
-  ___;
   createJobCounter(vars);
-  ___;
 
   auto prg        = vars.get<Program>("sintorn2.method.rasterizeProgram");
   auto nodePool   = vars.get<Buffer >("sintorn2.method.nodePool"        );
@@ -80,11 +89,9 @@ void sintorn2::rasterize(vars::Vars&vars){
   auto jobCounter = vars.get<Buffer >("sintorn2.method.jobCounter"      );
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
-  ___;
 
 
   jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  ___;
 
   nodePool  ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   aabbPool  ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
@@ -92,38 +99,44 @@ void sintorn2::rasterize(vars::Vars&vars){
   jobCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   depth     ->bind(0);
   shadowMask->bindImage(1);
-  ___;
 
   float data[1] = {1.f};
   vars.get<ge::gl::Texture>("shadowMask")->clear(0,GL_RED,GL_FLOAT,data);
 
   prg->use();
-  ___;
+
+
+  glDispatchCompute(1024,1,1);
+  glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
   //auto deb = make_shared<Buffer>(sizeof(float)*7*10000);
-  //auto debc = make_shared<Buffer>(sizeof(uint32_t));
+  //auto debc = make_shared<Buffer>(sizeof(uint32_t)*(10000+1));
   //debc->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
   //deb->bindBase(GL_SHADER_STORAGE_BUFFER,6);
   //debc->bindBase(GL_SHADER_STORAGE_BUFFER,7);
-  static int cc = 0;
-  ___;
 #if 1
-  Timer<float>t;
-  ___;
-  glFinish();
-  ___;
-  std::cerr << "rasterize: " << cc << std::endl;
-  ___;
-  t.reset();
-  ___;
-  glDispatchCompute(1,1,1);
-  ___;
-  glMemoryBarrier(GL_ALL_BARRIER_BITS);
-  ___;
-  std::cerr << "time: " << t.elapsedFromStart() << std::endl;
-  if(cc > 0)
-    exit(1);
-  cc++;
+  //Timer<float>t;
+  //___;
+  //glFinish();
+  //___;
+  //t.reset();
+  //___;
+  //glDispatchCompute(1,1,1);
+  //___;
+  //glMemoryBarrier(GL_ALL_BARRIER_BITS);
+  //___;
+  //glFinish();
+  //___;
+  //std::cerr << "time: " << t.elapsedFromStart() << std::endl;
+  //std::vector<uint32_t>debcData;
+  //debc->getData(debcData);
+  //std::cerr << "loop: " << debcData[0] << std::endl;
+  //for(int i=1;i<1000;i+=3){
+  //  std::cerr << "level: " << debcData[i+0] << std::endl;
+  //  std::cerr << "i0   : " << std::bitset<32>(debcData[i+1]) << std::endl;
+  //  std::cerr << "i1   : " << std::bitset<32>(debcData[i+2]) << std::endl;
+  //}
+  //exit(1);
 #else
 
   glDispatchCompute(1,1,1);
