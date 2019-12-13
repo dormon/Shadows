@@ -27,11 +27,12 @@ namespace sintorn2::debug{
 
 void prepareDrawSF(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2.method.debug"
-      "wavefrontSize"                        ,
-      "sintorn2.method.debug.dump.config"    ,
-      "sintorn2.method.debug.dump.near"      ,
-      "sintorn2.method.debug.dump.far"       ,
-      "sintorn2.method.debug.dump.fovy"      ,
+      ,"wavefrontSize"                        
+      ,"sintorn2.method.debug.dump.config"    
+      ,"sintorn2.method.debug.dump.near"      
+      ,"sintorn2.method.debug.dump.far"       
+      ,"sintorn2.method.debug.dump.fovy"      
+      ,"sintorn2.param.morePlanes"
       );
 
   auto const cfg            = *vars.get<Config>        ("sintorn2.method.debug.dump.config"    );
@@ -66,7 +67,13 @@ void prepareDrawSF(vars::Vars&vars){
 #define SF_INTERLEAVE 0
 #endif//SF_INTERLEAVE
 
-#define PLANES_PER_SF 4
+#ifndef MORE_PLANES
+#define MORE_PLANES 0
+#endif//MORE_PLANES
+
+const uint planesPerSF    = 4u + MORE_PLANES*3u;
+const uint floatsPerPlane = 4u;
+const uint floatsPerSF    = planesPerSF * floatsPerPlane;
 
 const uint alignedNofSF = (uint(NOF_TRIANGLES / SF_ALIGNMENT) + uint((NOF_TRIANGLES % SF_ALIGNMENT) != 0u)) * SF_ALIGNMENT;
 
@@ -120,22 +127,22 @@ void main(){
   e3[2] = shadowFrusta[alignedNofSF*14u + gid];
   e3[3] = shadowFrusta[alignedNofSF*15u + gid];
 #else
-  e0[0] = shadowFrusta[gid*16u+ 0u];
-  e0[1] = shadowFrusta[gid*16u+ 1u];
-  e0[2] = shadowFrusta[gid*16u+ 2u];
-  e0[3] = shadowFrusta[gid*16u+ 3u];
-  e1[0] = shadowFrusta[gid*16u+ 4u];
-  e1[1] = shadowFrusta[gid*16u+ 5u];
-  e1[2] = shadowFrusta[gid*16u+ 6u];
-  e1[3] = shadowFrusta[gid*16u+ 7u];
-  e2[0] = shadowFrusta[gid*16u+ 8u];
-  e2[1] = shadowFrusta[gid*16u+ 9u];
-  e2[2] = shadowFrusta[gid*16u+10u];
-  e2[3] = shadowFrusta[gid*16u+11u];
-  e3[0] = shadowFrusta[gid*16u+12u];
-  e3[1] = shadowFrusta[gid*16u+13u];
-  e3[2] = shadowFrusta[gid*16u+14u];
-  e3[3] = shadowFrusta[gid*16u+15u];
+  e0[0] = shadowFrusta[gid*floatsPerSF+ 0u];
+  e0[1] = shadowFrusta[gid*floatsPerSF+ 1u];
+  e0[2] = shadowFrusta[gid*floatsPerSF+ 2u];
+  e0[3] = shadowFrusta[gid*floatsPerSF+ 3u];
+  e1[0] = shadowFrusta[gid*floatsPerSF+ 4u];
+  e1[1] = shadowFrusta[gid*floatsPerSF+ 5u];
+  e1[2] = shadowFrusta[gid*floatsPerSF+ 6u];
+  e1[3] = shadowFrusta[gid*floatsPerSF+ 7u];
+  e2[0] = shadowFrusta[gid*floatsPerSF+ 8u];
+  e2[1] = shadowFrusta[gid*floatsPerSF+ 9u];
+  e2[2] = shadowFrusta[gid*floatsPerSF+10u];
+  e2[3] = shadowFrusta[gid*floatsPerSF+11u];
+  e3[0] = shadowFrusta[gid*floatsPerSF+12u];
+  e3[1] = shadowFrusta[gid*floatsPerSF+13u];
+  e3[2] = shadowFrusta[gid*floatsPerSF+14u];
+  e3[3] = shadowFrusta[gid*floatsPerSF+15u];
 #endif
 
 
@@ -234,6 +241,7 @@ void main(){
   auto const sfAlignment         = vars.getUint32("sintorn2.param.sfAlignment"       );
   auto const sfInterleave        = vars.getInt32 ("sintorn2.param.sfInterleave"      );
   auto const nofTriangles        = vars.getUint32("sintorn2.method.nofTriangles"      );
+  auto const morePlanes          = vars.getInt32 ("sintorn2.param.morePlanes"        );
 
   auto vs = make_shared<Shader>(GL_VERTEX_SHADER,vsSrc);
   auto gs = make_shared<Shader>(GL_GEOMETRY_SHADER,
@@ -241,6 +249,7 @@ void main(){
       Shader::define("SF_ALIGNMENT"       ,(uint32_t)sfAlignment       ),
       Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
       Shader::define("NOF_TRIANGLES"      ,(uint32_t)nofTriangles      ),
+      Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
       gsSrc);
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",
