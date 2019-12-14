@@ -281,6 +281,10 @@ void traverse(){
 
 #if WARP == 64
 
+uint job = 0u;
+
+layout(std430,binding = 7)buffer Debug{uint debug[];};
+
 void traverse(){
   int level = 0;
   uint64_t intersection[nofLevels];
@@ -300,10 +304,14 @@ void traverse(){
     //    debc[w*3+1+2] = uint(intersection[1]);
     //  }
     //}
-
     if(level == int(nofLevels)){
+      if(level >  int(nofLevels))return;
+      uint w = atomicAdd(debug[0],1);
+      debug[1+w*3+0] = job;
+      debug[1+w*3+1] = node;
+      debug[1+w*3+2] = uint(level);
       //test pixels
-#if 1
+#if 0
       lastLevel(node);
 #endif
       node >>= warpBits;
@@ -311,6 +319,13 @@ void traverse(){
     }else{
       uint status = uint(nodePool[nodeLevelOffsetInUints[level] + node*uintsPerWarp + uint(gl_LocalInvocationIndex>31u)]&uint(1u<<(gl_LocalInvocationIndex&0x1fu)));
       if(status != 0u){
+
+        if(level >  int(nofLevels))return;
+        uint w = atomicAdd(debug[0],1);
+        debug[1+w*3+0] = job;
+        debug[1+w*3+1] = node;
+        debug[1+w*3+2] = uint(level);
+
         vec3 minCorner;
         vec3 aabbSize;
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
@@ -358,10 +373,9 @@ void traverse(){
 
 #endif
 
-
 #line 36
 void main(){
-  uint job;
+  //uint job = 0u;
   for(;;){
     if(gl_LocalInvocationIndex==0){
       job = atomicAdd(jobCounter[0],1);
@@ -371,6 +385,11 @@ void main(){
     if(job >= NOF_TRIANGLES)return;
 
     loadShadowFrustum(job);
+
+    //uint w = atomicAdd(debug[0],1);
+    //debug[1+w*3+0] = job;
+    //debug[1+w*3+1] = 0;
+    //debug[1+w*3+2] = uint(0);
 
     traverse();
 

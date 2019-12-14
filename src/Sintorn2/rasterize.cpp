@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <Timer.h>
 #include <bitset>
+#include <Sintorn2/config.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -108,9 +109,52 @@ void sintorn2::rasterize(vars::Vars&vars){
 
   prg->use();
 
+  auto debug = make_shared<Buffer>(sizeof(uint32_t)*(1+1024+1024));
+  debug->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
 
-  glDispatchCompute(1024,1,1);
+  //glDispatchCompute(1024,1,1);
+  glDispatchCompute(1,1,1);
   glMemoryBarrier(GL_ALL_BARRIER_BITS);
+  glFinish();
+  std::vector<uint32_t>debugData;
+  debug->getData(debugData);
+
+  std::cerr << "N: " << debugData[0] << std::endl;
+  std::vector<uint32_t>levelCounter(10);
+  for(auto&l:levelCounter)l=0;
+  std::vector<uint32_t>jobCnt(10);
+  for(auto&l:jobCnt)l=0;
+  for(uint32_t j=0;j<debugData[0];++j){
+    auto i = 1+j*3;
+    auto job   = debugData[i+0];
+    //auto node  = debugData[i+1];
+    auto level = debugData[i+2];
+    if(level<10)
+      levelCounter[level]++;
+    if(job<10)
+      jobCnt[job]++;
+  }
+  for(uint32_t i=0;i<levelCounter.size();++i){
+    std::cerr << "level" << i << ": " << levelCounter[i] << std::endl;
+    
+  }
+  for(uint32_t i=0;i<jobCnt.size();++i){
+    std::cerr << "job" << i << ": " << jobCnt[i] << std::endl;
+    
+  }
+  //auto cfg = *vars.get<Config>("sintorn2.method.config");;
+  //for(uint32_t j=0;j<debugData[0];++j){
+  //  auto i = 1+j*3;
+  //  auto job   = debugData[i+0];
+  //  auto node  = debugData[i+1];
+  //  auto level = debugData[i+2];
+  //  if(level > cfg.nofLevels){
+  //    std::cerr << "job  : " << job   << " ";
+  //    std::cerr << "node : " << node  << " ";
+  //    std::cerr << "level: " << level << std::endl;
+  //  }
+  //}
 
   //auto deb = make_shared<Buffer>(sizeof(float)*7*10000);
   //auto debc = make_shared<Buffer>(sizeof(uint32_t)*(10000+1));
