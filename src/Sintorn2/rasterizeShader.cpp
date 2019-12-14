@@ -151,37 +151,45 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   return status;
 }
 
-/*
-#define TEST_SHADOW_FRUSTUM_LAST(LEVEL)\
-void JOIN(TestShadowFrustumHDB,LEVEL)(uvec2 coord,vec2 clipCoord){\
-  uvec2 localCoord             = getLocalCoords(LEVEL);\
-  uvec2 globalCoord            = coord * JOIN(TILE_DIVISIBILITY,LEVEL) + localCoord;\
-  vec2  globalClipCoord        = clipCoord + JOIN(TILE_SIZE_IN_CLIP_SPACE,LEVEL) * localCoord;\
-  if(texelFetch(triangleID,ivec2(globalCoord),0).x == SHADOWFRUSTUM_ID_IN_DISPATCH)return;\
-  vec4  SampleCoordInClipSpace = vec4(\
-    globalClipCoord + JOIN(TILE_SIZE_IN_CLIP_SPACE,LEVEL)*.5,\
-    texelFetch(HDT[LEVEL],ivec2(globalCoord),0).x,1);\
-  if(SampleCoordInClipSpace.z >= 1)return;\
-  bool inside = true;\
-  for(int p = 0; p < NOF_PLANES_PER_SF; ++p)\
-    inside=inside && dot(SampleCoordInClipSpace,SharedShadowFrusta[SHADOWFRUSTUM_ID_IN_WORKGROUP][p])>=0;\
-  if(inside)\
-    imageStore(FinalStencilMask,ivec2(globalCoord),uvec4(SHADOW_VALUE));\
-}
-
-*/
-//imageStore(shadowMask,ivec2(gl_GlobalInvocationID.xy),vec4(1-S));
 
 void lastLevel(uint node){
-  uvec2 sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+  uvec2 sampleCoord;
   vec4 clipCoord;
+  bool inside;
+  vec4 plane;
+
+
+  sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
 
   clipCoord.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
   clipCoord.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
   clipCoord.w = 1.f;
 
-  bool inside = true;
-  vec4 plane;
+  inside = true;
+  plane;
+
+  plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
+  inside = inside && (dot(plane,clipCoord) >= 0);
+  plane = vec4(shadowFrustaPlanes[4],shadowFrustaPlanes[5],shadowFrustaPlanes[6],shadowFrustaPlanes[7]);
+  inside = inside && (dot(plane,clipCoord) >= 0);
+  plane = vec4(shadowFrustaPlanes[8],shadowFrustaPlanes[9],shadowFrustaPlanes[10],shadowFrustaPlanes[11]);
+  inside = inside && (dot(plane,clipCoord) >= 0);
+  plane = vec4(shadowFrustaPlanes[12],shadowFrustaPlanes[13],shadowFrustaPlanes[14],shadowFrustaPlanes[15]);
+  inside = inside && (dot(plane,clipCoord) >= 0);
+
+  if(inside)
+    imageStore(shadowMask,ivec2(sampleCoord),vec4(0));
+
+
+
+  sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX) + uvec2(0u,4u);
+
+  clipCoord.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
+  clipCoord.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
+  clipCoord.w = 1.f;
+
+  inside = true;
+  plane;
 
   plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
   inside = inside && (dot(plane,clipCoord) >= 0);
@@ -195,6 +203,83 @@ void lastLevel(uint node){
   if(inside)
     imageStore(shadowMask,ivec2(sampleCoord),vec4(0));
 }
+
+#if WARP == 32
+
+void traverse(){
+  int level = 0;
+  uint intersection[nofLevels];
+  //uvec2 intersection[nofLevels];
+  //if(nofLevels > 0)intersection[0] = uvec2(0);
+  //if(nofLevels > 1)intersection[1] = uvec2(0);
+  //if(nofLevels > 2)intersection[2] = uvec2(0);
+  //if(nofLevels > 3)intersection[3] = uvec2(0);
+
+  uint node = 0;
+  while(level >= 0){
+    //if(gl_LocalInvocationIndex==0){
+    //  uint w = atomicAdd(debc[0],1);
+    //  if(w<100){
+    //    debc[w*3+1+0] = uint(level);
+    //    debc[w*3+1+1] = uint(intersection[0]);
+    //    debc[w*3+1+2] = uint(intersection[1]);
+    //  }
+    //}
+
+    if(level == int(nofLevels)){
+      //test pixels
+#if 1
+      lastLevel(node);
+#endif
+      node >>= warpBits;
+      level--;
+    }else{
+      uint status = uint(nodePool[nodeLevelOffsetInUints[level] + node]&uint(1u<<(gl_LocalInvocationIndex)));
+      if(status != 0u){
+        vec3 minCorner;
+        vec3 aabbSize;
+        minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
+        minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
+        minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
+        aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
+        aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
+        aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+
+
+        status = trivialRejectAccept(minCorner,aabbSize);
+      }
+      intersection[level] = unpackUint2x32(ballotARB(status == INTERSECTS    ))[0];
+      uint     trA        = unpackUint2x32(ballotARB(status == TRIVIAL_ACCEPT))[0];
+
+#if 1
+      if(gl_LocalInvocationIndex == 0u){
+        if(trA != 0u)
+          atomicAnd(nodePool[nodeLevelOffsetInUints[level]+node],~trA);
+      }
+#endif
+
+    }
+
+    while(level >= 0 && intersection[level] == 0u){
+      node >>= warpBits;
+      level--;
+    }
+    if(level < 0)break;
+    if(level>=0){
+      uint selectedBit = findLSB(intersection[level]);
+      node <<= warpBits   ;
+      node  += selectedBit;
+
+      intersection[level] ^= 1u << selectedBit;
+
+      level++;
+    }
+  }
+}
+
+#endif
+
+#if WARP == 64
 
 void traverse(){
   int level = 0;
@@ -271,6 +356,8 @@ void traverse(){
   }
 }
 
+#endif
+
 
 #line 36
 void main(){
@@ -285,11 +372,6 @@ void main(){
 
     loadShadowFrustum(job);
 
-    //{
-    //  uint xx = job % 100;
-    //  uint yy = job / 100;
-    //  imageStore(shadowMask,ivec2(xx,yy),vec4(0));
-    //}
     traverse();
 
   }

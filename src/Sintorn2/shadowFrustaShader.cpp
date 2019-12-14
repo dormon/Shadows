@@ -133,9 +133,9 @@ void main(){
   vec3 l0 = normalize(lightPosition.xyz-v0*lightPosition.w);
   vec3 l1 = normalize(lightPosition.xyz-v1*lightPosition.w);
   vec3 l2 = normalize(lightPosition.xyz-v2*lightPosition.w);
-  f0.xyz = normalize(cross(cross(l0,normalize(v0-v1)+normalize(v0-v2)),l0));
-  f1.xyz = normalize(cross(cross(l1,normalize(v1-v0)+normalize(v1-v2)),l1));
-  f2.xyz = normalize(cross(cross(l2,normalize(v2-v0)+normalize(v2-v1)),l2));
+  f0.xyz = -normalize(cross(cross(l0,normalize(v0-v1)+normalize(v0-v2)),l0));
+  f1.xyz = -normalize(cross(cross(l1,normalize(v1-v0)+normalize(v1-v2)),l1));
+  f2.xyz = -normalize(cross(cross(l2,normalize(v2-v0)+normalize(v2-v1)),l2));
   f0.w = -dot(f0.xyz,v0);
   f1.w = -dot(f1.xyz,v1);
   f2.w = -dot(f2.xyz,v2);
