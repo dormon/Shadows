@@ -204,6 +204,11 @@ void lastLevel(uint node){
     imageStore(shadowMask,ivec2(sampleCoord),vec4(0));
 }
 
+
+uint job = 0u;
+
+layout(std430,binding = 7)buffer Debug{uint debug[];};
+
 #if WARP == 32
 
 void traverse(){
@@ -227,6 +232,14 @@ void traverse(){
     //}
 
     if(level == int(nofLevels)){
+        if(level >  int(nofLevels))return;
+        if(gl_LocalInvocationIndex==0){
+          uint w = atomicAdd(debug[0],1);
+          debug[1+w*3+0] = job;
+          debug[1+w*3+1] = node;
+          debug[1+w*3+2] = uint(level);
+        }
+
       //test pixels
 #if 1
       lastLevel(node);
@@ -236,6 +249,16 @@ void traverse(){
     }else{
       uint status = uint(nodePool[nodeLevelOffsetInUints[level] + node]&uint(1u<<(gl_LocalInvocationIndex)));
       if(status != 0u){
+        if(level >  int(nofLevels))return;
+
+        //if(gl_LocalInvocationIndex == 0)
+        {
+          uint w = atomicAdd(debug[0],1);
+          debug[1+w*3+0] = job;
+          debug[1+w*3+1] = node;
+          debug[1+w*3+2] = uint(level);
+        }
+
         vec3 minCorner;
         vec3 aabbSize;
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
@@ -281,9 +304,6 @@ void traverse(){
 
 #if WARP == 64
 
-uint job = 0u;
-
-layout(std430,binding = 7)buffer Debug{uint debug[];};
 
 void traverse(){
   int level = 0;
@@ -306,12 +326,14 @@ void traverse(){
     //}
     if(level == int(nofLevels)){
       if(level >  int(nofLevels))return;
-      uint w = atomicAdd(debug[0],1);
-      debug[1+w*3+0] = job;
-      debug[1+w*3+1] = node;
-      debug[1+w*3+2] = uint(level);
+      if(gl_LocalInvocationIndex==0){
+        uint w = atomicAdd(debug[0],1);
+        debug[1+w*3+0] = job;
+        debug[1+w*3+1] = node;
+        debug[1+w*3+2] = uint(level);
+      }
       //test pixels
-#if 0
+#if 1
       lastLevel(node);
 #endif
       node >>= warpBits;

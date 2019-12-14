@@ -109,9 +109,11 @@ void sintorn2::rasterize(vars::Vars&vars){
 
   prg->use();
 
-  auto debug = make_shared<Buffer>(sizeof(uint32_t)*(1+1024+1024));
+  glFinish();
+  auto debug = make_shared<Buffer>(sizeof(uint32_t)*(1+1024*1024));
   debug->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
   debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+  glFinish();
 
   //glDispatchCompute(1024,1,1);
   glDispatchCompute(1,1,1);
@@ -143,6 +145,9 @@ void sintorn2::rasterize(vars::Vars&vars){
     std::cerr << "job" << i << ": " << jobCnt[i] << std::endl;
     
   }
+  //for(uint32_t i=0;i<10000;++i)
+  //  std::cerr << debugData[i] << " ";
+  //std::cerr << std::endl;
   //auto cfg = *vars.get<Config>("sintorn2.method.config");;
   //for(uint32_t j=0;j<debugData[0];++j){
   //  auto i = 1+j*3;
