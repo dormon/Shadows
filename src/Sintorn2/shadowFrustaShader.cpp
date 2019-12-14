@@ -151,11 +151,6 @@ void main(){
 		e1=-e1;
 		e2=-e2;
 		e3=-e3;
-#if MORE_PLANES == 1
-    f0=-f0;
-    f1=-f1;
-    f2=-f2;
-#endif
 	}
 	e3=transposeInverseModelViewProjection*e3;
 #endif
