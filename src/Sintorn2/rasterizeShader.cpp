@@ -22,9 +22,13 @@ std::string const sintorn2::rasterizeShader = R".(
 #define MORE_PLANES 0
 #endif//MORE_PLANES
 
+#ifndef ENABLE_FFC
+#define ENABLE_FFC 0
+#endif//ENABLE_FFC
+
 const uint planesPerSF = 4u + MORE_PLANES*3u;
 const uint floatsPerPlane = 4u;
-const uint floatsPerSF = planesPerSF * floatsPerPlane;
+const uint floatsPerSF = planesPerSF * floatsPerPlane + uint(ENABLE_FFC);
 
 layout(local_size_x=WARP)in;
 
@@ -51,6 +55,16 @@ void loadShadowFrustum(uint job){
   }
 }
 
+#if SAVE_COLLISION == 1
+layout(std430,binding=5)buffer Deb{float deb[];};
+layout(std430,binding=6)buffer Debc{uint debc[];};
+#endif
+
+#if SAVE_TRAVERSE_STAT == 1
+layout(std430,binding = 7)buffer Debug{uint debug[];};
+#endif
+
+
 
 vec3 trivialRejectCorner3D(vec3 Normal){
   return vec3((ivec3(sign(Normal))+1)/2);
@@ -60,12 +74,9 @@ const uint TRIVIAL_REJECT = 0xf0u;
 const uint TRIVIAL_ACCEPT =    3u;
 const uint INTERSECTS     =    2u;
 
-//layout(std430,binding=6)buffer Deb{float deb[];};
-//layout(std430,binding=7)buffer Debc{uint debc[];};
-
 /*
 void debugStoreAABB(vec3 minCorner,vec3 size,vec4 plane){
-  return;
+  //return;
   uint w = atomicAdd(debc[0],1);
   uint NN = 17;
   deb[w*NN+0] = minCorner[0];
@@ -98,35 +109,31 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   vec3 tr;
 
   plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
-  //debugStoreAABB(minCorner,size,plane);
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
-  tr = 1.f-tr;
+  tr = vec3(1.f)-tr;
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
 
   plane = vec4(shadowFrustaPlanes[4],shadowFrustaPlanes[5],shadowFrustaPlanes[6],shadowFrustaPlanes[7]);
-  //debugStoreAABB(minCorner,size,plane);
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
-  tr = 1.f-tr;
+  tr = vec3(1.f)-tr;
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
 
   plane = vec4(shadowFrustaPlanes[8],shadowFrustaPlanes[9],shadowFrustaPlanes[10],shadowFrustaPlanes[11]);
-  //debugStoreAABB(minCorner,size,plane);
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
-  tr = 1.f-tr;
+  tr = vec3(1.f)-tr;
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
 
   plane = vec4(shadowFrustaPlanes[12],shadowFrustaPlanes[13],shadowFrustaPlanes[14],shadowFrustaPlanes[15]);
-  //debugStoreAABB(minCorner,size,plane);
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
-  tr = 1.f-tr;
+  tr = vec3(1.f)-tr;
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1.f),plane)>0.f);
 
 #if MORE_PLANES == 1
@@ -166,7 +173,6 @@ void lastLevel(uint node){
   clipCoord.w = 1.f;
 
   inside = true;
-  plane;
 
   plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
   inside = inside && (dot(plane,clipCoord) >= 0);
@@ -189,7 +195,6 @@ void lastLevel(uint node){
   clipCoord.w = 1.f;
 
   inside = true;
-  plane;
 
   plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
   inside = inside && (dot(plane,clipCoord) >= 0);
@@ -206,8 +211,6 @@ void lastLevel(uint node){
 
 
 uint job = 0u;
-
-layout(std430,binding = 7)buffer Debug{uint debug[];};
 
 #if WARP == 32
 
@@ -325,14 +328,17 @@ void traverse(){
     //  }
     //}
     if(level == int(nofLevels)){
-      if(level >  int(nofLevels))return;
+
+#if SAVE_TRAVERSE_STAT == 1
       if(gl_LocalInvocationIndex==0){
         uint w = atomicAdd(debug[0],1);
-        debug[1+w*3+0] = job;
-        debug[1+w*3+1] = node;
-        debug[1+w*3+2] = uint(level);
+        debug[1+w*4+0] = job;
+        debug[1+w*4+1] = node;
+        debug[1+w*4+2] = uint(level);
+        debug[1+w*4+3] = 0xff;
       }
-      //test pixels
+#endif
+
 #if 1
       lastLevel(node);
 #endif
@@ -343,10 +349,6 @@ void traverse(){
       if(status != 0u){
 
         if(level >  int(nofLevels))return;
-        uint w = atomicAdd(debug[0],1);
-        debug[1+w*3+0] = job;
-        debug[1+w*3+1] = node;
-        debug[1+w*3+2] = uint(level);
 
         vec3 minCorner;
         vec3 aabbSize;
@@ -359,7 +361,44 @@ void traverse(){
 
 
         status = trivialRejectAccept(minCorner,aabbSize);
+
+#if SAVE_COLLISION == 1
+#line 363
+        uint w = atomicAdd(debc[0],1);
+        if(w<10000){
+          const uint NN = 1+1+3+3+floatsPerSF;
+          deb[w*NN+0] = float(status);
+          deb[w*NN+1] = float(level);
+
+          for(uint i=0;i<3;++i)
+            deb[w*NN+1+1+i] = 
+              //1.f+float(i);
+              minCorner[i];
+
+          for(uint i=0;i<3;++i)
+            deb[w*NN+1+1+3+i] = 
+              //1.f+3.f+float(i);
+              aabbSize[i];
+
+          for(uint i=0;i<floatsPerSF;++i)
+            deb[w*NN+1+1+3+3+i] = 
+              //1.f+3.f+3.f+float(i);
+              shadowFrustaPlanes[i];
+        }
+#endif
+
+
+
       }
+
+#if SAVE_TRAVERSE_STAT == 1
+        uint w = atomicAdd(debug[0],1);
+        debug[1+w*4+0] = job;
+        debug[1+w*4+1] = node;
+        debug[1+w*4+2] = uint(level);
+        debug[1+w*4+3] = status;
+#endif
+
       intersection[level] = ballotARB(status == INTERSECTS    );
       uint64_t trA        = ballotARB(status == TRIVIAL_ACCEPT);
 
@@ -407,6 +446,11 @@ void main(){
     if(job >= NOF_TRIANGLES)return;
 
     loadShadowFrustum(job);
+
+    #if (ENABLE_FFC == 1)
+      if(shadowFrustaPlanes[floatsPerSF-1] == 1.f)
+        continue;
+    #endif
 
     //uint w = atomicAdd(debug[0],1);
     //debug[1+w*3+0] = job;

@@ -27,6 +27,7 @@ void createShadowFrustaProgram(vars::Vars&vars){
       ,"sintorn2.param.sfInterleave"
       ,"sintorn2.param.triangleInterleave"
       ,"sintorn2.param.morePlanes"
+      ,"sintorn2.param.ffc"
       );
 
   auto const wavefrontSize       = vars.getSizeT ("wavefrontSize"                    );
@@ -38,6 +39,7 @@ void createShadowFrustaProgram(vars::Vars&vars){
   auto const sfInterleave        = vars.getInt32 ("sintorn2.param.sfInterleave"      );
   auto const triangleInterleave  = vars.getInt32 ("sintorn2.param.triangleInterleave");
   auto const morePlanes          = vars.getInt32 ("sintorn2.param.morePlanes"        );
+  auto const ffc                 = vars.getInt32 ("sintorn2.param.ffc"               );
 
 
   vars.reCreate<ge::gl::Program>("sintorn2.method.shadowFrustaProgram",
@@ -52,6 +54,7 @@ void createShadowFrustaProgram(vars::Vars&vars){
         Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
         Shader::define("TRIANGLE_INTERLEAVE",(int)     triangleInterleave),
         Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
+        Shader::define("ENABLE_FFC"         ,(int)     ffc               ),
         sintorn2::shadowFrustaShader
         ));
 }
@@ -63,6 +66,7 @@ void allocateShadowFrusta(vars::Vars&vars){
       ,"sintorn2.param.sfAlignment"
       ,"sintorn2.param.triangleInterleave"
       ,"sintorn2.param.morePlanes"
+      ,"sintorn2.param.ffc"
       ,"model"
       );
 
@@ -70,13 +74,14 @@ void allocateShadowFrusta(vars::Vars&vars){
   auto const sfAlignment         = vars.getUint32("sintorn2.param.sfAlignment"      );
   auto const triangleInterleave  = vars.getInt32 ("sintorn2.param.triangleInterleave");
   auto const morePlanes          = vars.getInt32 ("sintorn2.param.morePlanes"        );
+  auto const ffc                 = vars.getInt32 ("sintorn2.param.ffc"               );
 
   vector<float>vertices = vars.get<Model>("model")->getVertices();
   auto nofTriangles = (uint32_t)(vertices.size()/3/3);
   
   uint32_t const planesPerSF = 4 + morePlanes*3;
   uint32_t const floatsPerPlane = 4;
-  uint32_t const floatsPerSF = floatsPerPlane * planesPerSF;
+  uint32_t const floatsPerSF = floatsPerPlane * planesPerSF + (uint32_t)ffc;
 
   auto const aNofT = align(nofTriangles,(uint32_t)triangleAlignment);
 

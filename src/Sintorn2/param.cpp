@@ -18,5 +18,6 @@ void sintorn2::loadParams(
   vars.addInt32 ("sintorn2.param.sfInterleave"           ) = c->geti32   ("sfInterleave"      ,1   ,"interleave shadow frusta floats"                                                 );
   vars.addInt32 ("sintorn2.param.triangleInterleave"     ) = c->geti32   ("triangleInterleave",1   ,"interleave triangle floats"                                                      );
   vars.addInt32 ("sintorn2.param.morePlanes"             ) = c->geti32   ("morePlanes"        ,1   ,"additional frustum planes"                                                       );
+  vars.addInt32 ("sintorn2.param.ffc"                    ) = c->geti32   ("ffc"               ,1   ,"active front face culling"                                                       );
 
 }

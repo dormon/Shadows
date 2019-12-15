@@ -41,9 +41,13 @@ std::string const sintorn2::shadowFrustaShader = R".(
 #define MORE_PLANES 0
 #endif//MORE_PLANES
 
+#ifndef ENABLE_FFC
+#define ENABLE_FFC 0
+#endif//ENABLE_FFC
+
 const uint planesPerSF = 4u + MORE_PLANES*3u;
 const uint floatsPerPlane = 4u;
-const uint floatsPerSF = planesPerSF * floatsPerPlane;
+const uint floatsPerSF = planesPerSF * floatsPerPlane + uint(ENABLE_FFC);
 
 #line 38
 
@@ -144,9 +148,9 @@ void main(){
   f2 = transposeInverseModelViewProjection*f2;
 #endif
 
-	bool backFacing=false;
+	float ffc = 1.f;
 	if(dot(e3,lightPosition)>0){
-		backFacing=true;
+		ffc=0.f;
 		e0=-e0;
 		e1=-e1;
 		e2=-e2;
@@ -177,6 +181,11 @@ void main(){
   shadowFrusta[alignedNofSF*13u + gid] = e3[1];
   shadowFrusta[alignedNofSF*14u + gid] = e3[2];
   shadowFrusta[alignedNofSF*15u + gid] = e3[3];
+
+  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
+    shadowFrusta[alignedNofSF*16u + gid] = ffc;
+  #endif
+
   #if MORE_PLANES == 1
     shadowFrusta[alignedNofSF*16u + gid] = f0[0];
     shadowFrusta[alignedNofSF*17u + gid] = f0[1];
@@ -192,6 +201,9 @@ void main(){
     shadowFrusta[alignedNofSF*25u + gid] = f2[1];
     shadowFrusta[alignedNofSF*26u + gid] = f2[2];
     shadowFrusta[alignedNofSF*27u + gid] = f2[3];
+    #if ENABLE_FFC == 1
+      shadowFrusta[alignedNofSF*28u + gid] = ffc;
+    #endif
   #endif
 #else
   shadowFrusta[gid*floatsPerSF+ 0u] = e0[0];
@@ -210,6 +222,11 @@ void main(){
   shadowFrusta[gid*floatsPerSF+13u] = e3[1];
   shadowFrusta[gid*floatsPerSF+14u] = e3[2];
   shadowFrusta[gid*floatsPerSF+15u] = e3[3];
+
+  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
+    shadowFrusta[gid*floatsPerSF+15u] = ffc;
+  #endif
+
   #if MORE_PLANES == 1
     shadowFrusta[gid*floatsPerSF+16u] = f0[0];
     shadowFrusta[gid*floatsPerSF+17u] = f0[1];
@@ -223,6 +240,11 @@ void main(){
     shadowFrusta[gid*floatsPerSF+25u] = f2[1];
     shadowFrusta[gid*floatsPerSF+26u] = f2[2];
     shadowFrusta[gid*floatsPerSF+27u] = f2[3];
+
+    #if ENABLE_FFC == 1
+      shadowFrusta[gid*floatsPerSF+28u] = ffc;
+    #endif
+ 
   #endif
 #endif
 }
