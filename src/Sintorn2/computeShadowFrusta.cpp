@@ -8,6 +8,7 @@
 #include <Model.h>
 #include <divRoundUp.h>
 #include <align.h>
+#include <perfCounters.h>
 
 #include <Sintorn2/computeShadowFrusta.h>
 #include <Sintorn2/shadowFrustaShader.h>
@@ -133,7 +134,21 @@ void sintorn2::computeShadowFrusta(vars::Vars&vars){
     ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp))))
     ->use();
 
-  glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  if(vars.addOrGetBool("sintorn2.method.perfCounters.shadowFrusta")){
+    if(vars.addOrGetBool("sintorn2.method.perfCounters.oneCounter")){
+      perf::printComputeShaderProf([&](){
+      glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
+      glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+      },vars.addOrGetUint32("sintorn2.method.perfCounters.counter"));
+    }else{
+      perf::printComputeShaderProf([&](){
+      glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
+      glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+      });
+    }
+  }else{
+    glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  }
 
 }
