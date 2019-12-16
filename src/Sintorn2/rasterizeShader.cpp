@@ -53,6 +53,9 @@ void loadShadowFrustum(uint job){
     shadowFrustaPlanes[gl_LocalInvocationIndex] = shadowFrusta[job*floatsPerSF+gl_LocalInvocationIndex];
 #endif
   }
+#if WARP == 32
+  memoryBarrierShared();
+#endif
 }
 
 #if SAVE_COLLISION == 1
@@ -73,35 +76,6 @@ vec3 trivialRejectCorner3D(vec3 Normal){
 const uint TRIVIAL_REJECT = 0xf0u;
 const uint TRIVIAL_ACCEPT =    3u;
 const uint INTERSECTS     =    2u;
-
-/*
-void debugStoreAABB(vec3 minCorner,vec3 size,vec4 plane){
-  //return;
-  uint w = atomicAdd(debc[0],1);
-  uint NN = 17;
-  deb[w*NN+0] = minCorner[0];
-  deb[w*NN+1] = minCorner[1];
-  deb[w*NN+2] = minCorner[2];
-  deb[w*NN+3] = size[0];
-  deb[w*NN+4] = size[1];
-  deb[w*NN+5] = size[2];
-  deb[w*NN+6] = plane[0];
-  deb[w*NN+7] = plane[1];
-  deb[w*NN+8] = plane[2];
-  deb[w*NN+9] = plane[3];
-  vec3 trr;
-  trr = minCorner + trivialRejectCorner3D(plane.xyz)*size;
-  deb[w*NN+10] = trr[0];
-  deb[w*NN+11] = trr[1];
-  deb[w*NN+12] = trr[2];
-  trr = minCorner + (1.f-trivialRejectCorner3D(plane.xyz))*size;
-  deb[w*NN+13] = trr[0];
-  deb[w*NN+14] = trr[1];
-  deb[w*NN+15] = trr[2];
-  deb[w*NN+16] = float(gl_LocalInvocationIndex);
-}
-
-// */
 
 uint trivialRejectAccept(vec3 minCorner,vec3 size){
   uint status = TRIVIAL_ACCEPT;
@@ -217,33 +191,22 @@ uint job = 0u;
 void traverse(){
   int level = 0;
   uint intersection[nofLevels];
-  //uvec2 intersection[nofLevels];
-  //if(nofLevels > 0)intersection[0] = uvec2(0);
-  //if(nofLevels > 1)intersection[1] = uvec2(0);
-  //if(nofLevels > 2)intersection[2] = uvec2(0);
-  //if(nofLevels > 3)intersection[3] = uvec2(0);
 
   uint node = 0;
   while(level >= 0){
-    //if(gl_LocalInvocationIndex==0){
-    //  uint w = atomicAdd(debc[0],1);
-    //  if(w<100){
-    //    debc[w*3+1+0] = uint(level);
-    //    debc[w*3+1+1] = uint(intersection[0]);
-    //    debc[w*3+1+2] = uint(intersection[1]);
-    //  }
-    //}
 
     if(level == int(nofLevels)){
-        if(level >  int(nofLevels))return;
-        if(gl_LocalInvocationIndex==0){
-          uint w = atomicAdd(debug[0],1);
-          debug[1+w*3+0] = job;
-          debug[1+w*3+1] = node;
-          debug[1+w*3+2] = uint(level);
-        }
 
-      //test pixels
+#if SAVE_TRAVERSE_STAT == 1
+      if(gl_LocalInvocationIndex==0){
+        uint w = atomicAdd(debug[0],1);
+        debug[1+w*4+0] = job;
+        debug[1+w*4+1] = node;
+        debug[1+w*4+2] = uint(level);
+        debug[1+w*4+3] = 0xff;
+      }
+#endif
+
 #if 1
       lastLevel(node);
 #endif
@@ -253,14 +216,6 @@ void traverse(){
       uint status = uint(nodePool[nodeLevelOffsetInUints[level] + node]&uint(1u<<(gl_LocalInvocationIndex)));
       if(status != 0u){
         if(level >  int(nofLevels))return;
-
-        //if(gl_LocalInvocationIndex == 0)
-        {
-          uint w = atomicAdd(debug[0],1);
-          debug[1+w*3+0] = job;
-          debug[1+w*3+1] = node;
-          debug[1+w*3+2] = uint(level);
-        }
 
         vec3 minCorner;
         vec3 aabbSize;
@@ -274,6 +229,15 @@ void traverse(){
 
         status = trivialRejectAccept(minCorner,aabbSize);
       }
+
+#if SAVE_TRAVERSE_STAT == 1
+        uint w = atomicAdd(debug[0],1);
+        debug[1+w*4+0] = job;
+        debug[1+w*4+1] = node;
+        debug[1+w*4+2] = uint(level);
+        debug[1+w*4+3] = status;
+#endif
+
       intersection[level] = unpackUint2x32(ballotARB(status == INTERSECTS    ))[0];
       uint     trA        = unpackUint2x32(ballotARB(status == TRIVIAL_ACCEPT))[0];
 
@@ -311,22 +275,9 @@ void traverse(){
 void traverse(){
   int level = 0;
   uint64_t intersection[nofLevels];
-  //uvec2 intersection[nofLevels];
-  //if(nofLevels > 0)intersection[0] = uvec2(0);
-  //if(nofLevels > 1)intersection[1] = uvec2(0);
-  //if(nofLevels > 2)intersection[2] = uvec2(0);
-  //if(nofLevels > 3)intersection[3] = uvec2(0);
 
   uint node = 0;
   while(level >= 0){
-    //if(gl_LocalInvocationIndex==0){
-    //  uint w = atomicAdd(debc[0],1);
-    //  if(w<100){
-    //    debc[w*3+1+0] = uint(level);
-    //    debc[w*3+1+1] = uint(intersection[0]);
-    //    debc[w*3+1+2] = uint(intersection[1]);
-    //  }
-    //}
     if(level == int(nofLevels)){
 
 #if SAVE_TRAVERSE_STAT == 1
@@ -436,7 +387,6 @@ void traverse(){
 
 #line 36
 void main(){
-  //uint job = 0u;
   for(;;){
     if(gl_LocalInvocationIndex==0){
       job = atomicAdd(jobCounter[0],1);
@@ -451,11 +401,6 @@ void main(){
       if(shadowFrustaPlanes[floatsPerSF-1] == 1.f)
         continue;
     #endif
-
-    //uint w = atomicAdd(debug[0],1);
-    //debug[1+w*3+0] = job;
-    //debug[1+w*3+1] = 0;
-    //debug[1+w*3+2] = uint(0);
 
     traverse();
 

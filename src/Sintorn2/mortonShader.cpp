@@ -43,7 +43,7 @@ const std::string sintorn2::mortonShader = R".(
 // .*.|   ...|...|...|       o    |     n     |   2n+3m   |  xxxxxxx
 // ...|   ...|...|...|       o    |     n     |   2n+3m   |  xxxxxxx
 
-
+#line 46
 uint morton2(uvec3 v){
   const uint clustersX     = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
   const uint clustersY     = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
@@ -77,8 +77,8 @@ uint morton(uvec3 v){
   const uint bits3Length   = shortest;
   const uint bits2Length   = uint(middle-shortest);
   const uint bits1Length   = uint(longest-middle);
-  const uint shortestAxis  = uint(uint(shortest == yBits) + uint(shortest == zBits)*2u);
-  const uint longestAxis   = uint(uint(longest  == yBits) + uint(longest  == zBits)*2u);
+  const uint shortestAxis  = clamp(uint(uint(shortest == yBits) + uint(shortest == zBits)*2u),0u,2u);
+  const uint longestAxis   = clamp(uint(uint(longest  == yBits) + uint(longest  == zBits)*2u),0u,2u);
   const uint shortestZ     = uint(shortestAxis == 2u);
   const uint shortestY     = uint(shortestAxis == 1u);
   const uint isMiddle      = uint(bits2Length > 0u);

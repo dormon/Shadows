@@ -67,6 +67,7 @@ const uint nodesPerLevel[6] = {
   1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
   1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
 };
+#line 70
 
 const uint nodeLevelOffset[6] = {
   0,
