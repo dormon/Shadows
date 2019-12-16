@@ -40,6 +40,10 @@ add_library(${PROJECT_NAME} STATIC
   rasterize.h
   rasterizeShader.cpp
   rasterizeShader.h
+  merge.cpp
+  merge.h
+  mergeShader.cpp
+  mergeShader.h
   )
 
 add_subdirectory(debug)

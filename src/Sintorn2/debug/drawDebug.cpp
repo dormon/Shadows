@@ -17,6 +17,7 @@
 #include <Sintorn2/debug/dumpData.h>
 #include <Sintorn2/debug/drawSamples.h>
 #include <Sintorn2/debug/drawNodePool.h>
+#include <Sintorn2/debug/drawSF.h>
 #include <Sintorn2/quantizeZShader.h>
 #include <Sintorn2/depthToZShader.h>
 #include <Sintorn2/config.h>
@@ -251,6 +252,7 @@ void sintorn2::drawDebug(vars::Vars&vars){
     DRAW_MORTON,
     DRAW_SAMPLES,
     DRAW_NODEPOOL,
+    DRAW_SF,
   };
 
   auto&type         = vars.addOrGetUint32("sintorn2.method.debug.type",DEFAULT);
@@ -279,6 +281,8 @@ void sintorn2::drawDebug(vars::Vars&vars){
         wireframe = !wireframe;
         vars.updateTicks("sintorn2.method.debug.wireframe");
       }
+      if(ImGui::MenuItem("drawShadowFrusta"))
+        type = DRAW_SF;
 
       if(type == DRAW_NODEPOOL){
         if(vars.has("sintorn2.method.debug.dump.config")){
@@ -311,6 +315,10 @@ void sintorn2::drawDebug(vars::Vars&vars){
   if(type == DRAW_NODEPOOL){
     debug::drawSamples(vars);
     debug::drawNodePool(vars);
+  }
+  if(type == DRAW_SF){
+    debug::drawSamples(vars);
+    debug::drawSF(vars);
   }
 
 

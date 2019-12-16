@@ -8,6 +8,7 @@
 #include <Model.h>
 #include <divRoundUp.h>
 #include <align.h>
+#include <perfCounters.h>
 
 #include <Sintorn2/computeShadowFrusta.h>
 #include <Sintorn2/shadowFrustaShader.h>
@@ -26,6 +27,8 @@ void createShadowFrustaProgram(vars::Vars&vars){
       ,"sintorn2.param.bias"
       ,"sintorn2.param.sfInterleave"
       ,"sintorn2.param.triangleInterleave"
+      ,"sintorn2.param.morePlanes"
+      ,"sintorn2.param.ffc"
       );
 
   auto const wavefrontSize       = vars.getSizeT ("wavefrontSize"                    );
@@ -36,6 +39,9 @@ void createShadowFrustaProgram(vars::Vars&vars){
   auto const bias                = vars.getFloat ("sintorn2.param.bias"              );
   auto const sfInterleave        = vars.getInt32 ("sintorn2.param.sfInterleave"      );
   auto const triangleInterleave  = vars.getInt32 ("sintorn2.param.triangleInterleave");
+  auto const morePlanes          = vars.getInt32 ("sintorn2.param.morePlanes"        );
+  auto const ffc                 = vars.getInt32 ("sintorn2.param.ffc"               );
+
 
   vars.reCreate<ge::gl::Program>("sintorn2.method.shadowFrustaProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
@@ -48,6 +54,8 @@ void createShadowFrustaProgram(vars::Vars&vars){
         Shader::define("BIAS"               ,(float   )bias              ),
         Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
         Shader::define("TRIANGLE_INTERLEAVE",(int)     triangleInterleave),
+        Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
+        Shader::define("ENABLE_FFC"         ,(int)     ffc               ),
         sintorn2::shadowFrustaShader
         ));
 }
@@ -58,19 +66,23 @@ void allocateShadowFrusta(vars::Vars&vars){
       ,"sintorn2.param.triangleAlignment"
       ,"sintorn2.param.sfAlignment"
       ,"sintorn2.param.triangleInterleave"
+      ,"sintorn2.param.morePlanes"
+      ,"sintorn2.param.ffc"
       ,"model"
       );
 
   auto const triangleAlignment   = vars.getUint32("sintorn2.param.triangleAlignment");
   auto const sfAlignment         = vars.getUint32("sintorn2.param.sfAlignment"      );
   auto const triangleInterleave  = vars.getInt32 ("sintorn2.param.triangleInterleave");
+  auto const morePlanes          = vars.getInt32 ("sintorn2.param.morePlanes"        );
+  auto const ffc                 = vars.getInt32 ("sintorn2.param.ffc"               );
 
   vector<float>vertices = vars.get<Model>("model")->getVertices();
   auto nofTriangles = (uint32_t)(vertices.size()/3/3);
   
-  uint32_t const planesPerSF = 4;
+  uint32_t const planesPerSF = 4 + morePlanes*3;
   uint32_t const floatsPerPlane = 4;
-  uint32_t const floatsPerFS = floatsPerPlane * planesPerSF;
+  uint32_t const floatsPerSF = floatsPerPlane * planesPerSF + (uint32_t)ffc;
 
   auto const aNofT = align(nofTriangles,(uint32_t)triangleAlignment);
 
@@ -88,7 +100,7 @@ void allocateShadowFrusta(vars::Vars&vars){
   }
 
   auto const aNofSF = align(nofTriangles,(uint32_t)sfAlignment);
-  uint32_t const sfSize = sizeof(float)*floatsPerFS*aNofSF;
+  uint32_t const sfSize = sizeof(float)*floatsPerSF*aNofSF;
 
   vars.reCreate<Buffer  >("sintorn2.method.shadowFrusta",sfSize      );
   vars.reCreate<Buffer  >("sintorn2.method.triangles"   ,triData     );
@@ -122,7 +134,21 @@ void sintorn2::computeShadowFrusta(vars::Vars&vars){
     ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp))))
     ->use();
 
-  glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  if(vars.addOrGetBool("sintorn2.method.perfCounters.shadowFrusta")){
+    if(vars.addOrGetBool("sintorn2.method.perfCounters.oneCounter")){
+      perf::printComputeShaderProf([&](){
+      glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
+      glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+      },vars.addOrGetUint32("sintorn2.method.perfCounters.counter"));
+    }else{
+      perf::printComputeShaderProf([&](){
+      glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
+      glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+      });
+    }
+  }else{
+    glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  }
 
 }

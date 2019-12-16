@@ -132,6 +132,7 @@ set(SOURCES
   src/split.cpp
   src/GSCaps.cpp
   src/createAdjacency.cpp
+  src/perfCounters.cpp
   )
 
 set(INCLUDES
@@ -201,6 +202,7 @@ set(INCLUDES
   src/createAdjacency.h
   src/Timer.h
   src/align.h
+  src/perfCounters.h
   )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${INCLUDES})

@@ -27,7 +27,10 @@ std::string const sintorn2::configShader = R".(
 #endif//MIN_Z_BITS
 
 
-
+const uint tileBitsX       = uint(ceil(log2(float(TILE_X))));
+const uint tileBitsY       = uint(ceil(log2(float(TILE_Y))));
+const uint tileMaskX       = uint(TILE_X-1u);
+const uint tileMaskY       = uint(TILE_Y-1u);
 const uint warpBits        = uint(ceil(log2(float(WARP))));
 const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
 const uint clustersY       = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
@@ -37,6 +40,18 @@ const uint zBits           = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_
 const uint allBits         = xBits + yBits + zBits;
 const uint nofLevels       = uint(allBits/warpBits) + uint(allBits%warpBits != 0u);
 const uint uintsPerWarp    = uint(WARP/32u);
+
+const uint bitLength[3] = {
+  min(min(xBits,yBits),zBits),
+  max(max(min(xBits,yBits),min(xBits,zBits)),min(yBits,zBits)),
+  max(max(xBits,yBits),zBits),
+};
+
+const uint bitTogether[3] = {
+  bitLength[0]                   ,
+  uint(bitLength[1]-bitLength[0]),
+  uint(bitLength[2]-bitLength[1]),
+};
 
 const uint warpMask        = uint(WARP - 1u);
 const uint floatsPerAABB   = 6u;
@@ -98,8 +113,13 @@ const uint aabbLevelOffsetInFloats[6] = {
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
 };
 
-//const uint xBitsPerLevel[6] = {
-//  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-0,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-0,0))%3) != 0)),0)),
-//};
+const uint xBitsPerLevel[6] = {
+  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-0,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-0,0))%3) != 0)),0)),
+  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-1,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-1,0))%3) != 0)),0)),
+  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-2,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-2,0))%3) != 0)),0)),
+  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-3,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-3,0))%3) != 0)),0)),
+  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-4,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-4,0))%3) != 0)),0)),
+  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-5,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-5,0))%3) != 0)),0)),
+};
 
 ).";

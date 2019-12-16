@@ -4,6 +4,7 @@
 
 #include <Deferred.h>
 #include <FunctionPrologue.h>
+#include <perfCounters.h>
 
 #include <Sintorn2/buildHierarchy.h>
 #include <Sintorn2/allocateHierarchy.h>
@@ -45,8 +46,15 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   depth->bind(1);
   
   prg->use();
-  glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT|GL_COMMAND_BARRIER_BIT);
+  if(vars.addOrGetBool("sintorn2.method.perfCounters.buildHierarchy")){
+    perf::printComputeShaderProf([&](){
+    glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT|GL_COMMAND_BARRIER_BIT);
+    });
+  }else{
+    glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT|GL_COMMAND_BARRIER_BIT);
+  }
 
 #if 0
   cfg.print();

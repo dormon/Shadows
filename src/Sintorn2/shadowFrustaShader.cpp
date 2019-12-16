@@ -37,7 +37,17 @@ std::string const sintorn2::shadowFrustaShader = R".(
 #define VEC4_PER_SHADOWFRUSTUM 4
 #endif//VEC4_PER_SHADOWFRUSTUM
 
-#define FLOATS_PER_SHADOWFRUSTUM (VEC4_PER_SHADOWFRUSTUM*4)
+#ifndef MORE_PLANES
+#define MORE_PLANES 0
+#endif//MORE_PLANES
+
+#ifndef ENABLE_FFC
+#define ENABLE_FFC 0
+#endif//ENABLE_FFC
+
+const uint planesPerSF = 4u + MORE_PLANES*3u;
+const uint floatsPerPlane = 4u;
+const uint floatsPerSF = planesPerSF * floatsPerPlane + uint(ENABLE_FFC);
 
 #line 38
 
@@ -119,9 +129,28 @@ void main(){
 			v1 + BIAS*normalize(v1*lightPosition.w-lightPosition.xyz),
 			v2 + BIAS*normalize(v2*lightPosition.w-lightPosition.xyz));
 
-	bool backFacing=false;
+
+#if MORE_PLANES == 1
+  vec4 f0;
+  vec4 f1;
+  vec4 f2;
+  vec3 l0 = normalize(lightPosition.xyz-v0*lightPosition.w);
+  vec3 l1 = normalize(lightPosition.xyz-v1*lightPosition.w);
+  vec3 l2 = normalize(lightPosition.xyz-v2*lightPosition.w);
+  f0.xyz = -normalize(cross(cross(l0,normalize(v0-v1)+normalize(v0-v2)),l0));
+  f1.xyz = -normalize(cross(cross(l1,normalize(v1-v0)+normalize(v1-v2)),l1));
+  f2.xyz = -normalize(cross(cross(l2,normalize(v2-v0)+normalize(v2-v1)),l2));
+  f0.w = -dot(f0.xyz,v0);
+  f1.w = -dot(f1.xyz,v1);
+  f2.w = -dot(f2.xyz,v2);
+  f0 = transposeInverseModelViewProjection*f0;
+  f1 = transposeInverseModelViewProjection*f1;
+  f2 = transposeInverseModelViewProjection*f2;
+#endif
+
+	float ffc = 1.f;
 	if(dot(e3,lightPosition)>0){
-		backFacing=true;
+		ffc=0.f;
 		e0=-e0;
 		e1=-e1;
 		e2=-e2;
@@ -129,6 +158,8 @@ void main(){
 	}
 	e3=transposeInverseModelViewProjection*e3;
 #endif
+
+
 
 #if SF_INTERLEAVE == 1
   shadowFrusta[alignedNofSF* 0u + gid] = e0[0];
@@ -150,23 +181,71 @@ void main(){
   shadowFrusta[alignedNofSF*13u + gid] = e3[1];
   shadowFrusta[alignedNofSF*14u + gid] = e3[2];
   shadowFrusta[alignedNofSF*15u + gid] = e3[3];
+
+  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
+    shadowFrusta[alignedNofSF*16u + gid] = ffc;
+  #endif
+
+  #if MORE_PLANES == 1
+    shadowFrusta[alignedNofSF*16u + gid] = f0[0];
+    shadowFrusta[alignedNofSF*17u + gid] = f0[1];
+    shadowFrusta[alignedNofSF*18u + gid] = f0[2];
+    shadowFrusta[alignedNofSF*19u + gid] = f0[3];
+
+    shadowFrusta[alignedNofSF*20u + gid] = f1[0];
+    shadowFrusta[alignedNofSF*21u + gid] = f1[1];
+    shadowFrusta[alignedNofSF*22u + gid] = f1[2];
+    shadowFrusta[alignedNofSF*23u + gid] = f1[3];
+
+    shadowFrusta[alignedNofSF*24u + gid] = f2[0];
+    shadowFrusta[alignedNofSF*25u + gid] = f2[1];
+    shadowFrusta[alignedNofSF*26u + gid] = f2[2];
+    shadowFrusta[alignedNofSF*27u + gid] = f2[3];
+    #if ENABLE_FFC == 1
+      shadowFrusta[alignedNofSF*28u + gid] = ffc;
+    #endif
+  #endif
 #else
-  shadowFrusta[gid*16u+ 0u] = e0[0];
-  shadowFrusta[gid*16u+ 1u] = e0[1];
-  shadowFrusta[gid*16u+ 2u] = e0[2];
-  shadowFrusta[gid*16u+ 3u] = e0[3];
-  shadowFrusta[gid*16u+ 4u] = e1[0];
-  shadowFrusta[gid*16u+ 5u] = e1[1];
-  shadowFrusta[gid*16u+ 6u] = e1[2];
-  shadowFrusta[gid*16u+ 7u] = e1[3];
-  shadowFrusta[gid*16u+ 8u] = e2[0];
-  shadowFrusta[gid*16u+ 9u] = e2[1];
-  shadowFrusta[gid*16u+10u] = e2[2];
-  shadowFrusta[gid*16u+11u] = e2[3];
-  shadowFrusta[gid*16u+12u] = e3[0];
-  shadowFrusta[gid*16u+13u] = e3[1];
-  shadowFrusta[gid*16u+14u] = e3[2];
-  shadowFrusta[gid*16u+15u] = e3[3];
+  shadowFrusta[gid*floatsPerSF+ 0u] = e0[0];
+  shadowFrusta[gid*floatsPerSF+ 1u] = e0[1];
+  shadowFrusta[gid*floatsPerSF+ 2u] = e0[2];
+  shadowFrusta[gid*floatsPerSF+ 3u] = e0[3];
+  shadowFrusta[gid*floatsPerSF+ 4u] = e1[0];
+  shadowFrusta[gid*floatsPerSF+ 5u] = e1[1];
+  shadowFrusta[gid*floatsPerSF+ 6u] = e1[2];
+  shadowFrusta[gid*floatsPerSF+ 7u] = e1[3];
+  shadowFrusta[gid*floatsPerSF+ 8u] = e2[0];
+  shadowFrusta[gid*floatsPerSF+ 9u] = e2[1];
+  shadowFrusta[gid*floatsPerSF+10u] = e2[2];
+  shadowFrusta[gid*floatsPerSF+11u] = e2[3];
+  shadowFrusta[gid*floatsPerSF+12u] = e3[0];
+  shadowFrusta[gid*floatsPerSF+13u] = e3[1];
+  shadowFrusta[gid*floatsPerSF+14u] = e3[2];
+  shadowFrusta[gid*floatsPerSF+15u] = e3[3];
+
+  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
+    shadowFrusta[gid*floatsPerSF+15u] = ffc;
+  #endif
+
+  #if MORE_PLANES == 1
+    shadowFrusta[gid*floatsPerSF+16u] = f0[0];
+    shadowFrusta[gid*floatsPerSF+17u] = f0[1];
+    shadowFrusta[gid*floatsPerSF+18u] = f0[2];
+    shadowFrusta[gid*floatsPerSF+19u] = f0[3];
+    shadowFrusta[gid*floatsPerSF+20u] = f1[0];
+    shadowFrusta[gid*floatsPerSF+21u] = f1[1];
+    shadowFrusta[gid*floatsPerSF+22u] = f1[2];
+    shadowFrusta[gid*floatsPerSF+23u] = f1[3];
+    shadowFrusta[gid*floatsPerSF+24u] = f2[0];
+    shadowFrusta[gid*floatsPerSF+25u] = f2[1];
+    shadowFrusta[gid*floatsPerSF+26u] = f2[2];
+    shadowFrusta[gid*floatsPerSF+27u] = f2[3];
+
+    #if ENABLE_FFC == 1
+      shadowFrusta[gid*floatsPerSF+28u] = ffc;
+    #endif
+ 
+  #endif
 #endif
 }
 

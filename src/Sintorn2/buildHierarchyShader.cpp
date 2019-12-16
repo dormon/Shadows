@@ -337,28 +337,32 @@ void compute(uvec2 coord,uvec2 coord2){
         if(nofLevels>1){
           uint bit  = (referenceMorton >> (warpBits*1u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*2u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-2u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-2u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+          if(mm == 0){
+            mm = atomicAdd(levelNodeCounter[clamp(nofLevels-2u,0u,5u)*4u],1);
+            activeNodes[nodeLevelOffset[clamp(nofLevels-2u,0u,5u)]+mm] = node*uintsPerWarp;
+          }
         }
-        if(nofLevels>2){
-          uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
-          uint node = (referenceMorton >> (warpBits*3u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-3u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
-        }
-        if(nofLevels>3){
-          uint bit  = (referenceMorton >> (warpBits*3u)) & warpMask;
-          uint node = (referenceMorton >> (warpBits*4u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-4u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
-        }
-        if(nofLevels>4){
-          uint bit  = (referenceMorton >> (warpBits*4u)) & warpMask;
-          uint node = (referenceMorton >> (warpBits*5u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-5u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
-        }
-        if(nofLevels>5){
-          uint bit  = (referenceMorton >> (warpBits*5u)) & warpMask;
-          uint node = (referenceMorton >> (warpBits*6u));
-          atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-6u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
-        }
+        //if(nofLevels>2){
+        //  uint bit  = (referenceMorton >> (warpBits*2u)) & warpMask;
+        //  uint node = (referenceMorton >> (warpBits*3u));
+        //  atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-3u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+        //}
+        //if(nofLevels>3){
+        //  uint bit  = (referenceMorton >> (warpBits*3u)) & warpMask;
+        //  uint node = (referenceMorton >> (warpBits*4u));
+        //  atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-4u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+        //}
+        //if(nofLevels>4){
+        //  uint bit  = (referenceMorton >> (warpBits*4u)) & warpMask;
+        //  uint node = (referenceMorton >> (warpBits*5u));
+        //  atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-5u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+        //}
+        //if(nofLevels>5){
+        //  uint bit  = (referenceMorton >> (warpBits*5u)) & warpMask;
+        //  uint node = (referenceMorton >> (warpBits*6u));
+        //  atomicOr(nodePool[nodeLevelOffsetInUints[clamp(nofLevels-6u,0u,5u)]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));
+        //}
       }
 
       uint sameCluster[2];
