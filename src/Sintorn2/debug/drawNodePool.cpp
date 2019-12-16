@@ -62,12 +62,12 @@ void prepareDrawNodePool(vars::Vars&vars){
   #endif
 
   const vec4 colors[6] = {
-    vec4(1,1,1,1),
-    vec4(1,0,0,1),
-    vec4(0,1,0,1),
-    vec4(0,0,1,1),
-    vec4(1,1,0,1),
-    vec4(1,0,1,1),
+    vec4(.1,.1,.1,1)*5,
+    vec4(.1,.0,.0,1)*5,
+    vec4(.0,.1,.0,1)*5,
+    vec4(.0,.0,.1,1)*5,
+    vec4(.1,.1,.0,1)*5,
+    vec4(.1,.0,.1,1)*5,
   };
   layout(location=0)out vec4 fColor;
   void main(){
