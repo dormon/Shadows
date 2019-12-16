@@ -73,6 +73,7 @@ void reduce(){
   ab[1] = reductionArray[WARP_OFFSET+WARP*4u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&16u)!=0u)) > 0.f);
   reductionArray[WARP_OFFSET+WARP*2u + THREAD_IN_WARP] = ab[w];
+memoryBarrierShared();
   
   //6*16 -> 6*8
   ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
@@ -84,24 +85,28 @@ void reduce(){
   ab[1] = reductionArray[WARP_OFFSET+WARP*2u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&8u)!=0u)) > 0.f);
   reductionArray[WARP_OFFSET+WARP*1u + THREAD_IN_WARP] = ab[w];
+memoryBarrierShared();
 
   //6*8 -> 6*4
   ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
   ab[1] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&4u)!=0u)) > 0.f);
   reductionArray[WARP_OFFSET+WARP*0u + THREAD_IN_WARP] = ab[w];
+memoryBarrierShared();
 
   //6*4 -> 6*2
   ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
   ab[1] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&2u)!=0u)) > 0.f);
   reductionArray[WARP_OFFSET+WARP*0u + THREAD_IN_WARP] = ab[w];
+memoryBarrierShared();
 
   //6*2 -> 6*1
   ab[0] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 0u];                 
   ab[1] = reductionArray[WARP_OFFSET+WARP*0u + (uint(THREAD_IN_WARP)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(THREAD_IN_WARP)&1u)!=0u)) > 0.f);
   reductionArray[WARP_OFFSET+WARP*0u + THREAD_IN_WARP] = ab[w];
+memoryBarrierShared();
 
 }
 
@@ -209,6 +214,7 @@ void main(){
       reductionArray[WARP_OFFSET+WARP*4u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+4u];
       reductionArray[WARP_OFFSET+WARP*5u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+5u];
     }
+    memoryBarrierShared();
 
     if(isActive == 0){
       reductionArray[WARP_OFFSET+WARP*0u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*0u+selectedBit];
@@ -218,6 +224,7 @@ void main(){
       reductionArray[WARP_OFFSET+WARP*4u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*4u+selectedBit];
       reductionArray[WARP_OFFSET+WARP*5u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*5u+selectedBit];
     }
+    memoryBarrierShared();
 
     reduce();
 

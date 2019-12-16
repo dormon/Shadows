@@ -39,6 +39,7 @@ void reduce(){
   ab[1] = reductionArray[(TILE_X*TILE_Y)*2u+(uint(gl_LocalInvocationIndex)<<1u)+ 1u];       
   reductionArray[WARP*4u+gl_LocalInvocationIndex] = min(ab[0],ab[1]);
   reductionArray[WARP*5u+gl_LocalInvocationIndex] = max(ab[0],ab[1]);
+memoryBarrierShared();//even if we have 32 threads WG == warp size of NVIDIA - barrier is necessary on 2080ti
 
 
   //if(gl_LocalInvocationIndex == 0){
@@ -70,6 +71,7 @@ void reduce(){
   ab[1] = reductionArray[(TILE_X*TILE_Y)*2u+(uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&((TILE_X*TILE_Y)>>2u))!=0u)) > 0.f);
   reductionArray[WARP*2u + gl_LocalInvocationIndex] = ab[w];
+memoryBarrierShared();
 
   //if(gl_LocalInvocationIndex == 0){
   //  for(uint k=0;k<6;++k){
@@ -94,6 +96,7 @@ void reduce(){
   ab[1] = reductionArray[(TILE_X*TILE_Y)*1u+(uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&((TILE_X*TILE_Y)>>3u)) != 0u)) > 0.f);
   reductionArray[WARP*1u + gl_LocalInvocationIndex] = ab[w];
+memoryBarrierShared();
 
   //if(gl_LocalInvocationIndex == 0){
   //  for(uint k=0;k<6;++k){
@@ -113,6 +116,7 @@ void reduce(){
   ab[1] = reductionArray[(TILE_X*TILE_Y)*0u+(uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&((TILE_X*TILE_Y)>>4u)) != 0u)) > 0.f);
   reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
+memoryBarrierShared();
 
 
   //if(gl_LocalInvocationIndex == 0){
@@ -133,6 +137,7 @@ void reduce(){
   ab[1] = reductionArray[(TILE_X*TILE_Y)*0u+(uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&((TILE_X*TILE_Y)>>5u)) != 0u)) > 0.f);
   reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
+memoryBarrierShared();
  
   //if(gl_LocalInvocationIndex == 0){
   //  for(uint k=0;k<6;++k){
@@ -152,6 +157,7 @@ void reduce(){
   ab[1] = reductionArray[(TILE_X*TILE_Y)*0u+(uint(gl_LocalInvocationIndex)<<1u) + 1u];                 
   w = uint((ab[1]-ab[0])*(-1.f+2.f*float((uint(gl_LocalInvocationIndex)&((TILE_X*TILE_Y)>>6u)) != 0u)) > 0.f);
   reductionArray[WARP*0u + gl_LocalInvocationIndex] = ab[w];
+memoryBarrierShared();
 }
 #endif
 
@@ -313,7 +319,7 @@ void compute(uvec2 coord,uvec2 coord2){
   morton[1] = getMorton(coord2,depth[1]);
 #endif
 
-#line 120
+#line 322
   //if(uintsPerWarp == 1){
   #if WARP == 32
     uint counter = 0;
@@ -376,6 +382,8 @@ void compute(uvec2 coord,uvec2 coord2){
       reductionArray[gl_LocalInvocationIndex+(TILE_X*TILE_Y)*1u+WARP] = -1.f + 2.f/float(WINDOW_Y)*(coord2.y+0.5f);
       reductionArray[gl_LocalInvocationIndex+(TILE_X*TILE_Y)*2u+WARP] = depth[1];
 
+      memoryBarrierShared();
+
       if(referenceMorton != morton[0] || activeThread[0] == 0){
         reductionArray[gl_LocalInvocationIndex+(TILE_X*TILE_Y)*0u+0] = reductionArray[selectedBit+(TILE_X*TILE_Y)*0u];
         reductionArray[gl_LocalInvocationIndex+(TILE_X*TILE_Y)*1u+0] = reductionArray[selectedBit+(TILE_X*TILE_Y)*1u];
@@ -387,6 +395,7 @@ void compute(uvec2 coord,uvec2 coord2){
         reductionArray[gl_LocalInvocationIndex+(TILE_X*TILE_Y)*1u+WARP] = reductionArray[selectedBit+(TILE_X*TILE_Y)*1u];
         reductionArray[gl_LocalInvocationIndex+(TILE_X*TILE_Y)*2u+WARP] = reductionArray[selectedBit+(TILE_X*TILE_Y)*2u];
       }
+      memoryBarrierShared();
 
       reduce();
 

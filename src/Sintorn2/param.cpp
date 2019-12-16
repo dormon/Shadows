@@ -11,7 +11,7 @@ void sintorn2::loadParams(
   vars.addUint32("sintorn2.param.tileX"                  ) = c->getu32   ("tileX"             ,8   ,"select tile X size"                                                              );
   vars.addUint32("sintorn2.param.tileY"                  ) = c->getu32   ("tileY"             ,8   ,"select tile Y size"                                                              );
   vars.addUint32("sintorn2.param.propagateWarps"         ) = c->getu32   ("propagateWarps"    ,4   ,"number of warps cooperating on propagating data in hierarchy (for AMD 4 is good)");
-  vars.addFloat ("sintorn2.param.bias"                   ) = c->getf32   ("bias"              ,0.1f,"shadow frusta bias"                                                              );
+  vars.addFloat ("sintorn2.param.bias"                   ) = c->getf32   ("bias"              ,1.f ,"shadow frusta bias"                                                              );
   vars.addUint32("sintorn2.param.triangleAlignment"      ) = c->getu32   ("triangleAlignment" ,128 ,"alignment of triangles"                                                          );
   vars.addUint32("sintorn2.param.sfAlignment"            ) = c->getu32   ("sfAlignment"       ,128 ,"shadow frusta alignment"                                                         );
   vars.addUint32("sintorn2.param.sfWGS"                  ) = c->getu32   ("sfWGS"             ,64  ,"shadow frusta work group size"                                                   );
