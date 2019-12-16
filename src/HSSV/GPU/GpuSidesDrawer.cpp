@@ -63,8 +63,6 @@ void GpuSidesDrawer::drawSides(const glm::mat4& mvp, const glm::vec4& light)
 	if (!vars.getBool("hssv.args.testMode"))
 	{
 		DrawSides(mvp, light);
-
-		ifExistStamp(vars, "SidesDraw");
 	}
 }
 
@@ -195,7 +193,6 @@ void GpuSidesDrawer::CreateShaders()
 void GpuSidesDrawer::CreateSidesDrawProgram(SidesGenShaderParams const& params)
 {
 	drawSidesProgram = std::make_unique<Program>(
-		//std::make_shared<Shader>(GL_VERTEX_SHADER, "#version 450 core\n", Shader::define("EXTRACT_MULTIPLICITY", 1), cssv::sides::drawVPSrc)
 		std::make_shared<Shader>(GL_VERTEX_SHADER, genSilExtrusionVs()),
 		std::make_shared<Shader>(GL_GEOMETRY_SHADER, genSilExtrusionGs(params))
 		);
