@@ -33,9 +33,11 @@ void prepareDrawSF(vars::Vars&vars){
       ,"sintorn2.method.debug.dump.far"       
       ,"sintorn2.method.debug.dump.fovy"      
       ,"sintorn2.param.morePlanes"
+      ,"sintorn2.param.ffc"
       );
 
   auto const cfg            = *vars.get<Config>        ("sintorn2.method.debug.dump.config"    );
+  auto const ffc                 = vars.getInt32 ("sintorn2.param.ffc"               );
 
 
   std::string const vsSrc = R".(
@@ -71,9 +73,13 @@ void prepareDrawSF(vars::Vars&vars){
 #define MORE_PLANES 0
 #endif//MORE_PLANES
 
+#ifndef ENABLE_FFC
+#define ENABLE_FFC 0
+#endif//ENABLE_FFC
+
 const uint planesPerSF    = 4u + MORE_PLANES*3u;
 const uint floatsPerPlane = 4u;
-const uint floatsPerSF    = planesPerSF * floatsPerPlane;
+const uint floatsPerSF    = planesPerSF * floatsPerPlane + uint(ENABLE_FFC);
 
 const uint alignedNofSF = (uint(NOF_TRIANGLES / SF_ALIGNMENT) + uint((NOF_TRIANGLES % SF_ALIGNMENT) != 0u)) * SF_ALIGNMENT;
 
@@ -112,6 +118,8 @@ void main(){
   vec4 f2;
 #endif
 
+  float ffc;
+
 #if SF_INTERLEAVE == 1
   e0[0] = shadowFrusta[alignedNofSF* 0u + gid];
   e0[1] = shadowFrusta[alignedNofSF* 1u + gid];
@@ -133,6 +141,10 @@ void main(){
   e3[2] = shadowFrusta[alignedNofSF*14u + gid];
   e3[3] = shadowFrusta[alignedNofSF*15u + gid];
 
+  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
+    ffc = shadowFrusta[alignedNofSF*16u + gid];
+  #endif
+
   #if MORE_PLANES == 1
     f0[0] = shadowFrusta[alignedNofSF*16u + gid];
     f0[1] = shadowFrusta[alignedNofSF*17u + gid];
@@ -148,6 +160,10 @@ void main(){
     f2[1] = shadowFrusta[alignedNofSF*25u + gid];
     f2[2] = shadowFrusta[alignedNofSF*26u + gid];
     f2[3] = shadowFrusta[alignedNofSF*27u + gid];
+
+    #if ENABLE_FFC == 1
+      ffc = shadowFrusta[alignedNofSF*28u + gid];
+    #endif
   #endif
 #else
   e0[0] = shadowFrusta[gid*floatsPerSF+ 0u];
@@ -166,6 +182,11 @@ void main(){
   e3[1] = shadowFrusta[gid*floatsPerSF+13u];
   e3[2] = shadowFrusta[gid*floatsPerSF+14u];
   e3[3] = shadowFrusta[gid*floatsPerSF+15u];
+
+  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
+    ffc = shadowFrusta[gid*floatsPerSF+16u];
+  #endif
+
   #if MORE_PLANES == 1
     f0[0] = shadowFrusta[gid*floatsPerSF+16u];
     f0[1] = shadowFrusta[gid*floatsPerSF+17u];
@@ -179,6 +200,10 @@ void main(){
     f2[1] = shadowFrusta[gid*floatsPerSF+25u];
     f2[2] = shadowFrusta[gid*floatsPerSF+26u];
     f2[3] = shadowFrusta[gid*floatsPerSF+27u];
+
+    #if ENABLE_FFC == 1
+      ffc = shadowFrusta[gid*floatsPerSF+28u];
+    #endif
   #endif
 #endif
 
@@ -330,6 +355,7 @@ void main(){
       Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
       Shader::define("NOF_TRIANGLES"      ,(uint32_t)nofTriangles      ),
       Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
+      Shader::define("ENABLE_FFC"         ,(int)     ffc               ),
       gsSrc);
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",

@@ -224,7 +224,7 @@ void main(){
   shadowFrusta[gid*floatsPerSF+15u] = e3[3];
 
   #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
-    shadowFrusta[gid*floatsPerSF+15u] = ffc;
+    shadowFrusta[gid*floatsPerSF+16u] = ffc;
   #endif
 
   #if MORE_PLANES == 1
