@@ -271,7 +271,7 @@ void sintorn2::rasterize(vars::Vars&vars){
     for(auto const&s:l.second)
       std::cerr << "  " << statToName(s.first) << ": " << s.second << std::endl;
   }
-  //exit(0);
+  exit(0);
 
   //for(uint32_t i=0;i<10000;++i)
   //  std::cerr << debugData[i] << " ";
