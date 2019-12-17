@@ -310,6 +310,7 @@ void compute(uvec2 coord,uvec2 coord2){
 #if WARP==64
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
   uint morton = getMorton(coord,depth);
+  if(depth >= 1.f)activeThread = 0;
 #else
   float depth [2];
   uint  morton[2];
