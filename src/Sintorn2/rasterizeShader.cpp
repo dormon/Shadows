@@ -26,6 +26,10 @@ std::string const sintorn2::rasterizeShader = R".(
 #define ENABLE_FFC 0
 #endif//ENABLE_FFC
 
+#ifndef NO_AABB
+#define NO_AABB 0
+#endif//NO_AABB
+
 const uint planesPerSF = 4u + MORE_PLANES*3u;
 const uint floatsPerPlane = 4u;
 const uint floatsPerSF = planesPerSF * floatsPerPlane + uint(ENABLE_FFC);
@@ -226,7 +230,6 @@ void traverse(){
         aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
         aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
 
-
         status = trivialRejectAccept(minCorner,aabbSize);
       }
 
@@ -303,12 +306,59 @@ void traverse(){
 
         vec3 minCorner;
         vec3 aabbSize;
+#if NO_AABB == 1
+        uvec3 coord = (demorton(((node<<warpBits)+gl_LocalInvocationIndex)<<(warpBits*(nofLevels-1-level))));
+
+
+        //uint bitsToDiv  = warpBits*(nofLevels-1-level);
+        //uint xBitsToDiv = (bitsToDiv/3u) + uint((bitsToDiv%3) != 0);
+        //uint yBitsToDiv = (uint(max(int(bitsToDiv)-1,0))/3u) + uint((uint(max(int(bitsToDiv)-1,0))%3u) != 0);
+        //uint zBitsToDiv = (uint(max(int(bitsToDiv)-2,0))/3u) + uint((uint(max(int(bitsToDiv)-2,0))%3u) != 0);
+        uint xBitsToDiv = 2u * (nofLevels-1-level);
+        uint yBitsToDiv = 2u * (nofLevels-1-level);
+        uint zBitsToDiv = 2u * (nofLevels-1-level);
+
+        float startZ = clusterToZ(coord.z                );
+        float endZ   = clusterToZ(coord.z+(1<<zBitsToDiv));
+
+        float startX = -1.f + 2.f * float(coord.x*TILE_X) / float(WINDOW_X);
+        float startY = -1.f + 2.f * float(coord.y*TILE_Y) / float(WINDOW_Y);
+
+        float endX = clamp(-1.f + 2.f * (float((coord.x+(1<<xBitsToDiv))*TILE_X) / float(WINDOW_X)),-1.f,1.f);
+        float endY = clamp(-1.f + 2.f * (float((coord.y+(1<<yBitsToDiv))*TILE_Y) / float(WINDOW_Y)),-1.f,1.f);
+        minCorner[0] = startX;
+        minCorner[1] = startY;
+        minCorner[2] = startZ;
+
+        aabbSize[0] = endX-startX;
+        aabbSize[1] = endY-startY;
+        aabbSize[2] = endZ-startZ;
+
+        //if(level == 0){
+        //  aabbSize[0] = (512. / float(WINDOW_X))*2.f;
+        //  aabbSize[1] = (512. / float(WINDOW_Y))*2.f;
+        //}
+        //if(level == 1){
+        //  aabbSize[0] = (128. / float(WINDOW_X))*2.f;
+        //  aabbSize[1] = (128. / float(WINDOW_Y))*2.f;
+        //}
+
+        //if(level == 2){
+        //  aabbSize[0] = (32. / float(WINDOW_X))*2.f;
+        //  aabbSize[1] = (32. / float(WINDOW_Y))*2.f;
+        //}
+        //if(level == 3){
+        //  aabbSize[0] = (8. / float(WINDOW_X))*2.f;
+        //  aabbSize[1] = (8. / float(WINDOW_Y))*2.f;
+        //}
+#else
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
         minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
         aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
         aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
         aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+#endif
 
 
         status = trivialRejectAccept(minCorner,aabbSize);

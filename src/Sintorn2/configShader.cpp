@@ -26,19 +26,21 @@ std::string const sintorn2::configShader = R".(
 #define MIN_Z_BITS 9
 #endif//MIN_Z_BITS
 
+#define DIV_ROUND_UP(x,y) uint(uint(uint(x)/uint(y)) + uint((uint(x) % uint(y)) != 0u))
+#define BITS_REQUIRED(x) uint(ceil(log2(float(x))))
 
-const uint tileBitsX       = uint(ceil(log2(float(TILE_X))));
-const uint tileBitsY       = uint(ceil(log2(float(TILE_Y))));
+const uint tileBitsX       = BITS_REQUIRED(TILE_X);
+const uint tileBitsY       = BITS_REQUIRED(TILE_Y);
 const uint tileMaskX       = uint(TILE_X-1u);
 const uint tileMaskY       = uint(TILE_Y-1u);
-const uint warpBits        = uint(ceil(log2(float(WARP))));
-const uint clustersX       = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
-const uint clustersY       = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
-const uint xBits           = uint(ceil(log2(float(clustersX))));
-const uint yBits           = uint(ceil(log2(float(clustersY))));
+const uint warpBits        = BITS_REQUIRED(WARP);
+const uint clustersX       = DIV_ROUND_UP(WINDOW_X,TILE_X);
+const uint clustersY       = DIV_ROUND_UP(WINDOW_Y,TILE_Y);
+const uint xBits           = BITS_REQUIRED(clustersX);
+const uint yBits           = BITS_REQUIRED(clustersY);
 const uint zBits           = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
 const uint allBits         = xBits + yBits + zBits;
-const uint nofLevels       = uint(allBits/warpBits) + uint(allBits%warpBits != 0u);
+const uint nofLevels       = DIV_ROUND_UP(allBits,warpBits);
 const uint uintsPerWarp    = uint(WARP/32u);
 
 const uint bitLength[3] = {

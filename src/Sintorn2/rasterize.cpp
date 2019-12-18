@@ -13,6 +13,8 @@
 #include <Sintorn2/rasterizeShader.h>
 #include <Sintorn2/configShader.h>
 #include <Sintorn2/mortonShader.h>
+#include <Sintorn2/quantizeZShader.h>
+#include <Sintorn2/depthToZShader.h>
 
 #include <iomanip>
 #include <Timer.h>
@@ -45,6 +47,10 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"sintorn2.param.tileY"   
       ,"sintorn2.param.morePlanes"
       ,"sintorn2.param.ffc"
+      ,"sintorn2.param.noAABB"
+      ,"args.camera.near"
+      ,"args.camera.far"
+      ,"args.camera.fovy"
       );
 
   auto const wavefrontSize       =  vars.getSizeT           ("wavefrontSize"                    );
@@ -58,6 +64,10 @@ void createRasterizeProgram(vars::Vars&vars){
   auto const minZBits            =  vars.getUint32          ("sintorn2.param.minZBits"          );
   auto const morePlanes          =  vars.getInt32           ("sintorn2.param.morePlanes"        );
   auto const ffc                 =  vars.getInt32           ("sintorn2.param.ffc"               );
+  auto const noAABB              =  vars.getInt32           ("sintorn2.param.noAABB"            );
+  auto const nnear               =  vars.getFloat           ("args.camera.near"                 );
+  auto const ffar                =  vars.getFloat           ("args.camera.far"                  );
+  auto const fovy                =  vars.getFloat           ("args.camera.fovy"                 );
 
   vars.reCreate<ge::gl::Program>("sintorn2.method.rasterizeProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
@@ -74,14 +84,20 @@ void createRasterizeProgram(vars::Vars&vars){
         Shader::define("TILE_Y"             ,tileY                       ),
         Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
         Shader::define("ENABLE_FFC"         ,(int)     ffc               ),
+        Shader::define("NO_AABB"            ,(int)     noAABB            ),
 #if SAVE_COLLISION == 1
         Shader::define("SAVE_COLLISION"     ,(int)1),
 #endif
 #if SAVE_TRAVERSE_STAT == 1
         Shader::define("SAVE_TRAVERSE_STAT" ,(int)1),
 #endif
+        Shader::define("NEAR"      ,nnear                  ),
+        glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
+        Shader::define("FOVY"      ,fovy                   ),
         ballotSrc,
         sintorn2::demortonShader,
+        sintorn2::depthToZShader,
+        sintorn2::quantizeZShader,
         sintorn2::configShader,
         sintorn2::rasterizeShader
         ));

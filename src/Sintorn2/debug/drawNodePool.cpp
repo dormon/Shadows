@@ -148,6 +148,21 @@ uniform uint levelToDraw = 0;
 
 uniform uint drawTightAABB = 0;
 
+/*
+void getClipAABB(inout vec3 minCorner,inout vec3 maxCorner,uint node,uint level){
+  uvec3 coord = demorton(node << (warpBits*(nofLevels-1-level)));
+  minCorner.xy = -1.f + 2.f*vec2(coord.xy << uvec2(tileBitsX,tileBitsY)) / vec2(WINDOW_X,WINDOW_Y);
+  minCorner.z  = clusterToZ(coord.z);
+
+  const uint xBitsAvail[] = {
+    0,
+
+  };
+  
+  
+}
+*/
+
 void main(){
   uint gId = vId[0];
 #line 157
@@ -303,6 +318,7 @@ void main(){
 
       sintorn2::configShader,
       sintorn2::mortonShader,
+      sintorn2::demortonShader,
       sintorn2::depthToZShader,
       sintorn2::quantizeZShader,
       gsSrc);
