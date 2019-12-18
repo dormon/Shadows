@@ -40,11 +40,11 @@ void main(){
   }
 
   const vec3  normal      = texelFetch(normalTexture    ,coord,0).xyz;
-  float shadowCoef  = 1;
+  float shadowCoef = 1;
 
   if(useShadows)
   {
-	shadowCoef = texelFetch(shadowMaskTexture,coord,0).x+.5;
+	shadowCoef = texelFetch(shadowMaskTexture,coord,0).x;
   }
 
   uvec4 color              = texelFetch(colorTexture,coord,0);
@@ -53,13 +53,14 @@ void main(){
   vec3  Ks                 = vec3((color.xyz>>8u)&0xffu)/0xffu;
   float Shininess          = 50;//shininess factor
   float specularFactorCoef = float(color.w)/255.;
+  float diffuseShadowCoeff = max(shadowCoef, 0.3f);
 
   vec3 V = normalize(cameraPosition-position.xyz);//view vector
   vec3 L = normalize(lightPosition.xyz-position.xyz*lightPosition.w);//light vector
   vec3 R = reflect(-L,normal);//reflected light vector
 
   float ambientFactor  = 1;
-  float diffuseFactor  = max(dot(L,normal),0)*shadowCoef;
+  float diffuseFactor  = max(dot(L,normal),0)*diffuseShadowCoeff;
   float specularFactor = pow(max(dot(R,V),0),Shininess)*specularFactorCoef*shadowCoef;
 
   sum+=Ka*La*ambientFactor;
