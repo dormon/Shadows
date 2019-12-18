@@ -99,6 +99,7 @@ void ShadowVolumes::create(
   glClear(GL_STENCIL_BUFFER_BIT);
   glEnable(GL_STENCIL_TEST);
   glStencilFunc(GL_ALWAYS,0,0);
+  glEnable(GL_DEPTH_CLAMP);
 
   if(zfail){
     glStencilOpSeparate(GL_FRONT,GL_KEEP,GL_INCR_WRAP,GL_KEEP);
@@ -126,6 +127,7 @@ void ShadowVolumes::create(
   glDisable(GL_STENCIL_TEST);
   glEnable(GL_DEPTH_TEST);
   glDepthMask(GL_TRUE);
+  glDisable(GL_DEPTH_CLAMP);
 
   ifExistStamp("convertStencilBufferToShadowMask");
 }
