@@ -25,20 +25,27 @@ uniform vec4 lightPosition = vec4(100,100,100,1);
 uniform vec3 La = vec3(0.1);//light ambient color
 uniform vec3 Ld = vec3(1);//light diffuse color
 uniform vec3 Ls = vec3(1);//light specular color
+uniform vec3 bgColor = vec3(0.8, 0.7, 1);
 uniform bool useShadows = false;
 
 void main(){
   vec3 sum=vec3(0);
 
-  vec3  position    = texelFetch(positionTexture  ,coord,0).xyz;
+  const vec4  position    = texelFetch(positionTexture  ,coord,0);
 
-  vec3  position2   = texelFetch(positionTexture  ,coord+ivec2(1,0),0).xyz;
-  float angleDifference = 1-clamp(acos(clamp(dot(normalize(position - lightPosition.xyz),normalize(position2 -lightPosition.xyz)),0,1))/0.01,0,1);
+  if(position.w==0)
+  {
+     fColor = vec4(bgColor, 1);
+     return;
+  }
 
-  vec3  normal      = texelFetch(normalTexture    ,coord,0).xyz;
+  const vec3  normal      = texelFetch(normalTexture    ,coord,0).xyz;
   float shadowCoef  = 1;
+
   if(useShadows)
-    shadowCoef = texelFetch(shadowMaskTexture,coord,0).x+.5;
+  {
+	shadowCoef = texelFetch(shadowMaskTexture,coord,0).x+.5;
+  }
 
   uvec4 color              = texelFetch(colorTexture,coord,0);
   vec3  Ka                 = vec3((color.xyz>>0u)&0xffu)/0xffu;
@@ -47,8 +54,8 @@ void main(){
   float Shininess          = 50;//shininess factor
   float specularFactorCoef = float(color.w)/255.;
 
-  vec3 V = normalize(cameraPosition-position);//view vector
-  vec3 L = normalize(lightPosition.xyz-position*lightPosition.w);//light vector
+  vec3 V = normalize(cameraPosition-position.xyz);//view vector
+  vec3 L = normalize(lightPosition.xyz-position.xyz*lightPosition.w);//light vector
   vec3 R = reflect(-L,normal);//reflected light vector
 
   float ambientFactor  = 1;
@@ -60,15 +67,6 @@ void main(){
   sum+=Ks*Ls*specularFactor;
 
   fColor=vec4(sum,1);//output color
-  //fColor = vec4(distance(lightPosition.xyz,position)/1000.f)+vec4(sum,1)*0.00001;
-  //fColor = vec4(angleDifference)+vec4(sum,1)*0;
-  return;
-  float yrot = float(mod(degrees(atan(L.x,L.z         ))/360*64,2)>1);
-  float xrot = float(mod(degrees(atan(L.y,length(L.xz)))/360*64,2)>1);
-  float dist = length(position-lightPosition.xyz);
-
-  fColor = vec4(yrot!=xrot);
-  fColor = vec4(mod(dist,2)>1);
 }).";
   this->_program = std::make_shared<ge::gl::Program>(
       std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER,vertSrc),

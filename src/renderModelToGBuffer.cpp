@@ -11,6 +11,7 @@ void renderModelToGBuffer(vars::Vars&vars){
   ge::gl::glViewport(0, 0, windowSize.x, windowSize.y);
   ge::gl::glEnable(GL_DEPTH_TEST);
   vars.get<GBuffer>("gBuffer")->begin();
+  ge::gl::glClearColor(0, 0, 0, 0);
   ge::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
                   GL_STENCIL_BUFFER_BIT);
   vars.get<ge::gl::Texture>("shadowMask")->clear(0, GL_RED, GL_FLOAT);
