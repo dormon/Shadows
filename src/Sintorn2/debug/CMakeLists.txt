@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.12.1)
 
+SET(CMAKE_CXX_STANDARD 17)
+
 project(Sintorn2_Debug)
 
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME} OBJECT
   drawDebug.cpp
   drawDebug.h
   dumpData.cpp

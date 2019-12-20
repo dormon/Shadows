@@ -20,7 +20,6 @@ using namespace ge::gl;
 
 void sintorn2::buildHierarchy(vars::Vars&vars){
   FUNCTION_CALLER();
-
   sintorn2::computeConfig(vars);
   sintorn2::allocateHierarchy(vars);
   sintorn2::createBuildHierarchyProgram(vars);

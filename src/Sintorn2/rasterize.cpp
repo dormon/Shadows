@@ -95,10 +95,10 @@ void createRasterizeProgram(vars::Vars&vars){
         glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
         Shader::define("FOVY"      ,fovy                   ),
         ballotSrc,
+        sintorn2::configShader,
         sintorn2::demortonShader,
         sintorn2::depthToZShader,
         sintorn2::quantizeZShader,
-        sintorn2::configShader,
         sintorn2::rasterizeShader
         ));
 

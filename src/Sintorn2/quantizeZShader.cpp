@@ -30,28 +30,5 @@ std::string const sintorn2::quantizeZShader= R".(
 #define FOVY 1.5707963267948966f
 #endif//FOVY
 
-uint quantizeZ(float z){
-  const uint clustersX     = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
-  const uint clustersY     = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
-  const uint xBits         = uint(ceil(log2(float(clustersX))));
-  const uint yBits         = uint(ceil(log2(float(clustersY))));
-  const uint zBits         = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
-  const uint clustersZ     = 1u << zBits;
-  const uint Sy            = clustersY;
-
-  return clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/Sy)),0,clustersZ-1);
-}
-
-float clusterToZ(uint i){
-  const uint clustersX     = uint(WINDOW_X/TILE_X) + uint(WINDOW_X%TILE_X != 0u);
-  const uint clustersY     = uint(WINDOW_Y/TILE_Y) + uint(WINDOW_Y%TILE_Y != 0u);
-  const uint xBits         = uint(ceil(log2(float(clustersX))));
-  const uint yBits         = uint(ceil(log2(float(clustersY))));
-  const uint zBits         = MIN_Z_BITS>0?MIN_Z_BITS:max(max(xBits,yBits),MIN_Z_BITS);
-  const uint clustersZ     = 1u << zBits;
-  const uint Sy            = clustersY;
-
-  return -NEAR * exp(i*log(1.f + 2.f*tan(FOVY/2.f)/Sy));
-}
 
 ).";

@@ -18,8 +18,7 @@
 #include <Sintorn2/debug/drawSamples.h>
 #include <Sintorn2/debug/drawNodePool.h>
 #include <Sintorn2/debug/drawSF.h>
-#include <Sintorn2/quantizeZShader.h>
-#include <Sintorn2/depthToZShader.h>
+#include <Sintorn2/configShader.h>
 #include <Sintorn2/config.h>
 
 using namespace ge::gl;
@@ -153,8 +152,8 @@ uint getMorton(uvec2 coord){
   const uint tileBitsY     = uint(ceil(log2(float(TILE_Y))));
 
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
-  float z = depthToZ(depth);
-  uint  zQ = quantizeZ(z);
+  float z = DEPTH_TO_Z(depth);
+  uint  zQ = QUANTIZE_Z(z);
   uvec3 clusterCoord = uvec3(uvec2(coord) >> uvec2(tileBitsX,tileBitsY), zQ);
   return morton(clusterCoord);
 }
@@ -195,9 +194,8 @@ void main(){
         ge::gl::Shader::define("FOVY"      ,fovy                   ),
         ge::gl::Shader::define("TILE_X"    ,tileX                  ),
         ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
+        sintorn2::configShader,
         sintorn2::mortonShader,
-        sintorn2::depthToZShader,
-        sintorn2::quantizeZShader,
         fs));
 
 }
@@ -259,6 +257,7 @@ void sintorn2::drawDebug(vars::Vars&vars){
   auto&levelsToDraw = vars.addOrGetUint32("sintorn2.method.debug.levelsToDraw",0);
   auto&drawTightAABB = vars.addOrGetBool  ("sintorn2.method.debug.drawTightAABB");
   auto&wireframe     = vars.addOrGetBool  ("sintorn2.method.debug.wireframe",true);
+  auto&usePrecomputedSize = vars.addOrGetBool("sintorn2.method.debug.usePrecomputedSize",false);
 
   if(ImGui::BeginMainMenuBar()){
     if(ImGui::BeginMenu("debug")){
@@ -283,6 +282,11 @@ void sintorn2::drawDebug(vars::Vars&vars){
       }
       if(ImGui::MenuItem("drawShadowFrusta"))
         type = DRAW_SF;
+      if(ImGui::MenuItem("usePrecomputedSize")){
+        usePrecomputedSize = !usePrecomputedSize;
+        vars.updateTicks("sintorn2.method.debug.usePrecomputedSize");
+      }
+
 
       if(type == DRAW_NODEPOOL){
         if(vars.has("sintorn2.method.debug.dump.config")){

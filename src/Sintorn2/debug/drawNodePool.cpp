@@ -14,8 +14,6 @@
 #include <Sintorn2/debug/drawNodePool.h>
 
 #include <Sintorn2/mortonShader.h>
-#include <Sintorn2/quantizeZShader.h>
-#include <Sintorn2/depthToZShader.h>
 #include <Sintorn2/configShader.h>
 #include <Sintorn2/config.h>
 
@@ -148,6 +146,8 @@ uniform uint levelToDraw = 0;
 
 uniform uint drawTightAABB = 0;
 
+uniform uint usePrecomputedSize = 0;
+
 /*
 void getClipAABB(inout vec3 minCorner,inout vec3 maxCorner,uint node,uint level){
   uvec3 coord = demorton(node << (warpBits*(nofLevels-1-level)));
@@ -197,8 +197,8 @@ void main(){
   float mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+4];
   float mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+5];
 
-  float startZ = clusterToZ(z<<zBitsToDiv);
-  float endZ   = clusterToZ((z+1)<<zBitsToDiv);
+  float startZ = CLUSTER_TO_Z((z  )<<zBitsToDiv);
+  float endZ   = CLUSTER_TO_Z((z+1)<<zBitsToDiv);
 
   float startX = -1.f + 2.f * float((x<<xBitsToDiv)*TILE_X) / float(WINDOW_X);
   float startY = -1.f + 2.f * float((y<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y);
@@ -206,6 +206,11 @@ void main(){
   float endX = clamp(-1.f + 2.f * float(((x+1)<<xBitsToDiv)*TILE_X) / float(WINDOW_X),-1.f,1.f);
   float endY = clamp(-1.f + 2.f * float(((y+1)<<yBitsToDiv)*TILE_Y) / float(WINDOW_Y),-1.f,1.f);
 
+  if(usePrecomputedSize == 1u){
+    endX = startX + levelTileSizeClipSpace[levelToDraw].x;
+    endY = startY + levelTileSizeClipSpace[levelToDraw].y;
+    //endZ = startZ + levelTileSizeClipSpace[levelToDraw].z;
+  }
 #ifdef FAR_IS_INFINITE
   float e = -1.f;
   float f = -2.f * NEAR;
@@ -221,8 +226,8 @@ void main(){
     startY = mminY;
     endY   = mmaxY;
 
-    startZ = depthToZ(mminZ);
-    endZ   = depthToZ(mmaxZ);
+    startZ = DEPTH_TO_Z(mminZ);
+    endZ   = DEPTH_TO_Z(mmaxZ);
   }
 
 
@@ -319,8 +324,6 @@ void main(){
       sintorn2::configShader,
       sintorn2::mortonShader,
       sintorn2::demortonShader,
-      sintorn2::depthToZShader,
-      sintorn2::quantizeZShader,
       gsSrc);
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",
@@ -354,6 +357,7 @@ void drawNodePool(vars::Vars&vars){
   auto vao = vars.get<VertexArray>("sintorn2.method.debug.vao");
 
   auto prg = vars.get<Program>("sintorn2.method.debug.drawNodePoolProgram");
+  auto usePrecomputedSize = vars.getBool("sintorn2.method.debug.usePrecomputedSize");
 
   vao->bind();
   nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
@@ -365,6 +369,7 @@ void drawNodePool(vars::Vars&vars){
     ->setMatrix4fv("view"       ,glm::value_ptr(view    ))
     ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
     ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
+    ->set1ui      ("usePrecomputedSize",(uint32_t)usePrecomputedSize)
     ;
 
 

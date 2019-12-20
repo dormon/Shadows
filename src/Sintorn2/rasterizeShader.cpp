@@ -307,13 +307,9 @@ void traverse(){
         vec3 minCorner;
         vec3 aabbSize;
 #if NO_AABB == 1
+        /*
         uvec3 coord = (demorton(((node<<warpBits)+gl_LocalInvocationIndex)<<(warpBits*(nofLevels-1-level))));
 
-
-        //uint bitsToDiv  = warpBits*(nofLevels-1-level);
-        //uint xBitsToDiv = (bitsToDiv/3u) + uint((bitsToDiv%3) != 0);
-        //uint yBitsToDiv = (uint(max(int(bitsToDiv)-1,0))/3u) + uint((uint(max(int(bitsToDiv)-1,0))%3u) != 0);
-        //uint zBitsToDiv = (uint(max(int(bitsToDiv)-2,0))/3u) + uint((uint(max(int(bitsToDiv)-2,0))%3u) != 0);
         uint xBitsToDiv = 2u * (nofLevels-1-level);
         uint yBitsToDiv = 2u * (nofLevels-1-level);
         uint zBitsToDiv = 2u * (nofLevels-1-level);
@@ -333,24 +329,7 @@ void traverse(){
         aabbSize[0] = endX-startX;
         aabbSize[1] = endY-startY;
         aabbSize[2] = endZ-startZ;
-
-        //if(level == 0){
-        //  aabbSize[0] = (512. / float(WINDOW_X))*2.f;
-        //  aabbSize[1] = (512. / float(WINDOW_Y))*2.f;
-        //}
-        //if(level == 1){
-        //  aabbSize[0] = (128. / float(WINDOW_X))*2.f;
-        //  aabbSize[1] = (128. / float(WINDOW_Y))*2.f;
-        //}
-
-        //if(level == 2){
-        //  aabbSize[0] = (32. / float(WINDOW_X))*2.f;
-        //  aabbSize[1] = (32. / float(WINDOW_Y))*2.f;
-        //}
-        //if(level == 3){
-        //  aabbSize[0] = (8. / float(WINDOW_X))*2.f;
-        //  aabbSize[1] = (8. / float(WINDOW_Y))*2.f;
-        //}
+        */
 #else
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;

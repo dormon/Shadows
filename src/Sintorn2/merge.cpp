@@ -60,8 +60,8 @@ void createMergeProgram(vars::Vars&vars){
         ge::gl::Shader::define("TILE_X"    ,tileX                  ),
         ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
         ballotSrc,
-        sintorn2::mortonShader,
         sintorn2::configShader,
+        sintorn2::mortonShader,
         sintorn2::depthToZShader,
         sintorn2::quantizeZShader,
         sintorn2::mergeShader
