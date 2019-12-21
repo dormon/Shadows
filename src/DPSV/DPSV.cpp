@@ -34,10 +34,10 @@ void DPSV::create(glm::vec4 const& lightPosition, glm::mat4 const&, glm::mat4 co
 
 	ifExistStamp("");
 	buildTopTree(lightPosition);
-	ifExistStamp("dpsvBuild");
+	ifExistStamp("build");
 
 	createShadowMask(lightPosition);
-	ifExistStamp("dpsvTraverse");
+	ifExistStamp("traverse");
 }
 
 void DPSV::createAuxBuffer()
