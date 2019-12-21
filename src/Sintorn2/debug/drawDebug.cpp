@@ -282,9 +282,16 @@ void sintorn2::drawDebug(vars::Vars&vars){
       }
       if(ImGui::MenuItem("drawShadowFrusta"))
         type = DRAW_SF;
-      if(ImGui::MenuItem("usePrecomputedSize")){
-        usePrecomputedSize = !usePrecomputedSize;
-        vars.updateTicks("sintorn2.method.debug.usePrecomputedSize");
+      if(usePrecomputedSize){
+        if(ImGui::MenuItem("computeAABBSize")){
+          usePrecomputedSize = !usePrecomputedSize;
+          vars.updateTicks("sintorn2.method.debug.usePrecomputedSize");
+        }
+      }else{
+        if(ImGui::MenuItem("usePrecomputedAABBSize")){
+          usePrecomputedSize = !usePrecomputedSize;
+          vars.updateTicks("sintorn2.method.debug.usePrecomputedSize");
+        }
       }
 
 

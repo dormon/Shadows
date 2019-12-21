@@ -77,6 +77,7 @@ const uint shortestAxis = clamp(uint(uint(bitLength[0] == yBits) + uint(bitLengt
 #define QUANTIZE_Z(z) clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
 #define CLUSTER_TO_Z(i) (-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)))
 
+
 #ifdef FAR_IS_INFINITE
   #define DEPTH_TO_Z(d) (2.f*NEAR    /(d - 1.f))
 #else
@@ -193,13 +194,22 @@ const uvec3 bitPosition = uvec3(
   SET_BIT(31u,2u)
 );
 #line 172
-const uvec3 levelTileSize[] = {
-  uvec3(1u)<<bitCount(bitPosition>>(warpBits*0u)),
-  uvec3(1u)<<bitCount(bitPosition>>(warpBits*1u)),
-  uvec3(1u)<<bitCount(bitPosition>>(warpBits*2u)),
-  uvec3(1u)<<bitCount(bitPosition>>(warpBits*3u)),
-  uvec3(1u)<<bitCount(bitPosition>>(warpBits*4u)),
-  uvec3(1u)<<bitCount(bitPosition>>(warpBits*5u)),
+const uvec3 levelTileBits[] = {
+  bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-1,0))))-1u)),
+  bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-2,0))))-1u)),
+  bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-3,0))))-1u)),
+  bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-4,0))))-1u)),
+  bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-5,0))))-1u)),
+  bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-6,0))))-1u)),
+};
+
+const uvec3 levelTileSize[] = {                                            
+  uvec3(1u)<<levelTileBits[0],
+  uvec3(1u)<<levelTileBits[1],
+  uvec3(1u)<<levelTileBits[2],
+  uvec3(1u)<<levelTileBits[3],
+  uvec3(1u)<<levelTileBits[4],
+  uvec3(1u)<<levelTileBits[5],
 };
 
 const uvec3 levelTileSizeInPixels[] = {
@@ -212,14 +222,13 @@ const uvec3 levelTileSizeInPixels[] = {
 };
 
 const vec3 levelTileSizeClipSpace[] = {
-  vec3(vec2(levelTileSizeInPixels[0].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
-  vec3(vec2(levelTileSizeInPixels[1].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
-  vec3(vec2(levelTileSizeInPixels[2].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
-  vec3(vec2(levelTileSizeInPixels[3].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
-  vec3(vec2(levelTileSizeInPixels[4].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
-  vec3(vec2(levelTileSizeInPixels[5].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
+  vec3(2.f * vec2(levelTileSizeInPixels[0].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
+  vec3(2.f * vec2(levelTileSizeInPixels[1].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
+  vec3(2.f * vec2(levelTileSizeInPixels[2].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
+  vec3(2.f * vec2(levelTileSizeInPixels[3].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
+  vec3(2.f * vec2(levelTileSizeInPixels[4].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
+  vec3(2.f * vec2(levelTileSizeInPixels[5].xy) / vec2(WINDOW_X,WINDOW_Y),CLUSTER_TO_Z(levelTileSizeInPixels[0].z)),
 };
-
 
 const uint warpMask        = uint(WARP - 1u);
 const uint floatsPerAABB   = 6u;
@@ -280,15 +289,6 @@ const uint aabbLevelOffsetInFloats[6] = {
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2],
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3],
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
-};
-
-const uint xBitsPerLevel[6] = {
-  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-0,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-0,0))%3) != 0)),0)),
-  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-1,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-1,0))%3) != 0)),0)),
-  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-2,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-2,0))%3) != 0)),0)),
-  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-3,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-3,0))%3) != 0)),0)),
-  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-4,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-4,0))%3) != 0)),0)),
-  uint(max(xBits - ((int(warpBits)*max(int(nofLevels)-1-5,0))/3 + int(((int(warpBits)*max(int(nofLevels)-1-5,0))%3) != 0)),0)),
 };
 
 
