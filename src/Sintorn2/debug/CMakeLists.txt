@@ -13,6 +13,8 @@ add_library(${PROJECT_NAME} OBJECT
   drawSamples.h
   drawNodePool.cpp
   drawNodePool.h
+  drawTraverse.cpp
+  drawTraverse.h
   drawSF.cpp
   drawSF.h
   )

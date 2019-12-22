@@ -17,6 +17,7 @@
 #include <Sintorn2/debug/dumpData.h>
 #include <Sintorn2/debug/drawSamples.h>
 #include <Sintorn2/debug/drawNodePool.h>
+#include <Sintorn2/debug/drawTraverse.h>
 #include <Sintorn2/debug/drawSF.h>
 #include <Sintorn2/configShader.h>
 #include <Sintorn2/config.h>
@@ -251,6 +252,7 @@ void sintorn2::drawDebug(vars::Vars&vars){
     DRAW_SAMPLES,
     DRAW_NODEPOOL,
     DRAW_SF,
+    DRAW_TRAVERSE,
   };
 
   auto&type         = vars.addOrGetUint32("sintorn2.method.debug.type",DEFAULT);
@@ -258,6 +260,10 @@ void sintorn2::drawDebug(vars::Vars&vars){
   auto&drawTightAABB = vars.addOrGetBool  ("sintorn2.method.debug.drawTightAABB");
   auto&wireframe     = vars.addOrGetBool  ("sintorn2.method.debug.wireframe",true);
   auto&usePrecomputedSize = vars.addOrGetBool("sintorn2.method.debug.usePrecomputedSize",false);
+
+  auto&taToDraw = vars.addOrGetUint32("sintorn2.method.debug.taToDraw",0);
+  auto&trToDraw = vars.addOrGetUint32("sintorn2.method.debug.trToDraw",0);
+  auto&inToDraw = vars.addOrGetUint32("sintorn2.method.debug.inToDraw",0);
 
   if(ImGui::BeginMainMenuBar()){
     if(ImGui::BeginMenu("debug")){
@@ -274,6 +280,8 @@ void sintorn2::drawDebug(vars::Vars&vars){
         type = DRAW_SAMPLES;
       if(ImGui::MenuItem("drawNodePool"))
         type = DRAW_NODEPOOL;
+      if(ImGui::MenuItem("drawTraverse"))
+        type = DRAW_TRAVERSE;
       if(ImGui::MenuItem("drawTightAABB"))
         drawTightAABB = !drawTightAABB;
       if(ImGui::MenuItem("wireframe")){
@@ -308,6 +316,33 @@ void sintorn2::drawDebug(vars::Vars&vars){
         }
       }
 
+      if(type == DRAW_TRAVERSE){
+        if(vars.has("sintorn2.method.debug.dump.config")){
+          auto const cfg = *vars.get<Config>        ("sintorn2.method.debug.dump.config"    );
+          for(uint32_t i=0;i<cfg.nofLevels;++i){
+            std::stringstream ss;
+            ss << "trivialAccept" << i;
+            if(ImGui::MenuItem(ss.str().c_str())){
+              taToDraw ^= 1<<i;
+            }
+          }
+          for(uint32_t i=0;i<cfg.nofLevels;++i){
+            std::stringstream ss;
+            ss << "trivialReject" << i;
+            if(ImGui::MenuItem(ss.str().c_str())){
+              trToDraw ^= 1<<i;
+            }
+          }
+          for(uint32_t i=0;i<cfg.nofLevels;++i){
+            std::stringstream ss;
+            ss << "intersect" << i;
+            if(ImGui::MenuItem(ss.str().c_str())){
+              inToDraw ^= 1<<i;
+            }
+          }
+        }
+      }
+
       ImGui::EndMenu();
     }
 
@@ -326,6 +361,10 @@ void sintorn2::drawDebug(vars::Vars&vars){
   if(type == DRAW_NODEPOOL){
     debug::drawSamples(vars);
     debug::drawNodePool(vars);
+  }
+  if(type == DRAW_TRAVERSE){
+    debug::drawSamples(vars);
+    debug::drawTraverse(vars);
   }
   if(type == DRAW_SF){
     debug::drawSamples(vars);
