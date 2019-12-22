@@ -12,6 +12,8 @@
 
 #include <Sintorn2/config.h>
 #include <Sintorn2/debug/dumpData.h>
+#include <Sintorn2/buildHierarchy.h>
+#include <Sintorn2/rasterize.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -148,9 +150,19 @@ void dumpData(vars::Vars&vars){
   FUNCTION_CALLER();
   dumpSamples(vars);
   dumpBasic(vars);
+
+  dumpSF(vars);
+
+  buildHierarchy(vars);
   dumpNodePool(vars);
   dumpAABBPool(vars);
-  dumpSF(vars);
+
+  vars.getBool("sintorn2.param.storeTraverseStat") = true;
+  vars.updateTicks("sintorn2.param.storeTraverseStat");
+  rasterize(vars);
+  vars.getBool("sintorn2.param.storeTraverseStat") = false;
+  vars.updateTicks("sintorn2.param.storeTraverseStat");
+
   std::cerr << "dump" << std::endl;
 }
 

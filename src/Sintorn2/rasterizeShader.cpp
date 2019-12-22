@@ -67,7 +67,7 @@ layout(std430,binding=5)buffer Deb{float deb[];};
 layout(std430,binding=6)buffer Debc{uint debc[];};
 #endif
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
 
@@ -201,7 +201,7 @@ void traverse(){
 
     if(level == int(nofLevels)){
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
       if(gl_LocalInvocationIndex==0){
         uint w = atomicAdd(debug[0],1);
         debug[1+w*4+0] = job;
@@ -233,7 +233,7 @@ void traverse(){
         status = trivialRejectAccept(minCorner,aabbSize);
       }
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
         uint w = atomicAdd(debug[0],1);
         debug[1+w*4+0] = job;
         debug[1+w*4+1] = node;
@@ -283,7 +283,7 @@ void traverse(){
   while(level >= 0){
     if(level == int(nofLevels)){
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
       if(gl_LocalInvocationIndex==0){
         uint w = atomicAdd(debug[0],1);
         debug[1+w*4+0] = job;
@@ -293,7 +293,7 @@ void traverse(){
       }
 #endif
 
-#if 0
+#if 1
       lastLevel(node);
 #endif
       node >>= warpBits;
@@ -367,7 +367,7 @@ void traverse(){
 
       }
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
         uint w = atomicAdd(debug[0],1);
         debug[1+w*4+0] = job;
         debug[1+w*4+1] = node;

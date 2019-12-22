@@ -21,4 +21,6 @@ void sintorn2::loadParams(
   vars.addInt32 ("sintorn2.param.ffc"                    ) = c->geti32   ("ffc"               ,1   ,"active front face culling"                                                       );
   vars.addInt32 ("sintorn2.param.noAABB"                 ) = c->geti32   ("noAABB"            ,0   ,"no tight aabb"                                                                   );
 
+  vars.addBool  ("sintorn2.param.storeTraverseStat");
+
 }
