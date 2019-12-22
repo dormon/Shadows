@@ -166,63 +166,84 @@ void getClipAABB(inout vec3 minCorner,inout vec3 maxCorner,uint node,uint level)
 void main(){
   uint gId = vId[0];
 #line 157
-  uint bitsToDiv = warpBits*(nofLevels-1-levelToDraw);
-  uint xBitsToDiv = divRoundUp(bitsToDiv , 3u);
-  uint yBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-1,0)) , 3u);
-  uint zBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-2,0)) , 3u);
 
-#line 163
-  //uint clusX = divRoundUp(clustersX,1u<<xBitsToDiv);
-  //uint clusY = divRoundUp(clustersY,1u<<yBitsToDiv);
+  float mminX;
+  float mmaxX;
+  float mminY;
+  float mmaxY;
+  float mminZ;
+  float mmaxZ;
 
-  uvec3 xyz = demorton(gId);
-  //uint x = gId % clusX;
-  //uint y = (gId / clusX) % clusY;
-  //uint z = (gId / (clusX * clusY));
+  float startX;
+  float startY;
+  float endX  ;
+  float endY  ;
+  float startZ;
+  float endZ  ;
 
-  //uint mor = morton(uvec3(x<<xBitsToDiv,y<<yBitsToDiv,z<<zBitsToDiv));
 
-  //uint bit  = (mor >> (warpBits*(nofLevels-1-levelToDraw))) & warpMask;
-  //uint node = (mor >> (warpBits*(nofLevels  -levelToDraw)));
-
-  uint bit  = gId & warpMask;
-  uint node = gId >> warpBits;
-  uint mor  = gId;
-  //z = xyz.z;
-
-  uint doesNodeExist = nodePool[nodeLevelOffsetInUints[clamp(levelToDraw,0u,5u)]+node*uintsPerWarp+uint(bit>31u)]&(1u<<(bit&0x1fu));
-
-  if(doesNodeExist == 0)return;
-
-  //uint aabbNode = (mor >> (warpBits*(nofLevels-1-levelToDraw)));
-  uint aabbNode = gId;
-  float mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+0];
-  float mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+1];
-  float mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+2];
-  float mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+3];
-  float mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+4];
-  float mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+5];
-
-  //float startZ = CLUSTER_TO_Z((z  )<<levelTileBits[levelToDraw].z);
-  //float endZ   = CLUSTER_TO_Z((z+1)<<levelTileBits[levelToDraw].z);
-
-  //float startX = -1.f + x*levelTileSizeClipSpace[levelToDraw].x;
-  //float startY = -1.f + y*levelTileSizeClipSpace[levelToDraw].y;
-
-  //float endX   = clamp(-1.f + (x+1)*levelTileSizeClipSpace[levelToDraw].x,-1.f,1.f);
-  //float endY   = clamp(-1.f + (y+1)*levelTileSizeClipSpace[levelToDraw].y,-1.f,1.f);
-  
-  float startX = -1.f + xyz.x*levelTileSizeClipSpace[levelToDraw].x;
-  float startY = -1.f + xyz.y*levelTileSizeClipSpace[levelToDraw].y;
-  float endX   = min(startX + levelTileSizeClipSpace[levelToDraw].x,1.f);
-  float endY   = min(startY + levelTileSizeClipSpace[levelToDraw].y,1.f);
-  float startZ = CLUSTER_TO_Z((xyz.z  )<<levelTileBits[levelToDraw].z);
-  float endZ   = CLUSTER_TO_Z((xyz.z+1)<<levelTileBits[levelToDraw].z);
+ 
 
   if(usePrecomputedSize == 1u){
-    endX = startX + levelTileSizeClipSpace[levelToDraw].x;
-    endY = startY + levelTileSizeClipSpace[levelToDraw].y;
-    //endZ = startZ + zSizeMultiplier[levelToDraw]*exp(z<<zBitsToDiv);//levelTileSizeClipSpace[levelToDraw].z;
+    uvec3 xyz = demorton(gId<<(warpBits*(nofLevels-1-levelToDraw)));
+
+    uint bit  = gId & warpMask;
+    uint node = gId >> warpBits;
+
+    uint doesNodeExist = nodePool[nodeLevelOffsetInUints[clamp(levelToDraw,0u,5u)]+node*uintsPerWarp+uint(bit>31u)]&(1u<<(bit&0x1fu));
+    if(doesNodeExist == 0)return;
+
+    mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+0];
+    mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+1];
+    mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+2];
+    mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+3];
+    mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+4];
+    mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+5];
+
+    startX = -1.f + xyz.x*levelTileSizeClipSpace[nofLevels-1].x;
+    startY = -1.f + xyz.y*levelTileSizeClipSpace[nofLevels-1].y;
+    endX   = min(startX + levelTileSizeClipSpace[levelToDraw].x,1.f);
+    endY   = min(startY + levelTileSizeClipSpace[levelToDraw].y,1.f);
+    startZ = CLUSTER_TO_Z(xyz.z                                   );
+    endZ   = CLUSTER_TO_Z(xyz.z+(1u<<levelTileBits[levelToDraw].z));
+
+  }else{
+
+    uint bitsToDiv = warpBits*(nofLevels-1-levelToDraw);
+    uint xBitsToDiv = divRoundUp(bitsToDiv , 3u);
+    uint yBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-1,0)) , 3u);
+    uint zBitsToDiv = divRoundUp(uint(max(int(bitsToDiv)-2,0)) , 3u);
+
+    uint clusX = divRoundUp(clustersX,1u<<xBitsToDiv);
+    uint clusY = divRoundUp(clustersY,1u<<yBitsToDiv);
+
+    uint x = gId % clusX;
+    uint y = (gId / clusX) % clusY;
+    uint z = (gId / (clusX * clusY));
+
+    uint mor = morton(uvec3(x<<xBitsToDiv,y<<yBitsToDiv,z<<zBitsToDiv));
+    uint bit  = (mor >> (warpBits*(nofLevels-1-levelToDraw))) & warpMask;
+    uint node = (mor >> (warpBits*(nofLevels  -levelToDraw)));
+
+
+    uint doesNodeExist = nodePool[nodeLevelOffsetInUints[clamp(levelToDraw,0u,5u)]+node*uintsPerWarp+uint(bit>31u)]&(1u<<(bit&0x1fu));
+
+    if(doesNodeExist == 0)return;
+
+    uint aabbNode = (mor >> (warpBits*(nofLevels-1-levelToDraw)));
+    mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+0];
+    mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+1];
+    mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+2];
+    mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+3];
+    mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+4];
+    mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+5];
+
+    startZ = CLUSTER_TO_Z((z  )<<levelTileBits[levelToDraw].z);
+    endZ   = CLUSTER_TO_Z((z+1)<<levelTileBits[levelToDraw].z);
+    startX = -1.f + x*levelTileSizeClipSpace[levelToDraw].x;
+    startY = -1.f + y*levelTileSizeClipSpace[levelToDraw].y;
+    endX   = clamp(-1.f + (x+1)*levelTileSizeClipSpace[levelToDraw].x,-1.f,1.f);
+    endY   = clamp(-1.f + (y+1)*levelTileSizeClipSpace[levelToDraw].y,-1.f,1.f);
   }
 
 

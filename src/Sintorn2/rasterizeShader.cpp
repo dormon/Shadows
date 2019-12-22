@@ -293,7 +293,7 @@ void traverse(){
       }
 #endif
 
-#if 1
+#if 0
       lastLevel(node);
 #endif
       node >>= warpBits;
@@ -307,29 +307,25 @@ void traverse(){
         vec3 minCorner;
         vec3 aabbSize;
 #if NO_AABB == 1
-        /*
-        uvec3 coord = (demorton(((node<<warpBits)+gl_LocalInvocationIndex)<<(warpBits*(nofLevels-1-level))));
+        //*
+        uvec3 xyz = (demorton(((node<<warpBits)+gl_LocalInvocationIndex)<<(warpBits*(nofLevels-1-level))));
 
-        uint xBitsToDiv = 2u * (nofLevels-1-level);
-        uint yBitsToDiv = 2u * (nofLevels-1-level);
-        uint zBitsToDiv = 2u * (nofLevels-1-level);
+        float startX = -1.f + xyz.x*levelTileSizeClipSpace[nofLevels-1].x;
+        float startY = -1.f + xyz.y*levelTileSizeClipSpace[nofLevels-1].y;
+        float endX   = min(startX + levelTileSizeClipSpace[level].x,1.f);
+        float endY   = min(startY + levelTileSizeClipSpace[level].y,1.f);
+        float startZ = Z_TO_DEPTH(CLUSTER_TO_Z(xyz.z                             ));
+        float endZ   = Z_TO_DEPTH(CLUSTER_TO_Z(xyz.z+(1u<<levelTileBits[level].z)));
 
-        float startZ = clusterToZ(coord.z                );
-        float endZ   = clusterToZ(coord.z+(1<<zBitsToDiv));
-
-        float startX = -1.f + 2.f * float(coord.x*TILE_X) / float(WINDOW_X);
-        float startY = -1.f + 2.f * float(coord.y*TILE_Y) / float(WINDOW_Y);
-
-        float endX = clamp(-1.f + 2.f * (float((coord.x+(1<<xBitsToDiv))*TILE_X) / float(WINDOW_X)),-1.f,1.f);
-        float endY = clamp(-1.f + 2.f * (float((coord.y+(1<<yBitsToDiv))*TILE_Y) / float(WINDOW_Y)),-1.f,1.f);
         minCorner[0] = startX;
         minCorner[1] = startY;
         minCorner[2] = startZ;
 
-        aabbSize[0] = endX-startX;
-        aabbSize[1] = endY-startY;
-        aabbSize[2] = endZ-startZ;
-        */
+        aabbSize[0] = (endX-startX);
+        aabbSize[1] = (endY-startY);
+        aabbSize[2] = (endZ-startZ);
+
+        // */
 #else
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;

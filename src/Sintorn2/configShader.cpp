@@ -80,8 +80,10 @@ const uint shortestAxis = clamp(uint(uint(bitLength[0] == yBits) + uint(bitLengt
 
 #ifdef FAR_IS_INFINITE
   #define DEPTH_TO_Z(d) (2.f*NEAR    /(d - 1.f))
+  #define Z_TO_DEPTH(z) ((2.f*NEAR)/z+1.f)
 #else
   #define DEPTH_TO_Z(d) (2.f*NEAR*FAR/(d*(FAR-NEAR)-FAR-NEAR))
+  #define Z_TO_DEPTH(z) (((2.f*NEAR*FAR/z)+FAR+NEAR)/(FAR-NEAR))
 #endif
 
 const uint twoLongest[] = {
