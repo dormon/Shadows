@@ -47,7 +47,7 @@ void prepareDrawTraverse(vars::Vars&vars){
 
   flat out uint vId;
   void main(){
-    vId = gl_VertexID;
+    vId = gl_VertexID + gl_InstanceID;
   }
 
   ).";
@@ -59,19 +59,17 @@ void prepareDrawTraverse(vars::Vars&vars){
   in vec3 gNormal;
   #endif
 
-  const vec4 colors[6] = {
-    vec4(.1,.1,.1,1)*5,
-    vec4(.1,.0,.0,1)*5,
-    vec4(.0,.1,.0,1)*5,
-    vec4(.0,.0,.1,1)*5,
-    vec4(.1,.1,.0,1)*5,
-    vec4(.1,.0,.1,1)*5,
+  uniform uint mode        = 0;
+  const vec4 colors[] = {
+    vec4(.0,.5,.0,1),
+    vec4(.5,.0,.0,1),
+    vec4(.0,.0,.5,1),
   };
   layout(location=0)out vec4 fColor;
   void main(){
 
     #if WIREFRAME == 1
-    fColor = vec4(colors[levelToDraw]);
+    fColor = vec4(colors[mode]);
     #else
     float df = max(dot(normalize(gNormal),normalize(vec3(1,1,1))),0.1f);
     fColor = vec4(colors[levelToDraw]*df);
@@ -132,8 +130,9 @@ out vec3 gNormal;
 
 flat in uint vId[];
 
-layout(binding=0)buffer NodePool{uint nodePool[];};
-layout(binding=1)buffer AABBPool{float aabbPool[];};
+layout(binding=0)buffer NodePool    {uint  nodePool    [];};
+layout(binding=1)buffer AABBPool    {float aabbPool    [];};
+layout(binding=2)buffer TraverseData{uint  traverseData[];};
 
 uniform mat4 view;
 uniform mat4 proj;
@@ -148,23 +147,9 @@ uniform uint drawTightAABB = 0;
 
 uniform uint usePrecomputedSize = 0;
 
-/*
-void getClipAABB(inout vec3 minCorner,inout vec3 maxCorner,uint node,uint level){
-  uvec3 coord = demorton(node << (warpBits*(nofLevels-1-level)));
-  minCorner.xy = -1.f + 2.f*vec2(coord.xy << uvec2(tileBitsX,tileBitsY)) / vec2(WINDOW_X,WINDOW_Y);
-  minCorner.z  = clusterToZ(coord.z);
-
-  const uint xBitsAvail[] = {
-    0,
-
-  };
-  
-  
-}
-*/
-
 void main(){
-  uint gId = vId[0];
+  uint id   = vId[0];
+  uint gId = traverseData[id];
 #line 157
 
   float mminX;
@@ -189,9 +174,6 @@ void main(){
 
     uint bit  = gId & warpMask;
     uint node = gId >> warpBits;
-
-    uint doesNodeExist = nodePool[nodeLevelOffsetInUints[clamp(levelToDraw,0u,5u)]+node*uintsPerWarp+uint(bit>31u)]&(1u<<(bit&0x1fu));
-    if(doesNodeExist == 0)return;
 
     mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+0];
     mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+1];
@@ -367,7 +349,7 @@ void main(){
       fsSrc);
 
   vars.reCreate<Program>(
-      "sintorn2.method.debug.drawNodePoolProgram",
+      "sintorn2.method.debug.drawTraverseProgram",
       vs,
       gs,
       fs
@@ -387,12 +369,14 @@ void drawTraverse(vars::Vars&vars){
 
   auto const view           = *vars.get<glm::mat4>     ("sintorn2.method.debug.viewMatrix"           );
   auto const proj           = *vars.get<glm::mat4>     ("sintorn2.method.debug.projectionMatrix"     );
-  auto const levelsToDraw   =  vars.getUint32          ("sintorn2.method.debug.levelsToDraw"         );
+  auto const taToDraw       =  vars.getUint32          ("sintorn2.method.debug.taToDraw"             );
+  auto const trToDraw       =  vars.getUint32          ("sintorn2.method.debug.trToDraw"             );
+  auto const inToDraw       =  vars.getUint32          ("sintorn2.method.debug.inToDraw"             );
   auto const drawTightAABB  =  vars.getBool            ("sintorn2.method.debug.drawTightAABB"        );
 
   auto vao = vars.get<VertexArray>("sintorn2.method.debug.vao");
 
-  auto prg = vars.get<Program>("sintorn2.method.debug.drawNodePoolProgram");
+  auto prg = vars.get<Program>("sintorn2.method.debug.drawTraverseProgram");
   auto usePrecomputedSize = vars.getBool("sintorn2.method.debug.usePrecomputedSize");
 
   vao->bind();
@@ -408,11 +392,25 @@ void drawTraverse(vars::Vars&vars){
     ->set1ui      ("usePrecomputedSize",(uint32_t)usePrecomputedSize)
     ;
 
+  auto dibo = vars.get<Buffer>("sintorn2.method.debug.traverseData");
+  dibo->bind(GL_DRAW_INDIRECT_BUFFER);
+  dibo->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+
+  uint32_t const toDraw[] = {
+    taToDraw,
+    trToDraw,
+    inToDraw,
+  };
+  auto const nModes = sizeof(toDraw) / sizeof(toDraw[0]);
 
   for(uint32_t l=0;l<cfg.nofLevels;++l){
-    if((levelsToDraw&(1u<<l)) == 0)continue;
-    prg->set1ui      ("levelToDraw",l);
-    glDrawArrays(GL_POINTS,0,cfg.nofNodesPerLevel[l]);
+    for(uint32_t m=0;m<nModes;++m){
+      if((toDraw[m]&(1u<<l)) != 0){
+        prg->set1ui      ("mode"       ,m);
+        prg->set1ui      ("levelToDraw",l);
+        glDrawArraysIndirect(GL_POINTS,(GLvoid*const)(sizeof(uint32_t)*4u*(nModes*l+m)));
+      }
+    }
   }
 
   vao->unbind();

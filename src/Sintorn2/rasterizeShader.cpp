@@ -370,7 +370,7 @@ void traverse(){
 #if STORE_TRAVERSE_STAT == 1
         uint w = atomicAdd(debug[0],1);
         debug[1+w*4+0] = job;
-        debug[1+w*4+1] = node;
+        debug[1+w*4+1] = node*WARP + gl_LocalInvocationIndex;
         debug[1+w*4+2] = uint(level);
         debug[1+w*4+3] = status;
 #endif

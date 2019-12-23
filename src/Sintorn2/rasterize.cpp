@@ -231,82 +231,82 @@ void sintorn2::rasterize(vars::Vars&vars){
 
   //glFinish();
 
-  if(storeTraverseStat){
-    auto debug = vars.get<Buffer>("sintorn2.method.debug.traverseBuffer");
-    uint32_t NN = 0;
-    debug->getData(&NN,sizeof(uint32_t));
-    std::vector<uint32_t>debugData((NN*4+1)*sizeof(uint32_t));
-    debug->getData(debugData.data(),(NN*4+1)*sizeof(uint32_t));
+  //if(storeTraverseStat){
+  //  auto debug = vars.get<Buffer>("sintorn2.method.debug.traverseBuffer");
+  //  uint32_t NN = 0;
+  //  debug->getData(&NN,sizeof(uint32_t));
+  //  std::vector<uint32_t>debugData((NN*4+1)*sizeof(uint32_t));
+  //  debug->getData(debugData.data(),(NN*4+1)*sizeof(uint32_t));
 
-    std::cerr << "N: " << debugData[0] << std::endl;
-    std::map<uint32_t,uint32_t>levelCnt;
-    std::map<uint32_t,uint32_t>jobCnt;
-    std::map<uint32_t,uint32_t>nodeCnt;
-    std::map<uint32_t,uint32_t>statCnt;
-    std::map<uint32_t,std::map<uint32_t,uint32_t>>levelStatCnt;
-    for(uint32_t j=0;j<debugData[0];++j){
-      auto i = 1+j*4;
-      auto job   = debugData[i+0];
-      auto node  = debugData[i+1];
-      auto level = debugData[i+2];
-      auto stat  = debugData[i+3];
-      if(levelCnt.count(level)==0)levelCnt[level] = 0;
-      if(jobCnt  .count(job  )==0)jobCnt  [job  ] = 0;
-      if(nodeCnt .count(node )==0)nodeCnt [node ] = 0;
-      if(statCnt .count(stat )==0)statCnt [stat ] = 0;
-      if(levelStatCnt.count(level)==0)levelStatCnt[level] = std::map<uint32_t,uint32_t>();
-      if(levelStatCnt[level].count(stat) == 0)levelStatCnt[level][stat] = 0;
-      levelCnt[level]++;
-      jobCnt  [job  ]++;
-      nodeCnt [node ]++;
-      statCnt [stat ]++;
-      levelStatCnt[level][stat]++;
-    }
-    for(auto const&x:levelCnt){
-      std::cerr << "level" << x.first << ": " << x.second << std::endl;
-    }
+  //  std::cerr << "N: " << debugData[0] << std::endl;
+  //  std::map<uint32_t,uint32_t>levelCnt;
+  //  std::map<uint32_t,uint32_t>jobCnt;
+  //  std::map<uint32_t,uint32_t>nodeCnt;
+  //  std::map<uint32_t,uint32_t>statCnt;
+  //  std::map<uint32_t,std::map<uint32_t,uint32_t>>levelStatCnt;
+  //  for(uint32_t j=0;j<debugData[0];++j){
+  //    auto i = 1+j*4;
+  //    auto job   = debugData[i+0];
+  //    auto node  = debugData[i+1];
+  //    auto level = debugData[i+2];
+  //    auto stat  = debugData[i+3];
+  //    if(levelCnt.count(level)==0)levelCnt[level] = 0;
+  //    if(jobCnt  .count(job  )==0)jobCnt  [job  ] = 0;
+  //    if(nodeCnt .count(node )==0)nodeCnt [node ] = 0;
+  //    if(statCnt .count(stat )==0)statCnt [stat ] = 0;
+  //    if(levelStatCnt.count(level)==0)levelStatCnt[level] = std::map<uint32_t,uint32_t>();
+  //    if(levelStatCnt[level].count(stat) == 0)levelStatCnt[level][stat] = 0;
+  //    levelCnt[level]++;
+  //    jobCnt  [job  ]++;
+  //    nodeCnt [node ]++;
+  //    statCnt [stat ]++;
+  //    levelStatCnt[level][stat]++;
+  //  }
+  //  for(auto const&x:levelCnt){
+  //    std::cerr << "level" << x.first << ": " << x.second << std::endl;
+  //  }
 
-    //for(auto const&x:jobCnt){
-    //  std::cerr << "job" << x.first << ": " << x.second << std::endl;
-    //}
+  //  //for(auto const&x:jobCnt){
+  //  //  std::cerr << "job" << x.first << ": " << x.second << std::endl;
+  //  //}
 
-    auto statToName = [](uint32_t s){
-      if(s == 0   )return "empty  ";
-      if(s == 3   )return "ta     ";
-      if(s == 2   )return "in     ";
-      if(s == 0xf0)return "re     ";
-      if(s == 0xff)return "samples";
-      return              "bug    ";
-    };
-    //for(auto const&x:nodeCnt){
-    //  std::cerr << "node" << x.first << ": " << x.second << std::endl;
-    //}
-    for(auto const&x:statCnt){
-      std::cerr << "stat " << statToName(x.first) << ": " << x.second << std::endl;
-    }
-    for(auto const&l:levelStatCnt){
-      std::cerr << "level" << l.first << ": " << std::endl;
-      for(auto const&s:l.second)
-        std::cerr << "  " << statToName(s.first) << ": " << s.second << std::endl;
-    }
-    //exit(0);
+  //  auto statToName = [](uint32_t s){
+  //    if(s == 0   )return "empty  ";
+  //    if(s == 3   )return "ta     ";
+  //    if(s == 2   )return "in     ";
+  //    if(s == 0xf0)return "re     ";
+  //    if(s == 0xff)return "samples";
+  //    return              "bug    ";
+  //  };
+  //  //for(auto const&x:nodeCnt){
+  //  //  std::cerr << "node" << x.first << ": " << x.second << std::endl;
+  //  //}
+  //  for(auto const&x:statCnt){
+  //    std::cerr << "stat " << statToName(x.first) << ": " << x.second << std::endl;
+  //  }
+  //  for(auto const&l:levelStatCnt){
+  //    std::cerr << "level" << l.first << ": " << std::endl;
+  //    for(auto const&s:l.second)
+  //      std::cerr << "  " << statToName(s.first) << ": " << s.second << std::endl;
+  //  }
+  //  //exit(0);
 
-    //for(uint32_t i=0;i<10000;++i)
-    //  std::cerr << debugData[i] << " ";
-    //std::cerr << std::endl;
-    //auto cfg = *vars.get<Config>("sintorn2.method.config");;
-    //for(uint32_t j=0;j<debugData[0];++j){
-    //  auto i = 1+j*3;
-    //  auto job   = debugData[i+0];
-    //  auto node  = debugData[i+1];
-    //  auto level = debugData[i+2];
-    //  if(level > cfg.nofLevels){
-    //    std::cerr << "job  : " << job   << " ";
-    //    std::cerr << "node : " << node  << " ";
-    //    std::cerr << "level: " << level << std::endl;
-    //  }
-    //}
-  }
+  //  //for(uint32_t i=0;i<10000;++i)
+  //  //  std::cerr << debugData[i] << " ";
+  //  //std::cerr << std::endl;
+  //  //auto cfg = *vars.get<Config>("sintorn2.method.config");;
+  //  //for(uint32_t j=0;j<debugData[0];++j){
+  //  //  auto i = 1+j*3;
+  //  //  auto job   = debugData[i+0];
+  //  //  auto node  = debugData[i+1];
+  //  //  auto level = debugData[i+2];
+  //  //  if(level > cfg.nofLevels){
+  //  //    std::cerr << "job  : " << job   << " ";
+  //  //    std::cerr << "node : " << node  << " ";
+  //  //    std::cerr << "level: " << level << std::endl;
+  //  //  }
+  //  //}
+  //}
 
 #if SAVE_COLLISION == 1
   std::vector<float>debData;
