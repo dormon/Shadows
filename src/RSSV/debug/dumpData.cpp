@@ -125,6 +125,13 @@ void dumpSF(vars::Vars&vars){
   buf->copy(*sf);
 }
 
+void dumpEdges(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto edges = vars.get<Buffer>("rssv.method.edgeBuffer");
+  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.edgeBuffer",edges->getSize());
+  buf->copy(*edges);
+}
+
 void dumpBasic(vars::Vars&vars){
   FUNCTION_CALLER();
   auto lp        = *vars.get<glm::vec4>("rssv.method.debug.lightPosition"   );
@@ -324,6 +331,8 @@ void dumpData(vars::Vars&vars){
   dumpBasic(vars);
 
   dumpSF(vars);
+
+  //dumpEdges(vars);
 
   buildHierarchy(vars);
   dumpNodePool(vars);

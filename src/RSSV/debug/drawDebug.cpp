@@ -19,6 +19,7 @@
 #include <RSSV/debug/drawNodePool.h>
 #include <RSSV/debug/drawTraverse.h>
 #include <RSSV/debug/drawSF.h>
+#include <RSSV/debug/drawEdges.h>
 #include <RSSV/configShader.h>
 #include <RSSV/config.h>
 
@@ -57,6 +58,7 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&drawNodePool       = vars.addOrGetBool("rssv.method.debug.drawNodePool"    );
   auto&drawTraverse       = vars.addOrGetBool("rssv.method.debug.drawTraverse"    );
   auto&drawShadowFrusta   = vars.addOrGetBool("rssv.method.debug.drawShadowFrusta");
+  auto&drawEdges          = vars.addOrGetBool("rssv.method.debug.drawEdges"       );
 
   auto&taToDraw = vars.addOrGetUint32("rssv.method.debug.taToDraw",0);
   auto&trToDraw = vars.addOrGetUint32("rssv.method.debug.trToDraw",0);
@@ -95,6 +97,11 @@ void rssv::drawDebug(vars::Vars&vars){
       if(ImGui::MenuItem("drawShadowFrusta")){
         drawShadowFrusta = !drawShadowFrusta;
         vars.updateTicks("rssv.method.debug.drawShadowFrusta");
+      }
+
+      if(ImGui::MenuItem("drawEdges")){
+        drawEdges = !drawEdges;
+        vars.updateTicks("rssv.method.debug.drawEdges");
       }
 
       if(drawNodePool){
@@ -154,6 +161,9 @@ void rssv::drawDebug(vars::Vars&vars){
 
   if(drawShadowFrusta)
     debug::drawSF(vars);
+
+  if(drawEdges)
+    debug::drawEdges(vars);
 
 
 }
