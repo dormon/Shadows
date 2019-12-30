@@ -29,15 +29,8 @@ namespace rssv::debug{
 void prepareDrawEdges(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method.debug"
       ,"wavefrontSize"                        
-      ,"rssv.method.debug.dump.config"    
-      ,"rssv.method.debug.dump.near"      
-      ,"rssv.method.debug.dump.far"       
-      ,"rssv.method.debug.dump.fovy"      
-      ,"rssv.param.morePlanes"
-      ,"rssv.param.ffc"
       );
 
-  auto const cfg             = *vars.get<Config>("rssv.method.debug.dump.config");
   auto const alignedNofEdges =  vars.getUint32  ("rssv.method.alignedNofEdges"  );
 
   std::string const vsSrc = R".(
