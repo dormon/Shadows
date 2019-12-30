@@ -1,25 +1,54 @@
 cmake_minimum_required(VERSION 3.12.1)
 
-add_library(RSSV STATIC
+SET(CMAKE_CXX_STANDARD 17)
+
+project(RSSV)
+
+add_library(${PROJECT_NAME} STATIC
   RSSV.cpp
-  Tiles.cpp
-  BuildStupidHierarchy.cpp
-  ExtractSilhouettes.cpp
-  Params.cpp
-  StupidHierarchyShaders.cpp
-  PerfectResolution/Build.cpp
-  Hierarchy.cpp
   RSSV.h
-  Tiles.h
-  Shaders.h
-  BuildHierarchy.h
-  BuildStupidHierarchy.h
-  StupidHierarchyShaders.h
-  Hierarchy.h
-  ExtractSilhouettes.h
-  ExtractSilhouettesShader.h
-  Params.h
-  PerfectResolution/Build.h
+  allocateHierarchy.cpp
+  allocateHierarchy.h
+  mortonShader.cpp
+  mortonShader.h
+  param.cpp
+  param.h
+  createBuildHierarchyProgram.cpp
+  createBuildHierarchyProgram.h
+  buildHierarchy.cpp
+  buildHierarchy.h
+  buildHierarchyShader.cpp
+  buildHierarchyShader.h
+  depthToZShader.cpp
+  depthToZShader.h
+  quantizeZShader.cpp
+  quantizeZShader.h
+  config.h
+  propagateAABBShader.cpp
+  propagateAABBShader.h
+  propagateAABB.cpp
+  propagateAABB.h
+  createPropagateAABBProgram.cpp
+  createPropagateAABBProgram.h
+  computeConfig.cpp
+  computeConfig.h
+  configShader.cpp
+  configShader.h
+  computeShadowFrusta.cpp
+  computeShadowFrusta.h
+  shadowFrustaShader.cpp
+  shadowFrustaShader.h
+  rasterize.cpp
+  rasterize.h
+  rasterizeShader.cpp
+  rasterizeShader.h
+  merge.cpp
+  merge.h
+  mergeShader.cpp
+  mergeShader.h
   )
-target_include_directories(RSSV PUBLIC ..)
-target_link_libraries(RSSV PUBLIC geGL::geGL)
+
+add_subdirectory(debug)
+
+target_include_directories(${PROJECT_NAME} PUBLIC ..)
+target_link_libraries(${PROJECT_NAME} PUBLIC geGL::geGL RSSV_Debug)

@@ -11,7 +11,7 @@
 #include <DrawPrimitive.h>
 #include <Model.h>
 #include <RSSV/RSSV.h>
-#include <RSSV/Tiles.h>
+//#include <RSSV/Tiles.h>
 #include <Shading.h>
 #include <ShadowMethod.h>
 #include <Sintorn/Sintorn.h>
@@ -153,12 +153,12 @@ void Shadows::draw() {
     if (keyDown['m']) sintorn->drawHST(3);
     if (keyDown[',']) sintorn->drawFinalStencilMask();
   }
-  if (vars.getString("methodName") == "rssv") {
-    auto rssv = vars.getReinterpret<rssv::RSSV>("shadowMethod");
-    auto dp = vars.get<DrawPrimitive>("drawPrimitive");
-    auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(rssv->_HDT[i]);};
-    for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
-  }
+  //if (vars.getString("methodName") == "rssv") {
+  //  auto rssv = vars.getReinterpret<rssv::RSSV>("shadowMethod");
+  //  auto dp = vars.get<DrawPrimitive>("drawPrimitive");
+  //  auto drawTex = [&](char s,int i){if (keyDown[s]) dp->drawTexture(rssv->_HDT[i]);};
+  //  for(int i=0;i<4;++i)drawTex("hjkl"[i],i);
+  //}
 
 
 
