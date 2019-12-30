@@ -13,6 +13,7 @@
 #include <RSSV/rasterize.h>
 #include <RSSV/merge.h>
 #include <RSSV/debug/drawDebug.h>
+#include <RSSV/extractSilhouettes.h>
 
 namespace rssv{
 
@@ -35,6 +36,8 @@ void RSSV::create(glm::vec4 const& lightPosition,
   ifExistStamp("");
   rssv::computeShadowFrusta(vars);
   ifExistStamp("computeShadowFrusta");
+  rssv::extractSilhouettes(vars);
+  ifExistStamp("extractSilhouettes");
   rssv::buildHierarchy(vars);
   ifExistStamp("buildHierarchy");
   rssv::rasterize(vars);

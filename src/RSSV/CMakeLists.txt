@@ -46,6 +46,10 @@ add_library(${PROJECT_NAME} STATIC
   merge.h
   mergeShader.cpp
   mergeShader.h
+  extractSilhouettesShader.cpp
+  extractSilhouettesShader.h
+  extractSilhouettes.cpp
+  extractSilhouettes.h
   )
 
 add_subdirectory(debug)
