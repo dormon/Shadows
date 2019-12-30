@@ -255,11 +255,15 @@ void rssv::drawDebug(vars::Vars&vars){
     DRAW_TRAVERSE,
   };
 
-  auto&type         = vars.addOrGetUint32("rssv.method.debug.type",DEFAULT);
-  auto&levelsToDraw = vars.addOrGetUint32("rssv.method.debug.levelsToDraw",0);
-  auto&drawTightAABB = vars.addOrGetBool  ("rssv.method.debug.drawTightAABB");
-  auto&wireframe     = vars.addOrGetBool  ("rssv.method.debug.wireframe",true);
-  auto&usePrecomputedSize = vars.addOrGetBool("rssv.method.debug.usePrecomputedSize",false);
+  auto&type               = vars.addOrGetUint32("rssv.method.debug.type",DEFAULT);
+  auto&levelsToDraw       = vars.addOrGetUint32("rssv.method.debug.levelsToDraw",0);
+  auto&drawTightAABB      = vars.addOrGetBool  ("rssv.method.debug.drawTightAABB");
+  auto&wireframe          = vars.addOrGetBool  ("rssv.method.debug.wireframe",true);
+
+  auto&drawSamples        = vars.addOrGetBool("rssv.method.debug.drawSamples"     );
+  auto&drawNodePool       = vars.addOrGetBool("rssv.method.debug.drawNodePool"    );
+  auto&drawTraverse       = vars.addOrGetBool("rssv.method.debug.drawTraverse"    );
+  auto&drawShadowFrusta   = vars.addOrGetBool("rssv.method.debug.drawShadowFrusta");
 
   auto&taToDraw = vars.addOrGetUint32("rssv.method.debug.taToDraw",0);
   auto&trToDraw = vars.addOrGetUint32("rssv.method.debug.trToDraw",0);
@@ -276,34 +280,38 @@ void rssv::drawDebug(vars::Vars&vars){
     if(ImGui::BeginMenu("dump")){
       if(ImGui::MenuItem("copyData"))
         rssv::debug::dumpData(vars);
-      if(ImGui::MenuItem("drawSamples"))
-        type = DRAW_SAMPLES;
-      if(ImGui::MenuItem("drawNodePool"))
-        type = DRAW_NODEPOOL;
-      if(ImGui::MenuItem("drawTraverse"))
-        type = DRAW_TRAVERSE;
-      if(ImGui::MenuItem("drawTightAABB"))
+
+      if(ImGui::MenuItem("drawSamples")){
+        drawSamples = !drawSamples;
+        vars.updateTicks("rssv.method.debug.drawSamples");
+      }
+
+      if(ImGui::MenuItem("drawNodePool")){
+        drawNodePool = !drawNodePool;
+        vars.updateTicks("rssv.method.debug.drawNodePool");
+      }
+
+      if(ImGui::MenuItem("drawTraverse")){
+        drawTraverse = !drawTraverse;
+        vars.updateTicks("rssv.method.debug.drawTraverse");
+      }
+
+      if(ImGui::MenuItem("drawTightAABB")){
         drawTightAABB = !drawTightAABB;
+        vars.updateTicks("rssv.method.debug.drawTightAABB");
+      }
+
       if(ImGui::MenuItem("wireframe")){
         wireframe = !wireframe;
         vars.updateTicks("rssv.method.debug.wireframe");
       }
-      if(ImGui::MenuItem("drawShadowFrusta"))
-        type = DRAW_SF;
-      if(usePrecomputedSize){
-        if(ImGui::MenuItem("computeAABBSize")){
-          usePrecomputedSize = !usePrecomputedSize;
-          vars.updateTicks("rssv.method.debug.usePrecomputedSize");
-        }
-      }else{
-        if(ImGui::MenuItem("usePrecomputedAABBSize")){
-          usePrecomputedSize = !usePrecomputedSize;
-          vars.updateTicks("rssv.method.debug.usePrecomputedSize");
-        }
+
+      if(ImGui::MenuItem("drawShadowFrusta")){
+        drawShadowFrusta = !drawShadowFrusta;
+        vars.updateTicks("rssv.method.debug.drawShadowFrusta");
       }
 
-
-      if(type == DRAW_NODEPOOL){
+      if(drawNodePool){
         if(vars.has("rssv.method.debug.dump.config")){
           auto const cfg = *vars.get<Config>        ("rssv.method.debug.dump.config"    );
           for(uint32_t i=0;i<cfg.nofLevels;++i){
@@ -316,7 +324,7 @@ void rssv::drawDebug(vars::Vars&vars){
         }
       }
 
-      if(type == DRAW_TRAVERSE){
+      if(drawTraverse){
         if(vars.has("rssv.method.debug.dump.config")){
           auto const cfg = *vars.get<Config>        ("rssv.method.debug.dump.config"    );
           for(uint32_t i=0;i<cfg.nofLevels;++i){
@@ -352,28 +360,17 @@ void rssv::drawDebug(vars::Vars&vars){
   if(type == DRAW_MORTON)
     debug::drawMortons(vars);
 
-  //if(type == BASIC)
-  //  debug::drawBasic(vars);
-
-  if(type == DRAW_SAMPLES)
+  if(drawSamples)
     debug::drawSamples(vars);
 
-  if(type == DRAW_NODEPOOL){
-    debug::drawSamples(vars);
+  if(drawNodePool)
     debug::drawNodePool(vars);
-  }
-  if(type == DRAW_TRAVERSE){
-    debug::drawSamples(vars);
+
+  if(drawTraverse)
     debug::drawTraverse(vars);
-  }
-  if(type == DRAW_SF){
-    debug::drawSamples(vars);
+
+  if(drawShadowFrusta)
     debug::drawSF(vars);
-  }
 
 
-  //if(ImGui::Button("mine button"))
-  //  std::cerr << "button pressed" << std::endl;
-  /*
-  */
 }
