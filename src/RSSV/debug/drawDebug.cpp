@@ -20,6 +20,7 @@
 #include <RSSV/debug/drawTraverse.h>
 #include <RSSV/debug/drawSF.h>
 #include <RSSV/debug/drawEdges.h>
+#include <RSSV/debug/drawSilhouettes.h>
 #include <RSSV/configShader.h>
 #include <RSSV/config.h>
 
@@ -59,6 +60,7 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&drawTraverse       = vars.addOrGetBool("rssv.method.debug.drawTraverse"    );
   auto&drawShadowFrusta   = vars.addOrGetBool("rssv.method.debug.drawShadowFrusta");
   auto&drawEdges          = vars.addOrGetBool("rssv.method.debug.drawEdges"       );
+  auto&drawSilhouettes    = vars.addOrGetBool("rssv.method.debug.drawSilhouettes" );
 
   auto&taToDraw = vars.addOrGetUint32("rssv.method.debug.taToDraw",0);
   auto&trToDraw = vars.addOrGetUint32("rssv.method.debug.trToDraw",0);
@@ -66,8 +68,12 @@ void rssv::drawDebug(vars::Vars&vars){
 
   if(ImGui::BeginMainMenuBar()){
     if(ImGui::BeginMenu("dump")){
+
       if(ImGui::MenuItem("copyData"))
         rssv::debug::dumpData(vars);
+
+      if(ImGui::MenuItem("copySilhouettes"))
+        rssv::debug::dumpSilhouettes(vars);
 
       if(ImGui::MenuItem("drawSamples")){
         drawSamples = !drawSamples;
@@ -102,6 +108,11 @@ void rssv::drawDebug(vars::Vars&vars){
       if(ImGui::MenuItem("drawEdges")){
         drawEdges = !drawEdges;
         vars.updateTicks("rssv.method.debug.drawEdges");
+      }
+
+      if(ImGui::MenuItem("drawSilhouettes")){
+        drawSilhouettes = !drawSilhouettes;
+        vars.updateTicks("rssv.method.debug.drawSilhouettes");
       }
 
       if(drawNodePool){
@@ -164,6 +175,9 @@ void rssv::drawDebug(vars::Vars&vars){
 
   if(drawEdges)
     debug::drawEdges(vars);
+
+  if(drawSilhouettes)
+    debug::drawSilhouettes(vars);
 
 
 }

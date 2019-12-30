@@ -14,7 +14,7 @@ using namespace std;
 
 namespace rssv::debug{
 
-void prepareDrawEdges(vars::Vars&vars){
+void prepareDrawSilhouettes(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method.debug"
       ,"wavefrontSize"                        
       );
@@ -35,13 +35,15 @@ void prepareDrawEdges(vars::Vars&vars){
 
   layout(location=0)out vec4 fColor;
   void main(){
-    fColor = vec4(0,1,0,1);
+    fColor = vec4(1,0,0,1);
   }
   ).";
 
   std::string const gsSrc = R".(
 
-layout(binding=0)buffer EdgeBuffer{float edgeBuffer[];};
+layout(binding=0)buffer EdgeBuffer       {float edgeBuffer       [];};
+layout(binding=1)buffer MultBuffer       {uint  multBuffer       [];};
+layout(binding=2)buffer SilhouetteCounter{uint  silhouetteCounter[];};
 
 layout(points)in;
 layout(line_strip,max_vertices=2)out;
@@ -52,7 +54,13 @@ uniform mat4 view;
 uniform mat4 proj;
 
 void main(){
-  uint edge = vId[0];
+  uint thread = vId[0];
+
+  if(thread >= silhouetteCounter[0])return;
+
+  uint res = multBuffer[thread];
+  uint edge = res & 0x1fffffffu;
+  int  mult = int(res) >> 29;
 
   vec4 P[2];
   P[0][0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
@@ -82,7 +90,7 @@ void main(){
       fsSrc);
 
   vars.reCreate<Program>(
-      "rssv.method.debug.drawEdgesProgram",
+      "rssv.method.debug.drawSilhouettesProgram",
       vs,
       gs,
       fs
@@ -90,19 +98,21 @@ void main(){
 
 }
 
-void drawEdges(vars::Vars&vars){
-  prepareDrawEdges(vars);
-
-  auto const view          = *vars.get<glm::mat4>  ("rssv.method.debug.viewMatrix"        );
-  auto const proj          = *vars.get<glm::mat4>  ("rssv.method.debug.projectionMatrix"  );
-  auto const adj           =  vars.get<Adjacency>  ("adjacency"                           );
-  auto const vao           =  vars.get<VertexArray>("rssv.method.debug.vao"               );
-  auto const prg           =  vars.get<Program>    ("rssv.method.debug.drawEdgesProgram"  );
-  auto const edges         =  vars.get<Buffer>     ("rssv.method.edgeBuffer"              );
-
+void drawSilhouettes(vars::Vars&vars){
+  prepareDrawSilhouettes(vars);
+  auto const view              = *vars.get<glm::mat4>  ("rssv.method.debug.viewMatrix"            );
+  auto const proj              = *vars.get<glm::mat4>  ("rssv.method.debug.projectionMatrix"      );
+  auto const adj               =  vars.get<Adjacency>  ("adjacency"                               );
+  auto const vao               =  vars.get<VertexArray>("rssv.method.debug.vao"                   );
+  auto const prg               =  vars.get<Program>    ("rssv.method.debug.drawSilhouettesProgram");
+  auto const edges             =  vars.get<Buffer>     ("rssv.method.edgeBuffer"                  );
+  auto const multBuffer        =  vars.get<Buffer>     ("rssv.method.debug.dump.multBuffer"       );
+  auto const silhouetteCounter =  vars.get<Buffer>     ("rssv.method.debug.dump.silhouetteCounter");
   auto nofEdges = adj->getNofEdges();
 
   edges->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  multBuffer->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  silhouetteCounter->bindBase(GL_SHADER_STORAGE_BUFFER,2);
 
   vao->bind();
   prg->use();

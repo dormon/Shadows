@@ -132,6 +132,20 @@ void dumpEdges(vars::Vars&vars){
   buf->copy(*edges);
 }
 
+void dumpMultBuffer(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto source = vars.get<Buffer>("rssv.method.multBuffer");
+  auto target = vars.reCreate<Buffer>("rssv.method.debug.dump.multBuffer",source->getSize());
+  target->copy(*source);
+}
+
+void dumpSilhouetteCounter(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto source = vars.get<Buffer>("rssv.method.silhouetteCounter");
+  auto target = vars.reCreate<Buffer>("rssv.method.debug.dump.silhouetteCounter",source->getSize());
+  target->copy(*source);
+}
+
 void dumpBasic(vars::Vars&vars){
   FUNCTION_CALLER();
   auto lp        = *vars.get<glm::vec4>("rssv.method.debug.lightPosition"   );
@@ -332,7 +346,6 @@ void dumpData(vars::Vars&vars){
 
   dumpSF(vars);
 
-  //dumpEdges(vars);
 
   buildHierarchy(vars);
   dumpNodePool(vars);
@@ -342,6 +355,12 @@ void dumpData(vars::Vars&vars){
 
 
   std::cerr << "dump" << std::endl;
+}
+
+void dumpSilhouettes(vars::Vars&vars){
+  //dumpEdges(vars);
+  dumpMultBuffer(vars);
+  dumpSilhouetteCounter(vars);
 }
 
 }
