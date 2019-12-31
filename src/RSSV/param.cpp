@@ -23,6 +23,6 @@ void rssv::loadParams(
   vars.addSizeT ("rssv.param.alignment"              ) = c->getu64   ("alignment"            ,128 ,"buffer alignment in bytes"                                                       );
   vars.addUint32("rssv.param.extractSilhouettesWGS"  ) = c->getu32   ("extractSilhouettesWGS",64  ,"extract silhouettes work groups size"                                            );
 
-  vars.addBool  ("rssv.param.storeTraverseStat");
+  vars.addBool  ("rssv.param.storeTraverseSilhouettesStat");
 
 }

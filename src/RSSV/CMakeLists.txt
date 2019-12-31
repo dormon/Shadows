@@ -50,6 +50,10 @@ add_library(${PROJECT_NAME} STATIC
   extractSilhouettesShader.h
   extractSilhouettes.cpp
   extractSilhouettes.h
+  traverseSilhouettes.cpp
+  traverseSilhouettes.h
+  traverseSilhouettesShader.cpp
+  traverseSilhouettesShader.h
   )
 
 add_subdirectory(debug)
