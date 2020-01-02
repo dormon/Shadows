@@ -16,6 +16,7 @@
 #include <ODPM/OmnidirDPM.h>
 #include <DPSV/DPSV.h>
 #include <HSSV/HSSV.h>
+#include <MTSV/MTSV.h>
 
 void initMethods(vars::Vars&vars){
   auto methods = vars.add<Methods>("methods");
@@ -34,4 +35,5 @@ void initMethods(vars::Vars&vars){
   methods->add<OmnidirDpm                 >("odpm"             );
   methods->add<DPSV                       >("dpsv"             );
   methods->add<HSSV                       >("hssv"             );
+  methods->add<MTSV                       >("mtsv"             );
 }
