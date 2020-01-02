@@ -13,6 +13,8 @@
 #include <Sintorn2/rasterizeShader.h>
 #include <Sintorn2/configShader.h>
 #include <Sintorn2/mortonShader.h>
+#include <Sintorn2/quantizeZShader.h>
+#include <Sintorn2/depthToZShader.h>
 
 #include <iomanip>
 #include <Timer.h>
@@ -24,7 +26,6 @@ using namespace ge::gl;
 using namespace std;
 
 //#define SAVE_COLLISION 1
-//#define SAVE_TRAVERSE_STAT 1
 
 #include <string.h>
 
@@ -45,6 +46,11 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"sintorn2.param.tileY"   
       ,"sintorn2.param.morePlanes"
       ,"sintorn2.param.ffc"
+      ,"sintorn2.param.noAABB"
+      ,"sintorn2.param.storeTraverseStat"
+      ,"args.camera.near"
+      ,"args.camera.far"
+      ,"args.camera.fovy"
       );
 
   auto const wavefrontSize       =  vars.getSizeT           ("wavefrontSize"                    );
@@ -58,6 +64,11 @@ void createRasterizeProgram(vars::Vars&vars){
   auto const minZBits            =  vars.getUint32          ("sintorn2.param.minZBits"          );
   auto const morePlanes          =  vars.getInt32           ("sintorn2.param.morePlanes"        );
   auto const ffc                 =  vars.getInt32           ("sintorn2.param.ffc"               );
+  auto const noAABB              =  vars.getInt32           ("sintorn2.param.noAABB"            );
+  auto const storeTraverseStat   =  vars.getBool            ("sintorn2.param.storeTraverseStat" );
+  auto const nnear               =  vars.getFloat           ("args.camera.near"                 );
+  auto const ffar                =  vars.getFloat           ("args.camera.far"                  );
+  auto const fovy                =  vars.getFloat           ("args.camera.fovy"                 );
 
   vars.reCreate<ge::gl::Program>("sintorn2.method.rasterizeProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
@@ -74,23 +85,23 @@ void createRasterizeProgram(vars::Vars&vars){
         Shader::define("TILE_Y"             ,tileY                       ),
         Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
         Shader::define("ENABLE_FFC"         ,(int)     ffc               ),
+        Shader::define("NO_AABB"            ,(int)     noAABB            ),
 #if SAVE_COLLISION == 1
         Shader::define("SAVE_COLLISION"     ,(int)1),
 #endif
-#if SAVE_TRAVERSE_STAT == 1
-        Shader::define("SAVE_TRAVERSE_STAT" ,(int)1),
-#endif
+        Shader::define("STORE_TRAVERSE_STAT",(int)storeTraverseStat),
+        Shader::define("NEAR"      ,nnear                  ),
+        glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
+        Shader::define("FOVY"      ,fovy                   ),
         ballotSrc,
-        sintorn2::demortonShader,
         sintorn2::configShader,
+        sintorn2::demortonShader,
+        sintorn2::depthToZShader,
+        sintorn2::quantizeZShader,
         sintorn2::rasterizeShader
         ));
 
 }
-
-#if SAVE_TRAVERSE_STAT == 1
-std::shared_ptr<Buffer>debug;
-#endif
 
 #if SAVE_COLLISION == 1
 std::shared_ptr<Buffer>deb;
@@ -102,10 +113,6 @@ void createJobCounter(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2.method");
   vars.reCreate<Buffer>("sintorn2.method.jobCounter",sizeof(uint32_t));
 
-#if SAVE_TRAVERSE_STAT == 1
-  debug = make_shared<Buffer>(sizeof(uint32_t)*(1+1024*1024*128));
-#endif
-
 #if SAVE_COLLISION == 1
   deb = make_shared<Buffer>(sizeof(float)*floatsPerStore*10000);
   debc = make_shared<Buffer>(sizeof(uint32_t)*(1));
@@ -114,11 +121,19 @@ void createJobCounter(vars::Vars&vars){
 
 }
 
+void createDebugTraverseBuffers(vars::Vars&vars){
+  FUNCTION_PROLOGUE("sintorn2.method"
+      ,"sintorn2.param.storeTraverseStat"
+      );
+  vars.reCreate<Buffer>("sintorn2.method.debug.traverseBuffer",sizeof(uint32_t)*(1+1024*1024*128));
+}
+
 
 void sintorn2::rasterize(vars::Vars&vars){
   FUNCTION_CALLER();
   createRasterizeProgram(vars);
   createJobCounter(vars);
+  createDebugTraverseBuffers(vars);
 
   auto prg        = vars.get<Program>("sintorn2.method.rasterizeProgram");
   auto nodePool   = vars.get<Buffer >("sintorn2.method.nodePool"        );
@@ -150,12 +165,14 @@ void sintorn2::rasterize(vars::Vars&vars){
 
   prg->use();
 
-#if SAVE_TRAVERSE_STAT == 1
-  glFinish();
-  //debug->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
-  debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
-#endif
+  auto const storeTraverseStat = vars.getBool("sintorn2.param.storeTraverseStat");
+  if(storeTraverseStat){
+    glFinish();
+    auto debug = vars.get<Buffer>("sintorn2.method.debug.traverseBuffer");
+    glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+    debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+  }
+
 
 #if SAVE_COLLISION == 1
   debc->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
@@ -214,81 +231,82 @@ void sintorn2::rasterize(vars::Vars&vars){
 
   //glFinish();
 
-#if SAVE_TRAVERSE_STAT == 1
-  uint32_t NN = 0;
-  debug->getData(&NN,sizeof(uint32_t));
-  std::vector<uint32_t>debugData((NN*4+1)*sizeof(uint32_t));
-  debug->getData(debugData.data(),(NN*4+1)*sizeof(uint32_t));
+  //if(storeTraverseStat){
+  //  auto debug = vars.get<Buffer>("sintorn2.method.debug.traverseBuffer");
+  //  uint32_t NN = 0;
+  //  debug->getData(&NN,sizeof(uint32_t));
+  //  std::vector<uint32_t>debugData((NN*4+1)*sizeof(uint32_t));
+  //  debug->getData(debugData.data(),(NN*4+1)*sizeof(uint32_t));
 
-  std::cerr << "N: " << debugData[0] << std::endl;
-  std::map<uint32_t,uint32_t>levelCnt;
-  std::map<uint32_t,uint32_t>jobCnt;
-  std::map<uint32_t,uint32_t>nodeCnt;
-  std::map<uint32_t,uint32_t>statCnt;
-  std::map<uint32_t,std::map<uint32_t,uint32_t>>levelStatCnt;
-  for(uint32_t j=0;j<debugData[0];++j){
-    auto i = 1+j*4;
-    auto job   = debugData[i+0];
-    auto node  = debugData[i+1];
-    auto level = debugData[i+2];
-    auto stat  = debugData[i+3];
-    if(levelCnt.count(level)==0)levelCnt[level] = 0;
-    if(jobCnt  .count(job  )==0)jobCnt  [job  ] = 0;
-    if(nodeCnt .count(node )==0)nodeCnt [node ] = 0;
-    if(statCnt .count(stat )==0)statCnt [stat ] = 0;
-    if(levelStatCnt.count(level)==0)levelStatCnt[level] = std::map<uint32_t,uint32_t>();
-    if(levelStatCnt[level].count(stat) == 0)levelStatCnt[level][stat] = 0;
-    levelCnt[level]++;
-    jobCnt  [job  ]++;
-    nodeCnt [node ]++;
-    statCnt [stat ]++;
-    levelStatCnt[level][stat]++;
-  }
-  for(auto const&x:levelCnt){
-    std::cerr << "level" << x.first << ": " << x.second << std::endl;
-  }
-
-  //for(auto const&x:jobCnt){
-  //  std::cerr << "job" << x.first << ": " << x.second << std::endl;
-  //}
-
-  auto statToName = [](uint32_t s){
-    if(s == 0   )return "empty  ";
-    if(s == 3   )return "ta     ";
-    if(s == 2   )return "in     ";
-    if(s == 0xf0)return "re     ";
-    if(s == 0xff)return "samples";
-    return              "bug    ";
-  };
-  //for(auto const&x:nodeCnt){
-  //  std::cerr << "node" << x.first << ": " << x.second << std::endl;
-  //}
-  for(auto const&x:statCnt){
-    std::cerr << "stat " << statToName(x.first) << ": " << x.second << std::endl;
-  }
-  for(auto const&l:levelStatCnt){
-    std::cerr << "level" << l.first << ": " << std::endl;
-    for(auto const&s:l.second)
-      std::cerr << "  " << statToName(s.first) << ": " << s.second << std::endl;
-  }
-  exit(0);
-
-  //for(uint32_t i=0;i<10000;++i)
-  //  std::cerr << debugData[i] << " ";
-  //std::cerr << std::endl;
-  //auto cfg = *vars.get<Config>("sintorn2.method.config");;
-  //for(uint32_t j=0;j<debugData[0];++j){
-  //  auto i = 1+j*3;
-  //  auto job   = debugData[i+0];
-  //  auto node  = debugData[i+1];
-  //  auto level = debugData[i+2];
-  //  if(level > cfg.nofLevels){
-  //    std::cerr << "job  : " << job   << " ";
-  //    std::cerr << "node : " << node  << " ";
-  //    std::cerr << "level: " << level << std::endl;
+  //  std::cerr << "N: " << debugData[0] << std::endl;
+  //  std::map<uint32_t,uint32_t>levelCnt;
+  //  std::map<uint32_t,uint32_t>jobCnt;
+  //  std::map<uint32_t,uint32_t>nodeCnt;
+  //  std::map<uint32_t,uint32_t>statCnt;
+  //  std::map<uint32_t,std::map<uint32_t,uint32_t>>levelStatCnt;
+  //  for(uint32_t j=0;j<debugData[0];++j){
+  //    auto i = 1+j*4;
+  //    auto job   = debugData[i+0];
+  //    auto node  = debugData[i+1];
+  //    auto level = debugData[i+2];
+  //    auto stat  = debugData[i+3];
+  //    if(levelCnt.count(level)==0)levelCnt[level] = 0;
+  //    if(jobCnt  .count(job  )==0)jobCnt  [job  ] = 0;
+  //    if(nodeCnt .count(node )==0)nodeCnt [node ] = 0;
+  //    if(statCnt .count(stat )==0)statCnt [stat ] = 0;
+  //    if(levelStatCnt.count(level)==0)levelStatCnt[level] = std::map<uint32_t,uint32_t>();
+  //    if(levelStatCnt[level].count(stat) == 0)levelStatCnt[level][stat] = 0;
+  //    levelCnt[level]++;
+  //    jobCnt  [job  ]++;
+  //    nodeCnt [node ]++;
+  //    statCnt [stat ]++;
+  //    levelStatCnt[level][stat]++;
   //  }
+  //  for(auto const&x:levelCnt){
+  //    std::cerr << "level" << x.first << ": " << x.second << std::endl;
+  //  }
+
+  //  //for(auto const&x:jobCnt){
+  //  //  std::cerr << "job" << x.first << ": " << x.second << std::endl;
+  //  //}
+
+  //  auto statToName = [](uint32_t s){
+  //    if(s == 0   )return "empty  ";
+  //    if(s == 3   )return "ta     ";
+  //    if(s == 2   )return "in     ";
+  //    if(s == 0xf0)return "re     ";
+  //    if(s == 0xff)return "samples";
+  //    return              "bug    ";
+  //  };
+  //  //for(auto const&x:nodeCnt){
+  //  //  std::cerr << "node" << x.first << ": " << x.second << std::endl;
+  //  //}
+  //  for(auto const&x:statCnt){
+  //    std::cerr << "stat " << statToName(x.first) << ": " << x.second << std::endl;
+  //  }
+  //  for(auto const&l:levelStatCnt){
+  //    std::cerr << "level" << l.first << ": " << std::endl;
+  //    for(auto const&s:l.second)
+  //      std::cerr << "  " << statToName(s.first) << ": " << s.second << std::endl;
+  //  }
+  //  //exit(0);
+
+  //  //for(uint32_t i=0;i<10000;++i)
+  //  //  std::cerr << debugData[i] << " ";
+  //  //std::cerr << std::endl;
+  //  //auto cfg = *vars.get<Config>("sintorn2.method.config");;
+  //  //for(uint32_t j=0;j<debugData[0];++j){
+  //  //  auto i = 1+j*3;
+  //  //  auto job   = debugData[i+0];
+  //  //  auto node  = debugData[i+1];
+  //  //  auto level = debugData[i+2];
+  //  //  if(level > cfg.nofLevels){
+  //  //    std::cerr << "job  : " << job   << " ";
+  //  //    std::cerr << "node : " << node  << " ";
+  //  //    std::cerr << "level: " << level << std::endl;
+  //  //  }
+  //  //}
   //}
-#endif
 
 #if SAVE_COLLISION == 1
   std::vector<float>debData;

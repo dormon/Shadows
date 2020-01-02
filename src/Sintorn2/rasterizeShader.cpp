@@ -26,6 +26,10 @@ std::string const sintorn2::rasterizeShader = R".(
 #define ENABLE_FFC 0
 #endif//ENABLE_FFC
 
+#ifndef NO_AABB
+#define NO_AABB 0
+#endif//NO_AABB
+
 const uint planesPerSF = 4u + MORE_PLANES*3u;
 const uint floatsPerPlane = 4u;
 const uint floatsPerSF = planesPerSF * floatsPerPlane + uint(ENABLE_FFC);
@@ -63,7 +67,7 @@ layout(std430,binding=5)buffer Deb{float deb[];};
 layout(std430,binding=6)buffer Debc{uint debc[];};
 #endif
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
 
@@ -197,7 +201,7 @@ void traverse(){
 
     if(level == int(nofLevels)){
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
       if(gl_LocalInvocationIndex==0){
         uint w = atomicAdd(debug[0],1);
         debug[1+w*4+0] = job;
@@ -226,11 +230,10 @@ void traverse(){
         aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
         aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
 
-
         status = trivialRejectAccept(minCorner,aabbSize);
       }
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
         uint w = atomicAdd(debug[0],1);
         debug[1+w*4+0] = job;
         debug[1+w*4+1] = node;
@@ -280,7 +283,7 @@ void traverse(){
   while(level >= 0){
     if(level == int(nofLevels)){
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
       if(gl_LocalInvocationIndex==0){
         uint w = atomicAdd(debug[0],1);
         debug[1+w*4+0] = job;
@@ -303,12 +306,34 @@ void traverse(){
 
         vec3 minCorner;
         vec3 aabbSize;
+#if NO_AABB == 1
+        //*
+        uvec3 xyz = (demorton(((node<<warpBits)+gl_LocalInvocationIndex)<<(warpBits*(nofLevels-1-level))));
+
+        float startX = -1.f + xyz.x*levelTileSizeClipSpace[nofLevels-1].x;
+        float startY = -1.f + xyz.y*levelTileSizeClipSpace[nofLevels-1].y;
+        float endX   = min(startX + levelTileSizeClipSpace[level].x,1.f);
+        float endY   = min(startY + levelTileSizeClipSpace[level].y,1.f);
+        float startZ = Z_TO_DEPTH(CLUSTER_TO_Z(xyz.z                             ));
+        float endZ   = Z_TO_DEPTH(CLUSTER_TO_Z(xyz.z+(1u<<levelTileBits[level].z)));
+
+        minCorner[0] = startX;
+        minCorner[1] = startY;
+        minCorner[2] = startZ;
+
+        aabbSize[0] = (endX-startX);
+        aabbSize[1] = (endY-startY);
+        aabbSize[2] = (endZ-startZ);
+
+        // */
+#else
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
         minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
         aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
         aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
         aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+#endif
 
 
         status = trivialRejectAccept(minCorner,aabbSize);
@@ -342,10 +367,10 @@ void traverse(){
 
       }
 
-#if SAVE_TRAVERSE_STAT == 1
+#if STORE_TRAVERSE_STAT == 1
         uint w = atomicAdd(debug[0],1);
         debug[1+w*4+0] = job;
-        debug[1+w*4+1] = node;
+        debug[1+w*4+1] = node*WARP + gl_LocalInvocationIndex;
         debug[1+w*4+2] = uint(level);
         debug[1+w*4+3] = status;
 #endif

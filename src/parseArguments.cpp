@@ -4,7 +4,7 @@
 #include <CSSV/Param.h>
 #include <VSSV/Params.h>
 #include <Sintorn/Param.h>
-#include <RSSV/Params.h>
+#include <RSSV/param.h>
 #include <loadBasicApplicationParameters.h>
 #include <loadTestParams.h>
 #include <loadCameraParams.h>

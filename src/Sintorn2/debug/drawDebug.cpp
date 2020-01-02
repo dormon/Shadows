@@ -17,9 +17,9 @@
 #include <Sintorn2/debug/dumpData.h>
 #include <Sintorn2/debug/drawSamples.h>
 #include <Sintorn2/debug/drawNodePool.h>
+#include <Sintorn2/debug/drawTraverse.h>
 #include <Sintorn2/debug/drawSF.h>
-#include <Sintorn2/quantizeZShader.h>
-#include <Sintorn2/depthToZShader.h>
+#include <Sintorn2/configShader.h>
 #include <Sintorn2/config.h>
 
 using namespace ge::gl;
@@ -153,8 +153,8 @@ uint getMorton(uvec2 coord){
   const uint tileBitsY     = uint(ceil(log2(float(TILE_Y))));
 
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
-  float z = depthToZ(depth);
-  uint  zQ = quantizeZ(z);
+  float z = DEPTH_TO_Z(depth);
+  uint  zQ = QUANTIZE_Z(z);
   uvec3 clusterCoord = uvec3(uvec2(coord) >> uvec2(tileBitsX,tileBitsY), zQ);
   return morton(clusterCoord);
 }
@@ -195,9 +195,8 @@ void main(){
         ge::gl::Shader::define("FOVY"      ,fovy                   ),
         ge::gl::Shader::define("TILE_X"    ,tileX                  ),
         ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
+        sintorn2::configShader,
         sintorn2::mortonShader,
-        sintorn2::depthToZShader,
-        sintorn2::quantizeZShader,
         fs));
 
 }
@@ -253,12 +252,18 @@ void sintorn2::drawDebug(vars::Vars&vars){
     DRAW_SAMPLES,
     DRAW_NODEPOOL,
     DRAW_SF,
+    DRAW_TRAVERSE,
   };
 
   auto&type         = vars.addOrGetUint32("sintorn2.method.debug.type",DEFAULT);
   auto&levelsToDraw = vars.addOrGetUint32("sintorn2.method.debug.levelsToDraw",0);
   auto&drawTightAABB = vars.addOrGetBool  ("sintorn2.method.debug.drawTightAABB");
   auto&wireframe     = vars.addOrGetBool  ("sintorn2.method.debug.wireframe",true);
+  auto&usePrecomputedSize = vars.addOrGetBool("sintorn2.method.debug.usePrecomputedSize",false);
+
+  auto&taToDraw = vars.addOrGetUint32("sintorn2.method.debug.taToDraw",0);
+  auto&trToDraw = vars.addOrGetUint32("sintorn2.method.debug.trToDraw",0);
+  auto&inToDraw = vars.addOrGetUint32("sintorn2.method.debug.inToDraw",0);
 
   if(ImGui::BeginMainMenuBar()){
     if(ImGui::BeginMenu("debug")){
@@ -275,6 +280,8 @@ void sintorn2::drawDebug(vars::Vars&vars){
         type = DRAW_SAMPLES;
       if(ImGui::MenuItem("drawNodePool"))
         type = DRAW_NODEPOOL;
+      if(ImGui::MenuItem("drawTraverse"))
+        type = DRAW_TRAVERSE;
       if(ImGui::MenuItem("drawTightAABB"))
         drawTightAABB = !drawTightAABB;
       if(ImGui::MenuItem("wireframe")){
@@ -283,6 +290,18 @@ void sintorn2::drawDebug(vars::Vars&vars){
       }
       if(ImGui::MenuItem("drawShadowFrusta"))
         type = DRAW_SF;
+      if(usePrecomputedSize){
+        if(ImGui::MenuItem("computeAABBSize")){
+          usePrecomputedSize = !usePrecomputedSize;
+          vars.updateTicks("sintorn2.method.debug.usePrecomputedSize");
+        }
+      }else{
+        if(ImGui::MenuItem("usePrecomputedAABBSize")){
+          usePrecomputedSize = !usePrecomputedSize;
+          vars.updateTicks("sintorn2.method.debug.usePrecomputedSize");
+        }
+      }
+
 
       if(type == DRAW_NODEPOOL){
         if(vars.has("sintorn2.method.debug.dump.config")){
@@ -292,6 +311,33 @@ void sintorn2::drawDebug(vars::Vars&vars){
             ss << "level" << i;
             if(ImGui::MenuItem(ss.str().c_str())){
               levelsToDraw ^= 1<<i;
+            }
+          }
+        }
+      }
+
+      if(type == DRAW_TRAVERSE){
+        if(vars.has("sintorn2.method.debug.dump.config")){
+          auto const cfg = *vars.get<Config>        ("sintorn2.method.debug.dump.config"    );
+          for(uint32_t i=0;i<cfg.nofLevels;++i){
+            std::stringstream ss;
+            ss << "trivialAccept" << i;
+            if(ImGui::MenuItem(ss.str().c_str())){
+              taToDraw ^= 1<<i;
+            }
+          }
+          for(uint32_t i=0;i<cfg.nofLevels;++i){
+            std::stringstream ss;
+            ss << "trivialReject" << i;
+            if(ImGui::MenuItem(ss.str().c_str())){
+              trToDraw ^= 1<<i;
+            }
+          }
+          for(uint32_t i=0;i<cfg.nofLevels;++i){
+            std::stringstream ss;
+            ss << "intersect" << i;
+            if(ImGui::MenuItem(ss.str().c_str())){
+              inToDraw ^= 1<<i;
             }
           }
         }
@@ -315,6 +361,10 @@ void sintorn2::drawDebug(vars::Vars&vars){
   if(type == DRAW_NODEPOOL){
     debug::drawSamples(vars);
     debug::drawNodePool(vars);
+  }
+  if(type == DRAW_TRAVERSE){
+    debug::drawSamples(vars);
+    debug::drawTraverse(vars);
   }
   if(type == DRAW_SF){
     debug::drawSamples(vars);

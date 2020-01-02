@@ -7,7 +7,7 @@
 #include <getMVP.h>
 #include <imguiVars/addVarsLimits.h>
 #include <divRoundUp.h>
-#include <RSSV/Hierarchy.h>
+//#include <RSSV/Hierarchy.h>
 #include <Deferred.h>
 
 using namespace glm;
@@ -15,6 +15,7 @@ using namespace ge::gl;
 using namespace std;
 
 void createPointCloudProgram(vars::Vars&vars){
+#if 0
   FUNCTION_PROLOGUE("all");
   auto const vsSrc = R".(
   #version 450
@@ -226,14 +227,18 @@ void createPointCloudProgram(vars::Vars&vars){
   ).";
   auto const fs = make_shared<Shader>(GL_FRAGMENT_SHADER,fsSrc);
   vars.add<Program>("pointCloud.program",vs,fs);
+#endif
 }
 
 void createPointCloudVAO(vars::Vars&vars){
+#if 0
   FUNCTION_PROLOGUE("all");
   vars.add<VertexArray>("pointCloud.vao");
+#endif
 }
 
 void computeHierarchy(vars::Vars&vars){
+#if 0
   FUNCTION_PROLOGUE("all","wavefrontSize","pointCloud.positionTexture");
 
   std::cerr << "computeHierarchy" << std::endl;
@@ -243,9 +248,11 @@ void computeHierarchy(vars::Vars&vars){
   auto hier = vars.reCreate<rssv::Hierarchy>("pointCloud.hierarchy",size,(uint32)wavefrontSize);
 
   vars.reCreate<uint32_t>("pointCloud.hierarchy.nofLevels",hier->nofLevels);
+#endif
 }
 
 void drawPointCloud(vars::Vars&vars){
+#if 0
   FUNCTION_CALLER();
   if(!vars.has("pointCloud.positionTexture"))return;
 
@@ -310,6 +317,7 @@ void drawPointCloud(vars::Vars&vars){
 
   glDrawArrays(GL_POINTS,0,ww*hh);
   vao->unbind();
+#endif
 }
 
 // threadID.xy workGroupID.xy

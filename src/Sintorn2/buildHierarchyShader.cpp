@@ -283,8 +283,8 @@ uint getMorton(uvec2 coord,float depth){
   const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
   const uint tileBitsY     = uint(ceil(log2(float(TILE_Y))));
 
-  float z = depthToZ(depth);
-  uint  zQ = quantizeZ(z);
+  float z = DEPTH_TO_Z(depth);
+  uint  zQ = QUANTIZE_Z(z);
   uvec3 clusterCoord = uvec3(uvec2(coord) >> uvec2(tileBitsX,tileBitsY), zQ);
   return morton(clusterCoord);
 }

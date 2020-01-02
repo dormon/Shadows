@@ -12,8 +12,6 @@
 #include <Sintorn2/createBuildHierarchyProgram.h>
 #include <Sintorn2/buildHierarchyShader.h>
 #include <Sintorn2/mortonShader.h>
-#include <Sintorn2/quantizeZShader.h>
-#include <Sintorn2/depthToZShader.h>
 #include <Sintorn2/configShader.h>
 
 void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
@@ -61,8 +59,6 @@ void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
         ballotSrc,
         sintorn2::configShader,
         sintorn2::mortonShader,
-        sintorn2::depthToZShader,
-        sintorn2::quantizeZShader,
         sintorn2::reduceShader,
         sintorn2::buildHierarchyShader
         ));
