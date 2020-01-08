@@ -270,6 +270,10 @@ std::string const rssv::buildHierarchyShader = R".(
 #define FOVY 1.5707963267948966f
 #endif//FOVY
 
+#ifndef USE_PADDING
+#define USE_PADDING 0
+#endif//USE_PADDING
+
 layout(local_size_x=WARP)in;
 
 layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
@@ -458,7 +462,24 @@ void compute(uvec2 coord,uvec2 coord2){
 
       if(gl_LocalInvocationIndex < floatsPerAABB){
         uint node = (referenceMorton >> (warpBits*0u));
+#if USE_PADDING == 1
+
+        float aaa = (CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5]))+1) - CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5])))) / 32.f + CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5])));
+        float bbb = CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5])));
+        float ppp = Z_TO_DEPTH(aaa) - Z_TO_DEPTH(bbb);
+
+        const float size[6] = {
+          -0.5f/float(WINDOW_X),
+          +0.5f/float(WINDOW_X),
+          -0.5f/float(WINDOW_Y),
+          +0.5f/float(WINDOW_Y),
+          -ppp,
+          +ppp,
+        };
+        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex] + size[gl_LocalInvocationIndex];
+#else
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
+#endif
       }
 
       notDone ^= sameCluster;

@@ -25,7 +25,7 @@ namespace rssv::debug{
 
 void prepareDrawNodePool(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method.debug"
-      "wavefrontSize"                        ,
+      "wavefrontSize"                    ,
       "rssv.method.debug.dump.config"    ,
       "rssv.method.debug.dump.near"      ,
       "rssv.method.debug.dump.far"       ,
@@ -39,7 +39,7 @@ void prepareDrawNodePool(vars::Vars&vars){
   auto const fovy           =  vars.getFloat           ("rssv.method.debug.dump.fovy"      );
   auto const wireframe      =  vars.getBool            ("rssv.method.debug.wireframe"      );
 
-  auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"                        );
+  auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"                    );
 
 
   std::string const vsSrc = R".(
@@ -140,6 +140,9 @@ uniform uint levelToDraw = 0;
 
 uniform uint drawTightAABB = 0;
 
+uniform uint drawWithPadding = 0;
+uniform float zPadding       = 400.f;
+
 void main(){
   uint gId = vId[0];
 
@@ -187,6 +190,18 @@ void main(){
   float f = -2.f * NEAR * FAR / (FAR - NEAR);
 #endif
 
+  if(drawWithPadding == 1){
+    mminX += - 0.5f/float(WINDOW_X);
+    mminY += - 0.5f/float(WINDOW_Y);
+    mmaxX += + 0.5f/float(WINDOW_X);
+    mmaxY += + 0.5f/float(WINDOW_Y);
+    float aaa = (CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(mminZ))+1) - CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(mminZ)))) / zPadding + CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(mminZ)));
+    float bbb = CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(mminZ)));
+    float ppp = Z_TO_DEPTH(aaa) - Z_TO_DEPTH(bbb);
+    mminZ += - ppp;
+    mmaxZ += + ppp;
+  }
+
   if(drawTightAABB != 0){
     startX = mminX;
     endX   = mmaxX;
@@ -197,6 +212,8 @@ void main(){
     startZ = DEPTH_TO_Z(mminZ);
     endZ   = DEPTH_TO_Z(mmaxZ);
   }
+
+
 
 
   mat4 M = proj*view*inverse(nodeView)*inverse(nodeProj);
@@ -310,17 +327,20 @@ void main(){
 void drawNodePool(vars::Vars&vars){
   prepareDrawNodePool(vars);
 
-  auto const cfg            = *vars.get<Config>        ("rssv.method.debug.dump.config"          );
+  auto const cfg             = *vars.get<Config>        ("rssv.method.debug.dump.config"          );
 
-  auto const nodeView       = *vars.get<glm::mat4>     ("rssv.method.debug.dump.viewMatrix"      );
-  auto const nodeProj       = *vars.get<glm::mat4>     ("rssv.method.debug.dump.projectionMatrix");
-  auto const nodePool       =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"        );
-  auto const aabbPool       =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"        );
+  auto const nodeView        = *vars.get<glm::mat4>     ("rssv.method.debug.dump.viewMatrix"      );
+  auto const nodeProj        = *vars.get<glm::mat4>     ("rssv.method.debug.dump.projectionMatrix");
+  auto const nodePool        =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"        );
+  auto const aabbPool        =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"        );
 
-  auto const view           = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
-  auto const proj           = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
-  auto const levelsToDraw   =  vars.getUint32          ("rssv.method.debug.levelsToDraw"         );
-  auto const drawTightAABB  =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
+  auto const view            = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
+  auto const proj            = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
+  auto const levelsToDraw    =  vars.getUint32          ("rssv.method.debug.levelsToDraw"         );
+  auto const drawTightAABB   =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
+
+  float zPadding = vars.addOrGetFloat("rssv.method.debug.zPadding",400);
+  auto  drawWithPadding = vars.addOrGetBool("rssv.method.debug.drawWithPadding");
 
   auto vao = vars.get<VertexArray>("rssv.method.debug.vao");
 
@@ -336,6 +356,8 @@ void drawNodePool(vars::Vars&vars){
     ->setMatrix4fv("view"       ,glm::value_ptr(view    ))
     ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
     ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
+    ->set1ui      ("drawWithPadding",(uint32_t)drawWithPadding)
+    ->set1f       ("zPadding"       ,(float)zPadding)
     ;
 
 

@@ -145,7 +145,6 @@ uniform uint levelToDraw = 0;
 
 uniform uint drawTightAABB = 0;
 
-uniform uint usePrecomputedSize = 0;
 
 void main(){
   uint id   = vId[0];
@@ -317,12 +316,12 @@ void main(){
 void drawTraverse(vars::Vars&vars){
   prepareDrawTraverse(vars);
 
-  auto const cfg            = *vars.get<Config>        ("rssv.method.debug.dump.config"          );
+  auto const cfg               = *vars.get<Config>        ("rssv.method.debug.dump.config"           );
 
-  auto const nodeView       = *vars.get<glm::mat4>     ("rssv.method.debug.dump.viewMatrix"      );
-  auto const nodeProj       = *vars.get<glm::mat4>     ("rssv.method.debug.dump.projectionMatrix");
-  auto const nodePool       =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"        );
-  auto const aabbPool       =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"        );
+  auto const nodeView          = *vars.get<glm::mat4>     ("rssv.method.debug.dump.viewMatrix"       );
+  auto const nodeProj          = *vars.get<glm::mat4>     ("rssv.method.debug.dump.projectionMatrix" );
+  auto const nodePool          =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"         );
+  auto const aabbPool          =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"         );
 
   auto const view           = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
   auto const proj           = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
@@ -334,7 +333,6 @@ void drawTraverse(vars::Vars&vars){
   auto vao = vars.get<VertexArray>("rssv.method.debug.vao");
 
   auto prg = vars.get<Program>("rssv.method.debug.drawTraverseProgram");
-  auto usePrecomputedSize = vars.getBool("rssv.method.debug.usePrecomputedSize");
 
   vao->bind();
   nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
@@ -346,13 +344,15 @@ void drawTraverse(vars::Vars&vars){
     ->setMatrix4fv("view"       ,glm::value_ptr(view    ))
     ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
     ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
-    ->set1ui      ("usePrecomputedSize",(uint32_t)usePrecomputedSize)
     ;
 
   auto dibo = vars.get<Buffer>("rssv.method.debug.traverseData");
   dibo->bind(GL_DRAW_INDIRECT_BUFFER);
   dibo->bindBase(GL_SHADER_STORAGE_BUFFER,2);
 
+  //std::cerr << "taBits: " << inToDraw << std::endl;
+  //std::cerr << "trBits: " << inToDraw << std::endl;
+  //std::cerr << "inBits: " << inToDraw << std::endl;
   uint32_t const toDraw[] = {
     taToDraw,
     trToDraw,

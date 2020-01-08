@@ -1,7 +1,7 @@
 #include <RSSV/configShader.h>
 
 std::string const rssv::configShader = R".(
-
+#line 8000
 #ifndef WARP
 #define WARP 64
 #endif//WARP
@@ -77,13 +77,27 @@ const uint shortestAxis = clamp(uint(uint(bitLength[0] == yBits) + uint(bitLengt
 #define QUANTIZE_Z(z) clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
 #define CLUSTER_TO_Z(i) (-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)))
 
+// | 2n/(R-L)  0          (R+L)/(R-L)  0          |   |x|
+// | 0         2n/(T-B)   (T+B)/(T-B)  0          | * |y|
+// | 0         0         -(f+n)/(f-n)  -2fn/(f-n) |   |z|
+// | 0         0         -1            0          |   |1|
+//
+// ndcdepth<-1,1> = (-(f+n)/(f-n)*z  -2fn/(f-n)*1)/(-z)
+// d = (-(f+n)/(f-n)*z  -2fn/(f-n)*1)/(-z)
+// d = (f+n)/(f-n) + 2fn/(f-n)/z
+// d-(f+n)/(f-n) = 2fn/(f-n)/z
+// z = 2fn/(f-n) / (d-(f+n)/(f-n))
+// z = 2fn/(f-n) / ((d*(f-n)-(f+n))/(f-n))
+// z = 2fn / ((d*(f-n)-(f+n)))
+// z = 2fn / ((d*(f-n)-f-n)))
+//
 
 #ifdef FAR_IS_INFINITE
-  #define DEPTH_TO_Z(d) (2.f*NEAR    /(d - 1.f))
-  #define Z_TO_DEPTH(z) ((2.f*NEAR)/z+1.f)
+  #define DEPTH_TO_Z(d) (2.f*NEAR    /((d) - 1.f))
+  #define Z_TO_DEPTH(z) ((2.f*NEAR)/(z)+1.f)
 #else
-  #define DEPTH_TO_Z(d) (2.f*NEAR*FAR/(d*(FAR-NEAR)-FAR-NEAR))
-  #define Z_TO_DEPTH(z) (((2.f*NEAR*FAR/z)+FAR+NEAR)/(FAR-NEAR))
+  #define DEPTH_TO_Z(d) (2.f*NEAR*FAR/((d)*(FAR-NEAR)-FAR-NEAR))
+  #define Z_TO_DEPTH(z) (((2.f*NEAR*FAR/(z))+FAR+NEAR)/(FAR-NEAR))
 #endif
 
 const uint twoLongest[] = {
@@ -204,7 +218,7 @@ const uvec3 levelTileBits[] = {
   bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-5,0))))-1u)),
   bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-6,0))))-1u)),
 };
-
+#line 8000
 const uvec3 levelTileSize[] = {                                            
   uvec3(1u)<<levelTileBits[0],
   uvec3(1u)<<levelTileBits[1],

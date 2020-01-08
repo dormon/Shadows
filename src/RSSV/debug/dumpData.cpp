@@ -13,7 +13,7 @@
 #include <RSSV/config.h>
 #include <RSSV/debug/dumpData.h>
 #include <RSSV/buildHierarchy.h>
-#include <RSSV/rasterize.h>
+#include <RSSV/traverseSilhouettes.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -168,18 +168,23 @@ void dumpBasic(vars::Vars&vars){
 }
 
 void dumpTraverse(vars::Vars&vars){
-  vars.getBool("rssv.param.storeTraverseStat") = true;
-  vars.updateTicks("rssv.param.storeTraverseStat");
-  rasterize(vars);
-  vars.getBool("rssv.param.storeTraverseStat") = false;
-  vars.updateTicks("rssv.param.storeTraverseStat");
+  vars.getBool("rssv.param.storeTraverseSilhouettesStat") = true;
+  vars.updateTicks("rssv.param.storeTraverseSilhouettesStat");
+  traverseSilhouettes(vars);
+  vars.getBool("rssv.param.storeTraverseSilhouettesStat") = false;
+  vars.updateTicks("rssv.param.storeTraverseSilhouettesStat");
 
 
-  auto debug = vars.get<Buffer>("rssv.method.debug.traverseBuffer");
+  auto debug = vars.get<Buffer>("rssv.method.debug.traverseSilhouettesBuffer");
   uint32_t NN = 0;
   debug->getData(&NN,sizeof(uint32_t));
   std::vector<uint32_t>debugData((NN*4+1)*sizeof(uint32_t));
   debug->getData(debugData.data(),(NN*4+1)*sizeof(uint32_t));
+
+  //PRINT FIRST 100 INTERSECTIONS
+  //std::cerr << "NONO:" << debugData[0] << std::endl;
+  //for(size_t i=0;i<debugData[0];++i)
+  //  std::cerr << debugData[1+i*4+0] << " "<< debugData[1+i*4+1] << " "<< debugData[1+i*4+2] << " "<< debugData[1+i*4+3] << " " << std::endl;
 
   std::map<uint32_t,std::vector<uint32_t>>taData;
   std::map<uint32_t,std::vector<uint32_t>>trData;
@@ -203,7 +208,7 @@ void dumpTraverse(vars::Vars&vars){
     auto level = debugData[i+2];
     auto stat  = debugData[i+3];
     
-    if(job == 1){
+    //if(job == 1){
       if(stat == taStat){
         if(taData.count(level) == 0)taData[level] = std::vector<uint32_t>();
         taData[level].push_back(node);
@@ -218,7 +223,7 @@ void dumpTraverse(vars::Vars&vars){
         if(inData.count(level) == 0)inData[level] = std::vector<uint32_t>();
         inData[level].push_back(node);
       }
-    }
+    //}
 
 
     if(levelCnt.count(level)==0)levelCnt[level] = 0;

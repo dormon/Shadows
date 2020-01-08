@@ -24,16 +24,18 @@ void rssv::createBuildHierarchyProgram(vars::Vars&vars){
       ,"rssv.param.minZBits"
       ,"rssv.param.tileX"   
       ,"rssv.param.tileY"   
+      ,"rssv.param.usePadding"   
       );
 
-  auto const wavefrontSize       =  vars.getSizeT           ("wavefrontSize"          );
-  auto const windowSize          = *vars.get<glm::uvec2>    ("windowSize"             );
-  auto const nnear               =  vars.getFloat           ("args.camera.near"       );
-  auto const ffar                =  vars.getFloat           ("args.camera.far"        );
-  auto const fovy                =  vars.getFloat           ("args.camera.fovy"       );
-  auto const minZBits            =  vars.getUint32          ("rssv.param.minZBits");
-  auto const tileX               =  vars.getUint32          ("rssv.param.tileX"   );
-  auto const tileY               =  vars.getUint32          ("rssv.param.tileY"   );
+  auto const wavefrontSize =  vars.getSizeT       ("wavefrontSize"        );
+  auto const windowSize    = *vars.get<glm::uvec2>("windowSize"           );
+  auto const nnear         =  vars.getFloat       ("args.camera.near"     );
+  auto const ffar          =  vars.getFloat       ("args.camera.far"      );
+  auto const fovy          =  vars.getFloat       ("args.camera.fovy"     );
+  auto const minZBits      =  vars.getUint32      ("rssv.param.minZBits"  );
+  auto const tileX         =  vars.getUint32      ("rssv.param.tileX"     );
+  auto const tileY         =  vars.getUint32      ("rssv.param.tileY"     );
+  auto const usePadding    =  vars.getUint32      ("rssv.param.usePadding");
 
 #define PRINT(x) std::cerr << #x ": " << x << std::endl
 
@@ -47,15 +49,16 @@ void rssv::createBuildHierarchyProgram(vars::Vars&vars){
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
         "#version 450\n",
         //"#extension GL_NV_shader_thread_group : enable\n",
-        ge::gl::Shader::define("WARP"      ,(uint32_t)wavefrontSize),
-        ge::gl::Shader::define("WINDOW_X"  ,(uint32_t)windowSize.x ),
-        ge::gl::Shader::define("WINDOW_Y"  ,(uint32_t)windowSize.y ),
-        ge::gl::Shader::define("MIN_Z_BITS",(uint32_t)minZBits     ),
-        ge::gl::Shader::define("NEAR"      ,nnear                  ),
+        ge::gl::Shader::define("WARP"       ,(uint32_t)wavefrontSize),
+        ge::gl::Shader::define("WINDOW_X"   ,(uint32_t)windowSize.x ),
+        ge::gl::Shader::define("WINDOW_Y"   ,(uint32_t)windowSize.y ),
+        ge::gl::Shader::define("MIN_Z_BITS" ,(uint32_t)minZBits     ),
+        ge::gl::Shader::define("NEAR"       ,nnear                  ),
         glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
-        ge::gl::Shader::define("FOVY"      ,fovy                   ),
-        ge::gl::Shader::define("TILE_X"    ,tileX                  ),
-        ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
+        ge::gl::Shader::define("FOVY"       ,fovy                   ),
+        ge::gl::Shader::define("TILE_X"     ,tileX                  ),
+        ge::gl::Shader::define("TILE_Y"     ,tileY                  ),
+        ge::gl::Shader::define("USE_PADDING",(int)usePadding        ),
         ballotSrc,
         rssv::configShader,
         rssv::mortonShader,
