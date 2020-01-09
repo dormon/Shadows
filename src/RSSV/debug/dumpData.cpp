@@ -349,7 +349,7 @@ void dumpData(vars::Vars&vars){
   dumpSamples(vars);
   dumpBasic(vars);
 
-  dumpSF(vars);
+  //dumpSF(vars);
 
 
   buildHierarchy(vars);

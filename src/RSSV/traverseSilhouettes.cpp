@@ -34,7 +34,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"
       ,"wavefrontSize"
       ,"windowSize"
-      ,"rssv.method.nofTriangles"
       ,"rssv.param.sfWGS"
       ,"rssv.param.bias"
       ,"rssv.param.triangleInterleave"
@@ -50,7 +49,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       );
 
   auto const wavefrontSize                =  vars.getSizeT       ("wavefrontSize"                          );
-  auto const nofTriangles                 =  vars.getUint32      ("rssv.method.nofTriangles"               );
   auto const windowSize                   = *vars.get<glm::uvec2>("windowSize"                             );
   auto const tileX                        =  vars.getUint32      ("rssv.param.tileX"                       );
   auto const tileY                        =  vars.getUint32      ("rssv.param.tileY"                       );
@@ -66,7 +64,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
         "#version 450\n",
         Shader::define("WARP"               ,(uint32_t)wavefrontSize     ),
-        Shader::define("NOF_TRIANGLES"      ,(uint32_t)nofTriangles      ),
         Shader::define("WINDOW_X"           ,(uint32_t)windowSize.x      ),
         Shader::define("WINDOW_Y"           ,(uint32_t)windowSize.y      ),
         Shader::define("MIN_Z_BITS"         ,(uint32_t)minZBits          ),

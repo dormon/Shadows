@@ -64,15 +64,11 @@ shared vec4 light   ;
 
 #line 52
 
-shared uint ee;
-
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){ // TODO parallel load and precomputation in parallel in separated shader
     uint res  = multBuffer[job];
     uint edge = res & 0x1fffffffu;
     int  mult = int(res) >> 29;
-    //ee = edge;
-    //edge = job;
 
 #if USE_PLANES == 1
     vec3 edgeA;
@@ -86,15 +82,19 @@ void loadSilhouette(uint job){
 
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
     edgePlane = invTran*vec4(n,-dot(n,edgeA));
+    //edgePlane = transpose(inverse(proj*view))*vec4(n,-dot(n,edgeA));
 
     vec3 an = normalize(cross(n,edgeA-lightPosition.xyz));
     aPlane = invTran*vec4(an,-dot(an,edgeA));
+    //aPlane = transpose(inverse(proj*view))*vec4(an,-dot(an,edgeA));
 
     vec3 bn = normalize(cross(edgeB-lightPosition.xyz,n));
     bPlane = invTran*vec4(bn,-dot(bn,edgeB));
+    //bPlane = transpose(inverse(proj*view))*vec4(bn,-dot(bn,edgeB));
 
-    vec3 abn = normalize(cross(edgeB-edgeA,edgeA-lightPosition.xyz));
+    vec3 abn = normalize(cross(edgeB-edgeA,n));
     abPlane = invTran*vec4(abn,-dot(abn,edgeA));
+    //abPlane = transpose(inverse(proj*view))*vec4(abn,-dot(abn,edgeA));
 #else
     vec4 point;
     point[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
@@ -123,10 +123,12 @@ layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
 
 vec3 trivialRejectCorner3D(vec3 Normal){
-  return vec3((ivec3(sign(Normal))+1)/2);
+  return vec3((ivec3(sign(Normal))+1)>>1);
 }
 
+#if STORE_TRAVERSE_STAT == 1
 uint job = 0u;
+#endif
 
 #if WARP == 64
 #line 10000
@@ -196,14 +198,17 @@ void traverse(){
 #else
         vec3 minCorner;
         vec3 maxCorner;
-        minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
-        minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
-        minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
         #if USE_PLANES == 1
+                minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
                 maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
+                minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
                 maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
+                minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
                 maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
         #else
+                minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
+                minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
+                minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
                 maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]             ;
                 maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]             ;
                 maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]             ;
@@ -318,7 +323,11 @@ void traverse(){
 
 #line 36
 void main(){
-    //*
+  #if STORE_TRAVERSE_STAT == 1
+  #else
+  uint job;
+  #endif
+
   for(;;){
     if(gl_LocalInvocationIndex==0){
       job = atomicAdd(jobCounter[0],1);
@@ -326,23 +335,11 @@ void main(){
 
     job = readFirstInvocationARB(job);
     if(job >= silhouetteCounter[0])return;
-    //if(job >= 6)return;
 
     loadSilhouette(job);
 
     traverse();
 
   }
-  // */
-  //for(;job<6;++job){
-  //  loadSilhouette(job);
-  //  traverse();
-  //}
-  //job=3;loadSilhouette(job);traverse();
-  //job=1;loadSilhouette(job);traverse();
-  //job=5;loadSilhouette(job);traverse();
-  //job=2;loadSilhouette(job);traverse();
-  //job=0;loadSilhouette(job);traverse();
-  //job=4;loadSilhouette(job);traverse();
 }
 ).";
