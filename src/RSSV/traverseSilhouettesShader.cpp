@@ -46,10 +46,21 @@ uniform mat4 view;
 uniform mat4 proj;
 uniform vec4 lightPosition;
 
+#define USE_PLANES 1
+
+shared int  edgeMult;
+
+#if USE_PLANES == 1
+uniform mat4 invTran;
+shared vec4 edgePlane;
+shared vec4 aPlane;
+shared vec4 bPlane;
+shared vec4 abPlane;
+#else
 shared vec4 edgeA   ;
 shared vec4 edgeB   ;
 shared vec4 light   ;
-shared int  edgeMult;
+#endif
 
 #line 52
 
@@ -62,23 +73,47 @@ void loadSilhouette(uint job){
     int  mult = int(res) >> 29;
     //ee = edge;
     //edge = job;
-    vec4 point;
 
+#if USE_PLANES == 1
+    vec3 edgeA;
+    vec3 edgeB;
+    edgeA[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
+    edgeA[1] = edgeBuffer[edge+1*ALIGNED_NOF_EDGES];
+    edgeA[2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
+    edgeB[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
+    edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
+    edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
+
+    vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
+    edgePlane = invTran*vec4(n,-dot(n,edgeA));
+
+    vec3 an = normalize(cross(n,edgeA-lightPosition.xyz));
+    aPlane = invTran*vec4(an,-dot(an,edgeA));
+
+    vec3 bn = normalize(cross(edgeB-lightPosition.xyz,n));
+    bPlane = invTran*vec4(bn,-dot(bn,edgeB));
+
+    vec3 abn = normalize(cross(edgeB-edgeA,edgeA-lightPosition.xyz));
+    abPlane = invTran*vec4(abn,-dot(abn,edgeA));
+#else
+    vec4 point;
     point[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
     point[1] = edgeBuffer[edge+1*ALIGNED_NOF_EDGES];
     point[2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
     point[3] = 1;
     edgeA = proj*view*point;
-
     point[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
     point[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
     point[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
     point[3] = 1;
     edgeB = proj*view*point;
+    light = proj*view*lightPosition;
+#endif
 
     edgeMult = mult;
+  
 
-    light = proj*view*lightPosition;
+
   }
   memoryBarrierShared();
 }
@@ -95,9 +130,21 @@ uint job = 0u;
 
 #if WARP == 64
 #line 10000
+
+#define USE_SHARED_STACK 1
+
+#if USE_SHARED_STACK == 1
+shared uint64_t intersection[nofLevels];
+#endif
+
 void traverse(){
   int level = 0;
+
+#if USE_SHARED_STACK == 1
+  uint64_t currentIntersection;
+#else
   uint64_t intersection[nofLevels];
+#endif
 
   uint node = 0;
   while(level >= 0){
@@ -152,16 +199,58 @@ void traverse(){
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
         minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
-        maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]             ;
-        maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]             ;
-        maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]             ;
-        //aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
-        //aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
-        //aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+        #if USE_PLANES == 1
+                maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
+                maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
+                maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+        #else
+                maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]             ;
+                maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]             ;
+                maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]             ;
+        #endif
 #endif
 
+#if USE_PLANES == 1
+        vec3 tr;
+        bool planeTest;
 
+#if 1
+        status = TRIVIAL_REJECT;
+        tr = trivialRejectCorner3D(edgePlane.xyz);
+        if(dot(edgePlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+          if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f){
+            tr = trivialRejectCorner3D(aPlane.xyz);
+            if(dot(aPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+              tr = trivialRejectCorner3D(bPlane.xyz);
+              if(dot(bPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+                tr = trivialRejectCorner3D(abPlane.xyz);
+                if(dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f)
+                  status = INTERSECTS;
+              }
+            }
+          }
+        }
+#endif
+
+#if 0
+        tr = trivialRejectCorner3D(edgePlane.xyz);
+        planeTest =              dot(edgePlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
+        planeTest = planeTest && dot(edgePlane,vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f;
+        tr = trivialRejectCorner3D(aPlane.xyz);
+        planeTest = planeTest && dot(aPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
+        tr = trivialRejectCorner3D(bPlane.xyz);
+        planeTest = planeTest && dot(bPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
+        tr = trivialRejectCorner3D(abPlane.xyz);
+        planeTest = planeTest && dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
+
+        if(planeTest)
+          status = INTERSECTS;
+        else
+          status = TRIVIAL_REJECT;
+#endif
+#else
         status = silhouetteStatus(edgeA,edgeB,light,minCorner,maxCorner);
+#endif
 
       }
 
@@ -173,22 +262,52 @@ void traverse(){
         debug[1+w*4+3] = status;
 #endif
 
+#if USE_SHARED_STACK == 1
+      currentIntersection = ballotARB(status == INTERSECTS    );
+      if(gl_LocalInvocationIndex==0)
+        intersection[level] = currentIntersection;
+#else
       intersection[level] = ballotARB(status == INTERSECTS    );
+#endif
+
     }
 
+#if USE_SHARED_STACK == 1
+    while(level >= 0 && currentIntersection == 0ul){
+      node >>= warpBits;
+      level--;
+      if(level < 0)break;
+      currentIntersection = intersection[level];
+    }
+#else
     while(level >= 0 && intersection[level] == 0ul){
       node >>= warpBits;
       level--;
     }
+#endif
+
     if(level < 0)break;
     if(level>=0){
+
+#if USE_SHARED_STACK == 1
+      uint selectedBit = unpackUint2x32(currentIntersection)[0]!=0?findLSB(unpackUint2x32(currentIntersection)[0]):findLSB(unpackUint2x32(currentIntersection)[1])+32u;
+#else
       uint selectedBit = unpackUint2x32(intersection[level])[0]!=0?findLSB(unpackUint2x32(intersection[level])[0]):findLSB(unpackUint2x32(intersection[level])[1])+32u;
+#endif
+
       node <<= warpBits   ;
       node  += selectedBit;
 
       uint64_t mask = 1ul;
       mask <<= selectedBit;
+
+#if USE_SHARED_STACK == 1
+      currentIntersection ^= mask;
+      if(gl_LocalInvocationIndex==0)
+        intersection[level] = currentIntersection;
+#else
       intersection[level] ^= mask;
+#endif
 
       level++;
     }

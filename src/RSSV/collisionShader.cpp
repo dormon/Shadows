@@ -179,9 +179,9 @@ bool doesDiagonalIntersectShadowVolumeSide(in vec4 A,in vec4 B,in vec4 L,in uint
 }
 
 bool doesShadowVolumeSideIntersectsFrustum(in vec4 A,in vec4 B,in vec4 L){
-  //if(doesEdgeIntersectFrustum(A,A-L))return true;
-  //if(doesEdgeIntersectFrustum(B,B-L))return true;
-  //if(doesEdgeIntersectFrustum(A,B))return true;
+  if(doesEdgeIntersectFrustum(A,A-L))return true;
+  if(doesEdgeIntersectFrustum(B,B-L))return true;
+  if(doesEdgeIntersectFrustum(A,B))return true;
   if(doesDiagonalIntersectShadowVolumeSide(A,B,L,0))return true;
   if(doesDiagonalIntersectShadowVolumeSide(A,B,L,1))return true;
   if(doesDiagonalIntersectShadowVolumeSide(A,B,L,2))return true;
