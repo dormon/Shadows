@@ -22,7 +22,8 @@ void rssv::loadParams(
   vars.addInt32 ("rssv.param.noAABB"                 ) = c->geti32   ("noAABB"               ,0   ,"no tight aabb"                                                                   );
   vars.addSizeT ("rssv.param.alignment"              ) = c->getu64   ("alignment"            ,128 ,"buffer alignment in bytes"                                                       );
   vars.addUint32("rssv.param.extractSilhouettesWGS"  ) = c->getu32   ("extractSilhouettesWGS",64  ,"extract silhouettes work groups size"                                            );
-  vars.addInt32 ("rssv.param.usePadding"             ) = c->geti32   ("usePadding"           ,0   ,"increase aabb size by half of a pixel"                                           );
+  vars.addUint32("rssv.param.usePadding"             ) = c->getu32   ("usePadding"           ,0   ,"increase aabb size by half of a pixel"                                           );
+  vars.addUint32("rssv.param.discardBackfacing"      ) = c->getu32   ("discardBackfacing"    ,0   ,"discard light backfacing fragments"                                              );
 
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat");
 

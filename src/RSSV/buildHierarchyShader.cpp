@@ -283,6 +283,11 @@ layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 
 layout(binding=1)uniform sampler2DRect depthTexture;
 
+#if DISCARD_BACK_FACING == 1
+layout(binding=2)uniform sampler2D     normalTexture;
+uniform vec4 lightPosition;
+#endif
+
 uint getMorton(uvec2 coord,float depth){
   const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
   const uint tileBitsY     = uint(ceil(log2(float(TILE_Y))));
@@ -315,6 +320,12 @@ void compute(uvec2 coord,uvec2 coord2){
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
   uint morton = getMorton(coord,depth);
   if(depth >= 1.f)activeThread = 0;
+
+#if DISCARD_BACK_FACING == 1
+  if(dot(lightPosition,texelFetch(normalTexture,ivec2(coord),0))<0)
+    activeThread = 0;
+#endif
+
 #else
   float depth [2];
   uint  morton[2];

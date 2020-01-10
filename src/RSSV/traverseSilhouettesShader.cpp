@@ -48,14 +48,25 @@ uniform vec4 lightPosition;
 
 #define USE_PLANES 1
 
+#define PARALLEL_LOAD 0
+
 shared int  edgeMult;
 
 #if USE_PLANES == 1
 uniform mat4 invTran;
+
+#if PARALLEL_LOAD == 1
+shared vec4 edgePlane[WARP];
+shared vec4 aPlane   [WARP];
+shared vec4 bPlane   [WARP];
+shared vec4 abPlane  [WARP];
+#else
 shared vec4 edgePlane;
 shared vec4 aPlane;
 shared vec4 bPlane;
 shared vec4 abPlane;
+#endif
+
 #else
 shared vec4 edgeA   ;
 shared vec4 edgeB   ;
@@ -64,6 +75,36 @@ shared vec4 light   ;
 
 #line 52
 
+#if PARALLEL_LOAD == 1
+void parallelLoad(uint job){
+  if(job+gl_LocalInvocationIndex >= silhouetteCounter[0])return;
+
+  uint res  = multBuffer[job+gl_LocalInvocationIndex];
+  uint edge = res & 0x1fffffffu;
+  int  mult = int(res) >> 29;
+
+  vec3 edgeA;
+  vec3 edgeB;
+  edgeA[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
+  edgeA[1] = edgeBuffer[edge+1*ALIGNED_NOF_EDGES];
+  edgeA[2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
+  edgeB[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
+  edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
+  edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
+  
+  vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
+  edgePlane[gl_LocalInvocationIndex] = invTran*vec4(n,-dot(n,edgeA));
+
+  vec3 an = normalize(cross(n,edgeA-lightPosition.xyz));
+  aPlane[gl_LocalInvocationIndex] = invTran*vec4(an,-dot(an,edgeA));
+
+  vec3 bn = normalize(cross(edgeB-lightPosition.xyz,n));
+  bPlane[gl_LocalInvocationIndex] = invTran*vec4(bn,-dot(bn,edgeB));
+
+  vec3 abn = normalize(cross(edgeB-edgeA,n));
+  abPlane[gl_LocalInvocationIndex] = invTran*vec4(abn,-dot(abn,edgeA));
+}
+#else
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){ // TODO parallel load and precomputation in parallel in separated shader
     uint res  = multBuffer[job];
@@ -118,6 +159,10 @@ void loadSilhouette(uint job){
   memoryBarrierShared();
 }
 
+#endif
+
+
+
 #if STORE_TRAVERSE_STAT == 1
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
@@ -139,7 +184,11 @@ uint job = 0u;
 shared uint64_t intersection[nofLevels];
 #endif
 
+#if PARALLEL_LOAD == 1
+void traverse(uint jb){
+#else
 void traverse(){
+#endif
   int level = 0;
 
 #if USE_SHARED_STACK == 1
@@ -220,21 +269,39 @@ void traverse(){
         bool planeTest;
 
 #if 1
-        status = TRIVIAL_REJECT;
-        tr = trivialRejectCorner3D(edgePlane.xyz);
-        if(dot(edgePlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-          if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f){
-            tr = trivialRejectCorner3D(aPlane.xyz);
-            if(dot(aPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-              tr = trivialRejectCorner3D(bPlane.xyz);
-              if(dot(bPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-                tr = trivialRejectCorner3D(abPlane.xyz);
-                if(dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f)
-                  status = INTERSECTS;
+  #if PARALLEL_LOAD == 1
+          status = TRIVIAL_REJECT;
+          tr = trivialRejectCorner3D(edgePlane[jb].xyz);
+          if(dot(edgePlane[jb],vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+            if(dot(edgePlane[jb],vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f){
+              tr = trivialRejectCorner3D(aPlane[jb].xyz);
+              if(dot(aPlane[jb],vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+                tr = trivialRejectCorner3D(bPlane[jb].xyz);
+                if(dot(bPlane[jb],vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+                  tr = trivialRejectCorner3D(abPlane[jb].xyz);
+                  if(dot(abPlane[jb],vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f)
+                    status = INTERSECTS;
+                }
               }
             }
           }
-        }
+  #else
+          status = TRIVIAL_REJECT;
+          tr = trivialRejectCorner3D(edgePlane.xyz);
+          if(dot(edgePlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+            if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f){
+              tr = trivialRejectCorner3D(aPlane.xyz);
+              if(dot(aPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+                tr = trivialRejectCorner3D(bPlane.xyz);
+                if(dot(bPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+                  tr = trivialRejectCorner3D(abPlane.xyz);
+                  if(dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f)
+                    status = INTERSECTS;
+                }
+              }
+            }
+          }
+  #endif
 #endif
 
 #if 0
@@ -330,15 +397,89 @@ void main(){
 
   for(;;){
     if(gl_LocalInvocationIndex==0){
+#if PARALLEL_LOAD == 1
+      job = atomicAdd(jobCounter[0],WARP);
+#else
       job = atomicAdd(jobCounter[0],1);
+#endif
     }
 
     job = readFirstInvocationARB(job);
+#if PARALLEL_LOAD == 1
+    parallelLoad(job);
+
+    if(job >= silhouetteCounter[0])return;traverse( 0);job++;
+    if(job >= silhouetteCounter[0])return;traverse( 1);job++;
+    if(job >= silhouetteCounter[0])return;traverse( 2);job++;
+    if(job >= silhouetteCounter[0])return;traverse( 3);job++;
+    if(job >= silhouetteCounter[0])return;traverse( 4);job++;
+    if(job >= silhouetteCounter[0])return;traverse( 5);job++;
+    if(job >= silhouetteCounter[0])return;traverse( 6);job++;
+    if(job >= silhouetteCounter[0])return;traverse( 7);job++;
+    if(job >= silhouetteCounter[0])return;traverse( 8);job++;
+    if(job >= silhouetteCounter[0])return;traverse( 9);job++;
+    if(job >= silhouetteCounter[0])return;traverse(10);job++;
+    if(job >= silhouetteCounter[0])return;traverse(11);job++;
+    if(job >= silhouetteCounter[0])return;traverse(12);job++;
+    if(job >= silhouetteCounter[0])return;traverse(13);job++;
+    if(job >= silhouetteCounter[0])return;traverse(14);job++;
+    if(job >= silhouetteCounter[0])return;traverse(15);job++;
+    if(job >= silhouetteCounter[0])return;traverse(16);job++;
+    if(job >= silhouetteCounter[0])return;traverse(17);job++;
+    if(job >= silhouetteCounter[0])return;traverse(18);job++;
+    if(job >= silhouetteCounter[0])return;traverse(19);job++;
+    if(job >= silhouetteCounter[0])return;traverse(20);job++;
+    if(job >= silhouetteCounter[0])return;traverse(21);job++;
+    if(job >= silhouetteCounter[0])return;traverse(22);job++;
+    if(job >= silhouetteCounter[0])return;traverse(23);job++;
+    if(job >= silhouetteCounter[0])return;traverse(24);job++;
+    if(job >= silhouetteCounter[0])return;traverse(25);job++;
+    if(job >= silhouetteCounter[0])return;traverse(26);job++;
+    if(job >= silhouetteCounter[0])return;traverse(27);job++;
+    if(job >= silhouetteCounter[0])return;traverse(28);job++;
+    if(job >= silhouetteCounter[0])return;traverse(29);job++;
+    if(job >= silhouetteCounter[0])return;traverse(30);job++;
+    if(job >= silhouetteCounter[0])return;traverse(31);job++;
+    if(job >= silhouetteCounter[0])return;traverse(32);job++;
+    if(job >= silhouetteCounter[0])return;traverse(33);job++;
+    if(job >= silhouetteCounter[0])return;traverse(34);job++;
+    if(job >= silhouetteCounter[0])return;traverse(35);job++;
+    if(job >= silhouetteCounter[0])return;traverse(36);job++;
+    if(job >= silhouetteCounter[0])return;traverse(37);job++;
+    if(job >= silhouetteCounter[0])return;traverse(38);job++;
+    if(job >= silhouetteCounter[0])return;traverse(39);job++;
+    if(job >= silhouetteCounter[0])return;traverse(40);job++;
+    if(job >= silhouetteCounter[0])return;traverse(41);job++;
+    if(job >= silhouetteCounter[0])return;traverse(42);job++;
+    if(job >= silhouetteCounter[0])return;traverse(43);job++;
+    if(job >= silhouetteCounter[0])return;traverse(44);job++;
+    if(job >= silhouetteCounter[0])return;traverse(45);job++;
+    if(job >= silhouetteCounter[0])return;traverse(46);job++;
+    if(job >= silhouetteCounter[0])return;traverse(47);job++;
+    if(job >= silhouetteCounter[0])return;traverse(48);job++;
+    if(job >= silhouetteCounter[0])return;traverse(49);job++;
+    if(job >= silhouetteCounter[0])return;traverse(50);job++;
+    if(job >= silhouetteCounter[0])return;traverse(51);job++;
+    if(job >= silhouetteCounter[0])return;traverse(52);job++;
+    if(job >= silhouetteCounter[0])return;traverse(53);job++;
+    if(job >= silhouetteCounter[0])return;traverse(54);job++;
+    if(job >= silhouetteCounter[0])return;traverse(55);job++;
+    if(job >= silhouetteCounter[0])return;traverse(56);job++;
+    if(job >= silhouetteCounter[0])return;traverse(57);job++;
+    if(job >= silhouetteCounter[0])return;traverse(58);job++;
+    if(job >= silhouetteCounter[0])return;traverse(59);job++;
+    if(job >= silhouetteCounter[0])return;traverse(60);job++;
+    if(job >= silhouetteCounter[0])return;traverse(61);job++;
+    if(job >= silhouetteCounter[0])return;traverse(62);job++;
+    if(job >= silhouetteCounter[0])return;traverse(63);job++;
+                                                   
+#else
     if(job >= silhouetteCounter[0])return;
 
     loadSilhouette(job);
 
     traverse();
+#endif
 
   }
 }
