@@ -1,3 +1,5 @@
+#include <glm/gtc/type_ptr.hpp>
+
 #include <Vars/Vars.h>
 #include <geGL/geGL.h>
 #include <geGL/StaticCalls.h>
@@ -24,14 +26,17 @@ void rssv::buildHierarchy(vars::Vars&vars){
   rssv::allocateHierarchy(vars);
   rssv::createBuildHierarchyProgram(vars);
   //exit(0);
-  auto depth            =  vars.get<GBuffer>("gBuffer")->depth;
-  auto prg              =  vars.get<Program>("rssv.method.buildHierarchyProgram");
-  auto nodePool         =  vars.get<Buffer >("rssv.method.nodePool");
-  auto aabbPool         =  vars.get<Buffer >("rssv.method.aabbPool");
-  auto levelNodeCounter =  vars.get<Buffer >("rssv.method.levelNodeCounter");
-  auto activeNodes      =  vars.get<Buffer >("rssv.method.activeNodes");
+  auto gBuffer           =  vars.get<GBuffer>("gBuffer");
+  auto prg               =  vars.get<Program>("rssv.method.buildHierarchyProgram");
+  auto nodePool          =  vars.get<Buffer >("rssv.method.nodePool");
+  auto aabbPool          =  vars.get<Buffer >("rssv.method.aabbPool");
+  auto levelNodeCounter  =  vars.get<Buffer >("rssv.method.levelNodeCounter");
+  auto activeNodes       =  vars.get<Buffer >("rssv.method.activeNodes");
+  auto discardBackfacing =  vars.getUint32   ("rssv.param.discardBackfacing");
 
-  auto cfg              = *vars.get<Config >("rssv.method.config");
+  auto cfg               = *vars.get<Config >("rssv.method.config");
+
+  auto depth             =  gBuffer->depth;
 
   uint32_t dci[4] = {0,1,1,0};
   nodePool        ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
@@ -45,6 +50,14 @@ void rssv::buildHierarchy(vars::Vars&vars){
   depth->bind(1);
   
   prg->use();
+
+  if(discardBackfacing){
+    auto normal              =  gBuffer->normal;
+    auto const lightPosition = *vars.get<glm::vec4>("rssv.method.lightPosition"   );
+    normal->bind(2);
+    prg->set4fv("lightPosition",glm::value_ptr(lightPosition));
+  }
+
   if(vars.addOrGetBool("rssv.method.perfCounters.buildHierarchy")){
     perf::printComputeShaderProf([&](){
     glDispatchCompute(cfg.clustersX,cfg.clustersY,1);

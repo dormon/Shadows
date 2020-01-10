@@ -270,6 +270,10 @@ std::string const rssv::buildHierarchyShader = R".(
 #define FOVY 1.5707963267948966f
 #endif//FOVY
 
+#ifndef USE_PADDING
+#define USE_PADDING 0
+#endif//USE_PADDING
+
 layout(local_size_x=WARP)in;
 
 layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
@@ -278,6 +282,11 @@ layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 
 layout(binding=1)uniform sampler2DRect depthTexture;
+
+#if DISCARD_BACK_FACING == 1
+layout(binding=2)uniform sampler2D     normalTexture;
+uniform vec4 lightPosition;
+#endif
 
 uint getMorton(uvec2 coord,float depth){
   const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
@@ -310,7 +319,12 @@ void compute(uvec2 coord,uvec2 coord2){
 #if WARP==64
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
   uint morton = getMorton(coord,depth);
-  if(depth >= 1.f)activeThread = 0;
+  activeThread &= uint(depth < 1.f);
+
+#if DISCARD_BACK_FACING == 1
+  activeThread &= uint(dot(lightPosition,texelFetch(normalTexture,ivec2(coord),0))>0);
+#endif
+
 #else
   float depth [2];
   uint  morton[2];
@@ -458,7 +472,24 @@ void compute(uvec2 coord,uvec2 coord2){
 
       if(gl_LocalInvocationIndex < floatsPerAABB){
         uint node = (referenceMorton >> (warpBits*0u));
+#if USE_PADDING == 1
+
+        float aaa = (CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5]))+1) - CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5])))) / 32.f + CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5])));
+        float bbb = CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5])));
+        float ppp = Z_TO_DEPTH(aaa) - Z_TO_DEPTH(bbb);
+
+        const float size[6] = {
+          -0.5f/float(WINDOW_X),
+          +0.5f/float(WINDOW_X),
+          -0.5f/float(WINDOW_Y),
+          +0.5f/float(WINDOW_Y),
+          -ppp,
+          +ppp,
+        };
+        aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex] + size[gl_LocalInvocationIndex];
+#else
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
+#endif
       }
 
       notDone ^= sameCluster;

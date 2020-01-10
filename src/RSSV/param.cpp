@@ -7,7 +7,7 @@ void rssv::loadParams(
     std::shared_ptr<argumentViewer::ArgumentViewer>const&arg){
   auto c = arg->getContext("rssvParam","parameters for Per-Triangle Shadow Volumes Using a View-Sample Cluster Hierarchy method");
 
-  vars.addUint32("rssv.param.minZBits"               ) = c->getu32   ("minZBits"             ,9   ,"select number of Z bits - 0 mean max(xBits,yBits)"                               );
+  vars.addUint32("rssv.param.minZBits"               ) = c->getu32   ("minZBits"             ,10  ,"select number of Z bits - 0 mean max(xBits,yBits)"                               );
   vars.addUint32("rssv.param.tileX"                  ) = c->getu32   ("tileX"                ,8   ,"select tile X size"                                                              );
   vars.addUint32("rssv.param.tileY"                  ) = c->getu32   ("tileY"                ,8   ,"select tile Y size"                                                              );
   vars.addUint32("rssv.param.propagateWarps"         ) = c->getu32   ("propagateWarps"       ,4   ,"number of warps cooperating on propagating data in hierarchy (for AMD 4 is good)");
@@ -22,6 +22,8 @@ void rssv::loadParams(
   vars.addInt32 ("rssv.param.noAABB"                 ) = c->geti32   ("noAABB"               ,0   ,"no tight aabb"                                                                   );
   vars.addSizeT ("rssv.param.alignment"              ) = c->getu64   ("alignment"            ,128 ,"buffer alignment in bytes"                                                       );
   vars.addUint32("rssv.param.extractSilhouettesWGS"  ) = c->getu32   ("extractSilhouettesWGS",64  ,"extract silhouettes work groups size"                                            );
+  vars.addUint32("rssv.param.usePadding"             ) = c->getu32   ("usePadding"           ,1   ,"increase aabb size by half of a pixel"                                           );
+  vars.addUint32("rssv.param.discardBackfacing"      ) = c->getu32   ("discardBackfacing"    ,1   ,"discard light backfacing fragments"                                              );
 
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat");
 

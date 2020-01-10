@@ -35,8 +35,8 @@ void RSSV::create(glm::vec4 const& lightPosition,
 
   //glFinish();
   ifExistStamp("");
-  rssv::computeShadowFrusta(vars);
-  ifExistStamp("computeShadowFrusta");
+  //rssv::computeShadowFrusta(vars);
+  //ifExistStamp("computeShadowFrusta");
   rssv::extractSilhouettes(vars);
   ifExistStamp("extractSilhouettes");
   rssv::buildHierarchy(vars);
