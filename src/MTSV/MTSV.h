@@ -17,7 +17,7 @@ public:
 protected:
 	void getNofTriangles();
 	void createBuildProgram();
-	void createTraversalProgram();
+	void createShadowMaskProgram();
 
 	void createNodeBuffer();
 	void createTriangleBuffer();

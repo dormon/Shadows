@@ -16,7 +16,11 @@ void main()
 std::string getMtsvBuildCsShader()
 {
 	return std::string(R".(
+#extension GL_KHR_shader_subgroup_basic : enable
+
 layout (local_size_x = WG_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+#define NOF_FLOATS_TRIANGLE 9u
 
 struct Node
 {
@@ -65,10 +69,16 @@ layout (std430,binding=3) buffer util
     uint build_count;   // initialized to 0, used for persistant thread scheduling
 } index;
 
+Triangle getTriangle( in uint i )
+{
+	const uint startingIndex = NOF_FLOATS_TRIANGLE * i;
+	Triangle t;
 
-vec3 get_vertex(uint index) {
-    uint id = index * 8;
-    return vec3(vertices[id], vertices[id+1], vertices[id+2]);
+	t.a = vec4(vertices[startingIndex + 0], vertices[startingIndex + 1], vertices[startingIndex + 2], 1);
+	t.b = vec4(vertices[startingIndex + 3], vertices[startingIndex + 4], vertices[startingIndex + 5], 1);
+	t.c = vec4(vertices[startingIndex + 6], vertices[startingIndex + 7], vertices[startingIndex + 8], 1);
+
+	return t;
 }
 // ------------------------------------------------------------------------------------------
 
@@ -82,7 +92,7 @@ uniform uint triangle_count = 0;
 // If the light is inside the AABB, I set the cone angle to PI/2
 uniform float delta = 0.0;
 
-uniform vec3 light_pos;
+uniform vec3 lightPos;
 
 #define PERSISTANT_THREAD_CONSTRUCT 1
 shared uint s_num_triangle[32];
@@ -237,17 +247,13 @@ float segment_segment_angular_distance(vec3 d0, vec3 d1, vec3 n0, float dir_angl
 }
 
 
-void MTree_mergeTriangle(in uint i)
+void MTree_mergeTriangle(in uint triangleId)
 {
-    vec3 v0 = get_vertex(id0 + shadow_cmd_vertex_offset[cmd_id]);
-    vec3 v1 = get_vertex(id1 + shadow_cmd_vertex_offset[cmd_id]);
-    vec3 v2 = get_vertex(id2 + shadow_cmd_vertex_offset[cmd_id]);
-    
-    // Don't forget to transpose the vertices to world space *but* with the light as origin
-    mat4 model_mat = matrices[cmd_id];
-    vec3 A = (model_mat * vec4(v0, 1.0)).xyz - light_pos;
-    vec3 B = (model_mat * vec4(v1, 1.0)).xyz - light_pos;
-    vec3 C = (model_mat * vec4(v2, 1.0)).xyz - light_pos;
+    Triangle tr = getTriangle(triangleId);
+	
+	vec3 A = tr.a.xyz - lightPos;
+    vec3 B = tr.b.xyz - lightPos;
+    vec3 C = tr.c.xyz - lightPos;
     
     // Add the current node to the node buffer atomically  
     const uint insertion = atomicAdd(index.node, 1);
@@ -277,24 +283,23 @@ void MTree_mergeTriangle(in uint i)
         world_triangles[insertion] = Triangle(v0, v1, v2);
     }
     
+#ifdef USE_FF_CULLING
     // Compute the capping plane equation (i.e. the supporting plane of triangle ABC)
     const vec3 norm = normalize(cross(B-A, C-A));
     const vec4 capping_plane = vec4(norm, -dot(norm,A));
-    
-    
+      
     // Perform front face culling
     if (capping_plane.w > 0.0) 
 	{
         return;
     }
     
-#if 1
     // Need when front face culling
     vec3 tmp = A;
     A = C;
     C = tmp;
 #endif
-    
+
     Node node;
     
     vec3 center = (A + B + C) / 3.0;
@@ -501,7 +506,7 @@ void MTree_mergeTriangle(in uint i)
 		{
             cone_delta_side = -1.0;
         } 
-		else if(dist-angle > father.delta && vi == false) 
+		else if(dist-angle > father.delta/* && vi == false*/) 
 		{
             cone_delta_side = 1.0;
         }  
@@ -545,8 +550,12 @@ void main(void)
     // And spawn ceil(triangle_count / work_group_size)+1 threads
     // Here I use persistant threads. 
     // If you have implemented the PSV algorithm of Gerhards, do the same as you already did
+
+/*
 	const uint warpSize1 = gl_SubgroupSize - 1;
 	const uint dataIndex = gl_LocalInvocationID.x / gl_SubgroupSize;
+	const uint warp_id = s_num_triangle[dataIndex]/gl_SubgroupSize ;
+	const uint warp_count = uint(ceil(float(triangle_count)/float(gl_SubgroupSize)));
 	
     for( uint k=0 ; k<triangle_count ; k++ ) 
 	{     
@@ -554,9 +563,6 @@ void main(void)
 		{
             s_num_triangle[dataIndex] = atomicAdd( index.build_count, gl_SubgroupSize );
 		}
-        
-        uint warp_id = s_num_triangle[dataIndex]/gl_SubgroupSize ;
-        uint warp_count = uint(ceil(float(triangle_count)/float(gl_SubgroupSize)));
 
         uint element_id;
         if(warp_id >= warp_count)
@@ -564,26 +570,7 @@ void main(void)
             return;
         }
         
-#if 1
         element_id = warp_id*gl_SubgroupSize  + (gl_LocalInvocationID.x & warpSize1);
-#else
-        uint cycle_length = min(warp_count, 128u);
-        uint bucket_count = (warp_count) / cycle_length;
-        if((gl_LocalInvocationID.x & warpSize1) == 0u)
-		{
-            if(warp_id/cycle_length == bucket_count) 
-			{
-                element_id = warp_id * gl_SubgroupSize ;
-            } 
-			else
-			{
-                element_id = (warp_id%bucket_count)*cycle_length + warp_id/bucket_count;
-                element_id *= gl_SubgroupSize;
-            } 
-        }
-        element_id = readInvocationARB(element_id, 0);//shuffleNV(element_id, 0, gl_SubgroupSize);
-        element_id += (gl_LocalInvocationID.x & warpSize1);
-#endif 
 
         if (element_id>=triangle_count) 
 		{
@@ -592,6 +579,11 @@ void main(void)
         
         MTree_mergeTriangle(element_id);
     }
+*/
+	if(gl_GlobalInvocationID.x < triangle_count)
+	{
+		MTree_mergeTriangle(gl_GlobalInvocationID.x);
+	}
 }
 ).";
 }
@@ -602,8 +594,10 @@ std::string getMtsvShadowMaskFs()
 #version 450 core
 
 layout( binding = 0 ) uniform sampler2D positionTex; 
+layout( binding = 1 ) uniform sampler2D normalTex; 
 
 uniform vec3 lightPos;
+uniform float bias = 0.01f;
 
 layout(location=0) out float fColor;
 
@@ -787,15 +781,17 @@ float MTree_traversal(in vec3 p)
 
 void main()
 {
-    const vec4 pos = texelFetch( positionTex, ivec2(gl_FragCoord.xy), 0 );
+    vec4 pos = texelFetch( positionTex, ivec2(gl_FragCoord.xy), 0 );
+	const vec3 normal = texelFetch( normalTex, ivec2(gl_FragCoord.xy), 0 ).xyz;
 
     if(pos.w == 0) 
 	{
         fColor = 1.f;
         return;
     }
-     
-    fColor = MTree_traversal(pos.xyz-lightPos);  
+    pos.xyz += bias * normal;
+	
+    fColor = MTree_traversal(pos.xyz-lightPos); 
 }
 ).";
 }

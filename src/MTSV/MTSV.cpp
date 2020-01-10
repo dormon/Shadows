@@ -12,12 +12,14 @@
 #include <Model.h>
 #include <Deferred.h>
 
+#include <fstream>
+
 using namespace ge;
 using namespace gl;
 
 MTSV::MTSV(vars::Vars& vars) : ShadowMethod(vars)
 {
-	createTraversalProgram();
+	createShadowMaskProgram();
 	createSupportBuffer();
 	createShadowMaskVao();
 }
@@ -63,19 +65,28 @@ void MTSV::getNofTriangles()
 
 void MTSV::createBuildProgram()
 {
-	FUNCTION_PROLOGUE("mtsv.objects", "mtsv.args.wgSize");
+	FUNCTION_PROLOGUE("mtsv.objects", "mtsv.args.wgSize", "mtsv.args.useFrontFaceCulling");
+
+	//std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\kkk.glsl");
+	//std::string program((std::istreambuf_iterator<char>(t1)), std::istreambuf_iterator<char>());
 
 	uint32_t const wgSize = vars.getUint32("mtsv.args.wgSize");
 
-	vars.reCreate<Program>("mtsv.objects.buildProgram",
-		std::make_shared<Shader>(GL_COMPUTE_SHADER, "#version 450 core\n", Shader::define("WG_SIZE", wgSize), getMtsvBuildCsShader()) );
+	std::string s = "#version 450 core\n" + (vars.getBool("mtsv.args.useFrontFaceCulling") ? Shader::define("USE_FF_CULLING") : "") + Shader::define("WG_SIZE", wgSize) + getMtsvBuildCsShader();
+
+	vars.reCreate<Program>("mtsv.objects.buildProgram", std::make_shared<Shader>(GL_COMPUTE_SHADER, "#version 450 core\n", Shader::define("WG_SIZE", wgSize), getMtsvBuildCsShader()) );
+	//vars.reCreate<Program>("mtsv.objects.buildProgram", std::make_shared<Shader>(GL_COMPUTE_SHADER, program));
 }
 
-void MTSV::createTraversalProgram()
+void MTSV::createShadowMaskProgram()
 {
+	//std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\lll.glsl");
+	//std::string program((std::istreambuf_iterator<char>(t1)), std::istreambuf_iterator<char>());
+
 	vars.reCreate<Program>("mtsv.objects.shadowMaskProgram",
 		std::make_shared<Shader>(GL_VERTEX_SHADER,   getMtsvShadowMaskVs()),
 		std::make_shared<Shader>(GL_FRAGMENT_SHADER, getMtsvShadowMaskFs()) );
+		//std::make_shared<Shader>(GL_FRAGMENT_SHADER, program));
 }
 
 void MTSV::createNodeBuffer()
@@ -112,16 +123,24 @@ void MTSV::createShadowMaskVao()
 
 void MTSV::buildMetricTree(glm::vec3 const& lightPos)
 {
-	vars.get<Program>("mtsv.objects.buildProgram")->use();
-	vars.get<Program>("mtsv.objects.buildProgram")->set3fv("light_pos", glm::value_ptr(lightPos));
-	vars.get<Program>("mtsv.objects.buildProgram")->set1f("delta", glm::half_pi<float>());
+	Program* program = vars.get<Program>("mtsv.objects.buildProgram");
+	program->use();
+	program->set3fv("lightPos", glm::value_ptr(lightPos));
+	program->set1f("delta", glm::half_pi<float>());
+	program->set1ui("triangle_count", NofTriangles);
 
 	vars.get<RenderModel>("renderModel")->vertices->bindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	vars.get<Buffer>("mtsv.objects.triangleBuffer")->bindBase(GL_SHADER_STORAGE_BUFFER, 1);
 	vars.get<Buffer>("mtsv.objects.nodeBuffer")->bindBase(GL_SHADER_STORAGE_BUFFER, 2);
 	vars.get<Buffer>("mtsv.objects.supportBuffer")->bindBase(GL_SHADER_STORAGE_BUFFER, 3);
 
-	glDispatchCompute(vars.getUint32("mtsv.args.numWg"), 1, 1);
+	//glDispatchCompute(vars.getUint32("mtsv.args.numWg"), 1, 1);
+
+	{
+		uint32_t const wgSize = vars.getUint32("mtsv.args.wgSize");
+		uint32_t const nofWgs = NofTriangles / wgSize + 1;
+		glDispatchCompute(nofWgs, 1, 1);
+	}
 
 	vars.get<RenderModel>("renderModel")->vertices->unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	vars.get<Buffer>("mtsv.objects.triangleBuffer")->unbindBase(GL_SHADER_STORAGE_BUFFER, 1);
@@ -139,8 +158,10 @@ void MTSV::setWindowViewport()
 
 void MTSV::fillShadowMask(glm::vec3 const& lightPos)
 {
-	vars.get<Program>("mtsv.objects.shadowMaskProgram")->use();
-	vars.get<Program>("mtsv.objects.shadowMaskProgram")->set3fv("light_pos", glm::value_ptr(lightPos));
+	Program* program = vars.get<Program>("mtsv.objects.shadowMaskProgram");
+	program->use();
+	program->set3fv("lightPos", glm::value_ptr(lightPos));
+	program->set1f("bias", vars.getFloat("mtsv.args.bias"));
 
 	vars.get<VertexArray>("mtsv.objects.VAO")->bind();
 	vars.get<Framebuffer>("mtsv.objects.FBO")->bind();
