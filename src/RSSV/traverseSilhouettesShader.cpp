@@ -123,19 +123,15 @@ void loadSilhouette(uint job){
 
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
     edgePlane = invTran*vec4(n,-dot(n,edgeA));
-    //edgePlane = transpose(inverse(proj*view))*vec4(n,-dot(n,edgeA));
 
     vec3 an = normalize(cross(n,edgeA-lightPosition.xyz));
     aPlane = invTran*vec4(an,-dot(an,edgeA));
-    //aPlane = transpose(inverse(proj*view))*vec4(an,-dot(an,edgeA));
 
     vec3 bn = normalize(cross(edgeB-lightPosition.xyz,n));
     bPlane = invTran*vec4(bn,-dot(bn,edgeB));
-    //bPlane = transpose(inverse(proj*view))*vec4(bn,-dot(bn,edgeB));
 
     vec3 abn = normalize(cross(edgeB-edgeA,n));
     abPlane = invTran*vec4(abn,-dot(abn,edgeA));
-    //abPlane = transpose(inverse(proj*view))*vec4(abn,-dot(abn,edgeA));
 #else
     vec4 point;
     point[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];

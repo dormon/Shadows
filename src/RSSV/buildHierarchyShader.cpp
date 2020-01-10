@@ -319,11 +319,10 @@ void compute(uvec2 coord,uvec2 coord2){
 #if WARP==64
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
   uint morton = getMorton(coord,depth);
-  if(depth >= 1.f)activeThread = 0;
+  activeThread &= uint(depth < 1.f);
 
 #if DISCARD_BACK_FACING == 1
-  if(dot(lightPosition,texelFetch(normalTexture,ivec2(coord),0))<0)
-    activeThread = 0;
+  activeThread &= uint(dot(lightPosition,texelFetch(normalTexture,ivec2(coord),0))>0);
 #endif
 
 #else
