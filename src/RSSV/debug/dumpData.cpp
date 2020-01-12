@@ -246,7 +246,7 @@ void dumpTraverse(vars::Vars&vars){
   //  std::cerr << "job" << x.first << ": " << x.second << std::endl;
   //}
 
-  auto statToName = [](uint32_t s){
+  auto statToName = [&](uint32_t s){
     if(s == emStat)return "empty  ";
     if(s == taStat)return "ta     ";
     if(s == inStat)return "in     ";
