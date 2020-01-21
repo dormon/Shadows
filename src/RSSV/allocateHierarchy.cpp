@@ -19,10 +19,11 @@ void rssv::allocateHierarchy(vars::Vars&vars){
 
   auto cfg = *vars.get<Config>("rssv.method.config");
 
-  vars.reCreate<Buffer>("rssv.method.nodePool"        ,cfg.nodesSize                   );
-  vars.reCreate<Buffer>("rssv.method.aabbPool"        ,cfg.aabbsSize                   );
-  vars.reCreate<Buffer>("rssv.method.levelNodeCounter",cfg.nofLevels*sizeof(uint32_t)*4);
-  vars.reCreate<Buffer>("rssv.method.activeNodes"     ,cfg.nofNodes *sizeof(uint32_t)  );
-  vars.reCreate<Buffer>("rssv.method.debugBuffer"     ,cfg.nofNodes *sizeof(uint32_t)  );
-
+  vars.reCreate<Buffer >("rssv.method.nodePool"        ,cfg.nodesSize                                  );
+  vars.reCreate<Buffer >("rssv.method.aabbPool"        ,cfg.aabbsSize                                  );
+  vars.reCreate<Buffer >("rssv.method.levelNodeCounter",cfg.nofLevels*sizeof(uint32_t)*4               );
+  vars.reCreate<Buffer >("rssv.method.activeNodes"     ,cfg.nofNodes *sizeof(uint32_t)                 );
+  vars.reCreate<Buffer >("rssv.method.debugBuffer"     ,cfg.nofNodes *sizeof(uint32_t)                 );
+  vars.reCreate<Buffer >("rssv.method.bridges"         ,cfg.nofNodes *sizeof(int32_t)                  );
+  vars.reCreate<Texture>("rssv.method.stencil"         ,GL_TEXTURE_2D,GL_R32I,1,cfg.windowX,cfg.windowY);
 }

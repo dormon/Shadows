@@ -113,17 +113,22 @@ void traverseSilhouettes(vars::Vars&vars){
   auto const proj              = *vars.get<glm::mat4>("rssv.method.projectionMatrix");
   auto const lightPosition     = *vars.get<glm::vec4>("rssv.method.lightPosition"   );
 
-  auto nodePool          = vars.get<Buffer>("rssv.method.nodePool"             );
-  auto aabbPool          = vars.get<Buffer>("rssv.method.aabbPool"             );
-  auto jobCounter        = vars.get<Buffer>("rssv.method.silhouettesJobCounter");
-  auto edges             = vars.get<Buffer>("rssv.method.edgeBuffer"           );
-  auto multBuffer        = vars.get<Buffer>("rssv.method.multBuffer"           );
-  auto silhouetteCounter = vars.get<Buffer>("rssv.method.silhouetteCounter"    );
+  auto nodePool          = vars.get<Buffer >("rssv.method.nodePool"             );
+  auto aabbPool          = vars.get<Buffer >("rssv.method.aabbPool"             );
+  auto jobCounter        = vars.get<Buffer >("rssv.method.silhouettesJobCounter");
+  auto edges             = vars.get<Buffer >("rssv.method.edgeBuffer"           );
+  auto multBuffer        = vars.get<Buffer >("rssv.method.multBuffer"           );
+  auto silhouetteCounter = vars.get<Buffer >("rssv.method.silhouetteCounter"    );
+  auto bridges           = vars.get<Buffer >("rssv.method.bridges"              );
+  auto stencil           = vars.get<Texture>("rssv.method.stencil"              );
 
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
 
   jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+
+  bridges->clear(GL_R32I,GL_RED_INTEGER,GL_INT);
+  stencil->clear(0,GL_RED_INTEGER,GL_INT);
 
   nodePool         ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   aabbPool         ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
@@ -131,6 +136,7 @@ void traverseSilhouettes(vars::Vars&vars){
   edges            ->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   multBuffer       ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   silhouetteCounter->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+  bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
 
   //std::vector<uint32_t>sil;
   //multBuffer->getData(sil);
@@ -142,19 +148,20 @@ void traverseSilhouettes(vars::Vars&vars){
   //}
   //exit(1);
 
-  depth     ->bind(0);
+  depth     ->bind     (0);
   shadowMask->bindImage(1);
+  stencil   ->bindImage(2);
 
   float data[1] = {1.f};
   vars.get<ge::gl::Texture>("shadowMask")->clear(0,GL_RED,GL_FLOAT,data);
 
   prg->use();
 
-  auto invTran = glm::transpose(glm::inverse(proj*view));
+  //auto invTran = glm::transpose(glm::inverse(proj*view));
   prg
-    //->setMatrix4fv("view"         ,glm::value_ptr(view         ))
-    //->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
-    ->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
+    ->setMatrix4fv("view"         ,glm::value_ptr(view         ))
+    ->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
+    //->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
     ->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
 
   auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");

@@ -208,4 +208,41 @@ uint silhouetteStatus(vec4 edgeA,vec4 edgeB,vec4 light,vec3 minCorner,vec3 maxCo
   return TRIVIAL_REJECT;
 }
 
+int sampleCollision(
+    in vec3 startSample,
+    in vec3 endSample  ,
+    in vec4 aa         ,
+    in vec4 bb         ,
+    in vec4 ll         ){
+
+  vec3 edgeNormal     = normalize(cross(bb.xyz*aa.w-aa.xyz*bb.w,ll.xyz*aa.w-aa.xyz*ll.w));
+  vec4 edgePlane      = vec4(edgeNormal,-dot(edgeNormal,aa.xyz/aa.w));
+
+  vec3 sampleNormal   = normalize(cross(endSample-startSample,ll.xyz-startSample*ll.w));
+  vec4 samplePlane    = vec4(sampleNormal,-dot(sampleNormal,startSample));
+
+  vec3 triangleNormal = normalize(cross(endSample-startSample,bb.xyz*aa.w-aa.xyz*bb.w));
+  vec4 trianglePlane  = vec4(triangleNormal,-dot(triangleNormal,startSample));
+
+  // m n c 
+  // - - 0
+  // 0 - 1
+  // + - 1
+  // - 0 1
+  // 0 0 0
+  // + 0 0
+  // - + 1
+  // 0 + 0
+  // + + 0
+  //
+  // m<0 && n>=0 || m>=0 && n<0
+  // m<0 xor n<0
+
+  if((dot(edgePlane,vec4(startSample,1))<0) == (dot(edgePlane,vec4(endSample,1))<0))return 0;
+
+  if(dot(trianglePlane,aa)<=0)return 0;
+
+  return 1-int(sign(dot(samplePlane,aa)*dot(samplePlane,bb)));
+}
+
 ).";

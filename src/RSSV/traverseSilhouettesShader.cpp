@@ -38,9 +38,11 @@ layout(std430,binding=2)buffer JobCounter        {uint  jobCounter       [];};
 layout(std430,binding=3)buffer EdgeBuffer        {float edgeBuffer       [];};
 layout(std430,binding=4)buffer MultBuffer        {uint  multBuffer       [];};
 layout(std430,binding=5)buffer SilhouetteCounter {uint  silhouetteCounter[];};
+layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
 
 layout(     binding=0)          uniform sampler2DRect depthTexture;
 layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
+layout(r32i,binding=2)          uniform iimage2D      stencil     ;
 
 uniform mat4 view;
 uniform mat4 proj;
@@ -73,7 +75,31 @@ shared vec4 edgeB   ;
 shared vec4 light   ;
 #endif
 
+shared vec4 edgeAClipSpace;
+shared vec4 edgeBClipSpace;
+shared vec4 lightClipSpace;
+
 #line 52
+
+vec4 getClipPlane(in vec4 a,in vec4 b,in vec4 c){
+  if(a.w==0){
+    if(b.w==0){
+      if(c.w==0){
+        return vec4(0,0,0,cross(b.xyz-a.xyz,c.xyz-a.xyz).z);
+      }else{
+        vec3 n = cross(a.xyz*c.w-c.xyz*a.w,b.xyz*c.w-c.xyz*b.w);
+        return vec4(n*c.w,-dot(n,c.xyz));
+      }
+    }else{
+      vec3 n = cross(c.xyz*b.w-b.xyz*c.w,a.xyz*b.w-b.xyz*a.w);
+      return vec4(n*b.w,-dot(n,b.xyz));
+    }
+  }else{
+    vec3 n = cross(b.xyz*a.w-a.xyz*b.w,c.xyz*a.w-a.xyz*c.w);
+    return vec4(n*a.w,-dot(n,a.xyz));
+  }
+}
+
 
 #if PARALLEL_LOAD == 1
 void parallelLoad(uint job){
@@ -121,6 +147,64 @@ void loadSilhouette(uint job){
     edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
     edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
 
+
+    edgeAClipSpace = proj*view*vec4(edgeA,1.f);
+    edgeBClipSpace = proj*view*vec4(edgeB,1.f);
+    lightClipSpace = proj*view*lightPosition  ;
+
+    //edgeAClipSpace /= abs(edgeAClipSpace.w);
+    //edgeBClipSpace /= abs(edgeBClipSpace.w);
+    //lightClipSpace /= abs(lightClipSpace.w);
+
+#if 1
+    edgePlane = getClipPlane(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
+
+    vec3 an = normalize(cross(
+          edgePlane.xyz,
+          edgeAClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeAClipSpace.w));
+    aPlane = vec4(an*abs(edgeAClipSpace.w),-dot(an,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
+
+    vec3 bn = normalize(cross(
+          edgeBClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeBClipSpace.w,
+          edgePlane.xyz));
+    bPlane = vec4(bn*abs(edgeBClipSpace.w),-dot(bn,edgeBClipSpace.xyz)*sign(edgeBClipSpace.w));
+
+    vec3 abn = normalize(cross(
+          edgeBClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*edgeBClipSpace.w,
+          edgePlane.xyz));
+    abPlane = vec4(abn*abs(edgeAClipSpace.w),-dot(abn,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
+
+
+    /*
+    vec3 n = normalize(cross(
+          edgeBClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*edgeBClipSpace.w,
+          lightClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*lightClipSpace.w));
+    edgePlane = vec4(n*edgeAClipSpace.w,-dot(n,edgeAClipSpace.xyz));
+    //edgePlane *= 1-2*float((edgeAClipSpace.w < 0 && edgeBClipSpace.w < 0) || (edgeAClipSpace.w < 0 && lightClipSpace.w < 0));
+
+    vec3 an = normalize(cross(
+          n,
+          edgeAClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeAClipSpace.w));
+    aPlane = vec4(an*edgeAClipSpace.w,-dot(an,edgeAClipSpace.xyz));
+    //aPlane *= 1-2*float((edgeAClipSpace.w < 0 && edgeBClipSpace.w < 0));
+
+    vec3 bn = normalize(cross(
+          edgeBClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeBClipSpace.w,
+          n));
+    bPlane = vec4(bn*edgeBClipSpace.w,-dot(bn,edgeBClipSpace.xyz));
+    //bPlane *= 1-2*float((edgeAClipSpace.w < 0 && edgeBClipSpace.w < 0) || (edgeAClipSpace.w < 0 && lightClipSpace.w < 0) || (edgeBClipSpace.w < 0 && lightClipSpace.w < 0));
+
+    vec3 abn = normalize(cross(
+          edgeBClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*edgeBClipSpace.w,
+          n));
+    abPlane = vec4(abn*edgeAClipSpace.w,-dot(abn,edgeAClipSpace.xyz));
+    //abPlane *= 1-2*float((edgeAClipSpace.w < 0 && lightClipSpace.w < 0));
+    */
+#endif
+
+#if 0
+    mat4 invTran = transpose(inverse(proj*view));
+
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
     edgePlane = invTran*vec4(n,-dot(n,edgeA));
 
@@ -132,6 +216,9 @@ void loadSilhouette(uint job){
 
     vec3 abn = normalize(cross(edgeB-edgeA,n));
     abPlane = invTran*vec4(abn,-dot(abn,edgeA));
+#endif
+
+
 #else
     vec4 point;
     point[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
@@ -139,12 +226,17 @@ void loadSilhouette(uint job){
     point[2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
     point[3] = 1;
     edgeA = proj*view*point;
+
     point[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
     point[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
     point[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
     point[3] = 1;
     edgeB = proj*view*point;
     light = proj*view*lightPosition;
+
+    edgeAClipSpace = edgeA;
+    edgeBClipSpace = edgeB;
+    lightClipSpace = light;
 #endif
 
     edgeMult = mult;
@@ -157,7 +249,20 @@ void loadSilhouette(uint job){
 
 #endif
 
-
+//void lastLevel(uint node){
+//  uvec2 sampleCoord;
+//  vec4 clipCoord;
+//  bool inside;
+//  vec4 plane;
+//
+//
+//  sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+//
+//  clipCoord.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
+//  clipCoord.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
+//  clipCoord.w = 1.f;
+//
+//}
 
 #if STORE_TRAVERSE_STAT == 1
 layout(std430,binding = 7)buffer Debug{uint debug[];};
@@ -294,8 +399,23 @@ void traverse(){
                   if(dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f)
                     status = INTERSECTS;
                 }
+                //else{
+                //  if(level+1 < nofLevels)
+                //    status = INTERSECTS;
+                //  else
+                //    status = TRIVIAL_ACCEPT;
+                //}
               }
+              //else{
+              //  if(level+1 < nofLevels)
+              //    status = INTERSECTS;
+              //  else
+              //    status = TRIVIAL_ACCEPT;
+              //}
             }
+            //else{
+            //  status = TRIVIAL_ACCEPT;
+            //}
           }
   #endif
 #endif

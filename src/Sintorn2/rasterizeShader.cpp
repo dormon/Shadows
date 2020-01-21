@@ -190,11 +190,22 @@ void lastLevel(uint node){
 
 uint job = 0u;
 
+#define USE_SHARED_STACK 1
+
 #if WARP == 32
+
+#if USE_SHARED_STACK == 1
+shared uint intersection[nofLevels];
+#endif
 
 void traverse(){
   int level = 0;
+
+#if USE_SHARED_STACK == 1
+  uint currentIntersection;
+#else
   uint intersection[nofLevels];
+#endif
 
   uint node = 0;
   while(level >= 0){
@@ -241,7 +252,15 @@ void traverse(){
         debug[1+w*4+3] = status;
 #endif
 
+#if USE_SHARED_STACK == 1
+      currentIntersection = unpackUint2x32(ballotARB(status == INTERSECTS    ))[0];
+      if(gl_LocalInvocationIndex==0)
+        intersection[level] = currentIntersection;
+      memoryBarrierShared();
+#else
       intersection[level] = unpackUint2x32(ballotARB(status == INTERSECTS    ))[0];
+#endif
+
       uint     trA        = unpackUint2x32(ballotARB(status == TRIVIAL_ACCEPT))[0];
 
 #if 1
@@ -253,17 +272,44 @@ void traverse(){
 
     }
 
+#if USE_SHARED_STACK == 1
+    while(level >= 0 && currentIntersection == 0u){
+      node >>= warpBits;
+      level--;
+      if(level < 0)break;
+      currentIntersection = intersection[level];
+    }
+#else
     while(level >= 0 && intersection[level] == 0u){
       node >>= warpBits;
       level--;
     }
+#endif
+
+
+
     if(level < 0)break;
     if(level>=0){
+#if USE_SHARED_STACK == 1
+      uint selectedBit = findLSB(currentIntersection);
+#else
       uint selectedBit = findLSB(intersection[level]);
+#endif
       node <<= warpBits   ;
       node  += selectedBit;
 
-      intersection[level] ^= 1u << selectedBit;
+      uint mask = 1u;
+      mask <<= selectedBit;
+
+#if USE_SHARED_STACK == 1
+      currentIntersection ^= mask;
+      if(gl_LocalInvocationIndex==0)
+        intersection[level] = currentIntersection;
+      memoryBarrierShared();
+#else
+      intersection[level] ^= mask;
+#endif
+
 
       level++;
     }
@@ -275,9 +321,18 @@ void traverse(){
 #if WARP == 64
 
 
+#if USE_SHARED_STACK == 1
+shared uint64_t intersection[nofLevels];
+#endif
+
 void traverse(){
   int level = 0;
+
+#if USE_SHARED_STACK == 1
+  uint64_t currentIntersection;
+#else
   uint64_t intersection[nofLevels];
+#endif
 
   uint node = 0;
   while(level >= 0){
@@ -375,7 +430,14 @@ void traverse(){
         debug[1+w*4+3] = status;
 #endif
 
+#if USE_SHARED_STACK == 1
+      currentIntersection = ballotARB(status == INTERSECTS    );
+      if(gl_LocalInvocationIndex==0)
+        intersection[level] = currentIntersection;
+#else
       intersection[level] = ballotARB(status == INTERSECTS    );
+#endif
+
       uint64_t trA        = ballotARB(status == TRIVIAL_ACCEPT);
 
 #if 1
@@ -389,19 +451,43 @@ void traverse(){
 
     }
 
+#if USE_SHARED_STACK == 1
+    while(level >= 0 && currentIntersection == 0ul){
+      node >>= warpBits;
+      level--;
+      if(level < 0)break;
+      currentIntersection = intersection[level];
+    }
+#else
     while(level >= 0 && intersection[level] == 0ul){
       node >>= warpBits;
       level--;
     }
+#endif
+
+
     if(level < 0)break;
     if(level>=0){
+#if USE_SHARED_STACK == 1
+      uint selectedBit = unpackUint2x32(currentIntersection)[0]!=0?findLSB(unpackUint2x32(currentIntersection)[0]):findLSB(unpackUint2x32(currentIntersection)[1])+32u;
+#else
       uint selectedBit = unpackUint2x32(intersection[level])[0]!=0?findLSB(unpackUint2x32(intersection[level])[0]):findLSB(unpackUint2x32(intersection[level])[1])+32u;
+#endif
+
+
       node <<= warpBits   ;
       node  += selectedBit;
 
       uint64_t mask = 1ul;
       mask <<= selectedBit;
+
+#if USE_SHARED_STACK == 1
+      currentIntersection ^= mask;
+      if(gl_LocalInvocationIndex==0)
+        intersection[level] = currentIntersection;
+#else
       intersection[level] ^= mask;
+#endif
 
       level++;
     }
