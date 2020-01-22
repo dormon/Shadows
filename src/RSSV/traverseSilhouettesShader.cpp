@@ -43,6 +43,7 @@ uniform vec4 lightPosition;
 shared int  edgeMult;
 
 uniform mat4 invTran;
+uniform mat4 projView;
 
 shared vec4 edgePlane;
 shared vec4 aPlane;
@@ -91,15 +92,16 @@ void loadSilhouette(uint job){
     edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
 
 
-    edgeAClipSpace = proj*view*vec4(edgeA,1.f);
-    edgeBClipSpace = proj*view*vec4(edgeB,1.f);
-    lightClipSpace = proj*view*lightPosition  ;
 
     //edgeAClipSpace /= abs(edgeAClipSpace.w);
     //edgeBClipSpace /= abs(edgeBClipSpace.w);
     //lightClipSpace /= abs(lightClipSpace.w);
 
-#if 1
+#if 0
+    edgeAClipSpace = projView*vec4(edgeA,1.f);
+    edgeBClipSpace = projView*vec4(edgeB,1.f);
+    lightClipSpace = projView*lightPosition  ;
+
     edgePlane = getClipPlane(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
 
     vec3 an = cross(
@@ -118,7 +120,7 @@ void loadSilhouette(uint job){
     abPlane = vec4(abn*abs(edgeAClipSpace.w),-dot(abn,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
 
 #else
-    mat4 invTran = transpose(inverse(proj*view));
+    //mat4 invTran = transpose(inverse(proj*view));
 
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
     edgePlane = invTran*vec4(n,-dot(n,edgeA));
@@ -226,12 +228,12 @@ void traverse(){
 #else
         vec3 minCorner;
         vec3 maxCorner;
-                minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
-                maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
-                minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
-                maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
-                minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
-                maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+        minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
+        maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
+        minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
+        maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
+        minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
+        maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
 #endif
 
         vec3 tr;
@@ -250,23 +252,8 @@ void traverse(){
                   if(dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f)
                     status = INTERSECTS;
                 }
-                //else{
-                //  if(level+1 < nofLevels)
-                //    status = INTERSECTS;
-                //  else
-                //    status = TRIVIAL_ACCEPT;
-                //}
               }
-              //else{
-              //  if(level+1 < nofLevels)
-              //    status = INTERSECTS;
-              //  else
-              //    status = TRIVIAL_ACCEPT;
-              //}
             }
-            //else{
-            //  status = TRIVIAL_ACCEPT;
-            //}
           }
 #endif
 

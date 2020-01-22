@@ -157,11 +157,13 @@ void traverseSilhouettes(vars::Vars&vars){
 
   prg->use();
 
-  //auto invTran = glm::transpose(glm::inverse(proj*view));
+  auto invTran = glm::transpose(glm::inverse(proj*view));
+  //auto projView = proj*view;
   prg
-    ->setMatrix4fv("view"         ,glm::value_ptr(view         ))
-    ->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
-    //->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
+    //->setMatrix4fv("view"         ,glm::value_ptr(view         ))
+    //->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
+    ->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
+    //->setMatrix4fv("projView"      ,glm::value_ptr(projView      ))
     ->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
 
   auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
