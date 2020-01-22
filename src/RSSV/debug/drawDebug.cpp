@@ -67,27 +67,33 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&inToDraw = vars.addOrGetUint32("rssv.method.debug.inToDraw",0);
 
   if(ImGui::BeginMainMenuBar()){
-    if(ImGui::BeginMenu("dump")){
 
-      if(ImGui::MenuItem("copyData"))
-        rssv::debug::dumpData(vars);
+    if(ImGui::BeginMenu("samples")){
 
-      if(ImGui::MenuItem("copySilhouettes"))
-        rssv::debug::dumpSilhouettes(vars);
+      if(ImGui::MenuItem("dump")){
+        rssv::debug::dumpBasic(vars);
+        rssv::debug::dumpSamples(vars);
+      }
 
-      if(ImGui::MenuItem("drawSamples")){
+      if(ImGui::MenuItem("draw")){
         drawSamples = !drawSamples;
         vars.updateTicks("rssv.method.debug.drawSamples");
+      }
+
+      ImGui::EndMenu();
+    }
+
+    if(ImGui::BeginMenu("nodes")){
+
+      if(ImGui::MenuItem("dump")){
+        rssv::debug::dumpBasic(vars);
+        rssv::debug::dumpNodePool(vars);
+        rssv::debug::dumpAABBPool(vars);
       }
 
       if(ImGui::MenuItem("drawNodePool")){
         drawNodePool = !drawNodePool;
         vars.updateTicks("rssv.method.debug.drawNodePool");
-      }
-
-      if(ImGui::MenuItem("drawTraverse")){
-        drawTraverse = !drawTraverse;
-        vars.updateTicks("rssv.method.debug.drawTraverse");
       }
 
       if(ImGui::MenuItem("drawTightAABB")){
@@ -98,21 +104,6 @@ void rssv::drawDebug(vars::Vars&vars){
       if(ImGui::MenuItem("wireframe")){
         wireframe = !wireframe;
         vars.updateTicks("rssv.method.debug.wireframe");
-      }
-
-      if(ImGui::MenuItem("drawShadowFrusta")){
-        drawShadowFrusta = !drawShadowFrusta;
-        vars.updateTicks("rssv.method.debug.drawShadowFrusta");
-      }
-
-      if(ImGui::MenuItem("drawEdges")){
-        drawEdges = !drawEdges;
-        vars.updateTicks("rssv.method.debug.drawEdges");
-      }
-
-      if(ImGui::MenuItem("drawSilhouettes")){
-        drawSilhouettes = !drawSilhouettes;
-        vars.updateTicks("rssv.method.debug.drawSilhouettes");
       }
 
       if(drawNodePool){
@@ -126,6 +117,46 @@ void rssv::drawDebug(vars::Vars&vars){
             }
           }
         }
+      }
+
+      ImGui::EndMenu();
+    }
+
+
+    if(ImGui::BeginMenu("silhouettes")){
+      if(ImGui::MenuItem("dump"))
+        rssv::debug::dumpSilhouettes(vars);
+
+      if(ImGui::MenuItem("drawEdges")){
+        drawEdges = !drawEdges;
+        vars.updateTicks("rssv.method.debug.drawEdges");
+      }
+
+      if(ImGui::MenuItem("drawSilhouettes")){
+        drawSilhouettes = !drawSilhouettes;
+        vars.updateTicks("rssv.method.debug.drawSilhouettes");
+      }
+
+      ImGui::EndMenu();
+    }
+
+    if(ImGui::BeginMenu("traverse")){
+
+      if(ImGui::MenuItem("dump data")){
+        rssv::debug::dumpBasic(vars);
+        rssv::debug::dumpNodePool(vars);
+        rssv::debug::dumpAABBPool(vars);
+        rssv::debug::dumpTraverse(vars);
+      }
+
+      if(ImGui::MenuItem("draw")){
+        drawTraverse = !drawTraverse;
+        vars.updateTicks("rssv.method.debug.drawTraverse");
+      }
+
+      if(ImGui::MenuItem("drawTightAABB")){
+        drawTightAABB = !drawTightAABB;
+        vars.updateTicks("rssv.method.debug.drawTightAABB");
       }
 
       if(drawTraverse){
@@ -157,6 +188,21 @@ void rssv::drawDebug(vars::Vars&vars){
 
       ImGui::EndMenu();
     }
+
+
+    if(ImGui::BeginMenu("dump")){
+
+      if(ImGui::MenuItem("dump all"))
+        rssv::debug::dumpData(vars);
+
+      if(ImGui::MenuItem("drawShadowFrusta")){
+        drawShadowFrusta = !drawShadowFrusta;
+        vars.updateTicks("rssv.method.debug.drawShadowFrusta");
+      }
+
+      ImGui::EndMenu();
+    }
+
 
     ImGui::EndMainMenuBar();
   }
