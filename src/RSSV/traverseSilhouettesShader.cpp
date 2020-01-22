@@ -18,14 +18,6 @@ std::string const rssv::traverseSilhouettesShader = R".(
 #define SF_INTERLEAVE 0
 #endif//SF_INTERLEAVE
 
-#ifndef MORE_PLANES
-#define MORE_PLANES 0
-#endif//MORE_PLANES
-
-#ifndef ENABLE_FFC
-#define ENABLE_FFC 0
-#endif//ENABLE_FFC
-
 #ifndef NO_AABB
 #define NO_AABB 0
 #endif//NO_AABB
@@ -48,11 +40,8 @@ uniform mat4 view;
 uniform mat4 proj;
 uniform vec4 lightPosition;
 
-#define USE_PLANES 1
-
 shared int  edgeMult;
 
-#if USE_PLANES == 1
 uniform mat4 invTran;
 
 shared vec4 edgePlane;
@@ -60,11 +49,6 @@ shared vec4 aPlane;
 shared vec4 bPlane;
 shared vec4 abPlane;
 
-#else
-shared vec4 edgeA   ;
-shared vec4 edgeB   ;
-shared vec4 light   ;
-#endif
 
 shared vec4 edgeAClipSpace;
 shared vec4 edgeBClipSpace;
@@ -92,12 +76,11 @@ vec4 getClipPlane(in vec4 a,in vec4 b,in vec4 c){
 }
 
 void loadSilhouette(uint job){
-  if(gl_LocalInvocationIndex == 0){ // TODO parallel load and precomputation in parallel in separated shader
+  if(gl_LocalInvocationIndex == 0){
     uint res  = multBuffer[job];
     uint edge = res & 0x1fffffffu;
     int  mult = int(res) >> 29;
 
-#if USE_PLANES == 1
     vec3 edgeA;
     vec3 edgeB;
     edgeA[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
@@ -150,31 +133,7 @@ void loadSilhouette(uint job){
     abPlane = invTran*vec4(abn,-dot(abn,edgeA));
 #endif
 
-
-#else
-    vec4 point;
-    point[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
-    point[1] = edgeBuffer[edge+1*ALIGNED_NOF_EDGES];
-    point[2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
-    point[3] = 1;
-    edgeA = proj*view*point;
-
-    point[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
-    point[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
-    point[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
-    point[3] = 1;
-    edgeB = proj*view*point;
-    light = proj*view*lightPosition;
-
-    edgeAClipSpace = edgeA;
-    edgeBClipSpace = edgeB;
-    lightClipSpace = light;
-#endif
-
     edgeMult = mult;
-  
-
-
   }
   memoryBarrierShared();
 }
@@ -275,24 +234,14 @@ void traverse(){
 #else
         vec3 minCorner;
         vec3 maxCorner;
-        #if USE_PLANES == 1
                 minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
                 maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
                 minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
                 maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
                 minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
                 maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
-        #else
-                minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
-                minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
-                minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
-                maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]             ;
-                maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]             ;
-                maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]             ;
-        #endif
 #endif
 
-#if USE_PLANES == 1
         vec3 tr;
         bool planeTest;
 
@@ -344,9 +293,6 @@ void traverse(){
           status = INTERSECTS;
         else
           status = TRIVIAL_REJECT;
-#endif
-#else
-        status = silhouetteStatus(edgeA,edgeB,light,minCorner,maxCorner);
 #endif
 
       }
