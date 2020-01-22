@@ -21,6 +21,7 @@
 #include <RSSV/debug/drawSF.h>
 #include <RSSV/debug/drawEdges.h>
 #include <RSSV/debug/drawSilhouettes.h>
+#include <RSSV/debug/drawBridges.h>
 #include <RSSV/configShader.h>
 #include <RSSV/config.h>
 
@@ -61,6 +62,10 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&drawShadowFrusta   = vars.addOrGetBool("rssv.method.debug.drawShadowFrusta");
   auto&drawEdges          = vars.addOrGetBool("rssv.method.debug.drawEdges"       );
   auto&drawSilhouettes    = vars.addOrGetBool("rssv.method.debug.drawSilhouettes" );
+
+
+  auto&drawBridges        = vars.addOrGetBool  ("rssv.method.debug.drawBridges"  );
+  auto&bridgesToDraw      = vars.addOrGetUint32("rssv.method.debug.bridgesToDraw");
 
   auto&taToDraw = vars.addOrGetUint32("rssv.method.debug.taToDraw",0);
   auto&trToDraw = vars.addOrGetUint32("rssv.method.debug.trToDraw",0);
@@ -122,6 +127,35 @@ void rssv::drawDebug(vars::Vars&vars){
       ImGui::EndMenu();
     }
 
+    if(ImGui::BeginMenu("bridges")){
+
+      if(ImGui::MenuItem("dump")){
+        rssv::debug::dumpBasic(vars);
+        rssv::debug::dumpNodePool(vars);
+        rssv::debug::dumpAABBPool(vars);
+      }
+
+      if(ImGui::MenuItem(drawBridges?"hide":"draw")){
+        drawBridges = !drawBridges;
+        vars.updateTicks("rssv.method.debug.drawBridges");
+      }
+
+      if(drawBridges){
+        if(vars.has("rssv.method.debug.dump.config")){
+          auto const cfg = *vars.get<Config>        ("rssv.method.debug.dump.config"    );
+          for(uint32_t i=0;i<cfg.nofLevels;++i){
+            std::stringstream ss;
+            ss << "level" << i;
+            if(ImGui::MenuItem(ss.str().c_str())){
+              bridgesToDraw ^= 1<<i;
+            }
+          }
+        }
+      }
+
+      ImGui::EndMenu();
+    }
+
 
     if(ImGui::BeginMenu("silhouettes")){
       if(ImGui::MenuItem("dump"))
@@ -149,7 +183,7 @@ void rssv::drawDebug(vars::Vars&vars){
         rssv::debug::dumpTraverse(vars);
       }
 
-      if(ImGui::MenuItem("draw")){
+      if(ImGui::MenuItem(drawTraverse?"hide":"draw")){
         drawTraverse = !drawTraverse;
         vars.updateTicks("rssv.method.debug.drawTraverse");
       }
@@ -224,6 +258,9 @@ void rssv::drawDebug(vars::Vars&vars){
 
   if(drawSilhouettes)
     debug::drawSilhouettes(vars);
+
+  if(drawBridges)
+    debug::drawBridges(vars);
 
 
 }
