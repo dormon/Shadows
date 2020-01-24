@@ -75,6 +75,10 @@ void Shadows::init() {
   initMethods(vars);
   parseArguments(vars);
 
+  if(vars.getBool("notResizable")){
+    SDL_SetWindowResizable(window->getWindow(),SDL_FALSE);
+  }
+
   if(vars.getBool("getModelStats")){
     getModelStats(vars);
     exit(0);

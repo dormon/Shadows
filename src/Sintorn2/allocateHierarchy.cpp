@@ -25,4 +25,12 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
   vars.reCreate<Buffer>("sintorn2.method.activeNodes"     ,cfg.nofNodes *sizeof(uint32_t)  );
   vars.reCreate<Buffer>("sintorn2.method.debugBuffer"     ,cfg.nofNodes *sizeof(uint32_t)  );
 
+  std::cerr <<  "nofNodes: " << cfg.nofNodes << std::endl;
+  std::cerr <<  "aabbSize: " << cfg.aabbsSize << std::endl;
+  cfg.print();
+  size_t sss =
+  vars.get<Buffer>("sintorn2.method.nodePool")->getSize() + 
+  vars.get<Buffer>("sintorn2.method.aabbPool")->getSize() + 
+  vars.get<Buffer>("sintorn2.method.activeNodes")->getSize();
+  std::cerr << "HIERARCHY SIZE: " << (float)sss / (float)(1024*1024) << " MB" << std::endl;
 }

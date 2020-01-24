@@ -45,6 +45,8 @@ void parseArguments(vars::Vars&vars){
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");
 
+  vars.addBool("notResizable") = arg->isPresent("--notResizable");
+
   vars.addSizeT("frameCounter");
   vars.addSizeT("maxFrame") = arg->getu32("--maxFrame",0,"after this frame the app will stop");
 
