@@ -129,6 +129,7 @@ uniform uint drawTightAABB = 0;
 uniform uint drawWithPadding = 0;
 uniform float zPadding       = 400.f;
 
+uniform vec4 lightPosition;
 
 vec3 getCenter(uint level,uint node){
   vec3 minCorner;
@@ -142,6 +143,7 @@ vec3 getCenter(uint level,uint node){
   maxCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+5];
 
   vec3 center = (maxCorner+minCorner)/2.f;
+  return center;
 }
 
 void main(){
@@ -166,13 +168,13 @@ void main(){
     parentCenter = nodeProjView*vec4(getCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
   }
 
-  center4       /= center4      .w;
-  parentCenter4 /= parentCenter4.w;
+  center       /= center      .w;
+  parentCenter /= parentCenter.w;
 
   mat4 M = proj*view;
 
-  gl_Position = M*vec4(center4      );EmitVertex();
-  gl_Position = M*vec4(parentCenter4);EmitVertex();
+  gl_Position = M*vec4(center      );EmitVertex();
+  gl_Position = M*vec4(parentCenter);EmitVertex();
   EndPrimitive();
 
 }
@@ -219,10 +221,11 @@ void drawBridges(vars::Vars&vars){
   auto const nodePool        =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"        );
   auto const aabbPool        =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"        );
 
-  auto const view            = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
-  auto const proj            = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
-  auto const bridgesToDraw   =  vars.getUint32          ("rssv.method.debug.bridgesToDraw"        );
-  auto const drawTightAABB   =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
+  auto const view            = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"      );
+  auto const proj            = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix");
+  auto const bridgesToDraw   =  vars.getUint32          ("rssv.method.debug.bridgesToDraw"   );
+  auto const drawTightAABB   =  vars.getBool            ("rssv.method.debug.drawTightAABB"   );
+  auto const lightPosition   = *vars.get<glm::vec4>     ("rssv.method.debug.lightPosition"   );
 
   float zPadding = vars.addOrGetFloat("rssv.method.debug.zPadding",400);
   auto  drawWithPadding = vars.addOrGetBool("rssv.method.debug.drawWithPadding");
@@ -236,13 +239,14 @@ void drawBridges(vars::Vars&vars){
   aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
   prg->use();
   prg
-    ->setMatrix4fv("nodeView"   ,glm::value_ptr(nodeView))
-    ->setMatrix4fv("nodeProj"   ,glm::value_ptr(nodeProj))
-    ->setMatrix4fv("view"       ,glm::value_ptr(view    ))
-    ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
-    ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
-    ->set1ui      ("drawWithPadding",(uint32_t)drawWithPadding)
-    ->set1f       ("zPadding"       ,(float)zPadding)
+    ->setMatrix4fv("nodeView"       ,glm::value_ptr(nodeView     ))
+    ->setMatrix4fv("nodeProj"       ,glm::value_ptr(nodeProj     ))
+    ->setMatrix4fv("view"           ,glm::value_ptr(view         ))
+    ->setMatrix4fv("proj"           ,glm::value_ptr(proj         ))
+    ->set4fv      ("lightPosition"  ,glm::value_ptr(lightPosition))
+    ->set1ui      ("drawTightAABB"  ,(uint32_t)drawTightAABB      )
+    ->set1ui      ("drawWithPadding",(uint32_t)drawWithPadding    )
+    ->set1f       ("zPadding"       ,(float)zPadding              )
     ;
 
 
