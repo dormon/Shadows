@@ -56,12 +56,12 @@ void prepareDrawBridges(vars::Vars&vars){
   in vec3 gNormal;
 
   const vec4 colors[6] = {
-    vec4(.1,.1,.1,1)*5,
-    vec4(.1,.0,.0,1)*5,
-    vec4(.0,.1,.0,1)*5,
-    vec4(.0,.0,.1,1)*5,
-    vec4(.1,.1,.0,1)*5,
-    vec4(.1,.0,.1,1)*5,
+    vec4(.1,.1,.1,1)*5*2,
+    vec4(.1,.0,.0,1)*5*2,
+    vec4(.0,.1,.0,1)*5*2,
+    vec4(.0,.0,.1,1)*5*2,
+    vec4(.1,.1,.0,1)*5*2,
+    vec4(.1,.0,.1,1)*5*2,
   };
   layout(location=0)out vec4 fColor;
   void main(){
@@ -221,11 +221,11 @@ void drawBridges(vars::Vars&vars){
   auto const nodePool        =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"        );
   auto const aabbPool        =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"        );
 
-  auto const view            = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"      );
-  auto const proj            = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix");
-  auto const bridgesToDraw   =  vars.getUint32          ("rssv.method.debug.bridgesToDraw"   );
-  auto const drawTightAABB   =  vars.getBool            ("rssv.method.debug.drawTightAABB"   );
-  auto const lightPosition   = *vars.get<glm::vec4>     ("rssv.method.debug.lightPosition"   );
+  auto const view            = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
+  auto const proj            = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
+  auto const bridgesToDraw   =  vars.getUint32          ("rssv.method.debug.bridgesToDraw"        );
+  auto const drawTightAABB   =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
+  auto const lightPosition   = *vars.get<glm::vec4>     ("rssv.method.debug.lightPosition"        );
 
   float zPadding = vars.addOrGetFloat("rssv.method.debug.zPadding",400);
   auto  drawWithPadding = vars.addOrGetBool("rssv.method.debug.drawWithPadding");

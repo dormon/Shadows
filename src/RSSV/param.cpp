@@ -26,5 +26,6 @@ void rssv::loadParams(
   vars.addUint32("rssv.param.discardBackfacing"      ) = c->getu32   ("discardBackfacing"    ,1   ,"discard light backfacing fragments"                                              );
 
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat");
+  vars.addBool  ("rssv.param.storeEdgePlanes"             );
 
 }

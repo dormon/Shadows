@@ -15,6 +15,7 @@
 #include <RSSV/mortonShader.h>
 #include <RSSV/debug/drawDebug.h>
 #include <RSSV/debug/dumpData.h>
+#include <RSSV/debug/dumpSamples.h>
 #include <RSSV/debug/drawSamples.h>
 #include <RSSV/debug/drawNodePool.h>
 #include <RSSV/debug/drawTraverse.h>
@@ -56,6 +57,7 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&drawTightAABB      = vars.addOrGetBool  ("rssv.method.debug.drawTightAABB");
   auto&wireframe          = vars.addOrGetBool  ("rssv.method.debug.wireframe",true);
 
+  auto&clearScreen        = vars.addOrGetBool("rssv.method.debug.clearScreen"     );
   auto&drawSamples        = vars.addOrGetBool("rssv.method.debug.drawSamples"     );
   auto&drawNodePool       = vars.addOrGetBool("rssv.method.debug.drawNodePool"    );
   auto&drawTraverse       = vars.addOrGetBool("rssv.method.debug.drawTraverse"    );
@@ -72,6 +74,13 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&inToDraw = vars.addOrGetUint32("rssv.method.debug.inToDraw",0);
 
   if(ImGui::BeginMainMenuBar()){
+    if(ImGui::BeginMenu("debug")){
+      if(ImGui::MenuItem(clearScreen?"fillScreen":"clearScreen")){
+        clearScreen = !clearScreen;
+        vars.updateTicks("rssv.method.debug.clearScreen");
+      }
+      ImGui::EndMenu();
+    }
 
     if(ImGui::BeginMenu("samples")){
 
@@ -183,6 +192,14 @@ void rssv::drawDebug(vars::Vars&vars){
         rssv::debug::dumpTraverse(vars);
       }
 
+      if(ImGui::MenuItem("dump planes")){
+        rssv::debug::dumpBasic(vars);
+        rssv::debug::dumpNodePool(vars);
+        rssv::debug::dumpAABBPool(vars);
+        rssv::debug::dumpTraversePlanes(vars);
+      }
+
+
       if(ImGui::MenuItem(drawTraverse?"hide":"draw")){
         drawTraverse = !drawTraverse;
         vars.updateTicks("rssv.method.debug.drawTraverse");
@@ -239,6 +256,10 @@ void rssv::drawDebug(vars::Vars&vars){
 
 
     ImGui::EndMainMenuBar();
+  }
+
+  if(clearScreen){
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   }
 
   if(drawSamples)

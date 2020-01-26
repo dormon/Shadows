@@ -9,6 +9,7 @@
 #include <divRoundUp.h>
 #include <BallotShader.h>
 #include <Deferred.h>
+#include <FastAdjacency.h>
 
 #include <RSSV/rasterize.h>
 #include <RSSV/rasterizeShader.h>
@@ -42,6 +43,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"rssv.param.tileY"   
       ,"rssv.param.noAABB"
       ,"rssv.param.storeTraverseSilhouettesStat"
+      ,"rssv.param.storeEdgePlanes"
       ,"args.camera.near"
       ,"args.camera.far"
       ,"args.camera.fovy"
@@ -55,6 +57,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const minZBits                     =  vars.getUint32      ("rssv.param.minZBits"                    );
   auto const noAABB                       =  vars.getInt32       ("rssv.param.noAABB"                      );
   auto const storeTraverseSilhouettesStat =  vars.getBool        ("rssv.param.storeTraverseSilhouettesStat");
+  auto const storeEdgePlanes              =  vars.getBool        ("rssv.param.storeEdgePlanes"             );
   auto const nnear                        =  vars.getFloat       ("args.camera.near"                       );
   auto const ffar                         =  vars.getFloat       ("args.camera.far"                        );
   auto const fovy                         =  vars.getFloat       ("args.camera.fovy"                       );
@@ -71,6 +74,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("TILE_Y"             ,tileY                       ),
         Shader::define("NO_AABB"            ,(int)     noAABB            ),
         Shader::define("STORE_TRAVERSE_STAT",(int)storeTraverseSilhouettesStat),
+        Shader::define("STORE_EDGE_PLANES"  ,(int)storeEdgePlanes             ),
         Shader::define("NEAR"      ,nnear                  ),
         glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
         Shader::define("FOVY"      ,fovy                   ),
@@ -99,6 +103,15 @@ void createDebugSilhouetteTraverseBuffers(vars::Vars&vars){
   vars.reCreate<Buffer>("rssv.method.debug.traverseSilhouettesBuffer",sizeof(uint32_t)*(1+1024*1024*128));
 }
 
+void createDebugEdgePlanesBuffer(vars::Vars&vars){
+  FUNCTION_PROLOGUE("rssv.method"
+      ,"rssv.param.storeEdgePlanes"
+      ,"adjacency"
+      );
+  auto adj = vars.get<Adjacency>("adjacency");
+  vars.reCreate<Buffer>("rssv.method.debug.edgePlanes",sizeof(uint32_t)*(1+16*adj->getNofEdges()));
+}
+
 
 
 void traverseSilhouettes(vars::Vars&vars){
@@ -106,6 +119,7 @@ void traverseSilhouettes(vars::Vars&vars){
   createTraverseSilhouettesProgram(vars);
   createSilhouetteJobCounter(vars);
   createDebugSilhouetteTraverseBuffers(vars);
+  createDebugEdgePlanesBuffer(vars);
 
   auto prg        = vars.get<Program>("rssv.method.traverseSilhouettesProgram");
 
@@ -173,6 +187,17 @@ void traverseSilhouettes(vars::Vars&vars){
     glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
     debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
   }
+
+  auto const storeEdgePlanes = vars.getBool("rssv.param.storeEdgePlanes");
+  if(storeEdgePlanes){
+    glFinish();
+    auto debug = vars.get<Buffer>("rssv.method.debug.edgePlanes");
+    glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+    debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+  }
+
+
+
 
 
   if(vars.addOrGetBool("rssv.method.perfCounters.traverseSilhouettes")){

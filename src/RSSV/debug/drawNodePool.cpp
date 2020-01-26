@@ -39,6 +39,9 @@ void prepareDrawNodePool(vars::Vars&vars){
   auto const fovy           =  vars.getFloat           ("rssv.method.debug.dump.fovy"      );
   auto const wireframe      =  vars.getBool            ("rssv.method.debug.wireframe"      );
 
+  std::cerr << "DRAWNODEPOOL PROGRAM - NEAR: " << nnear << std::endl;
+  std::cerr << "DRAWNODEPOOL PROGRAM - FAR : " << ffar  << std::endl;
+
   auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"                    );
 
 
@@ -105,11 +108,11 @@ void prepareDrawNodePool(vars::Vars&vars){
 #endif//MIN_Z_BITS
 
 #ifndef NEAR
-#define NEAR 0.01f
+#define NEAR 1.f
 #endif//NEAR
 
 #ifndef FAR
-#define FAR 1000.f
+#define FAR 100.f
 #endif//FAR
 
 #ifndef FOVY
@@ -184,10 +187,10 @@ void main(){
 
 #ifdef FAR_IS_INFINITE
   float e = -1.f;
-  float f = -2.f * NEAR;
+  float f = -2.f * float(NEAR);
 #else
-  float e = -(FAR + NEAR) / (FAR - NEAR);
-  float f = -2.f * NEAR * FAR / (FAR - NEAR);
+  float e = -float(FAR + NEAR) / float(FAR - NEAR);
+  float f = -2.f * float(NEAR) * float(FAR) / float(FAR - NEAR);
 #endif
 
   if(drawWithPadding == 1){
@@ -213,79 +216,87 @@ void main(){
     endZ   = DEPTH_TO_Z(mmaxZ);
   }
 
-
+  vec4 P[8];
+  P[0] = vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));
+  P[1] = vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));
+  P[2] = vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));
+  P[3] = vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));
+  P[4] = vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));
+  P[5] = vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));
+  P[6] = vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));
+  P[7] = vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));
 
 
   mat4 M = proj*view*inverse(nodeView)*inverse(nodeProj);
 #if WIREFRAME == 1
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*P[0];EmitVertex();
+  gl_Position = M*P[1];EmitVertex();
+  gl_Position = M*P[3];EmitVertex();
+  gl_Position = M*P[2];EmitVertex();
+  gl_Position = M*P[0];EmitVertex();
   EndPrimitive();
 
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*P[4];EmitVertex();
+  gl_Position = M*P[5];EmitVertex();
+  gl_Position = M*P[7];EmitVertex();
+  gl_Position = M*P[6];EmitVertex();
+  gl_Position = M*P[4];EmitVertex();
   EndPrimitive();
 
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*P[0];EmitVertex();
+  gl_Position = M*P[4];EmitVertex();
   EndPrimitive();
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*P[1];EmitVertex();
+  gl_Position = M*P[5];EmitVertex();
   EndPrimitive();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*P[2];EmitVertex();
+  gl_Position = M*P[6];EmitVertex();
   EndPrimitive();
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*P[3];EmitVertex();
+  gl_Position = M*P[7];EmitVertex();
   EndPrimitive();
 #else
   mat4 N = inverse(nodeView)*inverse(nodeProj);
   gNormal = (N*vec4(0,0,-1,0)).xyz;
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*P[0];EmitVertex();
+  gl_Position = M*P[1];EmitVertex();
+  gl_Position = M*P[2];EmitVertex();
+  gl_Position = M*P[3];EmitVertex();
   EndPrimitive();
 
   gNormal = (N*vec4(1,0,0,0)).xyz;
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*P[1];EmitVertex();
+  gl_Position = M*P[5];EmitVertex();
+  gl_Position = M*P[3];EmitVertex();
+  gl_Position = M*P[7];EmitVertex();
   EndPrimitive();
 
   gNormal = (N*vec4(0,0,1,0)).xyz;
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*P[5];EmitVertex();
+  gl_Position = M*P[4];EmitVertex();
+  gl_Position = M*P[7];EmitVertex();
+  gl_Position = M*P[6];EmitVertex();
   EndPrimitive();
 
   gNormal = (N*vec4(-1,0,0,0)).xyz;
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*P[4];EmitVertex();
+  gl_Position = M*P[0];EmitVertex();
+  gl_Position = M*P[6];EmitVertex();
+  gl_Position = M*P[2];EmitVertex();
   EndPrimitive();
 
   gNormal = (N*vec4(0,1,0,0)).xyz;
-  gl_Position = M*vec4(startX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),  endY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),  endY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
+  gl_Position = M*P[2];EmitVertex();
+  gl_Position = M*P[3];EmitVertex();
+  gl_Position = M*P[6];EmitVertex();
+  gl_Position = M*P[7];EmitVertex();
   EndPrimitive();
 
   gNormal = (N*vec4(0,-1,0,0)).xyz;
-  gl_Position = M*vec4(startX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-  endZ),startY*(-  endZ),e*  endZ+f,(-  endZ));EmitVertex();
-  gl_Position = M*vec4(startX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
-  gl_Position = M*vec4(  endX*(-startZ),startY*(-startZ),e*startZ+f,(-startZ));EmitVertex();
+  gl_Position = M*P[4];EmitVertex();
+  gl_Position = M*P[5];EmitVertex();
+  gl_Position = M*P[0];EmitVertex();
+  gl_Position = M*P[1];EmitVertex();
   EndPrimitive();
 #endif
 }
@@ -299,17 +310,17 @@ void main(){
       ge::gl::Shader::define("WINDOW_X"  ,(uint32_t)cfg.windowX  ),
       ge::gl::Shader::define("WINDOW_Y"  ,(uint32_t)cfg.windowY  ),
       ge::gl::Shader::define("MIN_Z_BITS",(uint32_t)cfg.minZBits ),
-      ge::gl::Shader::define("NEAR"      ,nnear                  ),
       glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
+      ge::gl::Shader::define("NEAR"      ,nnear                  ),
       ge::gl::Shader::define("FOVY"      ,fovy                   ),
       ge::gl::Shader::define("TILE_X"    ,cfg.tileX              ),
       ge::gl::Shader::define("TILE_Y"    ,cfg.tileY              ),
       ge::gl::Shader::define("WIREFRAME",(int)wireframe),
-
       rssv::configShader,
       rssv::mortonShader,
       rssv::demortonShader,
       gsSrc);
+
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",
       ge::gl::Shader::define("WIREFRAME",(int)wireframe),
@@ -339,31 +350,29 @@ void drawNodePool(vars::Vars&vars){
   auto const levelsToDraw    =  vars.getUint32          ("rssv.method.debug.levelsToDraw"         );
   auto const drawTightAABB   =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
 
-  float zPadding = vars.addOrGetFloat("rssv.method.debug.zPadding",400);
-  auto  drawWithPadding = vars.addOrGetBool("rssv.method.debug.drawWithPadding");
+  auto vao                   =  vars.get<VertexArray>   ("rssv.method.debug.vao"                  );
+  auto prg                   =  vars.get<Program>       ("rssv.method.debug.drawNodePoolProgram"  );
 
-  auto vao = vars.get<VertexArray>("rssv.method.debug.vao");
-
-  auto prg = vars.get<Program>("rssv.method.debug.drawNodePoolProgram");
+  float zPadding             =  vars.addOrGetFloat      ("rssv.method.debug.zPadding",400         );
+  auto  drawWithPadding      =  vars.addOrGetBool       ("rssv.method.debug.drawWithPadding"      );
 
   vao->bind();
   nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
-  prg->use();
   prg
-    ->setMatrix4fv("nodeView"   ,glm::value_ptr(nodeView))
-    ->setMatrix4fv("nodeProj"   ,glm::value_ptr(nodeProj))
-    ->setMatrix4fv("view"       ,glm::value_ptr(view    ))
-    ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
-    ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
+    ->setMatrix4fv("nodeView"       ,glm::value_ptr(nodeView) )
+    ->setMatrix4fv("nodeProj"       ,glm::value_ptr(nodeProj) )
+    ->setMatrix4fv("view"           ,glm::value_ptr(view    ) )
+    ->setMatrix4fv("proj"           ,glm::value_ptr(proj    ) )
+    ->set1ui      ("drawTightAABB"  ,(uint32_t)drawTightAABB  )
     ->set1ui      ("drawWithPadding",(uint32_t)drawWithPadding)
-    ->set1f       ("zPadding"       ,(float)zPadding)
-    ;
+    ->set1f       ("zPadding"       ,(float)zPadding          )
+    ->use();
 
 
   for(uint32_t l=0;l<cfg.nofLevels;++l){
     if((levelsToDraw&(1u<<l)) == 0)continue;
-    prg->set1ui      ("levelToDraw",l);
+    prg->set1ui("levelToDraw",l);
     glDrawArrays(GL_POINTS,0,cfg.nofNodesPerLevel[l]);
   }
 

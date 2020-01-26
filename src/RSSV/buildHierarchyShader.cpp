@@ -234,6 +234,7 @@ void reduce(){
 ).";
 
 std::string const rssv::buildHierarchyShader = R".(
+#line 237
 #ifndef WARP
 #define WARP 64
 #endif//WARP
@@ -259,11 +260,11 @@ std::string const rssv::buildHierarchyShader = R".(
 #endif//MIN_Z_BITS
 
 #ifndef NEAR
-#define NEAR 0.01f
+#define NEAR 1.f
 #endif//NEAR
 
 #ifndef FAR
-#define FAR 1000.f
+#define FAR 100.f
 #endif//FAR
 
 #ifndef FOVY

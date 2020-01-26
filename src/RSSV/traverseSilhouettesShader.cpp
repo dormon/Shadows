@@ -76,6 +76,31 @@ vec4 getClipPlane(in vec4 a,in vec4 b,in vec4 c){
   }
 }
 
+vec4 getPlaneSkala(in vec4 A,in vec4 B,in vec4 C){
+  float x1 = A.x;
+  float x2 = B.x;
+  float x3 = C.x;
+  float y1 = A.y;
+  float y2 = B.y;
+  float y3 = C.y;
+  float z1 = A.z;
+  float z2 = B.z;
+  float z3 = C.z;
+  float w1 = A.w;
+  float w2 = B.w;
+  float w3 = C.w;
+
+  float a =  y1*(z2*w3-z3*w2) - y2*(z1*w3-z3*w1) + y3*(z1*w2-z2*w1);
+  float b = -x1*(z2*w3-z3*w2) + x2*(z1*w3-z3*w1) - x3*(z1*w2-z2*w1);
+  float c =  x1*(y2*w3-y3*w2) - x2*(y1*w3-y3*w1) + x3*(y1*w2-y2*w1);
+  float d = -x1*(y2*z3-y3*z2) + x2*(y1*z3-y3*z1) - x3*(y1*z2-y2*z1);
+  return vec4(a,b,c,d);
+}
+
+#if STORE_EDGE_PLANES == 1
+layout(std430,binding = 7)buffer Debug{uint debug[];};
+#endif
+
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){
     uint res  = multBuffer[job];
@@ -93,32 +118,40 @@ void loadSilhouette(uint job){
 
 
 
-    //edgeAClipSpace /= abs(edgeAClipSpace.w);
-    //edgeBClipSpace /= abs(edgeBClipSpace.w);
-    //lightClipSpace /= abs(lightClipSpace.w);
 
 #if 0
     edgeAClipSpace = projView*vec4(edgeA,1.f);
     edgeBClipSpace = projView*vec4(edgeB,1.f);
     lightClipSpace = projView*lightPosition  ;
 
-    edgePlane = getClipPlane(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
+    //edgeAClipSpace /= abs(edgeAClipSpace.w);
+    //edgeBClipSpace /= abs(edgeBClipSpace.w);
+    //lightClipSpace /= abs(lightClipSpace.w);
 
-    vec3 an = cross(
-          edgePlane.xyz,
-          edgeAClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeAClipSpace.w);
-    aPlane = vec4(an*abs(edgeAClipSpace.w),-dot(an,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
 
-    vec3 bn = cross(
-          edgeBClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeBClipSpace.w,
-          edgePlane.xyz);
-    bPlane = vec4(bn*abs(edgeBClipSpace.w),-dot(bn,edgeBClipSpace.xyz)*sign(edgeBClipSpace.w));
-
-    vec3 abn = cross(
-          edgeBClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*edgeBClipSpace.w,
-          edgePlane.xyz);
-    abPlane = vec4(abn*abs(edgeAClipSpace.w),-dot(abn,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
-
+    #if 1
+        edgePlane = getClipPlane(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
+    
+        vec3 an = cross(
+              edgePlane.xyz,
+              edgeAClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeAClipSpace.w);
+        aPlane = vec4(an*abs(edgeAClipSpace.w),-dot(an,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
+    
+        vec3 bn = cross(
+              edgeBClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeBClipSpace.w,
+              edgePlane.xyz);
+        bPlane = vec4(bn*abs(edgeBClipSpace.w),-dot(bn,edgeBClipSpace.xyz)*sign(edgeBClipSpace.w));
+    
+        vec3 abn = cross(
+              edgeBClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*edgeBClipSpace.w,
+              edgePlane.xyz);
+        abPlane = vec4(abn*abs(edgeAClipSpace.w),-dot(abn,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
+    #else
+      edgePlane = normalize(getPlaneSkala(edgeAClipSpace,edgeBClipSpace,lightClipSpace));
+      aPlane    = normalize(getPlaneSkala(edgeAClipSpace,lightClipSpace,edgeAClipSpace+vec4(edgePlane.xyz,0)));
+      bPlane    = normalize(getPlaneSkala(edgeBClipSpace,edgeBClipSpace+vec4(edgePlane.xyz,0),lightClipSpace));
+      abPlane   = normalize(-getPlaneSkala(edgeAClipSpace,edgeBClipSpace,edgeAClipSpace-vec4(edgePlane.xyz,0)));
+    #endif
 #else
     //mat4 invTran = transpose(inverse(proj*view));
 
@@ -134,6 +167,38 @@ void loadSilhouette(uint job){
     vec3 abn = normalize(cross(edgeB-edgeA,n));
     abPlane = invTran*vec4(abn,-dot(abn,edgeA));
 #endif
+
+#if STORE_EDGE_PLANES == 1
+    uint w = atomicAdd(debug[0],1);
+
+    #if 1
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 0+i] = floatBitsToUint(edgePlane[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 4+i] = floatBitsToUint(   aPlane[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 8+i] = floatBitsToUint(   bPlane[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+12+i] = floatBitsToUint(  abPlane[i]);
+    #else
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 0+i] = floatBitsToUint(edgeAClipSpace[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 4+i] = floatBitsToUint(edgeBClipSpace[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 8+i] = floatBitsToUint(lightClipSpace[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+12+i] = floatBitsToUint(lightClipSpace[i]);
+
+    #endif
+#endif
+    
 
     edgeMult = mult;
   }

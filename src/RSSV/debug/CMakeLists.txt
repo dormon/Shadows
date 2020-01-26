@@ -9,6 +9,8 @@ add_library(${PROJECT_NAME} OBJECT
   drawDebug.h
   dumpData.cpp
   dumpData.h
+  dumpSamples.cpp
+  dumpSamples.h
   drawSamples.cpp
   drawSamples.h
   drawNodePool.cpp
