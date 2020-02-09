@@ -132,14 +132,17 @@ out vec3 gNormal;
 
 flat in uint vId[];
 
-layout(binding=0)buffer NodePool{uint nodePool[];};
-layout(binding=1)buffer AABBPool{float aabbPool[];};
+layout(binding=0,std430)buffer NodePool   {uint  nodePool   [];};
+layout(binding=1,std430)buffer AABBPool   {float aabbPool   [];};
+layout(binding=2,std430)buffer AABBPointer{uint  aabbPointer[];};
 
 uniform mat4 view;
 uniform mat4 proj;
 
 uniform mat4 nodeView;
 uniform mat4 nodeProj;
+
+uniform int memoryOptim = 0;
 
 #line 122
 uniform uint levelToDraw = 0;
@@ -193,12 +196,22 @@ void main(){
     uint doesNodeExist = nodePool[nodeLevelOffsetInUints[clamp(levelToDraw,0u,5u)]+node*uintsPerWarp+uint(bit>31u)]&(1u<<(bit&0x1fu));
     if(doesNodeExist == 0)return;
 
-    mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+0];
-    mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+1];
-    mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+2];
-    mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+3];
-    mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+4];
-    mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+5];
+    if(memoryOptim == 1){
+      uint w = aabbPointer[nodeLevelOffset[clamp(levelToDraw,0u,5u)]+gId+1];
+      mminX = aabbPool[w*floatsPerAABB+0];
+      mmaxX = aabbPool[w*floatsPerAABB+1];
+      mminY = aabbPool[w*floatsPerAABB+2];
+      mmaxY = aabbPool[w*floatsPerAABB+3];
+      mminZ = aabbPool[w*floatsPerAABB+4];
+      mmaxZ = aabbPool[w*floatsPerAABB+5];
+    }else{
+      mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+0];
+      mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+1];
+      mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+2];
+      mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+3];
+      mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+4];
+      mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+5];
+    }
 
     startX = -1.f + xyz.x*levelTileSizeClipSpace[nofLevels-1].x;
     startY = -1.f + xyz.y*levelTileSizeClipSpace[nofLevels-1].y;
@@ -231,12 +244,23 @@ void main(){
     if(doesNodeExist == 0)return;
 
     uint aabbNode = (mor >> (warpBits*(nofLevels-1-levelToDraw)));
-    mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+0];
-    mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+1];
-    mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+2];
-    mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+3];
-    mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+4];
-    mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+5];
+
+    if(memoryOptim == 1){
+      uint w = aabbPointer[nodeLevelOffset[clamp(levelToDraw,0u,5u)]+aabbNode+1];
+      mminX = aabbPool[w*floatsPerAABB+0];
+      mmaxX = aabbPool[w*floatsPerAABB+1];
+      mminY = aabbPool[w*floatsPerAABB+2];
+      mmaxY = aabbPool[w*floatsPerAABB+3];
+      mminZ = aabbPool[w*floatsPerAABB+4];
+      mmaxZ = aabbPool[w*floatsPerAABB+5];
+    }else{
+      mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+0];
+      mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+1];
+      mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+2];
+      mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+3];
+      mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+4];
+      mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+aabbNode*floatsPerAABB+5];
+    }
 
     startZ = CLUSTER_TO_Z((z  )<<levelTileBits[levelToDraw].z);
     endZ   = CLUSTER_TO_Z((z+1)<<levelTileBits[levelToDraw].z);
@@ -389,6 +413,7 @@ void drawNodePool(vars::Vars&vars){
   auto const proj           = *vars.get<glm::mat4>     ("sintorn2.method.debug.projectionMatrix"     );
   auto const levelsToDraw   =  vars.getUint32          ("sintorn2.method.debug.levelsToDraw"         );
   auto const drawTightAABB  =  vars.getBool            ("sintorn2.method.debug.drawTightAABB"        );
+  auto const memoryOptim    =  vars.getInt32           ("sintorn2.method.debug.dump.memoryOptim"     );
 
   auto vao = vars.get<VertexArray>("sintorn2.method.debug.vao");
 
@@ -398,7 +423,15 @@ void drawNodePool(vars::Vars&vars){
   vao->bind();
   nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+
   prg->use();
+
+  if(memoryOptim){
+    auto aabbPointer = vars.get<Buffer>("sintorn2.method.debug.dump.aabbPointer");
+    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+    prg->set1i("memoryOptim",memoryOptim);
+  }
+
   prg
     ->setMatrix4fv("nodeView"   ,glm::value_ptr(nodeView))
     ->setMatrix4fv("nodeProj"   ,glm::value_ptr(nodeProj))

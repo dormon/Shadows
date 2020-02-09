@@ -48,6 +48,7 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"sintorn2.param.ffc"
       ,"sintorn2.param.noAABB"
       ,"sintorn2.param.storeTraverseStat"
+      ,"sintorn2.param.memoryOptim"
       ,"args.camera.near"
       ,"args.camera.far"
       ,"args.camera.fovy"
@@ -66,6 +67,7 @@ void createRasterizeProgram(vars::Vars&vars){
   auto const ffc                 =  vars.getInt32           ("sintorn2.param.ffc"               );
   auto const noAABB              =  vars.getInt32           ("sintorn2.param.noAABB"            );
   auto const storeTraverseStat   =  vars.getBool            ("sintorn2.param.storeTraverseStat" );
+  auto const memoryOptim         =  vars.getInt32           ("sintorn2.param.memoryOptim"       );
   auto const nnear               =  vars.getFloat           ("args.camera.near"                 );
   auto const ffar                =  vars.getFloat           ("args.camera.far"                  );
   auto const fovy                =  vars.getFloat           ("args.camera.fovy"                 );
@@ -90,6 +92,8 @@ void createRasterizeProgram(vars::Vars&vars){
         Shader::define("SAVE_COLLISION"     ,(int)1),
 #endif
         Shader::define("STORE_TRAVERSE_STAT",(int)storeTraverseStat),
+        Shader::define("MEMORY_OPTIM"       ,(int)memoryOptim      ),
+
         Shader::define("NEAR"      ,nnear                  ),
         glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
         Shader::define("FOVY"      ,fovy                   ),
@@ -135,13 +139,14 @@ void sintorn2::rasterize(vars::Vars&vars){
   createJobCounter(vars);
   createDebugTraverseBuffers(vars);
 
-  auto prg        = vars.get<Program>("sintorn2.method.rasterizeProgram");
-  auto nodePool   = vars.get<Buffer >("sintorn2.method.nodePool"        );
-  auto aabbPool   = vars.get<Buffer >("sintorn2.method.aabbPool"        );
-  auto sf         = vars.get<Buffer >("sintorn2.method.shadowFrusta"    );
-  auto jobCounter = vars.get<Buffer >("sintorn2.method.jobCounter"      );
-  auto depth      = vars.get<GBuffer>("gBuffer")->depth;
-  auto shadowMask = vars.get<Texture>("shadowMask");
+  auto prg         = vars.get<Program>("sintorn2.method.rasterizeProgram");
+  auto nodePool    = vars.get<Buffer >("sintorn2.method.nodePool"        );
+  auto aabbPool    = vars.get<Buffer >("sintorn2.method.aabbPool"        );
+  auto sf          = vars.get<Buffer >("sintorn2.method.shadowFrusta"    );
+  auto jobCounter  = vars.get<Buffer >("sintorn2.method.jobCounter"      );
+  auto depth       = vars.get<GBuffer>("gBuffer")->depth;
+  auto shadowMask  = vars.get<Texture>("shadowMask");
+  auto memoryOptim = vars.getInt32    ("sintorn2.param.memoryOptim"      );
 
 
   jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
@@ -152,6 +157,11 @@ void sintorn2::rasterize(vars::Vars&vars){
   jobCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   depth     ->bind(0);
   shadowMask->bindImage(1);
+
+  if(memoryOptim){
+    auto aabbPointer = vars.get<Buffer>("sintorn2.method.aabbPointer");
+    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+  }
 
   float data[1] = {1.f};
   vars.get<ge::gl::Texture>("shadowMask")->clear(0,GL_RED,GL_FLOAT,data);

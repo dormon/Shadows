@@ -41,6 +41,10 @@ layout(std430,binding=1)buffer AABBPool    {float aabbPool    [];};
 layout(std430,binding=2)buffer ShadowFrusta{float shadowFrusta[];};
 layout(std430,binding=3)buffer JobCounter  {uint  jobCounter  [];};
 
+#if MEMORY_OPTIM == 1
+layout(std430,binding=5)buffer AABBPointer {uint  aabbPointer [];};
+#endif
+
 layout(     binding=0)          uniform sampler2DRect depthTexture;
 layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
 
@@ -234,12 +238,22 @@ void traverse(){
 
         vec3 minCorner;
         vec3 aabbSize;
+#if MEMORY_OPTIM == 1
+        uint w = aabbPool[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationID + 1];
+        minCorner[0] = aabbPool[w*6u + 0u]             ;
+        minCorner[1] = aabbPool[w*6u + 2u]             ;
+        minCorner[2] = aabbPool[w*6u + 4u]             ;
+        aabbSize [0] = aabbPool[w*6u + 1u]-minCorner[0];
+        aabbSize [1] = aabbPool[w*6u + 3u]-minCorner[1];
+        aabbSize [2] = aabbPool[w*6u + 5u]-minCorner[2];
+#else
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
         minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
         aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
         aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
         aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+#endif
 
         status = trivialRejectAccept(minCorner,aabbSize);
       }
@@ -382,12 +396,25 @@ void traverse(){
 
         // */
 #else
+
+
+#if MEMORY_OPTIM == 1
+        uint w = aabbPool[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationID + 1];
+        minCorner[0] = aabbPool[w*6u + 0u]             ;
+        minCorner[1] = aabbPool[w*6u + 2u]             ;
+        minCorner[2] = aabbPool[w*6u + 4u]             ;
+        aabbSize [0] = aabbPool[w*6u + 1u]-minCorner[0];
+        aabbSize [1] = aabbPool[w*6u + 3u]-minCorner[1];
+        aabbSize [2] = aabbPool[w*6u + 5u]-minCorner[2];
+#else
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
         minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
         aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
         aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
         aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+#endif
+
 #endif
 
 

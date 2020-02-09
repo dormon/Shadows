@@ -20,6 +20,7 @@ void sintorn2::loadParams(
   vars.addInt32 ("sintorn2.param.morePlanes"             ) = c->geti32   ("morePlanes"        ,1   ,"additional frustum planes"                                                       );
   vars.addInt32 ("sintorn2.param.ffc"                    ) = c->geti32   ("ffc"               ,1   ,"active front face culling"                                                       );
   vars.addInt32 ("sintorn2.param.noAABB"                 ) = c->geti32   ("noAABB"            ,0   ,"no tight aabb"                                                                   );
+  vars.addInt32 ("sintorn2.param.memoryOptim"            ) = c->geti32   ("memoryOptim"       ,0   ,"apply memory optimization"                                                       );
 
   vars.addBool  ("sintorn2.param.storeTraverseStat");
 
