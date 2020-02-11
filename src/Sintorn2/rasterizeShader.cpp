@@ -239,7 +239,7 @@ void traverse(){
         vec3 minCorner;
         vec3 aabbSize;
 #if MEMORY_OPTIM == 1
-        uint w = aabbPool[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationID + 1];
+        uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
         minCorner[0] = aabbPool[w*6u + 0u]             ;
         minCorner[1] = aabbPool[w*6u + 2u]             ;
         minCorner[2] = aabbPool[w*6u + 4u]             ;
@@ -399,7 +399,7 @@ void traverse(){
 
 
 #if MEMORY_OPTIM == 1
-        uint w = aabbPool[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationID + 1];
+        uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
         minCorner[0] = aabbPool[w*6u + 0u]             ;
         minCorner[1] = aabbPool[w*6u + 2u]             ;
         minCorner[2] = aabbPool[w*6u + 4u]             ;

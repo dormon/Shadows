@@ -98,11 +98,14 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
 
   propagateAABB(vars);
 
+#define PRINT_NUMBER_OF_NODES 0
+
+#if PRINT_NUMBER_OF_NODES == 1
   auto aabbPointer = vars.get<Buffer>("sintorn2.method.aabbPointer");
   uint32_t nofAABB = 0;
   aabbPointer->getData(&nofAABB,sizeof(nofAABB));
-  std::cerr << "nofAABB: " << nofAABB << std::endl;
-
+  std::cerr << "nofAABB: " << nofAABB << " / " << cfg.clustersX*cfg.clustersY*vars.getUint32("sintorn2.param.memoryFactor") << std::endl;
+#endif
 
 
 #if 0

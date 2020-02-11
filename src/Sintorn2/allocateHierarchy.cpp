@@ -18,10 +18,12 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
   FUNCTION_PROLOGUE("sintorn2.method"
       ,"sintorn2.method.config"
       ,"sintorn2.param.memoryOptim"
+      ,"sintorn2.param.memoryFactor"
       );
 
-  auto cfg         = *vars.get<Config>("sintorn2.method.config"     );
-  auto memoryOptim =  vars.getInt32   ("sintorn2.param.memoryOptim" );
+  auto cfg          = *vars.get<Config>("sintorn2.method.config"     );
+  auto memoryOptim  =  vars.getInt32   ("sintorn2.param.memoryOptim" );
+  auto memoryFactor =  vars.getUint32  ("sintorn2.param.memoryFactor"); 
 
   vars.reCreate<Buffer>("sintorn2.method.nodePool"        ,cfg.nodesSize                   );
   vars.reCreate<Buffer>("sintorn2.method.levelNodeCounter",cfg.nofLevels*sizeof(uint32_t)*4);
@@ -29,8 +31,8 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
   vars.reCreate<Buffer>("sintorn2.method.debugBuffer"     ,cfg.nofNodes *sizeof(uint32_t)  );
 
   if(memoryOptim){
-    vars.reCreate<Buffer>("sintorn2.method.aabbPointer",sizeof(uint32_t)*(1+cfg.nofNodes)  );
-    vars.reCreate<Buffer>("sintorn2.method.aabbPool"   ,cfg.aabbsSize                      );
+    vars.reCreate<Buffer>("sintorn2.method.aabbPointer",sizeof(uint32_t)*(1+cfg.nofNodes)       );
+    vars.reCreate<Buffer>("sintorn2.method.aabbPool"   ,sizeof(float)*cfg.floatsPerAABB*cfg.clustersX*cfg.clustersY*memoryFactor);
   }else{
     vars.erase           ("sintorn2.method.aabbPointer"              );
     vars.reCreate<Buffer>("sintorn2.method.aabbPool"   ,cfg.aabbsSize);
