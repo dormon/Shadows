@@ -48,6 +48,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"args.camera.far"
       ,"args.camera.fovy"
       ,"rssv.method.alignedNofEdges"
+      ,"rssv.param.memoryOptim"
       );
 
   auto const wavefrontSize                =  vars.getSizeT       ("wavefrontSize"                          );
@@ -62,6 +63,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const ffar                         =  vars.getFloat       ("args.camera.far"                        );
   auto const fovy                         =  vars.getFloat       ("args.camera.fovy"                       );
   auto const alignedNofEdges              =  vars.getUint32      ("rssv.method.alignedNofEdges"            );
+  auto const memoryOptim                  =  vars.getInt32       ("rssv.param.memoryOptim"                 );
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
@@ -79,6 +81,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
         Shader::define("FOVY"      ,fovy                   ),
         Shader::define("ALIGNED_NOF_EDGES",alignedNofEdges),
+        Shader::define("MEMORY_OPTIM"       ,(int)memoryOptim      ),
         ballotSrc,
         rssv::configShader,
         rssv::demortonShader,
@@ -135,6 +138,7 @@ void traverseSilhouettes(vars::Vars&vars){
   auto silhouetteCounter = vars.get<Buffer >("rssv.method.silhouetteCounter"    );
   auto bridges           = vars.get<Buffer >("rssv.method.bridges"              );
   auto stencil           = vars.get<Texture>("rssv.method.stencil"              );
+  auto memoryOptim       = vars.getInt32    ("rssv.param.memoryOptim"           );
 
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
@@ -151,6 +155,11 @@ void traverseSilhouettes(vars::Vars&vars){
   multBuffer       ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   silhouetteCounter->bindBase(GL_SHADER_STORAGE_BUFFER,5);
   bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
+
+  if(memoryOptim){
+    auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
+    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,7);//TODO DEBUG????
+  }
 
   //std::vector<uint32_t>sil;
   //multBuffer->getData(sil);

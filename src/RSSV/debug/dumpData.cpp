@@ -28,6 +28,17 @@ void dumpNodePool(vars::Vars&vars){
   buf->copy(*nodePool);
 }
 
+void dumpAABBPointer(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto memoryOptim = vars.getInt32("rssv.param.memoryOptim");
+  if(!memoryOptim)return;
+
+  auto toBackup = vars.get<Buffer>("rssv.method.aabbPointer");
+  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPointer",toBackup->getSize());
+  buf->copy(*toBackup);
+}
+
+
 void dumpAABBPool(vars::Vars&vars){
   FUNCTION_CALLER();
   auto aabbPool = vars.get<Buffer>("rssv.method.aabbPool");
@@ -74,14 +85,17 @@ void dumpBasic(vars::Vars&vars){
 
   auto cfg       = *vars.get<Config>("rssv.method.config");
 
+  auto memoryOptim = vars.getInt32("rssv.param.memoryOptim");
 
-  vars.reCreate<glm::vec4 >("rssv.method.debug.dump.lightPosition"   ,lp   );
-  vars.reCreate<glm::mat4 >("rssv.method.debug.dump.viewMatrix"      ,vm   );
-  vars.reCreate<glm::mat4 >("rssv.method.debug.dump.projectionMatrix",pm   );
-  vars.reCreate<float     >("rssv.method.debug.dump.near"            ,nnear);
-  vars.reCreate<float     >("rssv.method.debug.dump.far"             ,ffar );
-  vars.reCreate<float     >("rssv.method.debug.dump.fovy"            ,fovy );
-  vars.reCreate<Config    >("rssv.method.debug.dump.config"          ,cfg  ); 
+
+  vars.reCreate<glm::vec4 >("rssv.method.debug.dump.lightPosition"   ,lp         );
+  vars.reCreate<glm::mat4 >("rssv.method.debug.dump.viewMatrix"      ,vm         );
+  vars.reCreate<glm::mat4 >("rssv.method.debug.dump.projectionMatrix",pm         );
+  vars.reCreate<float     >("rssv.method.debug.dump.near"            ,nnear      );
+  vars.reCreate<float     >("rssv.method.debug.dump.far"             ,ffar       );
+  vars.reCreate<float     >("rssv.method.debug.dump.fovy"            ,fovy       );
+  vars.reCreate<Config    >("rssv.method.debug.dump.config"          ,cfg        ); 
+  vars.reCreate<int       >("rssv.method.debug.dump.memoryOptim"     ,memoryOptim);
 }
 
 void dumpTraversePlanes(vars::Vars&vars){

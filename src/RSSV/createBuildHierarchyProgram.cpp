@@ -27,6 +27,7 @@ void rssv::createBuildHierarchyProgram(vars::Vars&vars){
       ,"rssv.param.tileY"   
       ,"rssv.param.usePadding"   
       ,"rssv.param.discardBackfacing"
+      ,"rssv.param.memoryOptim"
       );
 
   auto const wavefrontSize     =  vars.getSizeT       ("wavefrontSize"               );
@@ -39,6 +40,7 @@ void rssv::createBuildHierarchyProgram(vars::Vars&vars){
   auto const tileY             =  vars.getUint32      ("rssv.param.tileY"            );
   auto const usePadding        =  vars.getUint32      ("rssv.param.usePadding"       );
   auto const discardBackfacing =  vars.getUint32      ("rssv.param.discardBackfacing");
+  auto const memoryOptim       =  vars.getInt32       ("rssv.param.memoryOptim"      );
 
 #define PRINT(x) std::cerr << #x ": " << x << std::endl
 
@@ -63,6 +65,7 @@ void rssv::createBuildHierarchyProgram(vars::Vars&vars){
         ge::gl::Shader::define("TILE_Y"             ,tileY                  ),
         ge::gl::Shader::define("USE_PADDING"        ,(int)usePadding        ),
         ge::gl::Shader::define("DISCARD_BACK_FACING",(int)discardBackfacing ),
+        ge::gl::Shader::define("MEMORY_OPTIM"       ,(int)memoryOptim       ),
         ballotSrc,
         rssv::configShader,
         rssv::mortonShader,

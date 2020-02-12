@@ -103,6 +103,7 @@ void rssv::drawDebug(vars::Vars&vars){
         rssv::debug::dumpBasic(vars);
         rssv::debug::dumpNodePool(vars);
         rssv::debug::dumpAABBPool(vars);
+        rssv::debug::dumpAABBPointer(vars);
       }
 
       if(ImGui::MenuItem("drawNodePool")){

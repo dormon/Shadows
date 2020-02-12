@@ -126,9 +126,10 @@ void dumpSF(vars::Vars&vars){
 }
 
 void dumpAABBPointer(vars::Vars&vars){
+  FUNCTION_CALLER();
   auto memoryOptim = vars.getInt32("sintorn2.param.memoryOptim");
   if(!memoryOptim)return;
-  FUNCTION_CALLER();
+
   auto toBackup = vars.get<Buffer>("sintorn2.method.aabbPointer");
   auto buf = vars.reCreate<Buffer>("sintorn2.method.debug.dump.aabbPointer",toBackup->getSize());
   buf->copy(*toBackup);

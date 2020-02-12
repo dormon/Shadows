@@ -24,6 +24,8 @@ void rssv::loadParams(
   vars.addUint32("rssv.param.extractSilhouettesWGS"  ) = c->getu32   ("extractSilhouettesWGS",64  ,"extract silhouettes work groups size"                                            );
   vars.addUint32("rssv.param.usePadding"             ) = c->getu32   ("usePadding"           ,1   ,"increase aabb size by half of a pixel"                                           );
   vars.addUint32("rssv.param.discardBackfacing"      ) = c->getu32   ("discardBackfacing"    ,1   ,"discard light backfacing fragments"                                              );
+  vars.addInt32 ("rssv.param.memoryOptim"            ) = c->geti32   ("memoryOptim"          ,0   ,"apply memory optimization"                                                       );
+  vars.addUint32("rssv.param.memoryFactor"           ) = c->getu32   ("memoryFactor"         ,10  ,"memory optimization - this value is average number of nodes per screen tile"     );
 
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat");
   vars.addBool  ("rssv.param.storeEdgePlanes"             );

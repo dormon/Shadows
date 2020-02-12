@@ -41,8 +41,8 @@ void RSSV::create(glm::vec4 const& lightPosition,
   ifExistStamp("extractSilhouettes");
   rssv::buildHierarchy(vars);
   ifExistStamp("buildHierarchy");
-  rssv::traverseSilhouettes(vars);
-  ifExistStamp("traverseSilhouettes");
+  //rssv::traverseSilhouettes(vars);
+  //ifExistStamp("traverseSilhouettes");
   //rssv::rasterize(vars);
   //ifExistStamp("rasterize");
   //rssv::merge(vars);

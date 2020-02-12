@@ -26,15 +26,16 @@ void rssv::buildHierarchy(vars::Vars&vars){
   rssv::allocateHierarchy(vars);
   rssv::createBuildHierarchyProgram(vars);
   //exit(0);
-  auto gBuffer           =  vars.get<GBuffer>("gBuffer");
+  auto gBuffer           =  vars.get<GBuffer>("gBuffer"                          );
   auto prg               =  vars.get<Program>("rssv.method.buildHierarchyProgram");
-  auto nodePool          =  vars.get<Buffer >("rssv.method.nodePool");
-  auto aabbPool          =  vars.get<Buffer >("rssv.method.aabbPool");
-  auto levelNodeCounter  =  vars.get<Buffer >("rssv.method.levelNodeCounter");
-  auto activeNodes       =  vars.get<Buffer >("rssv.method.activeNodes");
-  auto discardBackfacing =  vars.getUint32   ("rssv.param.discardBackfacing");
+  auto nodePool          =  vars.get<Buffer >("rssv.method.nodePool"             );
+  auto aabbPool          =  vars.get<Buffer >("rssv.method.aabbPool"             );
+  auto levelNodeCounter  =  vars.get<Buffer >("rssv.method.levelNodeCounter"     );
+  auto activeNodes       =  vars.get<Buffer >("rssv.method.activeNodes"          );
+  auto discardBackfacing =  vars.getUint32   ("rssv.param.discardBackfacing"     );
+  auto memoryOptim       =  vars.getInt32    ("rssv.param.memoryOptim"           );
 
-  auto cfg               = *vars.get<Config >("rssv.method.config");
+  auto cfg               = *vars.get<Config >("rssv.method.config"               );
 
   auto depth             =  gBuffer->depth;
 
@@ -48,6 +49,12 @@ void rssv::buildHierarchy(vars::Vars&vars){
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   
   depth->bind(1);
+
+  if(memoryOptim){
+    auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
+    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+    ge::gl::glClearNamedBufferSubData(aabbPointer->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+  }
   
   prg->use();
 

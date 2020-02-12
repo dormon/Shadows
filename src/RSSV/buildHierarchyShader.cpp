@@ -49,6 +49,10 @@ layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
 layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 
+#if MEMORY_OPTIM == 1
+layout(std430,binding=5)buffer AABBPointer     {uint  aabbPointer     [];};
+#endif
+
 layout(binding=1)uniform sampler2DRect depthTexture;
 
 #if DISCARD_BACK_FACING == 1
@@ -182,10 +186,24 @@ void compute(uvec2 coord,uvec2 coord2){
 
       reduce();
 
+#if MEMORY_OPTIM == 1
+      if(gl_LocalInvocationIndex==0){
+        uint w = atomicAdd(aabbPointer[0],1);
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPointer[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)]+node+1] = w;
+        aabbPool[w*6+0] = reductionArray[0];
+        aabbPool[w*6+1] = reductionArray[1];
+        aabbPool[w*6+2] = reductionArray[2];
+        aabbPool[w*6+3] = reductionArray[3];
+        aabbPool[w*6+4] = reductionArray[4];
+        aabbPool[w*6+5] = reductionArray[5];
+      }
+#else
       if(gl_LocalInvocationIndex < floatsPerAABB){
         uint node = (referenceMorton >> (warpBits*0u));
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
       }
+#endif
 
       notDone[0] ^= sameCluster[0];
       notDone[1] ^= sameCluster[1];
@@ -238,6 +256,42 @@ void compute(uvec2 coord,uvec2 coord2){
 
       reduce();
 
+
+#if MEMORY_OPTIM == 1
+      if(gl_LocalInvocationIndex==0){
+        uint w = atomicAdd(aabbPointer[0],1);
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPointer[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)]+node+1] = w;
+#if USE_PADDING == 1
+        float aaa = (CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5]))+1) - CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5])))) / 32.f + CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5])));
+        float bbb = CLUSTER_TO_Z(QUANTIZE_Z(DEPTH_TO_Z(reductionArray[5])));
+        float ppp = Z_TO_DEPTH(aaa) - Z_TO_DEPTH(bbb);
+
+        const float size[6] = {
+          -0.5f/float(WINDOW_X),
+          +0.5f/float(WINDOW_X),
+          -0.5f/float(WINDOW_Y),
+          +0.5f/float(WINDOW_Y),
+          -ppp,
+          +ppp,
+        };
+
+        aabbPool[w*6+0] = reductionArray[0] + size[0];
+        aabbPool[w*6+1] = reductionArray[1] + size[1];
+        aabbPool[w*6+2] = reductionArray[2] + size[2];
+        aabbPool[w*6+3] = reductionArray[3] + size[3];
+        aabbPool[w*6+4] = reductionArray[4] + size[4];
+        aabbPool[w*6+5] = reductionArray[5] + size[5];
+#else
+        aabbPool[w*6+0] = reductionArray[0];
+        aabbPool[w*6+1] = reductionArray[1];
+        aabbPool[w*6+2] = reductionArray[2];
+        aabbPool[w*6+3] = reductionArray[3];
+        aabbPool[w*6+4] = reductionArray[4];
+        aabbPool[w*6+5] = reductionArray[5];
+#endif
+      }
+#else
       if(gl_LocalInvocationIndex < floatsPerAABB){
         uint node = (referenceMorton >> (warpBits*0u));
 #if USE_PADDING == 1
@@ -259,6 +313,10 @@ void compute(uvec2 coord,uvec2 coord2){
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
 #endif
       }
+
+#endif
+
+
 
       notDone ^= sameCluster;
       counter++;

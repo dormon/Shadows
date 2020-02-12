@@ -32,6 +32,10 @@ layout(std430,binding=4)buffer MultBuffer        {uint  multBuffer       [];};
 layout(std430,binding=5)buffer SilhouetteCounter {uint  silhouetteCounter[];};
 layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
 
+#if MEMORY_OPTIM == 1
+layout(std430,binding=7)buffer AABBPointer {uint  aabbPointer [];};///TODO DEBUG???
+#endif
+
 layout(     binding=0)          uniform sampler2DRect depthTexture;
 layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
 layout(r32i,binding=2)          uniform iimage2D      stencil     ;
@@ -291,14 +295,24 @@ void traverse(){
 
         // */
 #else
-        vec3 minCorner;
-        vec3 maxCorner;
+
+#if MEMORY_OPTIM == 1
+        uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
+        minCorner[0] = aabbPool[w*6u + 0u]             ;
+        minCorner[1] = aabbPool[w*6u + 2u]             ;
+        minCorner[2] = aabbPool[w*6u + 4u]             ;
+        aabbSize [0] = aabbPool[w*6u + 1u]-minCorner[0];
+        aabbSize [1] = aabbPool[w*6u + 3u]-minCorner[1];
+        aabbSize [2] = aabbPool[w*6u + 5u]-minCorner[2];
+#else
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
-        maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
-        maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
         minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
-        maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+        aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
+        aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
+        aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+#endif
+
 #endif
 
         vec3 tr;
