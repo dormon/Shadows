@@ -11,6 +11,7 @@
 
 #include <RSSV/createBuildHierarchyProgram.h>
 #include <RSSV/buildHierarchyShader.h>
+#include <RSSV/reduceShader.h>
 #include <RSSV/mortonShader.h>
 #include <RSSV/configShader.h>
 

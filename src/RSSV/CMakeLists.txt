@@ -19,6 +19,8 @@ add_library(${PROJECT_NAME} STATIC
   buildHierarchy.h
   buildHierarchyShader.cpp
   buildHierarchyShader.h
+  reduceShader.cpp
+  reduceShader.h
   depthToZShader.cpp
   depthToZShader.h
   quantizeZShader.cpp

@@ -3,5 +3,5 @@
 #include<iostream>
 
 namespace rssv{
-extern std::string const  buildHierarchyShader;
+extern std::string const  reduceShader;
 }
