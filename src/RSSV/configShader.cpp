@@ -89,29 +89,29 @@ const uint twoLongest[] = {
   2==shortestAxis?1u:2u,
 };
 
-#ifdef FAR_IS_INFINITE
-const float maxZOfHierarchy = (NEAR * exp((1<<MIN_Z_BITS)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)));
-const float z2ScaledZFactor = (maxZOfHierarchy-NEAR) / (10000.f-NEAR);
-const float scaledZ2ZFactor = (10000.f-NEAR) / (maxZOfHierarchy-NEAR);
-#else
-const float maxZOfHierarchy = (NEAR * exp((1<<MIN_Z_BITS)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)));
-const float z2ScaledZFactor = (maxZOfHierarchy-NEAR) / (FAR-NEAR);
-const float scaledZ2ZFactor = (FAR-NEAR) / (maxZOfHierarchy-NEAR);
-#endif
+#define CPTSV_QUANTIZATION(z)   clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
+#define CPTSV_DEQUANTIZATION(i) (-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)))
 
 #if SCALED_QUANTIZATION == 1
+  const float maxZOfHierarchy = -CPTSV_DEQUANTIZATION(clustersZ);
+  
+  #ifdef FAR_IS_INFINITE
+    #define SCALED_QUANTIZATION_FAR 10000.f
+  #else
+    #define SCALED_QUANTIZATION_FAR FAR
+  #endif
 
-#define ORIGINAL_Z_TO_SCALED_Z(z) (((z)+NEAR)*z2ScaledZFactor-NEAR)
-#define SCALED_Z_TO_ORIGINAL_Z(z) (((z)+NEAR)*scaledZ2ZFactor-NEAR)
+  const float z2ScaledZFactor = (maxZOfHierarchy-NEAR) / (SCALED_QUANTIZATION_FAR-NEAR);
+  const float scaledZ2ZFactor = (SCALED_QUANTIZATION_FAR-NEAR) / (maxZOfHierarchy-NEAR);
 
-#define QUANTIZE_Z(z) clamp(uint(log(-ORIGINAL_Z_TO_SCALED_Z(z)/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
-#define CLUSTER_TO_Z(i) SCALED_Z_TO_ORIGINAL_Z((-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY))))
+  #define ORIGINAL_Z_TO_SCALED_Z(z) (((z)+NEAR)*z2ScaledZFactor-NEAR)
+  #define SCALED_Z_TO_ORIGINAL_Z(z) (((z)+NEAR)*scaledZ2ZFactor-NEAR)
 
+  #define QUANTIZE_Z(z)   CPTSV_QUANTIZATION(ORIGINAL_Z_TO_SCALED_Z(z))  
+  #define CLUSTER_TO_Z(i) SCALED_Z_TO_ORIGINAL_Z(CPTSV_DEQUANTIZATION(i))
 #else
-
-#define QUANTIZE_Z(z) clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
-#define CLUSTER_TO_Z(i) (-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)))
-
+  #define QUANTIZE_Z(z)   CPTSV_QUANTIZATION(z)
+  #define CLUSTER_TO_Z(i) CPTSV_DEQUANTIZATION(i)
 #endif
 
 // | 2n/(R-L)  0          (R+L)/(R-L)  0          |   |x|
