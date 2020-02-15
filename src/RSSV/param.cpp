@@ -24,10 +24,12 @@ void rssv::loadParams(
   vars.addUint32("rssv.param.discardBackfacing"      ) = c->getu32   ("discardBackfacing"    ,1   ,"discard light backfacing fragments"                                              );
   vars.addInt32 ("rssv.param.memoryOptim"            ) = c->geti32   ("memoryOptim"          ,0   ,"apply memory optimization"                                                       );
   vars.addUint32("rssv.param.memoryFactor"           ) = c->getu32   ("memoryFactor"         ,10  ,"memory optimization - this value is average number of nodes per screen tile"     );
+  vars.addInt32 ("rssv.param.scaledQuantization"     ) = c->geti32   ("scaledQuantization"   ,0   ,"fix CPTSV quantization"                                                          );
 
+  vars.addInt32 ("rssv.param.mergedBuffers"               ,1);
+
+  //FOR DEBUG
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat"  );
   vars.addBool  ("rssv.param.storeEdgePlanes"               );
-  vars.addInt32 ("rssv.param.mergedBuffers"               ,1);
-  vars.addInt32 ("rssv.param.scaledQuantization"          ,0);
 
 }
