@@ -177,14 +177,22 @@ const uint halfWarp        = WARP / 2u;
 const uint halfWarpMask    = uint(halfWarp - 1u);
 
 const uint nodesPerLevel[6] = {
-  1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
+  (1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)))*uint(nofLevels>=1u),
+  (1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)))*uint(nofLevels>=2u),
+  (1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)))*uint(nofLevels>=3u),
+  (1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)))*uint(nofLevels>=4u),
+  (1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)))*uint(nofLevels>=5u),
+  (1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)))*uint(nofLevels>=6u),
 };
 #line 70
+
+const uint nofNodes = 
+  nodesPerLevel[0] + 
+  nodesPerLevel[1] + 
+  nodesPerLevel[2] + 
+  nodesPerLevel[3] + 
+  nodesPerLevel[4] + 
+  nodesPerLevel[5] ;
 
 const uint nodeLevelOffset[6] = {
   0,
@@ -196,13 +204,21 @@ const uint nodeLevelOffset[6] = {
 };
 
 const uint nodeLevelSizeInUints[6] = {
-  max(nodesPerLevel[0] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[1] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[2] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[3] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[4] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[5] >> warpBits,1u) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[0],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[1],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[2],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[3],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[4],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[5],WARP) * uintsPerWarp,
 };
+
+const uint nodeBufferSizeInUints = 
+  nodeLevelSizeInUints[0] + 
+  nodeLevelSizeInUints[1] + 
+  nodeLevelSizeInUints[2] + 
+  nodeLevelSizeInUints[3] + 
+  nodeLevelSizeInUints[4] + 
+  nodeLevelSizeInUints[5] ; 
 
 const uint nodeLevelOffsetInUints[6] = {
   0,
@@ -221,6 +237,18 @@ const uint aabbLevelSizeInFloats[6] = {
   nodesPerLevel[4] * floatsPerAABB,
   nodesPerLevel[5] * floatsPerAABB,
 };
+
+#if MEMORY_OPTIM == 1
+const uint aabbBufferSizeInFloats = clustersX * clustersY * floatsPerAABB * MEMORY_FACTOR;
+#else
+const uint aabbBufferSizeInFloats = 
+  aabbLevelSizeInFloats[0] + 
+  aabbLevelSizeInFloats[1] + 
+  aabbLevelSizeInFloats[2] + 
+  aabbLevelSizeInFloats[3] + 
+  aabbLevelSizeInFloats[4] + 
+  aabbLevelSizeInFloats[5] ; 
+#endif
 
 const uint aabbLevelOffsetInFloats[6] = {
   0,

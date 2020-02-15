@@ -130,15 +130,18 @@ out vec3 gNormal;
 
 flat in uint vId[];
 
-layout(binding=0)buffer NodePool    {uint  nodePool    [];};
-layout(binding=1)buffer AABBPool    {float aabbPool    [];};
-layout(binding=2)buffer TraverseData{uint  traverseData[];};
+layout(binding=0,std430)buffer NodePool    {uint  nodePool    [];};
+layout(binding=1,std430)buffer AABBPool    {float aabbPool    [];};
+layout(binding=2,std430)buffer TraverseData{uint  traverseData[];};
+layout(binding=3,std430)buffer AABBPointer {uint  aabbPointer [];};
 
 uniform mat4 view;
 uniform mat4 proj;
 
 uniform mat4 nodeView;
 uniform mat4 nodeProj;
+
+uniform int memoryOptim = 0;
 
 #line 122
 uniform uint levelToDraw = 0;
@@ -170,12 +173,22 @@ void main(){
   uint bit  = gId & warpMask;
   uint node = gId >> warpBits;
 
-  mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+0];
-  mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+1];
-  mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+2];
-  mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+3];
-  mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+4];
-  mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+5];
+  if(memoryOptim == 1){
+    uint w = aabbPointer[nodeLevelOffset[clamp(levelToDraw,0u,5u)]+gId+1];
+    mminX = aabbPool[w*floatsPerAABB+0];
+    mmaxX = aabbPool[w*floatsPerAABB+1];
+    mminY = aabbPool[w*floatsPerAABB+2];
+    mmaxY = aabbPool[w*floatsPerAABB+3];
+    mminZ = aabbPool[w*floatsPerAABB+4];
+    mmaxZ = aabbPool[w*floatsPerAABB+5];
+  }else{
+    mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+0];
+    mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+1];
+    mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+2];
+    mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+3];
+    mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+4];
+    mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+5];
+  }
 
   startX = -1.f + xyz.x*levelTileSizeClipSpace[nofLevels-1].x;
   startY = -1.f + xyz.y*levelTileSizeClipSpace[nofLevels-1].y;
@@ -323,12 +336,14 @@ void drawTraverse(vars::Vars&vars){
   auto const nodePool          =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"         );
   auto const aabbPool          =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"         );
 
-  auto const view           = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
-  auto const proj           = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
-  auto const taToDraw       =  vars.getUint32          ("rssv.method.debug.taToDraw"             );
-  auto const trToDraw       =  vars.getUint32          ("rssv.method.debug.trToDraw"             );
-  auto const inToDraw       =  vars.getUint32          ("rssv.method.debug.inToDraw"             );
-  auto const drawTightAABB  =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
+  auto const view              = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
+  auto const proj              = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
+  auto const taToDraw          =  vars.getUint32          ("rssv.method.debug.taToDraw"             );
+  auto const trToDraw          =  vars.getUint32          ("rssv.method.debug.trToDraw"             );
+  auto const inToDraw          =  vars.getUint32          ("rssv.method.debug.inToDraw"             );
+  auto const drawTightAABB     =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
+
+  auto const memoryOptim       =  vars.getInt32           ("rssv.method.debug.dump.memoryOptim"     );
 
   auto vao = vars.get<VertexArray>("rssv.method.debug.vao");
 
@@ -345,6 +360,11 @@ void drawTraverse(vars::Vars&vars){
     ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
     ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
     ;
+
+  if(memoryOptim){
+    prg->bindBuffer("AABBPointer",vars.get<Buffer>("rssv.method.debug.dump.aabbPointer"));
+    prg->set1i("memoryOptim",memoryOptim);
+  }
 
   auto dibo = vars.get<Buffer>("rssv.method.debug.traverseData");
   dibo->bind(GL_DRAW_INDIRECT_BUFFER);

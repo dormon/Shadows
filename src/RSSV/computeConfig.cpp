@@ -14,15 +14,22 @@ void rssv::computeConfig(vars::Vars&vars){
       ,"wavefrontSize"
       ,"windowSize"
       ,"rssv.param.minZBits"
-      ,"rssv.param.tileX"
-      ,"rssv.param.tileY"
+      ,"rssv.param.memoryOptim"
+      ,"rssv.param.memoryFactor"
       );
 
-  auto const wavefrontSize =  vars.getSizeT("wavefrontSize");
-  auto const windowSize    = *vars.get<glm::uvec2>("windowSize");
-  auto const minZBits      =  vars.getUint32("rssv.param.minZBits");
-  auto const tileX         =  vars.getUint32("rssv.param.tileX");
-  auto const tileY         =  vars.getUint32("rssv.param.tileY");
+  auto const wavefrontSize =  vars.getSizeT       ("wavefrontSize"          );
+  auto const windowSize    = *vars.get<glm::uvec2>("windowSize"             );
+  auto const minZBits      =  vars.getUint32      ("rssv.param.minZBits"    );
+  auto const memoryOptim   =  vars.getInt32       ("rssv.param.memoryOptim" );
+  auto const memoryFactor  =  vars.getInt32       ("rssv.param.memoryFactor");
 
-  vars.reCreate<Config>("rssv.method.config",wavefrontSize,windowSize.x,windowSize.y,tileX,tileY,minZBits);
+  vars.reCreate<Config>("rssv.method.config"
+      ,wavefrontSize
+      ,windowSize.x
+      ,windowSize.y
+      ,minZBits
+      ,memoryOptim
+      ,memoryFactor
+      );
 }

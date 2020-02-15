@@ -6,26 +6,6 @@ std::string const rssv::propagateAABBShader = R".(
 #define WARP 64
 #endif//WARP
 
-#ifndef WINDOW_X
-#define WINDOW_X 512
-#endif//WINDOW_X
-
-#ifndef WINDOW_Y
-#define WINDOW_Y 512
-#endif//WINDOW_Y
-
-#ifndef TILE_X
-#define TILE_X 8
-#endif//TILE_X
-
-#ifndef TILE_Y
-#define TILE_Y 8
-#endif//TILE_Y
-
-#ifndef MIN_Z_BITS
-#define MIN_Z_BITS 9
-#endif//MIN_Z_BITS
-
 #ifndef NOF_WARPS
 #define NOF_WARPS 4
 #endif//NOF_WARPS
@@ -41,8 +21,16 @@ std::string const rssv::propagateAABBShader = R".(
 
 layout(local_size_x=WARP,local_size_y=NOF_WARPS)in;
 
+#if MERGED_BUFFERS == 1
+layout(std430,binding=0)buffer NodePool{
+  uint  nodePool[nodeBufferSizeInUints ];
+  float aabbPool[aabbBufferSizeInFloats];
+};
+#else
 layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
 layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
+#endif
+
 layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 

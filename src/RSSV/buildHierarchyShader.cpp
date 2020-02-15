@@ -44,8 +44,17 @@ std::string const rssv::buildHierarchyShader = R".(
 
 layout(local_size_x=WARP)in;
 
+#if MERGED_BUFFERS == 1
+layout(std430,binding=0)buffer Hierarchy{
+  uint  nodePool[nodeBufferSizeInUints ];
+  float aabbPool[aabbBufferSizeInFloats];
+};
+#else
 layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
 layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
+#endif
+
+
 layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 

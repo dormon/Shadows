@@ -56,14 +56,15 @@ class Config{
         uint32_t wavefrontSize = 64u    ,
         uint32_t winX          = 512u   ,
         uint32_t winY          = 512u   ,
-        uint32_t tX            = 8u     ,
-        uint32_t tY            = 8u     ,
-        uint32_t minZ          = 9u     ){
+        uint32_t minZ          = 9u     ,
+        int32_t  memOptim      = 0      ,
+        uint32_t memFactor     = 10     ){
       windowX                 = winX;
       windowY                 = winY;
-      tileX                   = tX;
-      tileY                   = tY;
       minZBits                = minZ;
+      memoryOptim             = memOptim;
+      memoryFactor            = memFactor;
+
       warpBits                = uint32_t(requiredBits(wavefrontSize));
       clustersX               = divRoundUp(windowX,tileX);
       clustersY               = divRoundUp(windowY,tileY);
@@ -76,34 +77,40 @@ class Config{
       uintsPerWarp            = wavefrontSize / (sizeof(uint32_t)*8);
       nofNodesPerLevel        = computeNofNodesPerLevel(allBits,warpBits);
       nodeLevelSizeInUints    = computeNodeLevelSizeInUints(nofNodesPerLevel,wavefrontSize,uintsPerWarp);
-      nodesSize               = sum(nodeLevelSizeInUints) * sizeof(uint32_t);
+      
+      nodeBufferSize          = sum(nodeLevelSizeInUints) * sizeof(uint32_t);
       nodeLevelOffsetInUints  = getOffsets(nodeLevelSizeInUints);
       nofNodes                = sum(nofNodesPerLevel);
-      aabbsSize               = nofNodes * floatsPerAABB * sizeof(float);
+
+      if(memoryOptim)
+        aabbBufferSize = clustersX * clustersY * memoryFactor * floatsPerAABB * sizeof(float);
+      else
+        aabbBufferSize = nofNodes * floatsPerAABB * sizeof(float);
+
       aabbLevelSizeInFloats   = mul(nofNodesPerLevel,floatsPerAABB);
       aabbLevelOffsetInFloats = getOffsets(aabbLevelSizeInFloats);
       nodeLevelOffset         = getOffsets(nofNodesPerLevel);
     }
     void print(){
 #define PRINT(x) std::cerr << #x << ": " << x << std::endl
-      PRINT(windowX     );
-      PRINT(windowY     );
-      PRINT(tileX       );
-      PRINT(tileY       );
-      PRINT(minZBits    );
-      PRINT(warpBits    );
-      PRINT(clustersX   );
-      PRINT(clustersY   );
-      PRINT(xBits       );
-      PRINT(yBits       );
-      PRINT(zBits       );
-      PRINT(clustersZ   );
-      PRINT(allBits     );
-      PRINT(nofLevels   );
-      PRINT(uintsPerWarp);
-      PRINT(nodesSize   );
-      PRINT(aabbsSize   );
-      PRINT(nofNodes    );
+      PRINT(windowX       );
+      PRINT(windowY       );
+      PRINT(tileX         );
+      PRINT(tileY         );
+      PRINT(minZBits      );
+      PRINT(warpBits      );
+      PRINT(clustersX     );
+      PRINT(clustersY     );
+      PRINT(xBits         );
+      PRINT(yBits         );
+      PRINT(zBits         );
+      PRINT(clustersZ     );
+      PRINT(allBits       );
+      PRINT(nofLevels     );
+      PRINT(uintsPerWarp  );
+      PRINT(nodeBufferSize);
+      PRINT(aabbBufferSize);
+      PRINT(nofNodes      );
 
       PRINT(floatsPerAABB);
 #undef PRINT
@@ -119,25 +126,27 @@ class Config{
 #undef PRINT
 
     }
-    uint32_t windowX     ;
-    uint32_t windowY     ;
-    uint32_t tileX       ;
-    uint32_t tileY       ;
-    uint32_t minZBits    ;
-    uint32_t warpBits    ;
-    uint32_t clustersX   ;
-    uint32_t clustersY   ;
-    uint32_t xBits       ;
-    uint32_t yBits       ;
-    uint32_t zBits       ;
-    uint32_t clustersZ   ;
-    uint32_t allBits     ;
-    uint32_t nofLevels   ;
-    uint32_t uintsPerWarp;
-    uint32_t nodesSize   ;
-    uint32_t aabbsSize   ;
-    uint32_t nofNodes    ;
-    uint32_t const floatsPerAABB = 6;
+    uint32_t windowX       ;
+    uint32_t windowY       ;
+    uint32_t minZBits      ;
+    int32_t  memoryOptim   ;
+    uint32_t memoryFactor  ;
+    uint32_t warpBits      ;
+    uint32_t clustersX     ;
+    uint32_t clustersY     ;
+    uint32_t xBits         ;
+    uint32_t yBits         ;
+    uint32_t zBits         ;
+    uint32_t clustersZ     ;
+    uint32_t allBits       ;
+    uint32_t nofLevels     ;
+    uint32_t uintsPerWarp  ;
+    uint32_t nodeBufferSize;
+    uint32_t aabbBufferSize;
+    uint32_t nofNodes      ;
+    uint32_t const tileX         = 8u;
+    uint32_t const tileY         = 8u;
+    uint32_t const floatsPerAABB = 6 ;
     std::vector<uint32_t>nofNodesPerLevel        ;
     std::vector<uint32_t>nodeLevelOffset         ;
     std::vector<uint32_t>nodeLevelSizeInUints    ;

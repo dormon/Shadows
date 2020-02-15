@@ -46,5 +46,12 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
   vars.get<Buffer>("sintorn2.method.nodePool")->getSize() + 
   vars.get<Buffer>("sintorn2.method.aabbPool")->getSize() + 
   vars.get<Buffer>("sintorn2.method.activeNodes")->getSize();
+  if(memoryOptim)
+    sss += vars.get<Buffer>("sintorn2.method.aabbPointer")->getSize();
   std::cerr << "HIERARCHY SIZE: " << (float)sss / (float)(1024*1024) << " MB" << std::endl;
+  std::cerr << "nodePool  SIZE: " << (float)vars.get<Buffer>("sintorn2.method.nodePool")->getSize() / (float)(1024*1024) << " MB" << std::endl;
+  std::cerr << "aabbPool  SIZE: " << (float)vars.get<Buffer>("sintorn2.method.aabbPool")->getSize() / (float)(1024*1024) << " MB" << std::endl;
+  if(memoryOptim)
+    std::cerr << "aabbPointer  SIZE: " << (float)vars.get<Buffer>("sintorn2.method.aabbPointer")->getSize() / (float)(1024*1024) << " MB" << std::endl;
+  std::cerr << "activeNodes  SIZE: " << (float)vars.get<Buffer>("sintorn2.method.activeNodes")->getSize() / (float)(1024*1024) << " MB" << std::endl;
 }

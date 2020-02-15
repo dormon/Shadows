@@ -5,11 +5,9 @@
 void rssv::loadParams(
     vars::Vars&vars,
     std::shared_ptr<argumentViewer::ArgumentViewer>const&arg){
-  auto c = arg->getContext("rssvParam","parameters for Per-Triangle Shadow Volumes Using a View-Sample Cluster Hierarchy method");
+  auto c = arg->getContext("rssvParam","parameters for ray traced silhouette shadow volumes");
 
   vars.addUint32("rssv.param.minZBits"               ) = c->getu32   ("minZBits"             ,10  ,"select number of Z bits - 0 mean max(xBits,yBits)"                               );
-  vars.addUint32("rssv.param.tileX"                  ) = c->getu32   ("tileX"                ,8   ,"select tile X size"                                                              );
-  vars.addUint32("rssv.param.tileY"                  ) = c->getu32   ("tileY"                ,8   ,"select tile Y size"                                                              );
   vars.addUint32("rssv.param.propagateWarps"         ) = c->getu32   ("propagateWarps"       ,4   ,"number of warps cooperating on propagating data in hierarchy (for AMD 4 is good)");
   vars.addFloat ("rssv.param.bias"                   ) = c->getf32   ("bias"                 ,1.f ,"shadow frusta bias"                                                              );
   vars.addUint32("rssv.param.triangleAlignment"      ) = c->getu32   ("triangleAlignment"    ,128 ,"alignment of triangles"                                                          );
@@ -27,7 +25,8 @@ void rssv::loadParams(
   vars.addInt32 ("rssv.param.memoryOptim"            ) = c->geti32   ("memoryOptim"          ,0   ,"apply memory optimization"                                                       );
   vars.addUint32("rssv.param.memoryFactor"           ) = c->getu32   ("memoryFactor"         ,10  ,"memory optimization - this value is average number of nodes per screen tile"     );
 
-  vars.addBool  ("rssv.param.storeTraverseSilhouettesStat");
-  vars.addBool  ("rssv.param.storeEdgePlanes"             );
+  vars.addBool  ("rssv.param.storeTraverseSilhouettesStat"  );
+  vars.addBool  ("rssv.param.storeEdgePlanes"               );
+  vars.addInt32 ("rssv.param.mergedBuffers"               ,1);
 
 }

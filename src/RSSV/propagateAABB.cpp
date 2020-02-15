@@ -16,16 +16,31 @@ void rssv::propagateAABB(vars::Vars&vars){
   FUNCTION_CALLER();
   createPropagateAABBProgram(vars);
 
+  auto memoryOptim      =  vars.getInt32   ("rssv.param.memoryOptim"      );
+
   auto prg = vars.get<Program>("rssv.method.propagateAABBProgram");
 
   auto const cfg        = *vars.get<Config>("rssv.method.config");
-  auto nodePool         =  vars.get<Buffer >("rssv.method.nodePool");
-  auto aabbPool         =  vars.get<Buffer >("rssv.method.aabbPool");
   auto levelNodeCounter =  vars.get<Buffer >("rssv.method.levelNodeCounter");
   auto activeNodes      =  vars.get<Buffer >("rssv.method.activeNodes");
 
-  nodePool        ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  aabbPool        ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  auto mergedBuffers    =  vars.getInt32    ("rssv.param.mergedBuffers");
+
+  if(mergedBuffers){
+    auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
+    hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  }else{
+    auto nodePool         =  vars.get<Buffer >("rssv.method.nodePool");
+    auto aabbPool         =  vars.get<Buffer >("rssv.method.aabbPool");
+    nodePool        ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+    aabbPool        ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  }
+
+  if(memoryOptim == 1){
+    auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
+    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+  }
+
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   levelNodeCounter->bind    (GL_DISPATCH_INDIRECT_BUFFER);
   levelNodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);

@@ -24,8 +24,16 @@ std::string const rssv::traverseSilhouettesShader = R".(
 
 layout(local_size_x=WARP)in;
 
+#if MERGED_BUFFERS == 1
+layout(std430,binding=0)buffer Hierarchy{
+  uint  nodePool[nodePoolBufferSizeInUints ];
+  float aabbPool[aabbPoolBufferSizeInFloats];
+}
+#else
 layout(std430,binding=0)buffer NodePool          {uint  nodePool         [];};
 layout(std430,binding=1)buffer AABBPool          {float aabbPool         [];};
+#endif
+
 layout(std430,binding=2)buffer JobCounter        {uint  jobCounter       [];};
 layout(std430,binding=3)buffer EdgeBuffer        {float edgeBuffer       [];};
 layout(std430,binding=4)buffer MultBuffer        {uint  multBuffer       [];};
@@ -296,6 +304,8 @@ void traverse(){
         // */
 #else
 
+        vec3 minCorner;
+        vec3 aabbSize;
 #if MEMORY_OPTIM == 1
         uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
         minCorner[0] = aabbPool[w*6u + 0u]             ;
@@ -321,14 +331,14 @@ void traverse(){
 #if 1
           status = TRIVIAL_REJECT;
           tr = trivialRejectCorner3D(edgePlane.xyz);
-          if(dot(edgePlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-            if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f){
+          if(dot(edgePlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
+            if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(aabbSize),1.f))<=0.f){
               tr = trivialRejectCorner3D(aPlane.xyz);
-              if(dot(aPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+              if(dot(aPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
                 tr = trivialRejectCorner3D(bPlane.xyz);
-                if(dot(bPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
+                if(dot(bPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
                   tr = trivialRejectCorner3D(abPlane.xyz);
-                  if(dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f)
+                  if(dot(abPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f)
                     status = INTERSECTS;
                 }
               }
@@ -338,14 +348,14 @@ void traverse(){
 
 #if 0
         tr = trivialRejectCorner3D(edgePlane.xyz);
-        planeTest =              dot(edgePlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
-        planeTest = planeTest && dot(edgePlane,vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f;
+        planeTest =              dot(edgePlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f;
+        planeTest = planeTest && dot(edgePlane,vec4(minCorner + (1.f-tr)*(aabbSize),1.f))<=0.f;
         tr = trivialRejectCorner3D(aPlane.xyz);
-        planeTest = planeTest && dot(aPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
+        planeTest = planeTest && dot(aPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f;
         tr = trivialRejectCorner3D(bPlane.xyz);
-        planeTest = planeTest && dot(bPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
+        planeTest = planeTest && dot(bPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f;
         tr = trivialRejectCorner3D(abPlane.xyz);
-        planeTest = planeTest && dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
+        planeTest = planeTest && dot(abPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f;
 
         if(planeTest)
           status = INTERSECTS;

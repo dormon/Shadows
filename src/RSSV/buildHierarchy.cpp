@@ -28,29 +28,36 @@ void rssv::buildHierarchy(vars::Vars&vars){
   //exit(0);
   auto gBuffer           =  vars.get<GBuffer>("gBuffer"                          );
   auto prg               =  vars.get<Program>("rssv.method.buildHierarchyProgram");
-  auto nodePool          =  vars.get<Buffer >("rssv.method.nodePool"             );
-  auto aabbPool          =  vars.get<Buffer >("rssv.method.aabbPool"             );
   auto levelNodeCounter  =  vars.get<Buffer >("rssv.method.levelNodeCounter"     );
   auto activeNodes       =  vars.get<Buffer >("rssv.method.activeNodes"          );
   auto discardBackfacing =  vars.getUint32   ("rssv.param.discardBackfacing"     );
-  auto memoryOptim       =  vars.getInt32    ("rssv.param.memoryOptim"           );
+  auto mergedBuffers     =  vars.getInt32    ("rssv.param.mergedBuffers"         );
 
   auto cfg               = *vars.get<Config >("rssv.method.config"               );
 
   auto depth             =  gBuffer->depth;
 
+  if(mergedBuffers){
+    auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
+    ge::gl::glClearNamedBufferSubData(hierarchy->getId(),GL_R32UI,0,cfg.nodeBufferSize,GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+    hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  }else{
+    auto nodePool = vars.get<Buffer>("rssv.method.nodePool");
+    auto aabbPool = vars.get<Buffer>("rssv.method.aabbPool");
+    nodePool->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+    nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+    aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  }
+
   uint32_t dci[4] = {0,1,1,0};
-  nodePool        ->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
   levelNodeCounter->clear(GL_RGBA32UI,GL_RGBA_INTEGER,GL_UNSIGNED_INT,dci);
 
-  nodePool        ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  aabbPool        ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
   levelNodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   
   depth->bind(1);
 
-  if(memoryOptim){
+  if(cfg.memoryOptim){
     auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
     aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
     ge::gl::glClearNamedBufferSubData(aabbPointer->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);

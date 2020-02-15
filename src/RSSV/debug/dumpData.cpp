@@ -21,11 +21,26 @@ using namespace std;
 
 namespace rssv::debug{
 
+//void dumpHierarchy(vars::Vars&vars){
+//  FUNCTION_CALLER();
+//  auto input = vars.get<Buffer>("rssv.method.hierarchy");
+//  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.hierarchy",input->getSize());
+//  buf->copy(*input);
+//}
+
 void dumpNodePool(vars::Vars&vars){
   FUNCTION_CALLER();
-  auto nodePool = vars.get<Buffer>("rssv.method.nodePool");
-  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.nodePool",nodePool->getSize());
-  buf->copy(*nodePool);
+  auto const mergedBuffers =  vars.getInt32("rssv.param.mergedBuffers");
+  auto const cfg           = *vars.get<Config>("rssv.method.config");
+  if(mergedBuffers){
+    auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
+    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.nodePool",cfg.nodeBufferSize);
+    ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),0,0,buf->getSize());
+  }else{
+    auto nodePool = vars.get<Buffer>("rssv.method.nodePool");
+    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.nodePool",nodePool->getSize());
+    buf->copy(*nodePool);
+  }
 }
 
 void dumpAABBPointer(vars::Vars&vars){
@@ -41,9 +56,18 @@ void dumpAABBPointer(vars::Vars&vars){
 
 void dumpAABBPool(vars::Vars&vars){
   FUNCTION_CALLER();
-  auto aabbPool = vars.get<Buffer>("rssv.method.aabbPool");
-  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPool",aabbPool->getSize());
-  buf->copy(*aabbPool);
+  auto const mergedBuffers =  vars.getInt32   ("rssv.param.mergedBuffers");
+  auto const cfg           = *vars.get<Config>("rssv.method.config");
+
+  if(mergedBuffers){
+    auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
+    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPool",cfg.aabbBufferSize);
+    ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.nodeBufferSize,0,buf->getSize());
+  }else{
+    auto aabbPool = vars.get<Buffer>("rssv.method.aabbPool");
+    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPool",aabbPool->getSize());
+    buf->copy(*aabbPool);
+  }
 }
 
 void dumpSF(vars::Vars&vars){
