@@ -39,7 +39,12 @@ void rssv::buildHierarchy(vars::Vars&vars){
 
   if(mergedBuffers){
     auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
-    ge::gl::glClearNamedBufferSubData(hierarchy->getId(),GL_R32UI,0,cfg.nodeBufferSize,GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+    //clear node pool
+    ge::gl::glClearNamedBufferSubData(hierarchy->getId(),GL_R32UI,cfg.nodeBufferOffsetInHierarchy,cfg.nodeBufferSize,GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+    //clear aabbPointer
+    if(cfg.memoryOptim){
+      ge::gl::glClearNamedBufferSubData(hierarchy->getId(),GL_R32UI,cfg.aabbPointerBufferOffsetInHierarchy,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+    }
     hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   }else{
     auto nodePool = vars.get<Buffer>("rssv.method.nodePool");
@@ -47,6 +52,12 @@ void rssv::buildHierarchy(vars::Vars&vars){
     nodePool->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
     nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
     aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+
+    if(cfg.memoryOptim){
+      auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
+      aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+      ge::gl::glClearNamedBufferSubData(aabbPointer->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+    }
   }
 
   uint32_t dci[4] = {0,1,1,0};
@@ -57,11 +68,6 @@ void rssv::buildHierarchy(vars::Vars&vars){
   
   depth->bind(1);
 
-  if(cfg.memoryOptim){
-    auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
-    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
-    ge::gl::glClearNamedBufferSubData(aabbPointer->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
-  }
   
   prg->use();
 

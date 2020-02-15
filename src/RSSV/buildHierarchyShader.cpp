@@ -48,19 +48,23 @@ layout(local_size_x=WARP)in;
 layout(std430,binding=0)buffer Hierarchy{
   uint  nodePool[nodeBufferSizeInUints ];
   float aabbPool[aabbBufferSizeInFloats];
+  #if MEMORY_OPTIM == 1
+  uint  aabbPointer[aabbPointerBufferSizeInUints];
+  #endif
 };
 #else
 layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
 layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
+
+#if MEMORY_OPTIM == 1
+layout(std430,binding=5)buffer AABBPointer     {uint  aabbPointer     [];};
+#endif
+
 #endif
 
 
 layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
-
-#if MEMORY_OPTIM == 1
-layout(std430,binding=5)buffer AABBPointer     {uint  aabbPointer     [];};
-#endif
 
 layout(binding=1)uniform sampler2DRect depthTexture;
 

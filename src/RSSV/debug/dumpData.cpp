@@ -35,7 +35,7 @@ void dumpNodePool(vars::Vars&vars){
   if(mergedBuffers){
     auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
     auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.nodePool",cfg.nodeBufferSize);
-    ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),0,0,buf->getSize());
+    ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.nodeBufferOffsetInHierarchy,0,buf->getSize());
   }else{
     auto nodePool = vars.get<Buffer>("rssv.method.nodePool");
     auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.nodePool",nodePool->getSize());
@@ -48,9 +48,17 @@ void dumpAABBPointer(vars::Vars&vars){
   auto memoryOptim = vars.getInt32("rssv.param.memoryOptim");
   if(!memoryOptim)return;
 
-  auto toBackup = vars.get<Buffer>("rssv.method.aabbPointer");
-  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPointer",toBackup->getSize());
-  buf->copy(*toBackup);
+  auto const mergedBuffers =  vars.getInt32("rssv.param.mergedBuffers");
+  auto const cfg           = *vars.get<Config>("rssv.method.config");
+  if(mergedBuffers){
+    auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
+    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPointer",cfg.aabbPointerBufferSize);
+    ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.aabbPointerBufferOffsetInHierarchy,0,buf->getSize());
+  }else{
+    auto toBackup = vars.get<Buffer>("rssv.method.aabbPointer");
+    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPointer",toBackup->getSize());
+    buf->copy(*toBackup);
+  }
 }
 
 
@@ -62,7 +70,7 @@ void dumpAABBPool(vars::Vars&vars){
   if(mergedBuffers){
     auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
     auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPool",cfg.aabbBufferSize);
-    ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.nodeBufferSize,0,buf->getSize());
+    ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.aabbBufferOffsetInHierarchy,0,buf->getSize());
   }else{
     auto aabbPool = vars.get<Buffer>("rssv.method.aabbPool");
     auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPool",aabbPool->getSize());

@@ -30,15 +30,14 @@ void rssv::propagateAABB(vars::Vars&vars){
     auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
     hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   }else{
-    auto nodePool         =  vars.get<Buffer >("rssv.method.nodePool");
-    auto aabbPool         =  vars.get<Buffer >("rssv.method.aabbPool");
-    nodePool        ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-    aabbPool        ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
-  }
-
-  if(memoryOptim == 1){
-    auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
-    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+    auto nodePool =  vars.get<Buffer >("rssv.method.nodePool");
+    auto aabbPool =  vars.get<Buffer >("rssv.method.aabbPool");
+    nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+    aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+    if(memoryOptim == 1){
+      auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
+      aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+    }
   }
 
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);

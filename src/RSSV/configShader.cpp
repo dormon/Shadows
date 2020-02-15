@@ -259,5 +259,6 @@ const uint aabbLevelOffsetInFloats[6] = {
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
 };
 
+const uint aabbPointerBufferSizeInUints = nofNodes + 1;
 
 ).";

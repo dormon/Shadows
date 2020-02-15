@@ -30,38 +30,47 @@ void rssv::allocateHierarchy(vars::Vars&vars){
   vars.reCreate<Buffer >("rssv.method.bridges"         ,cfg.nofNodes *sizeof(int32_t)                  );
   vars.reCreate<Texture>("rssv.method.stencil"         ,GL_TEXTURE_2D,GL_R32I,1,cfg.windowX,cfg.windowY);
 
-  if(cfg.memoryOptim){
-    vars.reCreate<Buffer>("rssv.method.aabbPointer",sizeof(uint32_t)*(1+cfg.nofNodes));
-  }else{
-    vars.erase           ("rssv.method.aabbPointer"              );
-  }
-
   if(mergedBuffers){
-    vars.reCreate<Buffer>("rssv.method.hierarchy"  ,0
-        +cfg.nodeBufferSize
-        +cfg.aabbBufferSize
-        );
+    vars.erase("rssv.method.nodePool"   );
+    vars.erase("rssv.method.aabbPool"   );
+    vars.erase("rssv.method.aabbPointer");
+
+    size_t bufSize = 0;
+    bufSize += cfg.nodeBufferSize;
+    bufSize += cfg.aabbBufferSize;
+    if(cfg.memoryOptim)
+      bufSize += cfg.aabbPointerBufferSize;
+    vars.reCreate<Buffer>("rssv.method.hierarchy"  ,bufSize);
   }else{
+    vars.erase("rssv.method.hierarchy");
+
     vars.reCreate<Buffer>("rssv.method.aabbPool"   ,cfg.aabbBufferSize);
     vars.reCreate<Buffer>("rssv.method.nodePool"   ,cfg.nodeBufferSize);
+
+    if(cfg.memoryOptim){
+      vars.reCreate<Buffer>("rssv.method.aabbPointer",cfg.aabbPointerBufferSize);
+    }else{
+      vars.erase           ("rssv.method.aabbPointer"              );
+    }
   }
 
   size_t sss;
 
   if(mergedBuffers){
     sss = 
-    vars.get<Buffer>("rssv.method.hierarchy")->getSize() + 
-    vars.get<Buffer>("rssv.method.activeNodes")->getSize();
+    vars.get<Buffer>("rssv.method.hierarchy")->getSize();
   }else{
     sss =
     vars.get<Buffer>("rssv.method.nodePool")->getSize() + 
-    vars.get<Buffer>("rssv.method.aabbPool")->getSize() + 
-    vars.get<Buffer>("rssv.method.activeNodes")->getSize();
+    vars.get<Buffer>("rssv.method.aabbPool")->getSize();
+
+    if(cfg.memoryOptim)
+      sss += vars.get<Buffer>("rssv.method.aabbPointer")->getSize();
   }
 
+  sss += vars.get<Buffer>("rssv.method.activeNodes")->getSize();
 
-  if(cfg.memoryOptim)
-    sss += vars.get<Buffer>("rssv.method.aabbPointer")->getSize();
+
 
   GLint b;
   ge::gl::glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,&b);

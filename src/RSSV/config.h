@@ -90,6 +90,13 @@ class Config{
       aabbLevelSizeInFloats   = mul(nofNodesPerLevel,floatsPerAABB);
       aabbLevelOffsetInFloats = getOffsets(aabbLevelSizeInFloats);
       nodeLevelOffset         = getOffsets(nofNodesPerLevel);
+
+      aabbPointerBufferSize   = (nofNodes + 1) * sizeof(uint32_t);
+
+      nodeBufferOffsetInHierarchy        = 0                                           ;
+      aabbBufferOffsetInHierarchy        = nodeBufferOffsetInHierarchy + nodeBufferSize;
+      aabbPointerBufferOffsetInHierarchy = aabbBufferOffsetInHierarchy + aabbBufferSize;
+
     }
     void print(){
 #define PRINT(x) std::cerr << #x << ": " << x << std::endl
@@ -126,24 +133,28 @@ class Config{
 #undef PRINT
 
     }
-    uint32_t windowX       ;
-    uint32_t windowY       ;
-    uint32_t minZBits      ;
-    int32_t  memoryOptim   ;
-    uint32_t memoryFactor  ;
-    uint32_t warpBits      ;
-    uint32_t clustersX     ;
-    uint32_t clustersY     ;
-    uint32_t xBits         ;
-    uint32_t yBits         ;
-    uint32_t zBits         ;
-    uint32_t clustersZ     ;
-    uint32_t allBits       ;
-    uint32_t nofLevels     ;
-    uint32_t uintsPerWarp  ;
-    uint32_t nodeBufferSize;
-    uint32_t aabbBufferSize;
-    uint32_t nofNodes      ;
+    uint32_t windowX              ;
+    uint32_t windowY              ;
+    uint32_t minZBits             ;
+    int32_t  memoryOptim          ;
+    uint32_t memoryFactor         ;
+    uint32_t warpBits             ;
+    uint32_t clustersX            ;
+    uint32_t clustersY            ;
+    uint32_t xBits                ;
+    uint32_t yBits                ;
+    uint32_t zBits                ;
+    uint32_t clustersZ            ;
+    uint32_t allBits              ;
+    uint32_t nofLevels            ;
+    uint32_t uintsPerWarp         ;
+    uint32_t nodeBufferSize       ;
+    uint32_t aabbBufferSize       ;
+    uint32_t aabbPointerBufferSize             ;
+    uint32_t nodeBufferOffsetInHierarchy       ;
+    uint32_t aabbBufferOffsetInHierarchy       ;
+    uint32_t aabbPointerBufferOffsetInHierarchy;
+    uint32_t nofNodes             ;
     uint32_t const tileX         = 8u;
     uint32_t const tileY         = 8u;
     uint32_t const floatsPerAABB = 6 ;
