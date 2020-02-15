@@ -27,9 +27,6 @@ void prepareDrawNodePool(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method.debug"
       "wavefrontSize"                    ,
       "rssv.method.debug.dump.config"    ,
-      "rssv.method.debug.dump.near"      ,
-      "rssv.method.debug.dump.far"       ,
-      "rssv.method.debug.dump.fovy"      ,
       "rssv.method.debug.wireframe"      ,
       );
 

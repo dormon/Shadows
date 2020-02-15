@@ -111,21 +111,14 @@ void dumpBasic(vars::Vars&vars){
   auto lp        = *vars.get<glm::vec4>("rssv.method.debug.lightPosition"   );
   auto vm        = *vars.get<glm::mat4>("rssv.method.debug.viewMatrix"      );
   auto pm        = *vars.get<glm::mat4>("rssv.method.debug.projectionMatrix");
-  auto const nnear =  vars.getFloat("args.camera.near");
-  auto const ffar  =  vars.getFloat("args.camera.far" );
-  auto const fovy  =  vars.getFloat("args.camera.fovy");
 
   auto cfg       = *vars.get<Config>("rssv.method.config");
 
   auto memoryOptim = vars.getInt32("rssv.param.memoryOptim");
 
-
   vars.reCreate<glm::vec4 >("rssv.method.debug.dump.lightPosition"   ,lp         );
   vars.reCreate<glm::mat4 >("rssv.method.debug.dump.viewMatrix"      ,vm         );
   vars.reCreate<glm::mat4 >("rssv.method.debug.dump.projectionMatrix",pm         );
-  vars.reCreate<float     >("rssv.method.debug.dump.near"            ,nnear      );
-  vars.reCreate<float     >("rssv.method.debug.dump.far"             ,ffar       );
-  vars.reCreate<float     >("rssv.method.debug.dump.fovy"            ,fovy       );
   vars.reCreate<Config    >("rssv.method.debug.dump.config"          ,cfg        ); 
   vars.reCreate<int       >("rssv.method.debug.dump.memoryOptim"     ,memoryOptim);
 }

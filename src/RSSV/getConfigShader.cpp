@@ -16,25 +16,9 @@ std::string getConfigShader(vars::Vars&vars,bool debug = false){
 
   auto const wavefrontSize =  vars.getSizeT       ("wavefrontSize"            );
 
-  Config*cfgPtr;
-
-  float nnear;
-  float ffar ;
-  float fovy ;
-
-  if(debug){
-    cfgPtr = vars.get<Config>("rssv.method.debug.dump.config");
-    nnear  = vars.getFloat   ("rssv.method.debug.dump.near"  );
-    ffar   = vars.getFloat   ("rssv.method.debug.dump.far"   );
-    fovy   = vars.getFloat   ("rssv.method.debug.dump.fovy"  );
-  }else{
-    cfgPtr = vars.get<Config>("rssv.method.config"          );
-    nnear  = vars.getFloat   ("args.camera.near"            );
-    ffar   = vars.getFloat   ("args.camera.far"             );
-    fovy   = vars.getFloat   ("args.camera.fovy"            );
-  }
-
-  auto cfg = *cfgPtr;
+  auto const cfg = debug?
+    *vars.get<Config>("rssv.method.debug.dump.config"):
+    *vars.get<Config>("rssv.method.config"           );
 
   ss << ge::gl::Shader::define("WARP"          ,(uint32_t)wavefrontSize   );
   ss << ge::gl::Shader::define("WINDOW_X"      ,(uint32_t)cfg.windowX     );
@@ -44,10 +28,12 @@ std::string getConfigShader(vars::Vars&vars,bool debug = false){
   ss << ge::gl::Shader::define("TILE_Y"        ,(uint32_t)cfg.tileY       );
   ss << ge::gl::Shader::define("MEMORY_OPTIM"  ,(int     )cfg.memoryOptim );
   ss << ge::gl::Shader::define("MEMORY_FACTOR" ,(uint32_t)cfg.memoryFactor);
+  ss << ge::gl::Shader::define("NEAR"          ,(float   )cfg.nnear       );
+  ss << ge::gl::Shader::define("FAR"           ,(float   )cfg.ffar        );
+  ss << ge::gl::Shader::define("FOVY"          ,(float   )cfg.fovy        );
 
-  ss << ge::gl::Shader::define("NEAR"               ,nnear                      ),
-  ss << (glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar)),
-  ss << ge::gl::Shader::define("FOVY"               ,fovy                       ),
+  if(glm::isinf(cfg.ffar))
+    ss << ge::gl::Shader::define("FAR_IS_INFINITE");
 
   ss << rssv::configShader;
 

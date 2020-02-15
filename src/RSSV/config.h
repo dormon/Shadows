@@ -53,17 +53,23 @@ inline std::vector<uint32_t>getOffsets(std::vector<uint32_t>const&sizes){
 class Config{
   public:
     Config(
-        uint32_t wavefrontSize = 64u    ,
-        uint32_t winX          = 512u   ,
-        uint32_t winY          = 512u   ,
-        uint32_t minZ          = 9u     ,
-        int32_t  memOptim      = 0      ,
-        uint32_t memFactor     = 10     ){
+        uint32_t wavefrontSize = 64u      ,
+        uint32_t winX          = 512u     ,
+        uint32_t winY          = 512u     ,
+        uint32_t minZ          = 9u       ,
+        int32_t  memOptim      = 0        ,
+        uint32_t memFactor     = 10       ,
+        float    nn            = 0.1f     ,
+        float    ff            = 1000.f   ,
+        float    fo            = 3.149256f){
       windowX                 = winX;
       windowY                 = winY;
       minZBits                = minZ;
       memoryOptim             = memOptim;
       memoryFactor            = memFactor;
+      nnear                   = nn;
+      ffar                    = ff;
+      fovy                    = fo;
 
       warpBits                = uint32_t(requiredBits(wavefrontSize));
       clustersX               = divRoundUp(windowX,tileX);
@@ -133,23 +139,26 @@ class Config{
 #undef PRINT
 
     }
-    uint32_t windowX              ;
-    uint32_t windowY              ;
-    uint32_t minZBits             ;
-    int32_t  memoryOptim          ;
-    uint32_t memoryFactor         ;
-    uint32_t warpBits             ;
-    uint32_t clustersX            ;
-    uint32_t clustersY            ;
-    uint32_t xBits                ;
-    uint32_t yBits                ;
-    uint32_t zBits                ;
-    uint32_t clustersZ            ;
-    uint32_t allBits              ;
-    uint32_t nofLevels            ;
-    uint32_t uintsPerWarp         ;
-    uint32_t nodeBufferSize       ;
-    uint32_t aabbBufferSize       ;
+    uint32_t windowX                           ;
+    uint32_t windowY                           ;
+    uint32_t minZBits                          ;
+    int32_t  memoryOptim                       ;
+    uint32_t memoryFactor                      ;
+    uint32_t warpBits                          ;
+    float    nnear                             ;
+    float    ffar                              ;
+    float    fovy                              ;
+    uint32_t clustersX                         ;
+    uint32_t clustersY                         ;
+    uint32_t xBits                             ;
+    uint32_t yBits                             ;
+    uint32_t zBits                             ;
+    uint32_t clustersZ                         ;
+    uint32_t allBits                           ;
+    uint32_t nofLevels                         ;
+    uint32_t uintsPerWarp                      ;
+    uint32_t nodeBufferSize                    ;
+    uint32_t aabbBufferSize                    ;
     uint32_t aabbPointerBufferSize             ;
     uint32_t nodeBufferOffsetInHierarchy       ;
     uint32_t aabbBufferOffsetInHierarchy       ;
