@@ -61,7 +61,8 @@ class Config{
         uint32_t memFactor     = 10       ,
         float    nn            = 0.1f     ,
         float    ff            = 1000.f   ,
-        float    fo            = 3.149256f){
+        float    fo            = 3.149256f,
+        int32_t  scaledQ       = 0        ){
       windowX                 = winX;
       windowY                 = winY;
       minZBits                = minZ;
@@ -70,6 +71,8 @@ class Config{
       nnear                   = nn;
       ffar                    = ff;
       fovy                    = fo;
+      scaledQuantization      = scaledQ;
+
 
       warpBits                = uint32_t(requiredBits(wavefrontSize));
       clustersX               = divRoundUp(windowX,tileX);
@@ -106,26 +109,29 @@ class Config{
     }
     void print(){
 #define PRINT(x) std::cerr << #x << ": " << x << std::endl
-      PRINT(windowX       );
-      PRINT(windowY       );
-      PRINT(tileX         );
-      PRINT(tileY         );
-      PRINT(minZBits      );
-      PRINT(warpBits      );
-      PRINT(clustersX     );
-      PRINT(clustersY     );
-      PRINT(xBits         );
-      PRINT(yBits         );
-      PRINT(zBits         );
-      PRINT(clustersZ     );
-      PRINT(allBits       );
-      PRINT(nofLevels     );
-      PRINT(uintsPerWarp  );
-      PRINT(nodeBufferSize);
-      PRINT(aabbBufferSize);
-      PRINT(nofNodes      );
-
-      PRINT(floatsPerAABB);
+      PRINT(windowX           );
+      PRINT(windowY           );
+      PRINT(nnear             );
+      PRINT(ffar              );
+      PRINT(fovy              );
+      PRINT(scaledQuantization);
+      PRINT(tileX             );
+      PRINT(tileY             );
+      PRINT(minZBits          );
+      PRINT(warpBits          );
+      PRINT(clustersX         );
+      PRINT(clustersY         );
+      PRINT(xBits             );
+      PRINT(yBits             );
+      PRINT(zBits             );
+      PRINT(clustersZ         );
+      PRINT(allBits           );
+      PRINT(nofLevels         );
+      PRINT(uintsPerWarp      );
+      PRINT(nodeBufferSize    );
+      PRINT(aabbBufferSize    );
+      PRINT(nofNodes          );
+      PRINT(floatsPerAABB     );
 #undef PRINT
 #define PRINT(x) std::cerr << #x << ":" << std::endl;\
   for(auto const&a:x)\
@@ -148,6 +154,8 @@ class Config{
     float    nnear                             ;
     float    ffar                              ;
     float    fovy                              ;
+    int32_t  scaledQuantization                ;
+
     uint32_t clustersX                         ;
     uint32_t clustersY                         ;
     uint32_t xBits                             ;

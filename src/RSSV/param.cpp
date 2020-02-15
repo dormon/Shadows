@@ -28,5 +28,6 @@ void rssv::loadParams(
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat"  );
   vars.addBool  ("rssv.param.storeEdgePlanes"               );
   vars.addInt32 ("rssv.param.mergedBuffers"               ,1);
+  vars.addInt32 ("rssv.param.scaledQuantization"          ,0);
 
 }

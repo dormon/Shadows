@@ -16,19 +16,21 @@ void rssv::computeConfig(vars::Vars&vars){
       ,"rssv.param.minZBits"
       ,"rssv.param.memoryOptim"
       ,"rssv.param.memoryFactor"
+      ,"rssv.param.scaledQuantization"
       ,"args.camera.near"       
       ,"args.camera.far"        
       ,"args.camera.fovy"       
       );
 
-  auto const wavefrontSize =  vars.getSizeT       ("wavefrontSize"          );
-  auto const windowSize    = *vars.get<glm::uvec2>("windowSize"             );
-  auto const minZBits      =  vars.getUint32      ("rssv.param.minZBits"    );
-  auto const memoryOptim   =  vars.getInt32       ("rssv.param.memoryOptim" );
-  auto const memoryFactor  =  vars.getInt32       ("rssv.param.memoryFactor");
-  auto const nnear         =  vars.getFloat       ("args.camera.near"       );
-  auto const ffar          =  vars.getFloat       ("args.camera.far"        );
-  auto const fovy          =  vars.getFloat       ("args.camera.fovy"       );
+  auto const wavefrontSize      =  vars.getSizeT       ("wavefrontSize"                );
+  auto const windowSize         = *vars.get<glm::uvec2>("windowSize"                   );
+  auto const minZBits           =  vars.getUint32      ("rssv.param.minZBits"          );
+  auto const memoryOptim        =  vars.getInt32       ("rssv.param.memoryOptim"       );
+  auto const memoryFactor       =  vars.getInt32       ("rssv.param.memoryFactor"      );
+  auto const scaledQuantization =  vars.getInt32       ("rssv.param.scaledQuantization");
+  auto const nnear              =  vars.getFloat       ("args.camera.near"             );
+  auto const ffar               =  vars.getFloat       ("args.camera.far"              );
+  auto const fovy               =  vars.getFloat       ("args.camera.fovy"             );
 
   vars.reCreate<Config>("rssv.method.config"
       ,wavefrontSize
@@ -40,5 +42,6 @@ void rssv::computeConfig(vars::Vars&vars){
       ,nnear
       ,ffar
       ,fovy
+      ,scaledQuantization
       );
 }

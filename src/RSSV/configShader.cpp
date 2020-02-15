@@ -89,9 +89,30 @@ const uint twoLongest[] = {
   2==shortestAxis?1u:2u,
 };
 
+#ifdef FAR_IS_INFINITE
+const float maxZOfHierarchy = (NEAR * exp((1<<MIN_Z_BITS)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)));
+const float z2ScaledZFactor = (maxZOfHierarchy-NEAR) / (10000.f-NEAR);
+const float scaledZ2ZFactor = (10000.f-NEAR) / (maxZOfHierarchy-NEAR);
+#else
+const float maxZOfHierarchy = (NEAR * exp((1<<MIN_Z_BITS)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)));
+const float z2ScaledZFactor = (maxZOfHierarchy-NEAR) / (FAR-NEAR);
+const float scaledZ2ZFactor = (FAR-NEAR) / (maxZOfHierarchy-NEAR);
+#endif
+
+#if SCALED_QUANTIZATION == 1
+
+#define ORIGINAL_Z_TO_SCALED_Z(z) (((z)+NEAR)*z2ScaledZFactor-NEAR)
+#define SCALED_Z_TO_ORIGINAL_Z(z) (((z)+NEAR)*scaledZ2ZFactor-NEAR)
+
+#define QUANTIZE_Z(z) clamp(uint(log(-ORIGINAL_Z_TO_SCALED_Z(z)/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
+#define CLUSTER_TO_Z(i) SCALED_Z_TO_ORIGINAL_Z((-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY))))
+
+#else
 
 #define QUANTIZE_Z(z) clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
 #define CLUSTER_TO_Z(i) (-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)))
+
+#endif
 
 // | 2n/(R-L)  0          (R+L)/(R-L)  0          |   |x|
 // | 0         2n/(T-B)   (T+B)/(T-B)  0          | * |y|
