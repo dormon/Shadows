@@ -58,6 +58,8 @@ add_library(${PROJECT_NAME} STATIC
   traverseSilhouettesShader.h
   collisionShader.cpp
   collisionShader.h
+  getConfigShader.cpp
+  getConfigShader.h
   )
 
 add_subdirectory(debug)

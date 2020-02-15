@@ -13,8 +13,8 @@
 
 #include <RSSV/debug/drawNodePool.h>
 
+#include <RSSV/getConfigShader.h>
 #include <RSSV/mortonShader.h>
-#include <RSSV/configShader.h>
 #include <RSSV/config.h>
 
 
@@ -34,16 +34,7 @@ void prepareDrawNodePool(vars::Vars&vars){
       );
 
   auto const cfg            = *vars.get<Config>        ("rssv.method.debug.dump.config"    );
-  auto const nnear          =  vars.getFloat           ("rssv.method.debug.dump.near"      );
-  auto const ffar           =  vars.getFloat           ("rssv.method.debug.dump.far"       );
-  auto const fovy           =  vars.getFloat           ("rssv.method.debug.dump.fovy"      );
   auto const wireframe      =  vars.getBool            ("rssv.method.debug.wireframe"      );
-
-  std::cerr << "DRAWNODEPOOL PROGRAM - NEAR: " << nnear << std::endl;
-  std::cerr << "DRAWNODEPOOL PROGRAM - FAR : " << ffar  << std::endl;
-
-  auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"                    );
-
 
   std::string const vsSrc = R".(
   #version 450
@@ -321,19 +312,10 @@ void main(){
   auto vs = make_shared<Shader>(GL_VERTEX_SHADER,vsSrc);
   auto gs = make_shared<Shader>(GL_GEOMETRY_SHADER,
       "#version 450\n",
-      ge::gl::Shader::define("WARP"      ,(uint32_t)wavefrontSize),
-      ge::gl::Shader::define("WINDOW_X"  ,(uint32_t)cfg.windowX  ),
-      ge::gl::Shader::define("WINDOW_Y"  ,(uint32_t)cfg.windowY  ),
-      ge::gl::Shader::define("MIN_Z_BITS",(uint32_t)cfg.minZBits ),
-      glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
-      ge::gl::Shader::define("NEAR"      ,nnear                  ),
-      ge::gl::Shader::define("FOVY"      ,fovy                   ),
-      ge::gl::Shader::define("TILE_X"    ,cfg.tileX              ),
-      ge::gl::Shader::define("TILE_Y"    ,cfg.tileY              ),
-      ge::gl::Shader::define("WIREFRAME",(int)wireframe),
-      rssv::configShader,
+      getDebugConfigShader(vars),
       rssv::mortonShader,
       rssv::demortonShader,
+      ge::gl::Shader::define("WIREFRAME",(int)wireframe),
       gsSrc);
 
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
