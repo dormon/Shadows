@@ -14,7 +14,7 @@
 #include <RSSV/debug/drawNodePool.h>
 
 #include <RSSV/mortonShader.h>
-#include <RSSV/configShader.h>
+#include <RSSV/getConfigShader.h>
 #include <RSSV/config.h>
 
 
@@ -27,20 +27,11 @@ void prepareDrawTraverse(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method.debug"
       "wavefrontSize"                        ,
       "rssv.method.debug.dump.config"    ,
-      "rssv.method.debug.dump.near"      ,
-      "rssv.method.debug.dump.far"       ,
-      "rssv.method.debug.dump.fovy"      ,
       "rssv.method.debug.wireframe"      ,
       );
 
   auto const cfg            = *vars.get<Config>        ("rssv.method.debug.dump.config"    );
-  auto const nnear          =  vars.getFloat           ("rssv.method.debug.dump.near"      );
-  auto const ffar           =  vars.getFloat           ("rssv.method.debug.dump.far"       );
-  auto const fovy           =  vars.getFloat           ("rssv.method.debug.dump.fovy"      );
   auto const wireframe      =  vars.getBool            ("rssv.method.debug.wireframe"      );
-
-  auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"                        );
-
 
   std::string const vsSrc = R".(
   #version 450
@@ -297,18 +288,8 @@ void main(){
   auto vs = make_shared<Shader>(GL_VERTEX_SHADER,vsSrc);
   auto gs = make_shared<Shader>(GL_GEOMETRY_SHADER,
       "#version 450\n",
-      ge::gl::Shader::define("WARP"      ,(uint32_t)wavefrontSize),
-      ge::gl::Shader::define("WINDOW_X"  ,(uint32_t)cfg.windowX  ),
-      ge::gl::Shader::define("WINDOW_Y"  ,(uint32_t)cfg.windowY  ),
-      ge::gl::Shader::define("MIN_Z_BITS",(uint32_t)cfg.minZBits ),
-      ge::gl::Shader::define("NEAR"      ,nnear                  ),
-      glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
-      ge::gl::Shader::define("FOVY"      ,fovy                   ),
-      ge::gl::Shader::define("TILE_X"    ,cfg.tileX              ),
-      ge::gl::Shader::define("TILE_Y"    ,cfg.tileY              ),
+      rssv::getDebugConfigShader(vars),
       ge::gl::Shader::define("WIREFRAME",(int)wireframe),
-
-      rssv::configShader,
       rssv::mortonShader,
       rssv::demortonShader,
       gsSrc);

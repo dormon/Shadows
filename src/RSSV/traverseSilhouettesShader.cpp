@@ -22,16 +22,27 @@ std::string const rssv::traverseSilhouettesShader = R".(
 #define NO_AABB 0
 #endif//NO_AABB
 
+#pragma debug(on)
+
 layout(local_size_x=WARP)in;
 
 #if MERGED_BUFFERS == 1
+
 layout(std430,binding=0)buffer Hierarchy{
-  uint  nodePool[nodePoolBufferSizeInUints ];
-  float aabbPool[aabbPoolBufferSizeInFloats];
-}
+  uint  nodePool[nodeBufferSizeInUints ];
+  float aabbPool[aabbBufferSizeInFloats];
+#if MEMORY_OPTIM == 1
+  uint  aabbPointer[aabbPointerBufferSizeInUints];
+#endif
+};
+
 #else
 layout(std430,binding=0)buffer NodePool          {uint  nodePool         [];};
 layout(std430,binding=1)buffer AABBPool          {float aabbPool         [];};
+#if MEMORY_OPTIM == 1
+layout(std430,binding=7)buffer AABBPointer {uint  aabbPointer [];};///TODO DEBUG???
+#endif
+
 #endif
 
 layout(std430,binding=2)buffer JobCounter        {uint  jobCounter       [];};
@@ -39,10 +50,6 @@ layout(std430,binding=3)buffer EdgeBuffer        {float edgeBuffer       [];};
 layout(std430,binding=4)buffer MultBuffer        {uint  multBuffer       [];};
 layout(std430,binding=5)buffer SilhouetteCounter {uint  silhouetteCounter[];};
 layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
-
-#if MEMORY_OPTIM == 1
-layout(std430,binding=7)buffer AABBPointer {uint  aabbPointer [];};///TODO DEBUG???
-#endif
 
 layout(     binding=0)          uniform sampler2DRect depthTexture;
 layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
