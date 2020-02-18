@@ -18,6 +18,7 @@
 #include <RSSV/quantizeZShader.h>
 #include <RSSV/depthToZShader.h>
 #include <RSSV/collisionShader.h>
+#include <RSSV/getEdgePlanesShader.h>
 #include <RSSV/traverseSilhouettesShader.h>
 
 #include <iomanip>
@@ -43,28 +44,38 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"rssv.method.config"
       ,"rssv.method.alignedNofEdges"
       ,"rssv.param.mergedBuffers"
+      ,"rssv.param.computePlanesInClipSpace"
+      ,"rssv.param.useSkala"
+      ,"rssv.param.dumpPointsNotPlanes"
       );
 
   auto const noAABB                       =  vars.getInt32       ("rssv.param.noAABB"                      );
   auto const storeTraverseSilhouettesStat =  vars.getBool        ("rssv.param.storeTraverseSilhouettesStat");
   auto const storeEdgePlanes              =  vars.getBool        ("rssv.param.storeEdgePlanes"             );
   auto const alignedNofEdges              =  vars.getUint32      ("rssv.method.alignedNofEdges"            );
-  auto const mergedBuffers                =  vars.getInt32       ("rssv.param.mergedBuffers"    );
+  auto const mergedBuffers                =  vars.getInt32       ("rssv.param.mergedBuffers"               );
+  auto const computePlanesInClipSpace     =  vars.getBool        ("rssv.param.computePlanesInClipSpace"    );
+  auto const useSkala                     =  vars.getBool        ("rssv.param.useSkala"                    );
+  auto const dumpPointsNotPlanes          =  vars.getBool        ("rssv.param.dumpPointsNotPlanes"         );
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
         "#version 450\n",
         ballotSrc,
         getConfigShader(vars),
-        Shader::define("NO_AABB"            ,(int)     noAABB                 ),
-        Shader::define("STORE_TRAVERSE_STAT",(int)storeTraverseSilhouettesStat),
-        Shader::define("STORE_EDGE_PLANES"  ,(int)storeEdgePlanes             ),
-        Shader::define("ALIGNED_NOF_EDGES"  ,alignedNofEdges                  ),
-        Shader::define("MERGED_BUFFERS"     ,(int)mergedBuffers               ),
+        Shader::define("NO_AABB"                     ,(int)     noAABB                 ),
+        Shader::define("STORE_TRAVERSE_STAT"         ,(int)storeTraverseSilhouettesStat),
+        Shader::define("STORE_EDGE_PLANES"           ,(int)storeEdgePlanes             ),
+        Shader::define("ALIGNED_NOF_EDGES"           ,alignedNofEdges                  ),
+        Shader::define("MERGED_BUFFERS"              ,(int)mergedBuffers               ),
+        Shader::define("COMPUTE_PLANES_IN_CLIP_SPACE",(int)computePlanesInClipSpace    ),
+        Shader::define("USE_SKALA"                   ,(int)useSkala                    ),
+        Shader::define("DUMP_POINTS_NOT_PLANES"      ,(int)dumpPointsNotPlanes         ),
         rssv::demortonShader,
         rssv::depthToZShader,
         rssv::quantizeZShader,
         rssv::collisionShader,
+        rssv::getEdgePlanesShader,
         rssv::traverseSilhouettesShader
         ));
 
@@ -164,13 +175,19 @@ void traverseSilhouettes(vars::Vars&vars){
 
   prg->use();
 
-  auto invTran = glm::transpose(glm::inverse(proj*view));
-  //auto projView = proj*view;
+  auto computePlanesInClipSpace = vars.getBool("rssv.param.computePlanesInClipSpace");
+  if(computePlanesInClipSpace){
+    auto projView = proj*view;
+    prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
+  }else{
+    auto invTran = glm::transpose(glm::inverse(proj*view));
+    prg->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
+  }
+
   prg
     //->setMatrix4fv("view"         ,glm::value_ptr(view         ))
     //->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
-    ->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
-    //->setMatrix4fv("projView"      ,glm::value_ptr(projView      ))
+    //->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
     ->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
 
   auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");

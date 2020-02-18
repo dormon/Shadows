@@ -25,6 +25,8 @@ add_library(${PROJECT_NAME} OBJECT
   drawSilhouettes.h
   drawBridges.cpp
   drawBridges.h
+  drawEdgePlanes.cpp
+  drawEdgePlanes.h
   )
 
 target_include_directories(${PROJECT_NAME} PUBLIC .. ../..)

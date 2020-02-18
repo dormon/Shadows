@@ -22,6 +22,7 @@
 #include <RSSV/debug/drawSF.h>
 #include <RSSV/debug/drawEdges.h>
 #include <RSSV/debug/drawSilhouettes.h>
+#include <RSSV/debug/drawEdgePlanes.h>
 #include <RSSV/debug/drawBridges.h>
 #include <RSSV/configShader.h>
 #include <RSSV/config.h>
@@ -64,6 +65,7 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&drawShadowFrusta   = vars.addOrGetBool("rssv.method.debug.drawShadowFrusta");
   auto&drawEdges          = vars.addOrGetBool("rssv.method.debug.drawEdges"       );
   auto&drawSilhouettes    = vars.addOrGetBool("rssv.method.debug.drawSilhouettes" );
+  auto&drawEdgePlanes     = vars.addOrGetBool("rssv.method.debug.drawEdgePlanes"  );
 
 
   auto&drawBridges        = vars.addOrGetBool  ("rssv.method.debug.drawBridges"  );
@@ -168,21 +170,30 @@ void rssv::drawDebug(vars::Vars&vars){
 
 
     if(ImGui::BeginMenu("silhouettes")){
-      if(ImGui::MenuItem("dump"))
+      if(ImGui::MenuItem("dump")){
+        rssv::debug::dumpBasic(vars);
         rssv::debug::dumpSilhouettes(vars);
+      }
 
       if(ImGui::MenuItem("drawEdges")){
         drawEdges = !drawEdges;
         vars.updateTicks("rssv.method.debug.drawEdges");
       }
 
+
       if(ImGui::MenuItem("drawSilhouettes")){
         drawSilhouettes = !drawSilhouettes;
         vars.updateTicks("rssv.method.debug.drawSilhouettes");
       }
 
+      if(ImGui::MenuItem("drawEdgePlanes")){
+        drawEdgePlanes = !drawEdgePlanes;
+        vars.updateTicks("rssv.method.debug.drawEdgePlanes");
+      }
+
       ImGui::EndMenu();
     }
+
 
     if(ImGui::BeginMenu("traverse")){
 
@@ -190,6 +201,7 @@ void rssv::drawDebug(vars::Vars&vars){
         rssv::debug::dumpBasic(vars);
         rssv::debug::dumpNodePool(vars);
         rssv::debug::dumpAABBPool(vars);
+        rssv::debug::dumpAABBPointer(vars);
         rssv::debug::dumpTraverse(vars);
       }
 
@@ -280,6 +292,9 @@ void rssv::drawDebug(vars::Vars&vars){
 
   if(drawSilhouettes)
     debug::drawSilhouettes(vars);
+
+  if(drawEdgePlanes)
+    debug::drawEdgePlanes(vars);
 
   if(drawBridges)
     debug::drawBridges(vars);

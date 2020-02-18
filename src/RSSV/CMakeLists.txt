@@ -60,6 +60,8 @@ add_library(${PROJECT_NAME} STATIC
   collisionShader.h
   getConfigShader.cpp
   getConfigShader.h
+  getEdgePlanesShader.cpp
+  getEdgePlanesShader.h
   )
 
 add_subdirectory(debug)

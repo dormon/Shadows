@@ -21,17 +21,10 @@ using namespace std;
 
 namespace rssv::debug{
 
-//void dumpHierarchy(vars::Vars&vars){
-//  FUNCTION_CALLER();
-//  auto input = vars.get<Buffer>("rssv.method.hierarchy");
-//  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.hierarchy",input->getSize());
-//  buf->copy(*input);
-//}
-
 void dumpNodePool(vars::Vars&vars){
   FUNCTION_CALLER();
   auto const mergedBuffers =  vars.getInt32("rssv.param.mergedBuffers");
-  auto const cfg           = *vars.get<Config>("rssv.method.config");
+  auto const cfg           = *vars.get<Config>("rssv.method.debug.dump.config");
   if(mergedBuffers){
     auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
     auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.nodePool",cfg.nodeBufferSize);
@@ -45,11 +38,10 @@ void dumpNodePool(vars::Vars&vars){
 
 void dumpAABBPointer(vars::Vars&vars){
   FUNCTION_CALLER();
-  auto memoryOptim = vars.getInt32("rssv.param.memoryOptim");
-  if(!memoryOptim)return;
+  auto const cfg           = *vars.get<Config>("rssv.method.debug.dump.config");
+  if(!cfg.memoryOptim)return;
 
   auto const mergedBuffers =  vars.getInt32("rssv.param.mergedBuffers");
-  auto const cfg           = *vars.get<Config>("rssv.method.config");
   if(mergedBuffers){
     auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
     auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPointer",cfg.aabbPointerBufferSize);
@@ -65,7 +57,7 @@ void dumpAABBPointer(vars::Vars&vars){
 void dumpAABBPool(vars::Vars&vars){
   FUNCTION_CALLER();
   auto const mergedBuffers =  vars.getInt32   ("rssv.param.mergedBuffers");
-  auto const cfg           = *vars.get<Config>("rssv.method.config");
+  auto const cfg           = *vars.get<Config>("rssv.method.debug.dump.config");
 
   if(mergedBuffers){
     auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
@@ -114,13 +106,11 @@ void dumpBasic(vars::Vars&vars){
 
   auto cfg       = *vars.get<Config>("rssv.method.config");
 
-  auto memoryOptim = vars.getInt32("rssv.param.memoryOptim");
 
-  vars.reCreate<glm::vec4 >("rssv.method.debug.dump.lightPosition"   ,lp         );
-  vars.reCreate<glm::mat4 >("rssv.method.debug.dump.viewMatrix"      ,vm         );
-  vars.reCreate<glm::mat4 >("rssv.method.debug.dump.projectionMatrix",pm         );
-  vars.reCreate<Config    >("rssv.method.debug.dump.config"          ,cfg        ); 
-  vars.reCreate<int       >("rssv.method.debug.dump.memoryOptim"     ,memoryOptim);
+  vars.reCreate<glm::vec4 >("rssv.method.debug.dump.lightPosition"   ,lp           );
+  vars.reCreate<glm::mat4 >("rssv.method.debug.dump.viewMatrix"      ,vm           );
+  vars.reCreate<glm::mat4 >("rssv.method.debug.dump.projectionMatrix",pm           );
+  vars.reCreate<Config    >("rssv.method.debug.dump.config"          ,cfg          ); 
 }
 
 void dumpTraversePlanes(vars::Vars&vars){

@@ -308,31 +308,26 @@ void main(){
 }
 
 void drawTraverse(vars::Vars&vars){
+  FUNCTION_CALLER();
   prepareDrawTraverse(vars);
 
   auto const cfg               = *vars.get<Config>        ("rssv.method.debug.dump.config"           );
 
   auto const nodeView          = *vars.get<glm::mat4>     ("rssv.method.debug.dump.viewMatrix"       );
   auto const nodeProj          = *vars.get<glm::mat4>     ("rssv.method.debug.dump.projectionMatrix" );
-  auto const nodePool          =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"         );
-  auto const aabbPool          =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"         );
 
-  auto const view              = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
-  auto const proj              = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
-  auto const taToDraw          =  vars.getUint32          ("rssv.method.debug.taToDraw"             );
-  auto const trToDraw          =  vars.getUint32          ("rssv.method.debug.trToDraw"             );
-  auto const inToDraw          =  vars.getUint32          ("rssv.method.debug.inToDraw"             );
-  auto const drawTightAABB     =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
-
-  auto const memoryOptim       =  vars.getInt32           ("rssv.method.debug.dump.memoryOptim"     );
+  auto const view              = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"            );
+  auto const proj              = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"      );
+  auto const taToDraw          =  vars.getUint32          ("rssv.method.debug.taToDraw"              );
+  auto const trToDraw          =  vars.getUint32          ("rssv.method.debug.trToDraw"              );
+  auto const inToDraw          =  vars.getUint32          ("rssv.method.debug.inToDraw"              );
+  auto const drawTightAABB     =  vars.getBool            ("rssv.method.debug.drawTightAABB"         );
 
   auto vao = vars.get<VertexArray>("rssv.method.debug.vao");
 
   auto prg = vars.get<Program>("rssv.method.debug.drawTraverseProgram");
 
   vao->bind();
-  nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
   prg->use();
   prg
     ->setMatrix4fv("nodeView"   ,glm::value_ptr(nodeView))
@@ -342,9 +337,13 @@ void drawTraverse(vars::Vars&vars){
     ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
     ;
 
-  if(memoryOptim){
+  auto const nodePool          =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"         );
+  auto const aabbPool          =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"         );
+  nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  if(cfg.memoryOptim){
     prg->bindBuffer("AABBPointer",vars.get<Buffer>("rssv.method.debug.dump.aabbPointer"));
-    prg->set1i("memoryOptim",memoryOptim);
+    prg->set1i("memoryOptim",cfg.memoryOptim);
   }
 
   auto dibo = vars.get<Buffer>("rssv.method.debug.traverseData");

@@ -76,45 +76,6 @@ shared vec4 lightClipSpace;
 
 #line 52
 
-vec4 getClipPlane(in vec4 a,in vec4 b,in vec4 c){
-  if(a.w==0){
-    if(b.w==0){
-      if(c.w==0){
-        return vec4(0,0,0,cross(b.xyz-a.xyz,c.xyz-a.xyz).z);
-      }else{
-        vec3 n = cross(a.xyz*c.w-c.xyz*a.w,b.xyz*c.w-c.xyz*b.w);
-        return vec4(n*c.w,-dot(n,c.xyz));
-      }
-    }else{
-      vec3 n = cross(c.xyz*b.w-b.xyz*c.w,a.xyz*b.w-b.xyz*a.w);
-      return vec4(n*b.w,-dot(n,b.xyz));
-    }
-  }else{
-    vec3 n = cross(b.xyz*a.w-a.xyz*b.w,c.xyz*a.w-a.xyz*c.w);
-    return vec4(n*a.w,-dot(n,a.xyz));
-  }
-}
-
-vec4 getPlaneSkala(in vec4 A,in vec4 B,in vec4 C){
-  float x1 = A.x;
-  float x2 = B.x;
-  float x3 = C.x;
-  float y1 = A.y;
-  float y2 = B.y;
-  float y3 = C.y;
-  float z1 = A.z;
-  float z2 = B.z;
-  float z3 = C.z;
-  float w1 = A.w;
-  float w2 = B.w;
-  float w3 = C.w;
-
-  float a =  y1*(z2*w3-z3*w2) - y2*(z1*w3-z3*w1) + y3*(z1*w2-z2*w1);
-  float b = -x1*(z2*w3-z3*w2) + x2*(z1*w3-z3*w1) - x3*(z1*w2-z2*w1);
-  float c =  x1*(y2*w3-y3*w2) - x2*(y1*w3-y3*w1) + x3*(y1*w2-y2*w1);
-  float d = -x1*(y2*z3-y3*z2) + x2*(y1*z3-y3*z1) - x3*(y1*z2-y2*z1);
-  return vec4(a,b,c,d);
-}
 
 #if STORE_EDGE_PLANES == 1
 layout(std430,binding = 7)buffer Debug{uint debug[];};
@@ -138,38 +99,20 @@ void loadSilhouette(uint job){
 
 
 
-#if 0
+#if COMPUTE_PLANES_IN_CLIP_SPACE == 1
     edgeAClipSpace = projView*vec4(edgeA,1.f);
     edgeBClipSpace = projView*vec4(edgeB,1.f);
     lightClipSpace = projView*lightPosition  ;
 
-    //edgeAClipSpace /= abs(edgeAClipSpace.w);
-    //edgeBClipSpace /= abs(edgeBClipSpace.w);
-    //lightClipSpace /= abs(lightClipSpace.w);
+    edgeAClipSpace /= abs(edgeAClipSpace.w);
+    edgeBClipSpace /= abs(edgeBClipSpace.w);
+    lightClipSpace /= abs(lightClipSpace.w);
 
 
-    #if 1
-        edgePlane = getClipPlane(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
-    
-        vec3 an = cross(
-              edgePlane.xyz,
-              edgeAClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeAClipSpace.w);
-        aPlane = vec4(an*abs(edgeAClipSpace.w),-dot(an,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
-    
-        vec3 bn = cross(
-              edgeBClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeBClipSpace.w,
-              edgePlane.xyz);
-        bPlane = vec4(bn*abs(edgeBClipSpace.w),-dot(bn,edgeBClipSpace.xyz)*sign(edgeBClipSpace.w));
-    
-        vec3 abn = cross(
-              edgeBClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*edgeBClipSpace.w,
-              edgePlane.xyz);
-        abPlane = vec4(abn*abs(edgeAClipSpace.w),-dot(abn,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
+    #if USE_SKALA == 1
+      getEdgePlanesSkala(edgePlane,aPlane,bPlane,abPlane,edgeAClipSpace,edgeBClipSpace,lightClipSpace);
     #else
-      edgePlane = normalize(getPlaneSkala(edgeAClipSpace,edgeBClipSpace,lightClipSpace));
-      aPlane    = normalize(getPlaneSkala(edgeAClipSpace,lightClipSpace,edgeAClipSpace+vec4(edgePlane.xyz,0)));
-      bPlane    = normalize(getPlaneSkala(edgeBClipSpace,edgeBClipSpace+vec4(edgePlane.xyz,0),lightClipSpace));
-      abPlane   = normalize(-getPlaneSkala(edgeAClipSpace,edgeBClipSpace,edgeAClipSpace-vec4(edgePlane.xyz,0)));
+      getEdgePlanes(edgePlane,aPlane,bPlane,abPlane,edgeAClipSpace,edgeBClipSpace,lightClipSpace);
     #endif
 #else
     //mat4 invTran = transpose(inverse(proj*view));
@@ -190,19 +133,7 @@ void loadSilhouette(uint job){
 #if STORE_EDGE_PLANES == 1
     uint w = atomicAdd(debug[0],1);
 
-    #if 1
-        for(int i=0;i<4;++i)
-          debug[1+w*16+ 0+i] = floatBitsToUint(edgePlane[i]);
-    
-        for(int i=0;i<4;++i)
-          debug[1+w*16+ 4+i] = floatBitsToUint(   aPlane[i]);
-    
-        for(int i=0;i<4;++i)
-          debug[1+w*16+ 8+i] = floatBitsToUint(   bPlane[i]);
-    
-        for(int i=0;i<4;++i)
-          debug[1+w*16+12+i] = floatBitsToUint(  abPlane[i]);
-    #else
+    #if DUMP_POINTS_NOT_PLANES == 1
         for(int i=0;i<4;++i)
           debug[1+w*16+ 0+i] = floatBitsToUint(edgeAClipSpace[i]);
     
@@ -214,7 +145,18 @@ void loadSilhouette(uint job){
     
         for(int i=0;i<4;++i)
           debug[1+w*16+12+i] = floatBitsToUint(lightClipSpace[i]);
-
+    #else
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 0+i] = floatBitsToUint(edgePlane[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 4+i] = floatBitsToUint(   aPlane[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 8+i] = floatBitsToUint(   bPlane[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+12+i] = floatBitsToUint(  abPlane[i]);
     #endif
 #endif
     
@@ -224,6 +166,23 @@ void loadSilhouette(uint job){
   memoryBarrierShared();
 }
 
+//uniform mat4 invViewProj = mat4(1);
+//
+//void stupidBridge(vec3 sampleNClipSpace,vec3 sampleMClipSpace,vec4 lightWorldSpace,vec3 edgeAWorldSpace,vec3 edgeBWorldSpace){
+//  vec4 sampleMWorldSpace = invViewProj*vec4(sampleMClipSpace,1);
+//  vec4 sampleNWorldSpace = invViewProj*vec4(sampleNClipSpace,1);
+//
+//  sampleMWorldSpace.xyz /= sampleMClipSpace.w;
+//  sampleNWorldSpace.xyz /= sampleMClipSpace.w;
+//
+//  vec3 samplePlaneNormal = normalize(cross(sampleNWorldSpace.xyz - sampleMWorldSpace.xyz,lightWorldSpace.xyz-sampleMWorldSpace.xyz));
+//  vec4 samplePlaneWorldSpace = vec4(samplePlaneNormal,-dot(samplePlaneNormal,sampleMWorldSpace));
+//  vec4 samplePlaneClipSpace  = invTran*samplePlaneWorldSpace;
+//
+//
+//
+//
+//}
 
 //void lastLevel(uint node){
 //  uvec2 sampleCoord;
@@ -256,6 +215,7 @@ uint job = 0u;
 #line 10000
 
 shared uint64_t intersection[nofLevels];
+shared vec3     bridgeEnd   [nofLevels][WARP];
 
 void traverse(){
   int level = 0;
@@ -311,6 +271,7 @@ void traverse(){
         // */
 #else
 
+
         vec3 minCorner;
         vec3 aabbSize;
 #if MEMORY_OPTIM == 1
@@ -331,6 +292,19 @@ void traverse(){
 #endif
 
 #endif
+
+        bridgeEnd[level][gl_LocalInvocationIndex] = minCorner + aabbSize/2.f;
+
+        vec3 bridgeStart;
+        if(level == 0)
+          bridgeStart = lightPosition.xyz;
+        else
+          bridgeStart = bridgeEnd[level-1][node&warpMask];
+
+        if(level > 0){
+
+        }
+
 
         vec3 tr;
         bool planeTest;
@@ -430,9 +404,11 @@ void main(){
     job = readFirstInvocationARB(job);
     if(job >= silhouetteCounter[0])return;
 
+    //job=3;
     loadSilhouette(job);
 
     traverse();
+    //break;
 
   }
 }
