@@ -34,5 +34,7 @@ void rssv::loadParams(
   vars.addBool  ("rssv.param.computePlanesInClipSpace"      );
   vars.addBool  ("rssv.param.useSkala"                      );
   vars.addBool  ("rssv.param.dumpPointsNotPlanes"           );
+  vars.addBool  ("rssv.param.computeBridges"                );
+  vars.addBool  ("rssv.param.storeBridgesInLocalMemory"     );
 
 }

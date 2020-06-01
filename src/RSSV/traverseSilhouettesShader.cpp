@@ -65,10 +65,9 @@ uniform mat4 invTran;
 uniform mat4 projView;
 
 shared vec4 edgePlane;
-shared vec4 aPlane;
-shared vec4 bPlane;
-shared vec4 abPlane;
-
+shared vec4 aPlane   ;
+shared vec4 bPlane   ;
+shared vec4 abPlane  ;
 
 shared vec4 edgeAClipSpace;
 shared vec4 edgeBClipSpace;
@@ -96,9 +95,6 @@ void loadSilhouette(uint job){
     edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
     edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
 
-
-
-
 #if COMPUTE_PLANES_IN_CLIP_SPACE == 1
     edgeAClipSpace = projView*vec4(edgeA,1.f);
     edgeBClipSpace = projView*vec4(edgeB,1.f);
@@ -115,8 +111,6 @@ void loadSilhouette(uint job){
       getEdgePlanes(edgePlane,aPlane,bPlane,abPlane,edgeAClipSpace,edgeBClipSpace,lightClipSpace);
     #endif
 #else
-    //mat4 invTran = transpose(inverse(proj*view));
-
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
     edgePlane = invTran*vec4(n,-dot(n,edgeA));
 
@@ -128,6 +122,13 @@ void loadSilhouette(uint job){
 
     vec3 abn = normalize(cross(edgeB-edgeA,n));
     abPlane = invTran*vec4(abn,-dot(abn,edgeA));
+
+#if COMPUTE_BRIDGES == 1
+    edgeAClipSpace = projView*vec4(edgeA,1.f);
+    edgeBClipSpace = projView*vec4(edgeB,1.f);
+    lightClipSpace = projView*lightPosition  ;
+#endif
+
 #endif
 
 #if STORE_EDGE_PLANES == 1
@@ -166,23 +167,41 @@ void loadSilhouette(uint job){
   memoryBarrierShared();
 }
 
-//uniform mat4 invViewProj = mat4(1);
-//
-//void stupidBridge(vec3 sampleNClipSpace,vec3 sampleMClipSpace,vec4 lightWorldSpace,vec3 edgeAWorldSpace,vec3 edgeBWorldSpace){
-//  vec4 sampleMWorldSpace = invViewProj*vec4(sampleMClipSpace,1);
-//  vec4 sampleNWorldSpace = invViewProj*vec4(sampleNClipSpace,1);
-//
-//  sampleMWorldSpace.xyz /= sampleMClipSpace.w;
-//  sampleNWorldSpace.xyz /= sampleMClipSpace.w;
-//
-//  vec3 samplePlaneNormal = normalize(cross(sampleNWorldSpace.xyz - sampleMWorldSpace.xyz,lightWorldSpace.xyz-sampleMWorldSpace.xyz));
-//  vec4 samplePlaneWorldSpace = vec4(samplePlaneNormal,-dot(samplePlaneNormal,sampleMWorldSpace));
-//  vec4 samplePlaneClipSpace  = invTran*samplePlaneWorldSpace;
-//
-//
-//
-//
-//}
+int computeBridge(in vec3 bridgeStart,in vec3 bridgeEnd){
+  // m n c 
+  // - - 0
+  // 0 - 1
+  // + - 1
+  // - 0 1
+  // 0 0 0
+  // + 0 0
+  // - + 1
+  // 0 + 0
+  // + + 0
+  //
+  // m<0 && n>=0 || m>=0 && n<0
+  // m<0 xor n<0
+
+  int result = edgeMult;
+  float ss = dot(edgePlane,vec4(bridgeStart,1));
+  float es = dot(edgePlane,vec4(bridgeEnd  ,1));
+  if((ss<0)==(es<0))return 0;
+  result *= 1-2*int(ss<0.f);
+
+  vec4 samplePlane    = getClipPlaneSkala(vec4(bridgeStart,1),vec4(bridgeEnd,1),lightClipSpace);
+  ss = dot(samplePlane,edgeAClipSpace);
+  es = dot(samplePlane,edgeBClipSpace);
+  ss*=es;
+  if(ss>0.f)return 0;
+  result *= 1+int(ss<0.f);
+
+  vec4 trianglePlane  = getClipPlaneSkala(vec4(bridgeStart,1),vec4(bridgeEnd,1),vec4(bridgeStart,1) + (edgeBClipSpace-edgeAClipSpace));
+  trianglePlane *= sign(dot(trianglePlane,lightClipSpace));
+  if(dot(trianglePlane,edgeAClipSpace)<=0)return 0;
+
+  return result;
+
+}
 
 //void lastLevel(uint node){
 //  uvec2 sampleCoord;
@@ -215,7 +234,12 @@ uint job = 0u;
 #line 10000
 
 shared uint64_t intersection[nofLevels];
+
+#if COMPUTE_BRIDGES == 1
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
 shared vec3     bridgeEnd   [nofLevels][WARP];
+#endif
+#endif
 
 void traverse(){
   int level = 0;
@@ -293,17 +317,40 @@ void traverse(){
 
 #endif
 
-        bridgeEnd[level][gl_LocalInvocationIndex] = minCorner + aabbSize/2.f;
+#if COMPUTE_BRIDGES == 1
+
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+        bridgeEnd[level][gl_LocalInvocationIndex] = minCorner + aabbSize * 0.5f;
 
         vec3 bridgeStart;
         if(level == 0)
           bridgeStart = lightPosition.xyz;
         else
           bridgeStart = bridgeEnd[level-1][node&warpMask];
+#endif
 
         if(level > 0){
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+          int mult = computeBridge(bridgeStart,bridgeEnd[level][gl_LocalInvocationIndex]);
+#else
+          vec3 bridgeStart;
+          bridgeStart[0]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 0u];
+          bridgeStart[1]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 2u];
+          bridgeStart[2]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 4u];
+          bridgeStart[0] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 1u];
+          bridgeStart[1] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 3u];
+          bridgeStart[2] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 5u];
+          bridgeStart*=0.5;
 
+          int mult = computeBridge(
+              
+              bridgeStart,
+              
+              minCorner + aabbSize/2.f);
+#endif
+          if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
         }
+#endif
 
 
         vec3 tr;

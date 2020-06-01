@@ -47,6 +47,8 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"rssv.param.computePlanesInClipSpace"
       ,"rssv.param.useSkala"
       ,"rssv.param.dumpPointsNotPlanes"
+      ,"rssv.param.computeBridges"
+      ,"rssv.param.storeBridgesInLocalMemory"
       );
 
   auto const noAABB                       =  vars.getInt32       ("rssv.param.noAABB"                      );
@@ -57,20 +59,24 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const computePlanesInClipSpace     =  vars.getBool        ("rssv.param.computePlanesInClipSpace"    );
   auto const useSkala                     =  vars.getBool        ("rssv.param.useSkala"                    );
   auto const dumpPointsNotPlanes          =  vars.getBool        ("rssv.param.dumpPointsNotPlanes"         );
+  auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
+  auto const storeBridgesInLocalMemory    =  vars.getBool        ("rssv.param.storeBridgesInLocalMemory"   );
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
         "#version 450\n",
         ballotSrc,
         getConfigShader(vars),
-        Shader::define("NO_AABB"                     ,(int)     noAABB                 ),
-        Shader::define("STORE_TRAVERSE_STAT"         ,(int)storeTraverseSilhouettesStat),
-        Shader::define("STORE_EDGE_PLANES"           ,(int)storeEdgePlanes             ),
-        Shader::define("ALIGNED_NOF_EDGES"           ,alignedNofEdges                  ),
-        Shader::define("MERGED_BUFFERS"              ,(int)mergedBuffers               ),
-        Shader::define("COMPUTE_PLANES_IN_CLIP_SPACE",(int)computePlanesInClipSpace    ),
-        Shader::define("USE_SKALA"                   ,(int)useSkala                    ),
-        Shader::define("DUMP_POINTS_NOT_PLANES"      ,(int)dumpPointsNotPlanes         ),
+        Shader::define("NO_AABB"                      ,(int)     noAABB                 ),
+        Shader::define("STORE_TRAVERSE_STAT"          ,(int)storeTraverseSilhouettesStat),
+        Shader::define("STORE_EDGE_PLANES"            ,(int)storeEdgePlanes             ),
+        Shader::define("ALIGNED_NOF_EDGES"            ,alignedNofEdges                  ),
+        Shader::define("MERGED_BUFFERS"               ,(int)mergedBuffers               ),
+        Shader::define("COMPUTE_PLANES_IN_CLIP_SPACE" ,(int)computePlanesInClipSpace    ),
+        Shader::define("USE_SKALA"                    ,(int)useSkala                    ),
+        Shader::define("DUMP_POINTS_NOT_PLANES"       ,(int)dumpPointsNotPlanes         ),
+        Shader::define("COMPUTE_BRIDGES"              ,(int)computeBridges              ),
+        Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY",(int)storeBridgesInLocalMemory   ),
         rssv::demortonShader,
         rssv::depthToZShader,
         rssv::quantizeZShader,
