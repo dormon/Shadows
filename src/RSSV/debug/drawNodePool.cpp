@@ -344,7 +344,7 @@ void drawNodePool(vars::Vars&vars){
   auto const levelsToDraw    =  vars.getUint32          ("rssv.method.debug.levelsToDraw"         );
   auto const drawTightAABB   =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
 
-  auto const memoryOptim     =  vars.getInt32           ("rssv.method.debug.dump.memoryOptim"     );
+  auto const memoryOptim     =  cfg.memoryOptim;
 
   auto vao                   =  vars.get<VertexArray>   ("rssv.method.debug.vao"                  );
   auto prg                   =  vars.get<Program>       ("rssv.method.debug.drawNodePoolProgram"  );
