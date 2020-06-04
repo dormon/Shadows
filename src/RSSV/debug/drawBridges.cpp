@@ -129,13 +129,6 @@ vec3 getCenter(uint level,uint node){
   vec3 minCorner;
   vec3 maxCorner;
 
-  //minCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+0];
-  //maxCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+1];
-  //minCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+2];
-  //maxCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+3];
-  //minCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+4];
-  //maxCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+5];
-
   if(memoryOptim == 1){
     uint w = aabbPointer[nodeLevelOffset[level]+node+1];
     minCorner.x = aabbPool[w*floatsPerAABB+0];
