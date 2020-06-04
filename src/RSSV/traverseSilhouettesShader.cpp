@@ -290,6 +290,13 @@ void loadAABB(out vec3 minCorner,out vec3 maxCorner,in uint level,in uint node){
 #endif
 }
 
+vec3 loadAABBCenter(in uint level,in uint node){
+  vec3 minCorner;
+  vec3 maxCorner;
+  loadAABB(minCorner,maxCorner,level,node);
+  return (minCorner+maxCorner)*.5f;
+}
+
 void traverse(){
   int level = 0;
 
@@ -385,19 +392,17 @@ void traverse(){
             int mult = computeBridge(bridgeStart,bridgeEnd[level][gl_LocalInvocationIndex]);
   #else
             vec3 bridgeStart;
-            bridgeStart[0]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 0u];
-            bridgeStart[1]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 2u];
-            bridgeStart[2]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 4u];
-            bridgeStart[0] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 1u];
-            bridgeStart[1] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 3u];
-            bridgeStart[2] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 5u];
-            bridgeStart*=0.5;
+            bridgeStart = loadAABBCenter(level-1,node>>warpBits);
+
+            //bridgeStart[0]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 0u];
+            //bridgeStart[1]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 2u];
+            //bridgeStart[2]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 4u];
+            //bridgeStart[0] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 1u];
+            //bridgeStart[1] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 3u];
+            //bridgeStart[2] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 5u];
+            //bridgeStart*=0.5;
   
-            int mult = computeBridge(
-                
-                bridgeStart,
-                
-                minCorner + aabbSize/2.f);
+            int mult = computeBridge(bridgeStart,minCorner + aabbSize/2.f);
   #endif
             if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
             //atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult+1);
