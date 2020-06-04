@@ -92,9 +92,11 @@ shared vec4 lightClipSpace;
 // col(bridge,sil):
 //   bridge: M N clip
 //   Sil: edgePlane (ABL) samplePlane (MNL) trianglePlane (ABMN)
-//   edgePlane = proj*plane(ABL)
-//   samplePlane = skala(M,N,L)
+//   edgePlane = proj*plane(ABL) - same as for AABB
+//   samplePlane = skala(M,N,L) - new
+//   trianglePlane = 
 //   
+// //separate issue
 // col(AABB,tri):
 //   shadowFrustaPlanes needed
 //
@@ -269,6 +271,25 @@ shared vec3     bridgeEnd   [nofLevels][WARP];
 #endif
 #endif
 
+void loadAABB(out vec3 minCorner,out vec3 maxCorner,in uint level,in uint node){
+#if MEMORY_OPTIM == 1
+  uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
+  minCorner[0] = aabbPool[w*6u + 0u];
+  minCorner[1] = aabbPool[w*6u + 2u];
+  minCorner[2] = aabbPool[w*6u + 4u];
+  maxCorner[0] = aabbPool[w*6u + 1u];
+  maxCorner[1] = aabbPool[w*6u + 3u];
+  maxCorner[2] = aabbPool[w*6u + 5u];
+#else
+  minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u];
+  minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u];
+  minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u];
+  maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u];
+  maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u];
+  maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u];
+#endif
+}
+
 void traverse(){
   int level = 0;
 
@@ -326,22 +347,24 @@ void traverse(){
 
         vec3 minCorner;
         vec3 aabbSize;
-#if MEMORY_OPTIM == 1
-        uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
-        minCorner[0] = aabbPool[w*6u + 0u]             ;
-        minCorner[1] = aabbPool[w*6u + 2u]             ;
-        minCorner[2] = aabbPool[w*6u + 4u]             ;
-        aabbSize [0] = aabbPool[w*6u + 1u]-minCorner[0];
-        aabbSize [1] = aabbPool[w*6u + 3u]-minCorner[1];
-        aabbSize [2] = aabbPool[w*6u + 5u]-minCorner[2];
-#else
-        minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
-        minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
-        minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
-        aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
-        aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
-        aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
-#endif
+        loadAABB(minCorner,aabbSize,level,node);
+        aabbSize -= minCorner;
+//#if MEMORY_OPTIM == 1
+//        uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
+//        minCorner[0] = aabbPool[w*6u + 0u]             ;
+//        minCorner[1] = aabbPool[w*6u + 2u]             ;
+//        minCorner[2] = aabbPool[w*6u + 4u]             ;
+//        aabbSize [0] = aabbPool[w*6u + 1u]-minCorner[0];
+//        aabbSize [1] = aabbPool[w*6u + 3u]-minCorner[1];
+//        aabbSize [2] = aabbPool[w*6u + 5u]-minCorner[2];
+//#else
+//        minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
+//        minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
+//        minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
+//        aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
+//        aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
+//        aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+//#endif
 
 #endif
 
