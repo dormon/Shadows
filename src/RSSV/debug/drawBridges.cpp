@@ -106,6 +106,7 @@ flat in uint vId[];
 
 layout(binding=0)buffer NodePool{uint nodePool[];};
 layout(binding=1)buffer AABBPool{float aabbPool[];};
+layout(binding=2,std430)buffer AABBPointer{uint  aabbPointer[];};
 
 uniform mat4 view;
 uniform mat4 proj;
@@ -122,16 +123,35 @@ uniform float zPadding       = 400.f;
 
 uniform vec4 lightPosition;
 
+uniform int memoryOptim = 0;
+
 vec3 getCenter(uint level,uint node){
   vec3 minCorner;
   vec3 maxCorner;
 
-  minCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+0];
-  maxCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+1];
-  minCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+2];
-  maxCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+3];
-  minCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+4];
-  maxCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+5];
+  //minCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+0];
+  //maxCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+1];
+  //minCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+2];
+  //maxCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+3];
+  //minCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+4];
+  //maxCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+5];
+
+  if(memoryOptim == 1){
+    uint w = aabbPointer[nodeLevelOffset[level]+node+1];
+    minCorner.x = aabbPool[w*floatsPerAABB+0];
+    maxCorner.x = aabbPool[w*floatsPerAABB+1];
+    minCorner.y = aabbPool[w*floatsPerAABB+2];
+    maxCorner.y = aabbPool[w*floatsPerAABB+3];
+    minCorner.z = aabbPool[w*floatsPerAABB+4];
+    maxCorner.z = aabbPool[w*floatsPerAABB+5];
+  }else{
+    minCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+0];
+    maxCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+1];
+    minCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+2];
+    maxCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+3];
+    minCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+4];
+    maxCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+5];
+  }
 
   vec3 center = (maxCorner+minCorner)/2.f;
   return center;
@@ -208,6 +228,8 @@ void drawBridges(vars::Vars&vars){
   auto const drawTightAABB   =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
   auto const lightPosition   = *vars.get<glm::vec4>     ("rssv.method.debug.lightPosition"        );
 
+  auto const memoryOptim     =  cfg.memoryOptim;
+
   float zPadding = vars.addOrGetFloat("rssv.method.debug.zPadding",400);
   auto  drawWithPadding = vars.addOrGetBool("rssv.method.debug.drawWithPadding");
 
@@ -230,6 +252,11 @@ void drawBridges(vars::Vars&vars){
     ->set1f       ("zPadding"       ,(float)zPadding              )
     ;
 
+  if(memoryOptim){
+    auto aabbPointer = vars.get<Buffer>("rssv.method.debug.dump.aabbPointer");
+    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+    prg->set1i("memoryOptim",memoryOptim);
+  }
 
   for(uint32_t l=0;l<cfg.nofLevels;++l){
     if((bridgesToDraw&(1u<<l)) == 0)continue;

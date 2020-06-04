@@ -27,22 +27,19 @@ std::string const rssv::traverseSilhouettesShader = R".(
 layout(local_size_x=WARP)in;
 
 #if MERGED_BUFFERS == 1
-
-layout(std430,binding=0)buffer Hierarchy{
-  uint  nodePool[nodeBufferSizeInUints ];
-  float aabbPool[aabbBufferSizeInFloats];
-#if MEMORY_OPTIM == 1
-  uint  aabbPointer[aabbPointerBufferSizeInUints];
-#endif
-};
-
+  layout(std430,binding=0)buffer Hierarchy{
+    uint  nodePool[nodeBufferSizeInUints ];
+    float aabbPool[aabbBufferSizeInFloats];
+    #if MEMORY_OPTIM == 1
+      uint  aabbPointer[aabbPointerBufferSizeInUints];
+    #endif
+  };
 #else
-layout(std430,binding=0)buffer NodePool          {uint  nodePool         [];};
-layout(std430,binding=1)buffer AABBPool          {float aabbPool         [];};
-#if MEMORY_OPTIM == 1
-layout(std430,binding=7)buffer AABBPointer {uint  aabbPointer [];};///TODO DEBUG???
-#endif
-
+  layout(std430,binding=0)buffer NodePool          {uint  nodePool         [];};
+  layout(std430,binding=1)buffer AABBPool          {float aabbPool         [];};
+  #if MEMORY_OPTIM == 1
+    layout(std430,binding=7)buffer AABBPointer {uint  aabbPointer [];};///TODO DEBUG???
+  #endif
 #endif
 
 layout(std430,binding=2)buffer JobCounter        {uint  jobCounter       [];};
@@ -59,10 +56,11 @@ uniform mat4 view;
 uniform mat4 proj;
 uniform vec4 lightPosition;
 
-shared int  edgeMult;
-
 uniform mat4 invTran;
 uniform mat4 projView;
+
+
+shared int  edgeMult;
 
 shared vec4 edgePlane;
 shared vec4 aPlane   ;
