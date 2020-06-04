@@ -45,6 +45,7 @@ void prepareDrawBridges(vars::Vars&vars){
   uniform uint levelToDraw = 0;
 
   in vec3 gNormal;
+  in vec3 gColor;
 
   const vec4 colors[6] = {
     vec4(.1,.1,.1,1)*5*2,
@@ -58,6 +59,7 @@ void prepareDrawBridges(vars::Vars&vars){
   void main(){
 
     fColor = vec4(colors[levelToDraw]);
+    fColor = vec4(gColor,1);//colors[levelToDraw]);
   }
   ).";
 
@@ -107,6 +109,7 @@ flat in uint vId[];
 layout(binding=0)buffer NodePool{uint nodePool[];};
 layout(binding=1)buffer AABBPool{float aabbPool[];};
 layout(binding=2,std430)buffer AABBPointer{uint  aabbPointer[];};
+layout(binding=3,std430)buffer Bridges    { int  bridges    [];};
 
 uniform mat4 view;
 uniform mat4 proj;
@@ -150,6 +153,8 @@ vec3 getCenter(uint level,uint node){
   return center;
 }
 
+out vec3 gColor;
+
 void main(){
   uint gId = vId[0];
 
@@ -164,8 +169,13 @@ void main(){
 
   mat4 nodeProjView = inverse(nodeView)*inverse(nodeProj);
 
+  int mult = bridges[nodeLevelOffsetInUints[levelToDraw] + gId];
+
+  //we draw from child to parent
   vec4 center = nodeProjView*vec4(getCenter(clamp(levelToDraw,0u,5u),gId),1);
   vec4 parentCenter;
+  if(mult == 0)gColor = vec3(0.1);
+  else gColor = vec3(1.f);
   if(levelToDraw == 0){
     parentCenter = lightPosition;
   }else{
@@ -214,6 +224,7 @@ void drawBridges(vars::Vars&vars){
   auto const nodeProj        = *vars.get<glm::mat4>     ("rssv.method.debug.dump.projectionMatrix");
   auto const nodePool        =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"        );
   auto const aabbPool        =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"        );
+  auto const bridges         =  vars.get<Buffer>        ("rssv.method.debug.dump.bridges"         );
 
   auto const view            = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
   auto const proj            = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
@@ -250,6 +261,7 @@ void drawBridges(vars::Vars&vars){
     aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,2);
     prg->set1i("memoryOptim",memoryOptim);
   }
+  bridges->bindBase(GL_SHADER_STORAGE_BUFFER,3);
 
   for(uint32_t l=0;l<cfg.nofLevels;++l){
     if((bridgesToDraw&(1u<<l)) == 0)continue;

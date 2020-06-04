@@ -1,6 +1,8 @@
 #include <RSSV/getEdgePlanesShader.h>
 
 std::string const rssv::getEdgePlanesShader = R".(
+
+// this function computes plane in clip space from 3 points in clip space
 vec4 getClipPlaneSkala(in vec4 A,in vec4 B,in vec4 C){
   float x1 = A.x;
   float x2 = B.x;

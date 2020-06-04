@@ -53,6 +53,12 @@ void dumpAABBPointer(vars::Vars&vars){
   }
 }
 
+void dumpBridges(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto toBackup  = vars.get<Buffer >("rssv.method.bridges"              );
+  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.bridges",toBackup->getSize());
+  buf->copy(*toBackup);
+}
 
 void dumpAABBPool(vars::Vars&vars){
   FUNCTION_CALLER();

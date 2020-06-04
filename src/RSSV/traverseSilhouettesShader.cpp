@@ -73,6 +73,36 @@ shared vec4 lightClipSpace;
 
 #line 52
 
+// Silhouette VS AABB and BRIDGE
+// Input:
+// edge (A,B) worldspace
+// light (L) worldspace / clipspace
+// AABB: clip space minCorner + size
+// Bridge: clip space bridgeStart(M) bridgeEnd(N)
+//
+// col(AABB,sil):
+//   Sil: aPlane (AL) bPlane (BL) abPlane (AB) edgePlane (ABL)
+//   AABB: clip
+//   for collision we need aPlane bPlane abPlane edgePlane
+//   edgePlane = proj*plane(ABL)        noclip(ABL)
+//   aPlane = proj*plane(A,L,nor(ABL))  noclip(ABL)
+//   bPlane = proj*plane(B,L,nor(ABL))  noclip(ABL)
+//   abPlane = proj*plane(A,B,nor(ABL)) noclip(ABL)
+//
+// col(bridge,sil):
+//   bridge: M N clip
+//   Sil: edgePlane (ABL) samplePlane (MNL) trianglePlane (ABMN)
+//   edgePlane = proj*plane(ABL)
+//   samplePlane = skala(M,N,L)
+//   
+// col(AABB,tri):
+//   shadowFrustaPlanes needed
+//
+// col(bridge,tri):
+//   trianglePlane (ABMN) (BCMN) (CAMN)
+//
+//
+
 
 #if STORE_EDGE_PLANES == 1
 layout(std430,binding = 7)buffer Debug{uint debug[];};
@@ -316,38 +346,39 @@ void traverse(){
 #endif
 
 #if COMPUTE_BRIDGES == 1
-
-#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-        bridgeEnd[level][gl_LocalInvocationIndex] = minCorner + aabbSize * 0.5f;
-
-        vec3 bridgeStart;
-        if(level == 0)
-          bridgeStart = lightPosition.xyz;
-        else
-          bridgeStart = bridgeEnd[level-1][node&warpMask];
-#endif
-
-        if(level > 0){
-#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-          int mult = computeBridge(bridgeStart,bridgeEnd[level][gl_LocalInvocationIndex]);
-#else
+  
+  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+          bridgeEnd[level][gl_LocalInvocationIndex] = minCorner + aabbSize * 0.5f;
+  
           vec3 bridgeStart;
-          bridgeStart[0]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 0u];
-          bridgeStart[1]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 2u];
-          bridgeStart[2]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 4u];
-          bridgeStart[0] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 1u];
-          bridgeStart[1] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 3u];
-          bridgeStart[2] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 5u];
-          bridgeStart*=0.5;
-
-          int mult = computeBridge(
-              
-              bridgeStart,
-              
-              minCorner + aabbSize/2.f);
-#endif
-          if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
-        }
+          if(level == 0)
+            bridgeStart = lightPosition.xyz;
+          else
+            bridgeStart = bridgeEnd[level-1][node&warpMask];
+  #endif
+  
+          if(level > 0){
+  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+            int mult = computeBridge(bridgeStart,bridgeEnd[level][gl_LocalInvocationIndex]);
+  #else
+            vec3 bridgeStart;
+            bridgeStart[0]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 0u];
+            bridgeStart[1]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 2u];
+            bridgeStart[2]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 4u];
+            bridgeStart[0] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 1u];
+            bridgeStart[1] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 3u];
+            bridgeStart[2] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 5u];
+            bridgeStart*=0.5;
+  
+            int mult = computeBridge(
+                
+                bridgeStart,
+                
+                minCorner + aabbSize/2.f);
+  #endif
+            if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
+            //atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult+1);
+          }
 #endif
 
 

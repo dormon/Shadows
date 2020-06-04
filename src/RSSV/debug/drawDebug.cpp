@@ -146,6 +146,7 @@ void rssv::drawDebug(vars::Vars&vars){
         rssv::debug::dumpNodePool(vars);
         rssv::debug::dumpAABBPool(vars);
         rssv::debug::dumpAABBPointer(vars);
+        rssv::debug::dumpBridges(vars);
       }
 
       if(ImGui::MenuItem(drawBridges?"hide":"draw")){
