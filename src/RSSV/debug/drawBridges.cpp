@@ -136,7 +136,7 @@ vec4 lightClipSpace = vec4(0);
 vec4 edgeAClipSpace = vec4(0);
 vec4 edgeBClipSpace = vec4(0);
 
-int computeBridge(in vec3 bridgeStart,in vec3 bridgeEnd){
+int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
   // m n c 
   // - - 0
   // 0 - 1
@@ -150,23 +150,22 @@ int computeBridge(in vec3 bridgeStart,in vec3 bridgeEnd){
   //
   // m<0 && n>=0 || m>=0 && n<0
   // m<0 xor n<0
+  
   int result = edgeMult;
-  float ss = dot(edgePlane,vec4(bridgeStart,1));
-  float es = dot(edgePlane,vec4(bridgeEnd  ,1));
-  if(es == es)return 1;
-  else return 0;
+  float ss = dot(edgePlane,bridgeStart);
+  float es = dot(edgePlane,bridgeEnd  );
   if((ss<0)==(es<0))return 0;
   result *= 1-2*int(ss<0.f);
-  return result;
+  //return result;
 
-  vec4 samplePlane    = getClipPlaneSkala(vec4(bridgeStart,1),vec4(bridgeEnd,1),lightClipSpace);
+  vec4 samplePlane    = getClipPlaneSkala(bridgeStart,bridgeEnd,lightClipSpace);
   ss = dot(samplePlane,edgeAClipSpace);
   es = dot(samplePlane,edgeBClipSpace);
   ss*=es;
   if(ss>0.f)return 0;
   result *= 1+int(ss<0.f);
 
-  vec4 trianglePlane  = getClipPlaneSkala(vec4(bridgeStart,1),vec4(bridgeEnd,1),vec4(bridgeStart,1) + (edgeBClipSpace-edgeAClipSpace));
+  vec4 trianglePlane  = getClipPlaneSkala(bridgeStart,bridgeEnd,bridgeStart + (edgeBClipSpace-edgeAClipSpace));
   trianglePlane *= sign(dot(trianglePlane,lightClipSpace));
   if(dot(trianglePlane,edgeAClipSpace)<=0)return 0;
 
@@ -192,45 +191,53 @@ void main(){
 
   int mult = bridges[nodeLevelOffsetInUints[levelToDraw] + gId];
 
-  //we draw from child to parent
-  vec4 center = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw,0u,5u),gId),1);
-  vec4 parentCenter;
-  if(mult == 0)gColor = vec3(0.1);
-  else gColor = vec3(1.f);
-  if(levelToDraw == 0){
-    parentCenter = lightPosition;
-  }else{
-    parentCenter = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
-  }
+  vec4 bridgeStart;
+  vec4 bridgeEnd  ;
+  bridgeEnd = vec4(getAABBCenter(clamp(levelToDraw,0u,5u),gId),1);
+  if(levelToDraw == 0)
+    bridgeStart = nodeProj*nodeView*lightPosition;
+  else
+    bridgeStart = vec4(getAABBCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
 
-  {
-    vec4 A = vec4(0,1,0,1);
-    vec4 B = vec4(0,1,-1000,1);
-    vec4 L = vec4(0,100,-500,1);
+  vec4 center       = nodeProjView*bridgeEnd  ;
+  vec4 parentCenter = nodeProjView*bridgeStart;
+  ////we draw from child to parent
+  //vec4 center = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw,0u,5u),gId),1);
+  //vec4 parentCenter;
+  //if(mult == 0)gColor = vec3(0.1);
+  //else gColor = vec3(1.f);
+  //if(levelToDraw == 0){
+  //  parentCenter = lightPosition;
+  //}else{
+  //  parentCenter = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
+  //}
+
+  if(false){
+    vec4 A = vec4(-1,2,1,1);
+    vec4 B = vec4(1,2,1,1);
+    vec4 L = vec4(0,1000,0,1);
     vec3 n = cross(vec3(B-A),vec3(L-A));
-    edgePlane = inverse(transpose(nodeProj))*vec4(n,-dot(n,A.xyz));
-    edgeAClipSpace = nodeProj*A;
-    edgeBClipSpace = nodeProj*B;
-    lightClipSpace = nodeProj*L;
+    edgePlane = inverse(transpose(nodeProj*nodeView))*vec4(n,-dot(n,A.xyz));
+    edgeAClipSpace = nodeProj*nodeView*A;
+    edgeBClipSpace = nodeProj*nodeView*B;
+    lightClipSpace = nodeProj*nodeView*L;
     //edgePlane = getClipPlaneSkala(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
-    vec3 bs;
-    vec3 be;
-    if(levelToDraw == 0)bs = lightPosition.xyz;
-    else bs = getAABBCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits);
-    be = getAABBCenter(clamp(levelToDraw,0u,5u),gId);
-    mult = computeBridge(bs,be);
-    if(mult == 0)gColor = vec3(0.1);
-    else gColor = vec3(1.f);
+    mult = computeBridge(bridgeStart,bridgeEnd);
   }
+  if(mult == 0)gColor = vec3(0.1);
+  if(mult > 0)gColor = vec3(0,1,0);
+  if(mult < 0)gColor = vec3(0,0,1);
 
   center       /= center      .w;
   parentCenter /= parentCenter.w;
 
   mat4 M = proj*view;
 
+  if(mult != 0){
   gl_Position = M*vec4(center      );EmitVertex();
   gl_Position = M*vec4(parentCenter);EmitVertex();
   EndPrimitive();
+  }
 
 }
 

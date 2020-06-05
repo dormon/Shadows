@@ -135,6 +135,7 @@ void traverseSilhouettes(vars::Vars&vars){
   auto stencil           = vars.get<Texture>("rssv.method.stencil"              );
   auto memoryOptim       = vars.getInt32    ("rssv.param.memoryOptim"           );
   auto mergedBuffers     = vars.getInt32    ("rssv.param.mergedBuffers"         );
+  auto computeBridges    = vars.getBool        ("rssv.param.computeBridges"              );
 
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
@@ -189,6 +190,10 @@ void traverseSilhouettes(vars::Vars&vars){
     auto projView = proj*view;
     prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
   }else{
+    if(computeBridges){
+      auto projView = proj*view;
+      prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
+    }
     auto invTran = glm::transpose(glm::inverse(proj*view));
     prg->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
   }
@@ -198,6 +203,7 @@ void traverseSilhouettes(vars::Vars&vars){
     //->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
     //->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
     ->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
+  prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
 
   auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
   if(storeTraverseStat){

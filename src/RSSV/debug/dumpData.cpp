@@ -58,6 +58,11 @@ void dumpBridges(vars::Vars&vars){
   auto toBackup  = vars.get<Buffer >("rssv.method.bridges"              );
   auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.bridges",toBackup->getSize());
   buf->copy(*toBackup);
+  //std::vector<int>data;
+  //buf->getData(data);
+  //for(auto const&x:data)
+  //  if(x!=0)std::cerr << x << std::endl;
+  //exit(0);
 }
 
 void dumpAABBPool(vars::Vars&vars){
