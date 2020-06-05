@@ -16,6 +16,7 @@
 #include <RSSV/mortonShader.h>
 #include <RSSV/getConfigShader.h>
 #include <RSSV/config.h>
+#include <RSSV/getEdgePlanesShader.h>
 
 
 using namespace ge::gl;
@@ -128,6 +129,50 @@ uniform vec4 lightPosition;
 
 uniform int memoryOptim = 0;
 
+const int edgeMult = 1;
+vec4 edgePlane = vec4(0);
+vec4 lightClipSpace = vec4(0);
+vec4 edgeAClipSpace = vec4(0);
+vec4 edgeBClipSpace = vec4(0);
+
+int computeBridge(in vec3 bridgeStart,in vec3 bridgeEnd){
+  // m n c 
+  // - - 0
+  // 0 - 1
+  // + - 1
+  // - 0 1
+  // 0 0 0
+  // + 0 0
+  // - + 1
+  // 0 + 0
+  // + + 0
+  //
+  // m<0 && n>=0 || m>=0 && n<0
+  // m<0 xor n<0
+  int result = edgeMult;
+  float ss = dot(edgePlane,vec4(bridgeStart,1));
+  float es = dot(edgePlane,vec4(bridgeEnd  ,1));
+  if(es == es)return 1;
+  else return 0;
+  if((ss<0)==(es<0))return 0;
+  result *= 1-2*int(ss<0.f);
+  return result;
+
+  vec4 samplePlane    = getClipPlaneSkala(vec4(bridgeStart,1),vec4(bridgeEnd,1),lightClipSpace);
+  ss = dot(samplePlane,edgeAClipSpace);
+  es = dot(samplePlane,edgeBClipSpace);
+  ss*=es;
+  if(ss>0.f)return 0;
+  result *= 1+int(ss<0.f);
+
+  vec4 trianglePlane  = getClipPlaneSkala(vec4(bridgeStart,1),vec4(bridgeEnd,1),vec4(bridgeStart,1) + (edgeBClipSpace-edgeAClipSpace));
+  trianglePlane *= sign(dot(trianglePlane,lightClipSpace));
+  if(dot(trianglePlane,edgeAClipSpace)<=0)return 0;
+
+  return result;
+
+}
+
 vec3 getCenter(uint level,uint node){
   vec3 minCorner;
   vec3 maxCorner;
@@ -182,6 +227,26 @@ void main(){
     parentCenter = nodeProjView*vec4(getCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
   }
 
+  {
+    vec4 A = vec4(0,1,0,1);
+    vec4 B = vec4(0,1,-1000,1);
+    vec4 L = vec4(0,100,-500,1);
+    vec3 n = cross(vec3(B-A),vec3(L-A));
+    edgePlane = inverse(transpose(nodeProj))*vec4(n,-dot(n,A.xyz));
+    edgeAClipSpace = nodeProj*A;
+    edgeBClipSpace = nodeProj*B;
+    lightClipSpace = nodeProj*L;
+    //edgePlane = getClipPlaneSkala(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
+    vec3 bs;
+    vec3 be;
+    if(levelToDraw == 0)bs = lightPosition.xyz;
+    else bs = getCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits);
+    be = getCenter(clamp(levelToDraw,0u,5u),gId);
+    mult = computeBridge(bs,be);
+    if(mult == 0)gColor = vec3(0.1);
+    else gColor = vec3(1.f);
+  }
+
   center       /= center      .w;
   parentCenter /= parentCenter.w;
 
@@ -201,6 +266,7 @@ void main(){
       rssv::getDebugConfigShader(vars),
       rssv::mortonShader,
       rssv::demortonShader,
+      rssv::getEdgePlanesShader,
       gsSrc);
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",

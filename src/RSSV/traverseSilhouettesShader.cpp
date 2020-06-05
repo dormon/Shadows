@@ -22,7 +22,7 @@ std::string const rssv::traverseSilhouettesShader = R".(
 #define NO_AABB 0
 #endif//NO_AABB
 
-#pragma debug(on)
+//#pragma debug(on)
 
 layout(local_size_x=WARP)in;
 
@@ -271,31 +271,16 @@ shared vec3     bridgeEnd   [nofLevels][WARP];
 #endif
 #endif
 
-void loadAABB(out vec3 minCorner,out vec3 maxCorner,in uint level,in uint node){
-#if MEMORY_OPTIM == 1
-  uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
-  minCorner[0] = aabbPool[w*6u + 0u];
-  minCorner[1] = aabbPool[w*6u + 2u];
-  minCorner[2] = aabbPool[w*6u + 4u];
-  maxCorner[0] = aabbPool[w*6u + 1u];
-  maxCorner[1] = aabbPool[w*6u + 3u];
-  maxCorner[2] = aabbPool[w*6u + 5u];
-#else
-  minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u];
-  minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u];
-  minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u];
-  maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u];
-  maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u];
-  maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u];
-#endif
-}
 
-vec3 loadAABBCenter(in uint level,in uint node){
-  vec3 minCorner;
-  vec3 maxCorner;
-  loadAABB(minCorner,maxCorner,level,node);
-  return (minCorner+maxCorner)*.5f;
-}
+//int computeBridgeMultiplicity(){
+//#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+//  return computeBridge(bridgeStart,bridgeEnd[level][gl_LocalInvocationIndex]);
+//#else
+//  vec3 bridgeStart = loadAABBCenter(level-1,node>>warpBits);
+//  return computeBridge(bridgeStart,minCorner + aabbSize/2.f)+1;
+//#endif
+//}
+
 
 void traverse(){
   int level = 0;
@@ -327,86 +312,58 @@ void traverse(){
 
         if(level >  int(nofLevels))return;
 
-#if NO_AABB == 1
         vec3 minCorner;
         vec3 aabbSize;
-        //*
-        uvec3 xyz = (demorton(((node<<warpBits)+gl_LocalInvocationIndex)<<(warpBits*(nofLevels-1-level))));
-
-        float startX = -1.f + xyz.x*levelTileSizeClipSpace[nofLevels-1].x;
-        float startY = -1.f + xyz.y*levelTileSizeClipSpace[nofLevels-1].y;
-        float endX   = min(startX + levelTileSizeClipSpace[level].x,1.f);
-        float endY   = min(startY + levelTileSizeClipSpace[level].y,1.f);
-        float startZ = Z_TO_DEPTH(CLUSTER_TO_Z(xyz.z                             ));
-        float endZ   = Z_TO_DEPTH(CLUSTER_TO_Z(xyz.z+(1u<<levelTileBits[level].z)));
-
-        minCorner[0] = startX;
-        minCorner[1] = startY;
-        minCorner[2] = startZ;
-
-        aabbSize[0] = (endX-startX);
-        aabbSize[1] = (endY-startY);
-        aabbSize[2] = (endZ-startZ);
-
-        // */
-#else
-
-
-        vec3 minCorner;
-        vec3 aabbSize;
-        loadAABB(minCorner,aabbSize,level,node);
+        getAABB(minCorner,aabbSize,level,node,gl_LocalInvocationIndex);
         aabbSize -= minCorner;
-//#if MEMORY_OPTIM == 1
-//        uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
-//        minCorner[0] = aabbPool[w*6u + 0u]             ;
-//        minCorner[1] = aabbPool[w*6u + 2u]             ;
-//        minCorner[2] = aabbPool[w*6u + 4u]             ;
-//        aabbSize [0] = aabbPool[w*6u + 1u]-minCorner[0];
-//        aabbSize [1] = aabbPool[w*6u + 3u]-minCorner[1];
-//        aabbSize [2] = aabbPool[w*6u + 5u]-minCorner[2];
-//#else
-//        minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
-//        minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
-//        minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
-//        aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
-//        aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
-//        aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
-//#endif
 
-#endif
 
 #if COMPUTE_BRIDGES == 1
-  
-  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-          bridgeEnd[level][gl_LocalInvocationIndex] = minCorner + aabbSize * 0.5f;
-  
-          vec3 bridgeStart;
-          if(level == 0)
-            bridgeStart = lightPosition.xyz;
-          else
-            bridgeStart = bridgeEnd[level-1][node&warpMask];
-  #endif
-  
-          if(level > 0){
-  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-            int mult = computeBridge(bridgeStart,bridgeEnd[level][gl_LocalInvocationIndex]);
-  #else
-            vec3 bridgeStart;
-            bridgeStart = loadAABBCenter(level-1,node>>warpBits);
+        vec3 bridgeStart;
+        vec3 bridgeEnd  ;
+        int  mult       ;
 
-            //bridgeStart[0]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 0u];
-            //bridgeStart[1]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 2u];
-            //bridgeStart[2]  = aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 4u];
-            //bridgeStart[0] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 1u];
-            //bridgeStart[1] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 3u];
-            //bridgeStart[2] += aabbPool[aabbLevelOffsetInFloats[level-1] + (node>>warpBits)*WARP*6u + gl_LocalInvocationIndex*6u + 5u];
-            //bridgeStart*=0.5;
   
-            int mult = computeBridge(bridgeStart,minCorner + aabbSize/2.f);
+        bridgeEnd = minCorner + aabbSize*.5f;
+
+  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+        bridgeEnd[level][gl_LocalInvocationIndex] = bridgeEnd;
   #endif
-            if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
-            //atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult+1);
-          }
+  
+        if(level == 0){
+          bridgeStart = lightPosition.xyz;
+        }else{
+  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+          bridgeStart = bridgeEnd[level-1][node&warpMask];
+  #else
+          bridgeStart = loadAABBCenter(level-1,node>>warpBits,gl_LocalInvocationIndex);
+  #endif
+        }
+
+        mult = computeBridge(bridgeStart,bridgeEnd);
+        if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
+  
+  
+//  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+//          bridgeEnd[level][gl_LocalInvocationIndex] = minCorner + aabbSize * 0.5f;
+//  
+//          vec3 bridgeStart;
+//          if(level == 0)
+//            bridgeStart = lightPosition.xyz;
+//          else
+//            bridgeStart = bridgeEnd[level-1][node&warpMask];
+//  #endif
+//  
+//          if(level > 0){
+//  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+//            int mult = computeBridge(bridgeStart,bridgeEnd[level][gl_LocalInvocationIndex]);
+//  #else
+//
+//            vec3 bridgeStart = loadAABBCenter(level-1,node>>warpBits);
+//            int mult = computeBridge(bridgeStart,minCorner + aabbSize/2.f)+1;
+//  #endif
+//            if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
+//          }
 #endif
 
 

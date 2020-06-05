@@ -20,6 +20,7 @@
 #include <RSSV/collisionShader.h>
 #include <RSSV/getEdgePlanesShader.h>
 #include <RSSV/traverseSilhouettesShader.h>
+#include <RSSV/getAABBShader.h>
 
 #include <iomanip>
 #include <Timer.h>
@@ -76,13 +77,15 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("USE_SKALA"                    ,(int)useSkala                    ),
         Shader::define("DUMP_POINTS_NOT_PLANES"       ,(int)dumpPointsNotPlanes         ),
         Shader::define("COMPUTE_BRIDGES"              ,(int)computeBridges              ),
-        Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY",(int)storeBridgesInLocalMemory   ),
-        rssv::demortonShader,
-        rssv::depthToZShader,
-        rssv::quantizeZShader,
-        rssv::collisionShader,
-        rssv::getEdgePlanesShader,
-        rssv::traverseSilhouettesShader
+        Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY",(int)storeBridgesInLocalMemory   )
+        ,rssv::demortonShader
+        ,rssv::depthToZShader
+        ,rssv::quantizeZShader
+        ,rssv::collisionShader
+        ,rssv::getAABBShaderFWD
+        ,rssv::getEdgePlanesShader
+        ,rssv::traverseSilhouettesShader
+        ,rssv::getAABBShader
         ));
 
 }
