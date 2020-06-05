@@ -17,6 +17,7 @@
 #include <RSSV/getConfigShader.h>
 #include <RSSV/config.h>
 #include <RSSV/getEdgePlanesShader.h>
+#include <RSSV/getAABBShader.h>
 
 
 using namespace ge::gl;
@@ -217,14 +218,16 @@ void main(){
   int mult = bridges[nodeLevelOffsetInUints[levelToDraw] + gId];
 
   //we draw from child to parent
-  vec4 center = nodeProjView*vec4(getCenter(clamp(levelToDraw,0u,5u),gId),1);
+  //vec4 center = nodeProjView*vec4(getCenter(clamp(levelToDraw,0u,5u),gId),1);
+  vec4 center = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw,0u,5u),0,gId),1);
   vec4 parentCenter;
   if(mult == 0)gColor = vec3(0.1);
   else gColor = vec3(1.f);
   if(levelToDraw == 0){
     parentCenter = lightPosition;
   }else{
-    parentCenter = nodeProjView*vec4(getCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
+    //parentCenter = nodeProjView*vec4(getCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
+    parentCenter = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw-1,0u,5u),0,gId>>warpBits),1);
   }
 
   {
@@ -240,8 +243,10 @@ void main(){
     vec3 bs;
     vec3 be;
     if(levelToDraw == 0)bs = lightPosition.xyz;
-    else bs = getCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits);
-    be = getCenter(clamp(levelToDraw,0u,5u),gId);
+    //else bs = getCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits);
+    else bs = getAABBCenter(clamp(levelToDraw-1,0u,5u),0,gId>>warpBits);
+    //be = getCenter(clamp(levelToDraw,0u,5u),gId);
+    be = getAABBCenter(clamp(levelToDraw,0u,5u),0,gId);
     mult = computeBridge(bs,be);
     if(mult == 0)gColor = vec3(0.1);
     else gColor = vec3(1.f);
@@ -262,12 +267,15 @@ void main(){
 
   auto vs = make_shared<Shader>(GL_VERTEX_SHADER,vsSrc);
   auto gs = make_shared<Shader>(GL_GEOMETRY_SHADER,
-      "#version 450\n",
-      rssv::getDebugConfigShader(vars),
-      rssv::mortonShader,
-      rssv::demortonShader,
-      rssv::getEdgePlanesShader,
-      gsSrc);
+      "#version 450\n"
+      ,rssv::getDebugConfigShader(vars)
+      ,rssv::mortonShader
+      ,rssv::demortonShader
+      ,rssv::getEdgePlanesShader
+      ,rssv::getAABBShaderFWD
+      ,gsSrc
+      ,rssv::getAABBShader
+      );
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",
       fsSrc);

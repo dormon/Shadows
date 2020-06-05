@@ -336,7 +336,7 @@ void traverse(){
   #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
           bridgeStart = bridgeEnd[level-1][node&warpMask];
   #else
-          bridgeStart = loadAABBCenter(level-1,node>>warpBits,gl_LocalInvocationIndex);
+          bridgeStart = getAABBCenter(level-1,node>>warpBits,gl_LocalInvocationIndex);
   #endif
         }
 
