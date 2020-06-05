@@ -174,31 +174,6 @@ int computeBridge(in vec3 bridgeStart,in vec3 bridgeEnd){
 
 }
 
-vec3 getCenter(uint level,uint node){
-  vec3 minCorner;
-  vec3 maxCorner;
-
-  if(memoryOptim == 1){
-    uint w = aabbPointer[nodeLevelOffset[level]+node+1];
-    minCorner.x = aabbPool[w*floatsPerAABB+0];
-    maxCorner.x = aabbPool[w*floatsPerAABB+1];
-    minCorner.y = aabbPool[w*floatsPerAABB+2];
-    maxCorner.y = aabbPool[w*floatsPerAABB+3];
-    minCorner.z = aabbPool[w*floatsPerAABB+4];
-    maxCorner.z = aabbPool[w*floatsPerAABB+5];
-  }else{
-    minCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+0];
-    maxCorner.x = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+1];
-    minCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+2];
-    maxCorner.y = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+3];
-    minCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+4];
-    maxCorner.z = aabbPool[aabbLevelOffsetInFloats[level]+node*floatsPerAABB+5];
-  }
-
-  vec3 center = (maxCorner+minCorner)/2.f;
-  return center;
-}
-
 out vec3 gColor;
 
 void main(){
@@ -218,7 +193,6 @@ void main(){
   int mult = bridges[nodeLevelOffsetInUints[levelToDraw] + gId];
 
   //we draw from child to parent
-  //vec4 center = nodeProjView*vec4(getCenter(clamp(levelToDraw,0u,5u),gId),1);
   vec4 center = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw,0u,5u),0,gId),1);
   vec4 parentCenter;
   if(mult == 0)gColor = vec3(0.1);
@@ -226,7 +200,6 @@ void main(){
   if(levelToDraw == 0){
     parentCenter = lightPosition;
   }else{
-    //parentCenter = nodeProjView*vec4(getCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
     parentCenter = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw-1,0u,5u),0,gId>>warpBits),1);
   }
 
@@ -243,9 +216,7 @@ void main(){
     vec3 bs;
     vec3 be;
     if(levelToDraw == 0)bs = lightPosition.xyz;
-    //else bs = getCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits);
     else bs = getAABBCenter(clamp(levelToDraw-1,0u,5u),0,gId>>warpBits);
-    //be = getCenter(clamp(levelToDraw,0u,5u),gId);
     be = getAABBCenter(clamp(levelToDraw,0u,5u),0,gId);
     mult = computeBridge(bs,be);
     if(mult == 0)gColor = vec3(0.1);
