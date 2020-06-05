@@ -314,7 +314,7 @@ void traverse(){
 
         vec3 minCorner;
         vec3 aabbSize;
-        getAABB(minCorner,aabbSize,level,node,gl_LocalInvocationIndex);
+        getAABB(minCorner,aabbSize,level,(node<<warpBits)+gl_LocalInvocationIndex);
         aabbSize -= minCorner;
 
 
@@ -336,7 +336,7 @@ void traverse(){
   #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
           bridgeStart = bridgeEnd[level-1][node&warpMask];
   #else
-          bridgeStart = getAABBCenter(level-1,node>>warpBits,gl_LocalInvocationIndex);
+          bridgeStart = getAABBCenter(level-1,((node>>warpBits)<<warpBits)+gl_LocalInvocationIndex);
   #endif
         }
 

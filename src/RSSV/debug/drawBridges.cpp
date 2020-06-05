@@ -193,14 +193,14 @@ void main(){
   int mult = bridges[nodeLevelOffsetInUints[levelToDraw] + gId];
 
   //we draw from child to parent
-  vec4 center = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw,0u,5u),0,gId),1);
+  vec4 center = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw,0u,5u),gId),1);
   vec4 parentCenter;
   if(mult == 0)gColor = vec3(0.1);
   else gColor = vec3(1.f);
   if(levelToDraw == 0){
     parentCenter = lightPosition;
   }else{
-    parentCenter = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw-1,0u,5u),0,gId>>warpBits),1);
+    parentCenter = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
   }
 
   {
@@ -216,8 +216,8 @@ void main(){
     vec3 bs;
     vec3 be;
     if(levelToDraw == 0)bs = lightPosition.xyz;
-    else bs = getAABBCenter(clamp(levelToDraw-1,0u,5u),0,gId>>warpBits);
-    be = getAABBCenter(clamp(levelToDraw,0u,5u),0,gId);
+    else bs = getAABBCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits);
+    be = getAABBCenter(clamp(levelToDraw,0u,5u),gId);
     mult = computeBridge(bs,be);
     if(mult == 0)gColor = vec3(0.1);
     else gColor = vec3(1.f);
