@@ -23,6 +23,7 @@
 #include <RSSV/debug/drawEdges.h>
 #include <RSSV/debug/drawSilhouettes.h>
 #include <RSSV/debug/drawEdgePlanes.h>
+#include <RSSV/debug/drawSVSides.h>
 #include <RSSV/debug/drawBridges.h>
 #include <RSSV/configShader.h>
 #include <RSSV/config.h>
@@ -53,6 +54,7 @@ void blitDepth(vars::Vars&vars){
 
 void rssv::drawDebug(vars::Vars&vars){
   debug::prepareCommon(vars);
+  debug::blitDepth(vars);
 
   auto&levelsToDraw       = vars.addOrGetUint32("rssv.method.debug.levelsToDraw",0);
   auto&drawTightAABB      = vars.addOrGetBool  ("rssv.method.debug.drawTightAABB");
@@ -66,9 +68,11 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&drawEdges          = vars.addOrGetBool("rssv.method.debug.drawEdges"       );
   auto&drawSilhouettes    = vars.addOrGetBool("rssv.method.debug.drawSilhouettes" );
   auto&drawEdgePlanes     = vars.addOrGetBool("rssv.method.debug.drawEdgePlanes"  );
+  auto&drawSVSides        = vars.addOrGetBool("rssv.method.debug.drawSVSides"     );
 
 
   auto&drawBridges        = vars.addOrGetBool  ("rssv.method.debug.drawBridges"  );
+  auto&drawAllBridges     = vars.addOrGetBool  ("rssv.method.debug.drawAllBridges");
   auto&bridgesToDraw      = vars.addOrGetUint32("rssv.method.debug.bridgesToDraw");
 
   auto&taToDraw = vars.addOrGetUint32("rssv.method.debug.taToDraw",0);
@@ -153,6 +157,10 @@ void rssv::drawDebug(vars::Vars&vars){
         drawBridges = !drawBridges;
         vars.updateTicks("rssv.method.debug.drawBridges");
       }
+      if(ImGui::MenuItem(drawAllBridges?"hideEmpty":"all")){
+        drawAllBridges = !drawAllBridges;
+        vars.updateTicks("rssv.method.debug.drawAllBridges");
+      }
 
       if(drawBridges){
         if(vars.has("rssv.method.debug.dump.config")){
@@ -191,6 +199,10 @@ void rssv::drawDebug(vars::Vars&vars){
       if(ImGui::MenuItem("drawEdgePlanes")){
         drawEdgePlanes = !drawEdgePlanes;
         vars.updateTicks("rssv.method.debug.drawEdgePlanes");
+      }
+      if(ImGui::MenuItem("drawSVSides")){
+        drawSVSides = !drawSVSides;
+        vars.updateTicks("rssv.method.debug.drawSVSides");
       }
 
       ImGui::EndMenu();
@@ -297,6 +309,9 @@ void rssv::drawDebug(vars::Vars&vars){
 
   if(drawEdgePlanes)
     debug::drawEdgePlanes(vars);
+
+  if(drawSVSides)
+    debug::drawSVSides(vars);
 
   if(drawBridges)
     debug::drawBridges(vars);

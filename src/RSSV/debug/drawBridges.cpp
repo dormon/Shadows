@@ -175,6 +175,8 @@ int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
 
 out vec3 gColor;
 
+uniform int drawAllBridges = 0;
+
 void main(){
   uint gId = vId[0];
 
@@ -233,10 +235,16 @@ void main(){
 
   mat4 M = proj*view;
 
-  if(mult != 0){
-  gl_Position = M*vec4(center      );EmitVertex();
-  gl_Position = M*vec4(parentCenter);EmitVertex();
-  EndPrimitive();
+  if(drawAllBridges > 0){
+    gl_Position = M*vec4(center      );EmitVertex();
+    gl_Position = M*vec4(parentCenter);EmitVertex();
+    EndPrimitive();
+  }else{
+    if(mult != 0){
+      gl_Position = M*vec4(center      );EmitVertex();
+      gl_Position = M*vec4(parentCenter);EmitVertex();
+      EndPrimitive();
+    }
   }
 
 }
@@ -307,6 +315,7 @@ void drawBridges(vars::Vars&vars){
     ->set1ui      ("drawWithPadding",(uint32_t)drawWithPadding    )
     ->set1f       ("zPadding"       ,(float)zPadding              )
     ;
+  prg->set1i("drawAllBridges",(int)vars.getBool("rssv.method.debug.drawAllBridges"));
 
   if(memoryOptim){
     auto aabbPointer = vars.get<Buffer>("rssv.method.debug.dump.aabbPointer");
