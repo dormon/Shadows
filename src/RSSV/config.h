@@ -53,21 +53,23 @@ inline std::vector<uint32_t>getOffsets(std::vector<uint32_t>const&sizes){
 class Config{
   public:
     Config(
-        uint32_t wavefrontSize = 64u      ,
-        uint32_t winX          = 512u     ,
-        uint32_t winY          = 512u     ,
-        uint32_t minZ          = 9u       ,
-        int32_t  memOptim      = 0        ,
-        uint32_t memFactor     = 10       ,
-        float    nn            = 0.1f     ,
-        float    ff            = 1000.f   ,
-        float    fo            = 3.149256f,
-        int32_t  scaledQ       = 0        ){
+        uint32_t wavefrontSize   = 64u      ,
+        uint32_t winX            = 512u     ,
+        uint32_t winY            = 512u     ,
+        uint32_t minZ            = 9u       ,
+        int32_t  memOptim        = 0        ,
+        uint32_t memFactor       = 10       ,
+        int32_t  useBridgeBuffer = 0        ,
+        float    nn              = 0.1f     ,
+        float    ff              = 1000.f   ,
+        float    fo              = 3.149256f,
+        int32_t  scaledQ         = 0        ){
       windowX                 = winX;
       windowY                 = winY;
       minZBits                = minZ;
       memoryOptim             = memOptim;
       memoryFactor            = memFactor;
+      useBridgePool           = useBridgeBuffer;
       nnear                   = nn;
       ffar                    = ff;
       fovy                    = fo;
@@ -96,6 +98,11 @@ class Config{
       else
         aabbBufferSize = nofNodes * floatsPerAABB * sizeof(float);
 
+      if(memoryOptim)
+        bridgePoolSize = clustersX * clustersY * memoryFactor * floatsPerBridge * sizeof(float);
+      else
+        bridgePoolSize = nofNodes * floatsPerBridge * sizeof(float);
+
       aabbLevelSizeInFloats   = mul(nofNodesPerLevel,floatsPerAABB);
       aabbLevelOffsetInFloats = getOffsets(aabbLevelSizeInFloats);
       nodeLevelOffset         = getOffsets(nofNodesPerLevel);
@@ -105,6 +112,7 @@ class Config{
       nodeBufferOffsetInHierarchy        = 0                                           ;
       aabbBufferOffsetInHierarchy        = nodeBufferOffsetInHierarchy + nodeBufferSize;
       aabbPointerBufferOffsetInHierarchy = aabbBufferOffsetInHierarchy + aabbBufferSize;
+      bridgePoolOffsetInHierarchy        = aabbPointerBufferOffsetInHierarchy + aabbPointerBufferSize;
 
     }
     void print(){
@@ -132,6 +140,7 @@ class Config{
       PRINT(aabbBufferSize    );
       PRINT(nofNodes          );
       PRINT(floatsPerAABB     );
+      PRINT(floatsPerBridge   );
 #undef PRINT
 #define PRINT(x) std::cerr << #x << ":" << std::endl;\
   for(auto const&a:x)\
@@ -150,6 +159,7 @@ class Config{
     uint32_t minZBits                          ;
     int32_t  memoryOptim                       ;
     uint32_t memoryFactor                      ;
+    int32_t  useBridgePool                     ;
     uint32_t warpBits                          ;
     float    nnear                             ;
     float    ffar                              ;
@@ -165,16 +175,22 @@ class Config{
     uint32_t allBits                           ;
     uint32_t nofLevels                         ;
     uint32_t uintsPerWarp                      ;
+
     uint32_t nodeBufferSize                    ;
     uint32_t aabbBufferSize                    ;
     uint32_t aabbPointerBufferSize             ;
+    uint32_t bridgePoolSize                  ;
+
     uint32_t nodeBufferOffsetInHierarchy       ;
     uint32_t aabbBufferOffsetInHierarchy       ;
     uint32_t aabbPointerBufferOffsetInHierarchy;
+    uint32_t bridgePoolOffsetInHierarchy     ;
+
     uint32_t nofNodes             ;
-    uint32_t const tileX         = 8u;
-    uint32_t const tileY         = 8u;
-    uint32_t const floatsPerAABB = 6 ;
+    uint32_t const tileX           = 8u;
+    uint32_t const tileY           = 8u;
+    uint32_t const floatsPerAABB   = 6 ;
+    uint32_t const floatsPerBridge = 3 ;
     std::vector<uint32_t>nofNodesPerLevel        ;
     std::vector<uint32_t>nodeLevelOffset         ;
     std::vector<uint32_t>nodeLevelSizeInUints    ;

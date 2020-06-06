@@ -32,6 +32,7 @@ void rssv::createPropagateAABBProgram(vars::Vars&vars){
 
         ge::gl::Shader::define("NOF_WARPS"     ,(uint32_t)nofWarps         ),
         ge::gl::Shader::define("MERGED_BUFFERS",(int)mergedBuffers         ),
+        ge::gl::Shader::define("USE_BRIDGE_POOL",(int)cfg.useBridgePool    ),
         rssv::propagateAABBShader
         ));
 }

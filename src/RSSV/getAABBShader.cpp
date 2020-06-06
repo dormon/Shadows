@@ -56,10 +56,27 @@ void getAABB(out vec3 minCorner,out vec3 maxCorner,in uint level,in uint node){
 }
 
 vec3 getAABBCenter(in uint level,in uint node){
+#if USE_BRIDGE_POOL == 1
+  vec3 res;
+#if MEMORY_OPTIM == 1
+  uint w = aabbPointer[1 + nodeLevelOffset[level] + node];
+  res[0] = bridgePool[w*floatsPerBridge + 0u];
+  res[1] = bridgePool[w*floatsPerBridge + 1u];
+  res[2] = bridgePool[w*floatsPerBridge + 2u];
+#else
+  res[0] = bridgePool[bridgeLevelOffsetInFloats[level] + node*floatsPerBridge + 0u];
+  res[1] = bridgePool[bridgeLevelOffsetInFloats[level] + node*floatsPerBridge + 1u];
+  res[2] = bridgePool[bridgeLevelOffsetInFloats[level] + node*floatsPerBridge + 2u];
+#endif
+  return res;
+
+
+#else
   vec3 minCorner;
   vec3 maxCorner;
   getAABB(minCorner,maxCorner,level,node);
   return (minCorner+maxCorner)*.5f;
+#endif
 }
 
 ).";

@@ -38,6 +38,10 @@ void rssv::propagateAABB(vars::Vars&vars){
       auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
       aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
     }
+    if(cfg.useBridgePool){
+      auto bridgePool = vars.get<Buffer>("rssv.method.bridgePool");
+      bridgePool->bindBase(GL_SHADER_STORAGE_BUFFER,6);
+    }
   }
 
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);

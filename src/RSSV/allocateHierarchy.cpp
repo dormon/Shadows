@@ -32,6 +32,9 @@ void printHierarchySize(vars::Vars&vars){
 
     if(cfg.memoryOptim)
       sss += vars.get<Buffer>("rssv.method.aabbPointer")->getSize();
+
+    if(cfg.useBridgePool)
+      sss += vars.get<Buffer>("rssv.method.bridgePool")->getSize();
   }
 
   sss += vars.get<Buffer>("rssv.method.activeNodes")->getSize();
@@ -52,12 +55,17 @@ void allocateMergedBuffers(vars::Vars&vars){
   vars.erase("rssv.method.nodePool"   );
   vars.erase("rssv.method.aabbPool"   );
   vars.erase("rssv.method.aabbPointer");
+  vars.erase("rssv.method.bridgePool" );
 
   size_t bufSize = 0;
   bufSize += cfg.nodeBufferSize;
   bufSize += cfg.aabbBufferSize;
   if(cfg.memoryOptim)
     bufSize += cfg.aabbPointerBufferSize;
+
+  if(cfg.useBridgePool)
+    bufSize += cfg.bridgePoolSize;
+
   vars.reCreate<Buffer>("rssv.method.hierarchy"  ,bufSize);
 }
 
@@ -68,11 +76,17 @@ void allocateNonMergedBuffers(vars::Vars&vars){
   vars.reCreate<Buffer>("rssv.method.aabbPool"   ,cfg.aabbBufferSize);
   vars.reCreate<Buffer>("rssv.method.nodePool"   ,cfg.nodeBufferSize);
 
+  if(cfg.useBridgePool)
+    vars.reCreate<Buffer>("rssv.method.bridgePool",cfg.bridgePoolSize);
+  else
+    vars.erase("rssv.method.bridgePool");
+
   if(cfg.memoryOptim){
     vars.reCreate<Buffer>("rssv.method.aabbPointer",cfg.aabbPointerBufferSize);
   }else{
     vars.erase           ("rssv.method.aabbPointer"              );
   }
+  
 }
 
 }

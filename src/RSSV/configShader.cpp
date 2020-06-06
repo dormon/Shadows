@@ -193,6 +193,7 @@ const vec3 levelTileSizeClipSpace[] = {
 
 const uint warpMask        = uint(WARP - 1u);
 const uint floatsPerAABB   = 6u;
+const uint floatsPerBridge = 3u;
 
 const uint halfWarp        = WARP / 2u;
 const uint halfWarpMask    = uint(halfWarp - 1u);
@@ -259,8 +260,18 @@ const uint aabbLevelSizeInFloats[6] = {
   nodesPerLevel[5] * floatsPerAABB,
 };
 
+const uint bridgeLevelSizeInFloats[6] = {
+  nodesPerLevel[0] * floatsPerBridge,
+  nodesPerLevel[1] * floatsPerBridge,
+  nodesPerLevel[2] * floatsPerBridge,
+  nodesPerLevel[3] * floatsPerBridge,
+  nodesPerLevel[4] * floatsPerBridge,
+  nodesPerLevel[5] * floatsPerBridge,
+};
+
 #if MEMORY_OPTIM == 1
 const uint aabbBufferSizeInFloats = clustersX * clustersY * floatsPerAABB * MEMORY_FACTOR;
+const uint bridgePoolSizeInFloats = clustersX * clustersY * floatsPerBridge * MEMORY_FACTOR;
 #else
 const uint aabbBufferSizeInFloats = 
   aabbLevelSizeInFloats[0] + 
@@ -268,7 +279,15 @@ const uint aabbBufferSizeInFloats =
   aabbLevelSizeInFloats[2] + 
   aabbLevelSizeInFloats[3] + 
   aabbLevelSizeInFloats[4] + 
-  aabbLevelSizeInFloats[5] ; 
+  aabbLevelSizeInFloats[5] ;
+const uint bridgePoolSizeInFloats =
+  bridgeLevelSizeInFloats[0] + 
+  bridgeLevelSizeInFloats[1] + 
+  bridgeLevelSizeInFloats[2] + 
+  bridgeLevelSizeInFloats[3] + 
+  bridgeLevelSizeInFloats[4] + 
+  bridgeLevelSizeInFloats[5] ;
+
 #endif
 
 const uint aabbLevelOffsetInFloats[6] = {
@@ -278,6 +297,15 @@ const uint aabbLevelOffsetInFloats[6] = {
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2],
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3],
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
+};
+
+const uint bridgeLevelOffsetInFloats[6] = {
+  0,
+  0 + bridgeLevelSizeInFloats[0],
+  0 + bridgeLevelSizeInFloats[0] + bridgeLevelSizeInFloats[1],
+  0 + bridgeLevelSizeInFloats[0] + bridgeLevelSizeInFloats[1] + bridgeLevelSizeInFloats[2],
+  0 + bridgeLevelSizeInFloats[0] + bridgeLevelSizeInFloats[1] + bridgeLevelSizeInFloats[2] + bridgeLevelSizeInFloats[3],
+  0 + bridgeLevelSizeInFloats[0] + bridgeLevelSizeInFloats[1] + bridgeLevelSizeInFloats[2] + bridgeLevelSizeInFloats[3] + bridgeLevelSizeInFloats[4],
 };
 
 const uint aabbPointerBufferSizeInUints = nofNodes + 1;

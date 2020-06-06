@@ -28,6 +28,9 @@ layout(std430,binding=0)buffer NodePool{
   #if MEMORY_OPTIM == 1
   uint  aabbPointer[aabbPointerBufferSizeInUints];
   #endif
+  #if USE_BRIDGE_POOL == 1
+  float  bridgePool[bridgePoolSizeInFloats];
+  #endif
 };
 #else
 layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
@@ -35,6 +38,10 @@ layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
 
 #if MEMORY_OPTIM == 1
 layout(std430,binding=5)buffer AABBPointer     {uint  aabbPointer     [];};
+#endif
+
+#if USE_BRIDGE_POOL == 1
+layout(std430,binding=6)buffer AABBPointer     {float bridgePool     [];};
 #endif
 
 #endif
@@ -356,10 +363,21 @@ void main(){
       aabbPool[w*6+3] = reductionArray[WARP_OFFSET+3];
       aabbPool[w*6+4] = reductionArray[WARP_OFFSET+4];
       aabbPool[w*6+5] = reductionArray[WARP_OFFSET+5];
+#if USE_BRIDGE_POOL == 1
+      bridgePool[w*floatsPerBridge+0] = (reductionArray[WARP_OFFSET+0] + reductionArray[WARP_OFFSET+1])*.5f;
+      bridgePool[w*floatsPerBridge+1] = (reductionArray[WARP_OFFSET+2] + reductionArray[WARP_OFFSET+3])*.5f;
+      bridgePool[w*floatsPerBridge+2] = (reductionArray[WARP_OFFSET+4] + reductionArray[WARP_OFFSET+5])*.5f;
+#endif
     }
 #else
     if(THREAD_IN_WARP < floatsPerAABB)
       aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+THREAD_IN_WARP] = reductionArray[WARP_OFFSET+THREAD_IN_WARP];
+
+#if USE_BRIDGE_POOL == 1
+    if(THREAD_IN_WARP < floatsPerBridge)
+      bridgePool[bridgeLevelOffsetInFloats[destLevel]+node*floatsPerBridge+THREAD_IN_WARP] = (reductionArray[WARP_OFFSET+THREAD_IN_WARP*2+0] + reductionArray[WARP_OFFSET+THREAD_IN_WARP*2+1])*0.5f;
+#endif
+
 #endif
 
     nodeUint ^= 1u << bit;

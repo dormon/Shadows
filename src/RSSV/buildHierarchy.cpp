@@ -47,6 +47,10 @@ void clearAndBindNonMergedNodePoolAndAABBPool(vars::Vars&vars){
     aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
     ge::gl::glClearNamedBufferSubData(aabbPointer->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
   }
+  if(cfg.useBridgePool){
+    auto bridgePool = vars.get<Buffer>("rssv.method.bridgePool");
+    bridgePool->bindBase(GL_SHADER_STORAGE_BUFFER,6);
+  }
 }
 
 void clearAndBindNodePoolAndAABBPool(vars::Vars&vars){

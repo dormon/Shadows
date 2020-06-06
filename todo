@@ -1,6 +1,4 @@
-END of bridge is ok START is bad?
 kdy pocitat bridges pouze pri kolizi?
-store bridges centers in separate memory we have to load parent anyways so it would be quicker to load parent from separate memory
 last level bridges
 triangle vs aabb
 triangle vs bridges

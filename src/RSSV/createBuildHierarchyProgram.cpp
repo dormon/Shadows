@@ -46,6 +46,7 @@ void rssv::createBuildHierarchyProgram(vars::Vars&vars){
         ge::gl::Shader::define("USE_PADDING"        ,(int)usePadding            ),
         ge::gl::Shader::define("DISCARD_BACK_FACING",(int)discardBackfacing     ),
         ge::gl::Shader::define("MERGED_BUFFERS"     ,(int)mergedBuffers         ),
+        ge::gl::Shader::define("USE_BRIDGE_POOL"    ,(int)cfg.useBridgePool     ),
         rssv::buildHierarchyShader
         ));
 }

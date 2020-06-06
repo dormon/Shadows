@@ -62,6 +62,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const dumpPointsNotPlanes          =  vars.getBool        ("rssv.param.dumpPointsNotPlanes"         );
   auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
   auto const storeBridgesInLocalMemory    =  vars.getBool        ("rssv.param.storeBridgesInLocalMemory"   );
+  auto const&cfg                          = *vars.get<Config>    ("rssv.method.config"                     );
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
@@ -77,7 +78,8 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("USE_SKALA"                    ,(int)useSkala                    ),
         Shader::define("DUMP_POINTS_NOT_PLANES"       ,(int)dumpPointsNotPlanes         ),
         Shader::define("COMPUTE_BRIDGES"              ,(int)computeBridges              ),
-        Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY",(int)storeBridgesInLocalMemory   )
+        Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY",(int)storeBridgesInLocalMemory   ),
+        Shader::define("USE_BRIDGE_POOL"              ,(int)cfg.useBridgePool           )
         ,rssv::demortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader
@@ -203,7 +205,7 @@ void traverseSilhouettes(vars::Vars&vars){
     //->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
     //->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
     ->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
-  prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",3));
+  prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
 
   auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
   if(storeTraverseStat){

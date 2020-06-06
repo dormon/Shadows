@@ -33,6 +33,9 @@ layout(local_size_x=WARP)in;
     #if MEMORY_OPTIM == 1
       uint  aabbPointer[aabbPointerBufferSizeInUints];
     #endif
+    #if USE_BRIDGE_POOL == 1
+      float bridgePool[bridgePoolSizeInFloats];
+    #endif
   };
 #else
   layout(std430,binding=0)buffer NodePool          {uint  nodePool         [];};
@@ -436,7 +439,7 @@ void traverse(){
 
         //mult = computeBridgeEuclid(bridgeStart,bridgeEnd);
         if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
-  
+ 
   
 //  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
 //          bridgeEnd[level][gl_LocalInvocationIndex] = minCorner + aabbSize * 0.5f;

@@ -51,6 +51,9 @@ layout(std430,binding=0)buffer Hierarchy{
   #if MEMORY_OPTIM == 1
   uint  aabbPointer[aabbPointerBufferSizeInUints];
   #endif
+  #if USE_BRIDGE_POOL == 1
+  float bridgePool[bridgePoolSizeInFloats];
+  #endif
 };
 #else
 layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
@@ -58,6 +61,10 @@ layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
 
 #if MEMORY_OPTIM == 1
 layout(std430,binding=5)buffer AABBPointer     {uint  aabbPointer     [];};
+#endif
+
+#if USE_BRIDGE_POOL == 1
+layout(std430,binding=5)buffer AABBPointer     {float  bridgePool     [];};
 #endif
 
 #endif
@@ -295,6 +302,13 @@ void compute(uvec2 coord,uvec2 coord2){
         aabbPool[w*6+3] = reductionArray[3] + size[3];
         aabbPool[w*6+4] = reductionArray[4] + size[4];
         aabbPool[w*6+5] = reductionArray[5] + size[5];
+
+#if USE_BRIDGE_POOL == 1
+        bridgePool[w*floatsPerBridge+0] = (reductionArray[0] + size[0] + reductionArray[1] + size[1])*0.5f;
+        bridgePool[w*floatsPerBridge+1] = (reductionArray[2] + size[2] + reductionArray[3] + size[3])*0.5f;
+        bridgePool[w*floatsPerBridge+2] = (reductionArray[4] + size[4] + reductionArray[5] + size[5])*0.5f;
+#endif
+
 #else
         aabbPool[w*6+0] = reductionArray[0];
         aabbPool[w*6+1] = reductionArray[1];
@@ -302,6 +316,13 @@ void compute(uvec2 coord,uvec2 coord2){
         aabbPool[w*6+3] = reductionArray[3];
         aabbPool[w*6+4] = reductionArray[4];
         aabbPool[w*6+5] = reductionArray[5];
+
+#if USE_BRIDGE_POOL == 1
+        bridgePool[w*floatsPerBridge+0] = (reductionArray[0] + reductionArray[1])*0.5f;
+        bridgePool[w*floatsPerBridge+1] = (reductionArray[2] + reductionArray[3])*0.5f;
+        bridgePool[w*floatsPerBridge+2] = (reductionArray[4] + reductionArray[5])*0.5f;
+#endif
+
 #endif
       }
 #else
@@ -322,8 +343,24 @@ void compute(uvec2 coord,uvec2 coord2){
           +ppp,
         };
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex] + size[gl_LocalInvocationIndex];
+
+#if USE_BRIDGE_POOL == 1
+        if(gl_LocalInvocationIndex < floatsPerBridge){
+          bridgePool[bridgeLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerBridge+gl_LocalInvocationIndex] = 
+            (reductionArray[gl_LocalInvocationIndex*2] + size[gl_LocalInvocationIndex*2] + reductionArray[gl_LocalInvocationIndex*2+1] + size[gl_LocalInvocationIndex*2+1])*0.5f;
+        }
+#endif
+
 #else
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
+
+#if USE_BRIDGE_POOL == 1
+        if(gl_LocalInvocationIndex < floatsPerBridge){
+          bridgePool[bridgeLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerBridge+gl_LocalInvocationIndex] = 
+            (reductionArray[gl_LocalInvocationIndex*2] + reductionArray[gl_LocalInvocationIndex*2+1] )*0.5f;
+        }
+#endif
+
 #endif
       }
 
