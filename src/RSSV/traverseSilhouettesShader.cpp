@@ -328,20 +328,20 @@ int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
 
 }
 
-//void lastLevel(uint node){
-//  uvec2 sampleCoord;
-//  vec4 clipCoord;
-//  bool inside;
-//  vec4 plane;
-//
-//
-//  sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
-//
-//  clipCoord.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
-//  clipCoord.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
-//  clipCoord.w = 1.f;
-//
-//}
+void lastLevel(uint node){
+  uvec2 sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+
+  vec4 bridgeEnd;
+  bridgeEnd.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
+  bridgeEnd.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
+  bridgeEnd.w = 1.f;
+
+  vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node),1.f);
+
+  int mult = computeBridge(bridgeStart,bridgeEnd);
+
+  if(mult!=0)imageAtomicAdd(stencil,ivec2(sampleCoord),mult);
+}
 
 #if STORE_TRAVERSE_STAT == 1
 layout(std430,binding = 7)buffer Debug{uint debug[];};
@@ -396,8 +396,8 @@ void traverse(){
       }
 #endif
 
-#if 1
-      //lastLevel(node);
+#if COMPUTE_LAST_LEVEL_SILHOUETTES == 1
+      lastLevel(node);
 #endif
       node >>= warpBits;
       level--;

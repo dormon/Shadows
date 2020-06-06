@@ -25,6 +25,7 @@
 #include <RSSV/debug/drawEdgePlanes.h>
 #include <RSSV/debug/drawSVSides.h>
 #include <RSSV/debug/drawBridges.h>
+#include <RSSV/debug/drawStencil.h>
 #include <RSSV/configShader.h>
 #include <RSSV/config.h>
 
@@ -74,6 +75,8 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&drawBridges        = vars.addOrGetBool  ("rssv.method.debug.drawBridges"  );
   auto&drawAllBridges     = vars.addOrGetBool  ("rssv.method.debug.drawAllBridges");
   auto&bridgesToDraw      = vars.addOrGetUint32("rssv.method.debug.bridgesToDraw");
+
+  auto&drawStencil        = vars.addOrGetBool  ("rssv.method.debug.drawStencil"   );
 
   auto&taToDraw = vars.addOrGetUint32("rssv.method.debug.taToDraw",0);
   auto&trToDraw = vars.addOrGetUint32("rssv.method.debug.trToDraw",0);
@@ -173,6 +176,16 @@ void rssv::drawDebug(vars::Vars&vars){
             }
           }
         }
+      }
+
+      ImGui::EndMenu();
+    }
+
+    if(ImGui::BeginMenu("stencil")){
+
+      if(ImGui::MenuItem(drawStencil?"hide":"draw")){
+        drawStencil = !drawStencil;
+        vars.updateTicks("rssv.method.debug.drawStencil");
       }
 
       ImGui::EndMenu();
@@ -316,5 +329,7 @@ void rssv::drawDebug(vars::Vars&vars){
   if(drawBridges)
     debug::drawBridges(vars);
 
+  if(drawStencil)
+    debug::drawStencil(vars);
 
 }

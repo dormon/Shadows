@@ -37,5 +37,6 @@ void rssv::loadParams(
   vars.addBool  ("rssv.param.dumpPointsNotPlanes"           );
   vars.addBool  ("rssv.param.computeBridges"                ,true);
   vars.addBool  ("rssv.param.storeBridgesInLocalMemory"     );
+  vars.addBool  ("rssv.param.computeLastLevelSilhouettes"   ,true);
 
 }
