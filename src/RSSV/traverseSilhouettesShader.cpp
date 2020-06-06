@@ -421,13 +421,13 @@ void traverse(){
   #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
           bridgeStart = vec4(bridgeEnd[level-1][node&warpMask],1);
   #else
-          bridgeStart = vec4(getAABBCenter(level-1,((node>>warpBits)<<warpBits)+gl_LocalInvocationIndex),1);
+          bridgeStart = vec4(getAABBCenter(level-1,node>>warpBits),1);//((node>>warpBits)<<warpBits)+gl_LocalInvocationIndex),1);
   #endif
         }
 
-//        mult = computeBridge(bridgeStart,bridgeEnd);
+        mult = computeBridge(bridgeStart,bridgeEnd);
 
-        mult = computeBridgeEuclid(bridgeStart,bridgeEnd);
+        //mult = computeBridgeEuclid(bridgeStart,bridgeEnd);
         if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
   
   
