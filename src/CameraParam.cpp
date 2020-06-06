@@ -17,13 +17,70 @@ void createProjection(vars::Vars& vars) {
                                            near, far);
 }
 
+#include <fstream>
+
+void storeCamera(vars::Vars&vars){
+  if(!vars.getBool("args.camera.remember"))return;
+  std::string name = "storedCamera.txt";
+  auto&cam = *vars.get<basicCamera::FreeLookCamera>("cameraTransform");
+
+  auto pos = cam.getPosition();
+  auto a0 = cam.getAngle(0);
+  auto a1 = cam.getAngle(1);
+  auto a2 = cam.getAngle(2);
+
+  std::ofstream file (name);
+  if(!file.is_open()){
+    std::cerr << "cannot open camera file: " << name << std::endl;
+    return;
+  }
+
+  file << pos.x << std::endl;
+  file << pos.y << std::endl;
+  file << pos.z << std::endl;
+  file << a0 << std::endl;
+  file << a1 << std::endl;
+  file << a2 << std::endl;
+
+  file.close();
+
+}
+
+void loadCamera(vars::Vars&vars){
+  if(!vars.getBool("args.camera.remember"))return;
+  std::string name = "storedCamera.txt";
+  auto&cam = *vars.get<basicCamera::FreeLookCamera>("cameraTransform");
+
+  std::ifstream file (name);
+  if(!file.is_open()){
+    std::cerr << "cannot open camera file: " << name << std::endl;
+    return;
+  }
+  glm::vec3 pos;
+  file >> pos.x;
+  file >> pos.y;
+  file >> pos.z;
+  float a0,a1,a2;
+  file >> a0;
+  file >> a1;
+  file >> a2;
+
+  cam.setPosition(pos);
+  cam.setAngle(0,a0);
+  cam.setAngle(1,a1);
+  cam.setAngle(2,a2);
+
+  file.close();
+}
+
 void createView(vars::Vars& vars) {
   auto const type = vars.getString("args.camera.type");
   if (type == "orbit")
     vars.add<basicCamera::OrbitCamera>("cameraTransform");
-  else if (type == "free")
+  else if (type == "free"){
     vars.add<basicCamera::FreeLookCamera>("cameraTransform");
-  else {
+    loadCamera(vars);
+  }else {
     std::cerr << "ERROR: --camera-type is incorrect" << std::endl;
     exit(0);
   }

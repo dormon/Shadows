@@ -49,6 +49,7 @@ void parseArguments(vars::Vars&vars){
 
   vars.addSizeT("frameCounter");
   vars.addSizeT("maxFrame") = arg->getu32("--maxFrame",0,"after this frame the app will stop");
+  vars.addBool("args.camera.remember") = arg->isPresent("--camera-remember","if present it will load camera at start and store camera at the end");
 
   hide(vars,"frameCounter");
   hide(vars,"maxFrame");

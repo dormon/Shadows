@@ -13,3 +13,5 @@ void createProjection(vars::Vars& vars);
 void mouseMoveCamera(vars::Vars& vars, SDL_Event const& event);
 
 void printCameraPosition(vars::Vars& vars);
+void storeCamera(vars::Vars&vars);
+void loadCamera(vars::Vars&vars);

@@ -110,6 +110,9 @@ shared vec4 lightClipSpace;
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
 
+shared vec3 edgeAE;
+shared vec3 edgeBE;
+
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){
     uint res  = multBuffer[job];
@@ -124,6 +127,10 @@ void loadSilhouette(uint job){
     edgeB[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
     edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
     edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
+
+    //debug
+    edgeAE = edgeA;
+    edgeBE = edgeB;
 
     //edgeA = vec3(-1,2,1);
     //edgeB = vec3(1,2,-1);
@@ -238,6 +245,41 @@ void loadSilhouette(uint job){
 //  return result;
 //
 //}
+
+vec4 plane(vec3 a,vec3 b,vec3 c){
+  vec3 n = normalize(cross(b-a,c-a));
+  return vec4(n,-dot(n,a));
+}
+
+int computeBridgeEuclid(in vec4 bridgeStart,in vec4 bridgeEnd){
+  vec4 bs = inverse(projView)*bridgeStart;
+  vec4 be = inverse(projView)*bridgeEnd  ;
+  bs/=bs.w;
+  be/=be.w;
+
+  vec4 edgePlaneE = plane(edgeAE,edgeBE,lightPosition.xyz);
+
+  int result = edgeMult;
+  float ss = dot(edgePlaneE,bs);
+  float es = dot(edgePlaneE,be);
+  if((ss<0)==(es<0))return 0;
+  result *= 1-2*int(ss<0.f);
+  //return result;
+
+  vec4 samplePlane = plane(bs.xyz,be.xyz,lightPosition.xyz);
+  ss = dot(samplePlane,vec4(edgeAE,1));
+  es = dot(samplePlane,vec4(edgeBE,1));
+  ss*=es;
+  if(ss>0.f)return 0;
+  result *= 1+int(ss<0.f);
+
+
+  vec4 trianglePlane  = plane(bs.xyz,be.xyz,bs.xyz + (edgeBE-edgeAE));
+  trianglePlane *= sign(dot(trianglePlane,lightPosition));
+  if(dot(trianglePlane,vec4(edgeAE,1))<=0)return 0;
+
+  return result;
+}
 
 int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
   // m n c 
@@ -383,7 +425,9 @@ void traverse(){
   #endif
         }
 
-        mult = computeBridge(bridgeStart,bridgeEnd);
+//        mult = computeBridge(bridgeStart,bridgeEnd);
+
+        mult = computeBridgeEuclid(bridgeStart,bridgeEnd);
         if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
   
   
