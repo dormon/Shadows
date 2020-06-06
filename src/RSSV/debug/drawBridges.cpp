@@ -217,14 +217,18 @@ void main(){
   if(false){
     vec4 A = vec4(-1,2,1,1);
     vec4 B = vec4(1,2,1,1);
-    vec4 L = vec4(0,1000,0,1);
-    vec3 n = cross(vec3(B-A),vec3(L-A));
+    vec4 L = vec4(0,5,0,1);
+    vec3 n = normalize(cross(vec3(B-A),vec3(L-A)));
     edgePlane = inverse(transpose(nodeProj*nodeView))*vec4(n,-dot(n,A.xyz));
     edgeAClipSpace = nodeProj*nodeView*A;
     edgeBClipSpace = nodeProj*nodeView*B;
     lightClipSpace = nodeProj*nodeView*L;
+    float ss = dot(edgePlane,bridgeStart);
+    float es = dot(edgePlane,bridgeEnd  );
+    if(ss < 0)mult = 1;
+    else mult = -1;
     //edgePlane = getClipPlaneSkala(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
-    mult = computeBridge(bridgeStart,bridgeEnd);
+    //mult = computeBridge(bridgeStart,bridgeEnd);
   }
   if(mult == 0)gColor = vec3(0.1);
   if(mult > 0)gColor = vec3(0,1,0);

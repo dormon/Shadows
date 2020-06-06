@@ -203,7 +203,7 @@ void traverseSilhouettes(vars::Vars&vars){
     //->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
     //->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
     ->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
-  prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
+  prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",3));
 
   auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
   if(storeTraverseStat){

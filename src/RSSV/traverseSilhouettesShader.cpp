@@ -110,8 +110,8 @@ shared vec4 lightClipSpace;
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
 
-shared vec3 edgeAE;
-shared vec3 edgeBE;
+//shared vec3 edgeAE;
+//shared vec3 edgeBE;
 
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){
@@ -128,9 +128,9 @@ void loadSilhouette(uint job){
     edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
     edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
 
-    //debug
-    edgeAE = edgeA;
-    edgeBE = edgeB;
+    ////debug
+    //edgeAE = edgeA;
+    //edgeBE = edgeB;
 
     //edgeA = vec3(-1,2,1);
     //edgeB = vec3(1,2,-1);
@@ -163,14 +163,14 @@ void loadSilhouette(uint job){
     vec3 abn = normalize(cross(edgeB-edgeA,n));
     abPlane = invTran*vec4(abn,-dot(abn,edgeA));
 
-//#if COMPUTE_BRIDGES == 1
-//    edgeAClipSpace = projView*vec4(edgeA,1.f);
-//    edgeBClipSpace = projView*vec4(edgeB,1.f);
-//    lightClipSpace = projView*lightPosition  ;
-//#endif
+#if COMPUTE_BRIDGES == 1
     edgeAClipSpace = projView*vec4(edgeA,1.f);
     edgeBClipSpace = projView*vec4(edgeB,1.f);
     lightClipSpace = projView*lightPosition  ;
+#endif
+    //edgeAClipSpace = projView*vec4(edgeA,1.f);
+    //edgeBClipSpace = projView*vec4(edgeB,1.f);
+    //lightClipSpace = projView*lightPosition  ;
 
 #endif
 
@@ -246,40 +246,46 @@ void loadSilhouette(uint job){
 //
 //}
 
-vec4 plane(vec3 a,vec3 b,vec3 c){
-  vec3 n = normalize(cross(b-a,c-a));
-  return vec4(n,-dot(n,a));
-}
-
-int computeBridgeEuclid(in vec4 bridgeStart,in vec4 bridgeEnd){
-  vec4 bs = inverse(projView)*bridgeStart;
-  vec4 be = inverse(projView)*bridgeEnd  ;
-  bs/=bs.w;
-  be/=be.w;
-
-  vec4 edgePlaneE = plane(edgeAE,edgeBE,lightPosition.xyz);
-
-  int result = edgeMult;
-  float ss = dot(edgePlaneE,bs);
-  float es = dot(edgePlaneE,be);
-  if((ss<0)==(es<0))return 0;
-  result *= 1-2*int(ss<0.f);
-  //return result;
-
-  vec4 samplePlane = plane(bs.xyz,be.xyz,lightPosition.xyz);
-  ss = dot(samplePlane,vec4(edgeAE,1));
-  es = dot(samplePlane,vec4(edgeBE,1));
-  ss*=es;
-  if(ss>0.f)return 0;
-  result *= 1+int(ss<0.f);
-
-
-  vec4 trianglePlane  = plane(bs.xyz,be.xyz,bs.xyz + (edgeBE-edgeAE));
-  trianglePlane *= sign(dot(trianglePlane,lightPosition));
-  if(dot(trianglePlane,vec4(edgeAE,1))<=0)return 0;
-
-  return result;
-}
+//vec4 plane(vec3 a,vec3 b,vec3 c){
+//  vec3 n = normalize(cross(b-a,c-a));
+//  return vec4(n,-dot(n,a));
+//}
+//
+//int computeBridgeEuclid(in vec4 bridgeStart,in vec4 bridgeEnd){
+//  vec4 bs = inverse(projView)*bridgeStart;
+//  vec4 be = inverse(projView)*bridgeEnd  ;
+//  bs/=bs.w;
+//  be/=be.w;
+//
+//  //edgeAE = vec3(-1,2,1);
+//  //edgeBE = vec3( 1,2,1);
+//  //vec4 edgePlaneE = plane(edgeAE,edgeBE,lightPosition.xyz);
+//  vec4 edgePlaneE = plane(vec3(-1,2,1),vec3( 1,2,1),vec3(0,5,0));
+//
+//  int result = edgeMult;
+//  float ss = dot(edgePlaneE,bs);
+//  float es = dot(edgePlaneE,be);
+//  //if((ss<0)==(es<0))return 0;
+//  //result *= 1-2*int(ss<0.f);
+//  ////return result;
+//  if((ss<0))return  1;
+//  if((ss>0))return -1;
+//  return 0;//abs(result);
+//
+//  vec4 samplePlane = plane(bs.xyz,be.xyz,lightPosition.xyz);
+//  ss = dot(samplePlane,vec4(edgeAE,1));
+//  es = dot(samplePlane,vec4(edgeBE,1));
+//  ss*=es;
+//  if(ss>0.f)return 0;
+//  result *= 1+int(ss<0.f);
+//
+//
+//  vec4 trianglePlane  = plane(bs.xyz,be.xyz,bs.xyz + (edgeBE-edgeAE));
+//  trianglePlane *= sign(dot(trianglePlane,lightPosition));
+//  if(dot(trianglePlane,vec4(edgeAE,1))<=0)return 0;
+//
+//  return result;
+//}
 
 int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
   // m n c 
@@ -295,13 +301,14 @@ int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
   //
   // m<0 && n>=0 || m>=0 && n<0
   // m<0 xor n<0
+  //
+  //
   
   int result = edgeMult;
   float ss = dot(edgePlane,bridgeStart);
   float es = dot(edgePlane,bridgeEnd  );
   if((ss<0)==(es<0))return 0;
   result *= 1-2*int(ss<0.f);
-  //return result;
 
   vec4 samplePlane    = getClipPlaneSkala(bridgeStart,bridgeEnd,lightClipSpace);
   ss = dot(samplePlane,edgeAClipSpace);
@@ -352,7 +359,7 @@ shared uint64_t intersection[nofLevels];
 
 #if COMPUTE_BRIDGES == 1
 #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-shared vec3     bridgeEnd   [nofLevels][WARP];
+shared vec3     localBridgeEnd   [nofLevels][WARP];
 #endif
 #endif
 
@@ -412,16 +419,16 @@ void traverse(){
         bridgeEnd = vec4(minCorner + aabbSize*.5f,1.f);
 
   #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-        bridgeEnd[level][gl_LocalInvocationIndex] = vec3(bridgeEnd);
+        localBridgeEnd[level][gl_LocalInvocationIndex] = vec3(bridgeEnd);
   #endif
   
         if(level == 0){
           bridgeStart = proj*view*lightPosition;
         }else{
   #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-          bridgeStart = vec4(bridgeEnd[level-1][node&warpMask],1);
+          bridgeStart = vec4(localBridgeEnd[level-1][node&warpMask],1);
   #else
-          bridgeStart = vec4(getAABBCenter(level-1,node>>warpBits),1);//((node>>warpBits)<<warpBits)+gl_LocalInvocationIndex),1);
+        bridgeStart = vec4(getAABBCenter(level-1,node),1);
   #endif
         }
 
