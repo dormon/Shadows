@@ -44,7 +44,7 @@ void prepareDrawStencil(vars::Vars&vars){
     int value = imageLoad(stencil,ivec2(gl_FragCoord.xy)).r;
     if(value > 0)fColor = vec4(1,0,0,1);
     if(value < 0)fColor = vec4(0,0,1,1);
-    if(value == 0)fColor = vec4(0,0,0,1);
+    if(value == 0)discard;//fColor = vec4(0,0,0,1);
   }
   ).";
 
