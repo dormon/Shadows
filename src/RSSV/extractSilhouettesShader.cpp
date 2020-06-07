@@ -33,7 +33,6 @@ std::string const rssv::extractSilhouettesShader = R".(
 layout(local_size_x=WORKGROUP_SIZE_X)in;
 
 layout(std430,binding=0)readonly buffer EdgePlanes         {float edgePlanes [];};
-layout(std430,binding=1)         buffer Silhouettes        {vec4  silhouettes[];};
 
 layout(std430,binding=2)volatile buffer DrawIndirectBuffer{uint drawIndirectBuffer[4];};
 

@@ -90,25 +90,10 @@ void createEdges(vars::Vars&vars){
   vars.reCreate<Buffer>("rssv.method.edgeBuffer",edges);
 }
 
-void allocateSilhouettes(vars::Vars&vars){
-  FUNCTION_PROLOGUE("rssv.method"
-      ,"adjacency"
-      );
-
-  auto const adj = vars.get<Adjacency>("adjacency");
-  auto nofEdges = adj->getNofEdges();
-  auto silhouettes = vars.reCreate<ge::gl::Buffer>("rssv.method.silhouettes",
-      sizeof(float)*componentsPerVertex4D*verticesPerQuad*nofEdges*adj->getMaxMultiplicity(),
-      nullptr,GL_DYNAMIC_COPY);
-  silhouettes->clear(GL_R32F,GL_RED,GL_FLOAT);
-}
-
 void allocateSilhouettesData(vars::Vars&vars){
   createEdgePlanes(vars);
   createEdges(vars);
-  allocateSilhouettes(vars);
 }
-
 
 void createSilhouetteProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"         ,
@@ -158,7 +143,6 @@ void extractSilhouettes(vars::Vars&vars){
   auto adj               =  vars.get<Adjacency>("adjacency"                            );
   auto program           =  vars.get<Program>  ("rssv.method.extractSilhouettesProgram");
   auto edgePlanes        =  vars.get<Buffer>   ("rssv.method.edgePlanes"               );
-  auto silhouettes       =  vars.get<Buffer>   ("rssv.method.silhouettes"              );
   auto WGS               =  vars.getUint32     ("rssv.param.extractSilhouettesWGS"     );
   auto multBuffer        =  vars.get<Buffer>   ("rssv.method.multBuffer"               );
   auto lightPosition     = *vars.get<glm::vec4>("rssv.method.lightPosition"            );
@@ -170,7 +154,6 @@ void extractSilhouettes(vars::Vars&vars){
   program
     ->set4fv    ("lightPosition"     ,glm::value_ptr(lightPosition))
     ->bindBuffer("EdgePlanes"        ,edgePlanes                   )
-    ->bindBuffer("Silhouettes"       ,silhouettes                  )
     ->bindBuffer("DrawIndirectBuffer",silhouetteCounter            )
     ->bindBuffer("MultBuffer"        ,multBuffer                   )
     ->dispatch((GLuint)getDispatchSize(adj->getNofEdges(),WGS));

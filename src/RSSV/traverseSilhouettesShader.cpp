@@ -21,7 +21,11 @@ layout(std430,binding=0)buffer Hierarchy{
   #endif
 };
 
-layout(std430,binding=2)buffer JobCounter        {uint  jobCounter       [];};
+layout(std430,binding=2)buffer JobCounters       {
+  uint silhouetteJobCounter;
+  uint triangleJobCounter  ;
+};
+
 layout(std430,binding=3)buffer EdgeBuffer        {float edgeBuffer       [];};
 layout(std430,binding=4)buffer MultBuffer        {uint  multBuffer       [];};
 layout(std430,binding=5)buffer SilhouetteCounter {uint  silhouetteCounter[];};
@@ -341,7 +345,7 @@ void main(){
   //silhouette loop
   for(;;){
     if(gl_LocalInvocationIndex==0)
-      job = atomicAdd(jobCounter[0],1);
+      job = atomicAdd(silhouetteJobCounter,1);
 
     job = readFirstInvocationARB(job);
     if(job >= silhouetteCounter[0])break;

@@ -86,9 +86,9 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
 
 }
 
-void createSilhouetteJobCounter(vars::Vars&vars){
+void createTraverseJobCounters(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method");
-  vars.reCreate<Buffer>("rssv.method.silhouettesJobCounter",sizeof(uint32_t));
+  vars.reCreate<Buffer>("rssv.method.traverseJobCounters",sizeof(uint32_t)*2);
 }
 
 
@@ -113,7 +113,7 @@ void createDebugEdgePlanesBuffer(vars::Vars&vars){
 void traverseSilhouettes(vars::Vars&vars){
   FUNCTION_CALLER();
   createTraverseSilhouettesProgram(vars);
-  createSilhouetteJobCounter(vars);
+  createTraverseJobCounters(vars);
   createDebugSilhouetteTraverseBuffers(vars);
   createDebugEdgePlanesBuffer(vars);
 
@@ -124,7 +124,7 @@ void traverseSilhouettes(vars::Vars&vars){
   auto const&lightPosition     = *vars.get<glm::vec4>("rssv.method.lightPosition"   );
   auto const clipLightPosition = proj*view*lightPosition;
 
-  auto jobCounter                  = vars.get<Buffer >("rssv.method.silhouettesJobCounter"     );
+  auto jobCounters                 = vars.get<Buffer >("rssv.method.traverseJobCounters"       );
   auto edges                       = vars.get<Buffer >("rssv.method.edgeBuffer"                );
   auto multBuffer                  = vars.get<Buffer >("rssv.method.multBuffer"                );
   auto silhouetteCounter           = vars.get<Buffer >("rssv.method.silhouetteCounter"         );
@@ -136,7 +136,7 @@ void traverseSilhouettes(vars::Vars&vars){
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
 
-  jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+  jobCounters->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
 
   bridges->clear(GL_R32I,GL_RED_INTEGER,GL_INT);
   stencil->clear(0,GL_RED_INTEGER,GL_INT);
@@ -144,7 +144,7 @@ void traverseSilhouettes(vars::Vars&vars){
   auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
   hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
 
-  jobCounter       ->bindBase(GL_SHADER_STORAGE_BUFFER,2);
+  jobCounters      ->bindBase(GL_SHADER_STORAGE_BUFFER,2);
   edges            ->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   multBuffer       ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   silhouetteCounter->bindBase(GL_SHADER_STORAGE_BUFFER,5);
