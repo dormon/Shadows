@@ -19,9 +19,13 @@ namespace rssv::debug{
 void prepareDrawEdgePlanes(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method.debug"
       ,"wavefrontSize"                        
+      ,"rssv.param.alignment"
+      ,"adjacency"
       );
 
-  auto const alignedNofEdges =  vars.getUint32  ("rssv.method.alignedNofEdges"  );
+  auto const alignSize                    =  vars.getSizeT       ("rssv.param.alignment"                   );
+  auto adj                                =  vars.get<Adjacency> ("adjacency"                              );
+  auto const nofEdges                     =  adj->getNofEdges();
 
   std::string const vsSrc = R".(
   #version 450
@@ -43,7 +47,7 @@ void prepareDrawEdgePlanes(vars::Vars&vars){
 
   std::string const gsSrc = R".(
 
-layout(binding=0)buffer EdgeBuffer       {float edgeBuffer       [];};
+layout(binding=0)buffer EdgePlanes       {float edgePlanes       [];};
 layout(binding=1)buffer MultBuffer       {
   uint  nofSilhouettes  ;
   uint  multBuffer    [];
@@ -63,6 +67,10 @@ uniform mat4 debugProj;
 uniform vec4 light;
 uniform int selectedEdge = -1;
 
+#define ALIGN(W,A) uint(uint(uint(W)/uint(A))*uint(A) + uint((uint(W)%uint(A))!=0u)*uint(A))
+#define ALIGN_SIZE_FLOAT ALIGN(ALIGN_SIZE,4u)
+#define ALIGN_OFFSET(i) uint(ALIGN(NOF_EDGES,ALIGN_SIZE_FLOAT)*uint(i))
+
 void main(){
   uint thread = vId[0];
 
@@ -74,13 +82,13 @@ void main(){
   int  mult = int(res) >> 29;
 
   vec4 P[2];
-  P[0][0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
-  P[0][1] = edgeBuffer[edge+1*ALIGNED_NOF_EDGES];
-  P[0][2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
+  P[0][0] = edgePlanes[edge+ALIGN_OFFSET(0)];
+  P[0][1] = edgePlanes[edge+ALIGN_OFFSET(1)];
+  P[0][2] = edgePlanes[edge+ALIGN_OFFSET(2)];
   P[0][3] = 1;
-  P[1][0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
-  P[1][1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
-  P[1][2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
+  P[1][0] = edgePlanes[edge+ALIGN_OFFSET(3)];
+  P[1][1] = edgePlanes[edge+ALIGN_OFFSET(4)];
+  P[1][2] = edgePlanes[edge+ALIGN_OFFSET(5)];
   P[1][3] = 1;
 
   if(debugProj[0][0]==1337 && debugView[0][0] == 1337)return;
@@ -152,7 +160,8 @@ void main(){
   auto vs = make_shared<Shader>(GL_VERTEX_SHADER,vsSrc);
   auto gs = make_shared<Shader>(GL_GEOMETRY_SHADER,
       "#version 450\n",
-      Shader::define("ALIGNED_NOF_EDGES",alignedNofEdges),
+      Shader::define("ALIGN_SIZE",(uint32_t)alignSize),
+      Shader::define("NOF_EDGES" ,(uint32_t)nofEdges ),
       getEdgePlanesShader,
       gsSrc);
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
@@ -181,7 +190,7 @@ void drawEdgePlanes(vars::Vars&vars){
   auto const adj               =  vars.get<Adjacency>  ("adjacency"                               );
   auto const vao               =  vars.get<VertexArray>("rssv.method.debug.vao"                   );
   auto const prg               =  vars.get<Program>    ("rssv.method.debug.drawEdgePlanesProgram" );
-  auto const edges             =  vars.get<Buffer>     ("rssv.method.edgeBuffer"                  );
+  auto const edges             =  vars.get<Buffer>     ("rssv.method.edgePlanes"                  );
   auto const multBuffer        =  vars.get<Buffer>     ("rssv.method.debug.dump.multBuffer"       );
   auto nofEdges = adj->getNofEdges();
 
