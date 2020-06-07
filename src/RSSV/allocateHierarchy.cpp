@@ -17,25 +17,9 @@ using namespace ge::gl;
 
 namespace rssv{
 void printHierarchySize(vars::Vars&vars){
-  auto&cfg           = *vars.get<Config>("rssv.method.config"      );
-  auto mergedBuffers =  vars.getInt32   ("rssv.param.mergedBuffers");
-
   size_t sss;
 
-  if(mergedBuffers){
-    sss = 
-    vars.get<Buffer>("rssv.method.hierarchy")->getSize();
-  }else{
-    sss =
-    vars.get<Buffer>("rssv.method.nodePool")->getSize() + 
-    vars.get<Buffer>("rssv.method.aabbPool")->getSize();
-
-    if(cfg.memoryOptim)
-      sss += vars.get<Buffer>("rssv.method.aabbPointer")->getSize();
-
-    if(cfg.useBridgePool)
-      sss += vars.get<Buffer>("rssv.method.bridgePool")->getSize();
-  }
+  sss =  vars.get<Buffer>("rssv.method.hierarchy")->getSize();
 
   sss += vars.get<Buffer>("rssv.method.activeNodes")->getSize();
 
@@ -50,7 +34,7 @@ void printHierarchySize(vars::Vars&vars){
   std::cerr << "HIERARCHY SIZE: " << (float)sss / (float)(1024*1024) << " MB" << std::endl;
 }
 
-void allocateMergedBuffers(vars::Vars&vars){
+void allocateNodeAABB(vars::Vars&vars){
   auto&cfg           = *vars.get<Config>("rssv.method.config"      );
   vars.erase("rssv.method.nodePool"   );
   vars.erase("rssv.method.aabbPool"   );
@@ -69,36 +53,14 @@ void allocateMergedBuffers(vars::Vars&vars){
   vars.reCreate<Buffer>("rssv.method.hierarchy"  ,bufSize);
 }
 
-void allocateNonMergedBuffers(vars::Vars&vars){
-  auto&cfg           = *vars.get<Config>("rssv.method.config"      );
-  vars.erase("rssv.method.hierarchy");
-
-  vars.reCreate<Buffer>("rssv.method.aabbPool"   ,cfg.aabbBufferSize);
-  vars.reCreate<Buffer>("rssv.method.nodePool"   ,cfg.nodeBufferSize);
-
-  if(cfg.useBridgePool)
-    vars.reCreate<Buffer>("rssv.method.bridgePool",cfg.bridgePoolSize);
-  else
-    vars.erase("rssv.method.bridgePool");
-
-  if(cfg.memoryOptim){
-    vars.reCreate<Buffer>("rssv.method.aabbPointer",cfg.aabbPointerBufferSize);
-  }else{
-    vars.erase           ("rssv.method.aabbPointer"              );
-  }
-  
-}
-
 }
 
 void rssv::allocateHierarchy(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"
       ,"rssv.method.config"
-      ,"rssv.param.mergedBuffers"
       );
 
   auto&cfg           = *vars.get<Config>("rssv.method.config"      );
-  auto mergedBuffers =  vars.getInt32   ("rssv.param.mergedBuffers");
 
   vars.reCreate<Buffer >("rssv.method.levelNodeCounter",cfg.nofLevels*sizeof(uint32_t)*4               );
   vars.reCreate<Buffer >("rssv.method.activeNodes"     ,cfg.nofNodes *sizeof(uint32_t)                 );
@@ -106,11 +68,7 @@ void rssv::allocateHierarchy(vars::Vars&vars){
   vars.reCreate<Buffer >("rssv.method.bridges"         ,cfg.nofNodes *sizeof(int32_t)                  );
   vars.reCreate<Texture>("rssv.method.stencil"         ,GL_TEXTURE_2D,GL_R32I,1,cfg.windowX,cfg.windowY);
 
-  if(mergedBuffers){
-    allocateMergedBuffers(vars);
-  }else{
-    allocateNonMergedBuffers(vars);
-  }
+  allocateNodeAABB(vars);
 
   printHierarchySize(vars);
 

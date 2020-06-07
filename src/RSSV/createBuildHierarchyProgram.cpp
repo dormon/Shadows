@@ -26,12 +26,10 @@ void rssv::createBuildHierarchyProgram(vars::Vars&vars){
       ,"rssv.method.config"
       ,"rssv.param.usePadding"   
       ,"rssv.param.discardBackfacing"
-      ,"rssv.param.mergedBuffers"
       );
 
   auto const usePadding        =  vars.getUint32      ("rssv.param.usePadding"       );
   auto const discardBackfacing =  vars.getUint32      ("rssv.param.discardBackfacing");
-  auto const mergedBuffers     =  vars.getInt32       ("rssv.param.mergedBuffers"    );
   auto const cfg               = *vars.get<Config    >("rssv.method.config"          );
 
 #define PRINT(x) std::cerr << #x ": " << x << std::endl
@@ -45,7 +43,6 @@ void rssv::createBuildHierarchyProgram(vars::Vars&vars){
         rssv::reduceShader,
         ge::gl::Shader::define("USE_PADDING"        ,(int)usePadding            ),
         ge::gl::Shader::define("DISCARD_BACK_FACING",(int)discardBackfacing     ),
-        ge::gl::Shader::define("MERGED_BUFFERS"     ,(int)mergedBuffers         ),
         ge::gl::Shader::define("USE_BRIDGE_POOL"    ,(int)cfg.useBridgePool     ),
         rssv::buildHierarchyShader
         ));

@@ -26,24 +26,16 @@ std::string const rssv::traverseSilhouettesShader = R".(
 
 layout(local_size_x=WARP)in;
 
-#if MERGED_BUFFERS == 1
-  layout(std430,binding=0)buffer Hierarchy{
-    uint  nodePool[nodeBufferSizeInUints ];
-    float aabbPool[aabbBufferSizeInFloats];
-    #if MEMORY_OPTIM == 1
-      uint  aabbPointer[aabbPointerBufferSizeInUints];
-    #endif
-    #if USE_BRIDGE_POOL == 1
-      float bridgePool[bridgePoolSizeInFloats];
-    #endif
-  };
-#else
-  layout(std430,binding=0)buffer NodePool          {uint  nodePool         [];};
-  layout(std430,binding=1)buffer AABBPool          {float aabbPool         [];};
+layout(std430,binding=0)buffer Hierarchy{
+  uint  nodePool[nodeBufferSizeInUints ];
+  float aabbPool[aabbBufferSizeInFloats];
   #if MEMORY_OPTIM == 1
-    layout(std430,binding=7)buffer AABBPointer {uint  aabbPointer [];};///TODO DEBUG???
+    uint  aabbPointer[aabbPointerBufferSizeInUints];
   #endif
-#endif
+  #if USE_BRIDGE_POOL == 1
+    float bridgePool[bridgePoolSizeInFloats];
+  #endif
+};
 
 layout(std430,binding=2)buffer JobCounter        {uint  jobCounter       [];};
 layout(std430,binding=3)buffer EdgeBuffer        {float edgeBuffer       [];};

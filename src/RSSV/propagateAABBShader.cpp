@@ -21,7 +21,6 @@ std::string const rssv::propagateAABBShader = R".(
 
 layout(local_size_x=WARP,local_size_y=NOF_WARPS)in;
 
-#if MERGED_BUFFERS == 1
 layout(std430,binding=0)buffer NodePool{
   uint  nodePool[nodeBufferSizeInUints ];
   float aabbPool[aabbBufferSizeInFloats];
@@ -32,19 +31,6 @@ layout(std430,binding=0)buffer NodePool{
   float  bridgePool[bridgePoolSizeInFloats];
   #endif
 };
-#else
-layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
-layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
-
-#if MEMORY_OPTIM == 1
-layout(std430,binding=5)buffer AABBPointer     {uint  aabbPointer     [];};
-#endif
-
-#if USE_BRIDGE_POOL == 1
-layout(std430,binding=6)buffer AABBPointer     {float bridgePool     [];};
-#endif
-
-#endif
 
 layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};

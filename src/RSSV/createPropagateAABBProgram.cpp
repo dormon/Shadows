@@ -16,11 +16,9 @@ void rssv::createPropagateAABBProgram(vars::Vars&vars){
       ,"windowSize"
       ,"wavefrontSize"
       ,"rssv.method.config"
-      ,"rssv.param.mergedBuffers"
       );
 
   auto const nofWarps      =  vars.getUint32      ("rssv.param.propagateWarps");
-  auto const mergedBuffers =  vars.getInt32       ("rssv.param.mergedBuffers" );
   auto const cfg           = *vars.get<Config    >("rssv.method.config"       );
 
 
@@ -31,7 +29,6 @@ void rssv::createPropagateAABBProgram(vars::Vars&vars){
         rssv::getConfigShader(vars),
 
         ge::gl::Shader::define("NOF_WARPS"     ,(uint32_t)nofWarps         ),
-        ge::gl::Shader::define("MERGED_BUFFERS",(int)mergedBuffers         ),
         ge::gl::Shader::define("USE_BRIDGE_POOL",(int)cfg.useBridgePool    ),
         rssv::propagateAABBShader
         ));

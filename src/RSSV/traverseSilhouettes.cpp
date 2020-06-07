@@ -44,7 +44,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"rssv.param.storeEdgePlanes"
       ,"rssv.method.config"
       ,"rssv.method.alignedNofEdges"
-      ,"rssv.param.mergedBuffers"
       ,"rssv.param.computePlanesInClipSpace"
       ,"rssv.param.useSkala"
       ,"rssv.param.dumpPointsNotPlanes"
@@ -57,7 +56,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const storeTraverseSilhouettesStat =  vars.getBool        ("rssv.param.storeTraverseSilhouettesStat");
   auto const storeEdgePlanes              =  vars.getBool        ("rssv.param.storeEdgePlanes"             );
   auto const alignedNofEdges              =  vars.getUint32      ("rssv.method.alignedNofEdges"            );
-  auto const mergedBuffers                =  vars.getInt32       ("rssv.param.mergedBuffers"               );
   auto const computePlanesInClipSpace     =  vars.getBool        ("rssv.param.computePlanesInClipSpace"    );
   auto const useSkala                     =  vars.getBool        ("rssv.param.useSkala"                    );
   auto const dumpPointsNotPlanes          =  vars.getBool        ("rssv.param.dumpPointsNotPlanes"         );
@@ -75,7 +73,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("STORE_TRAVERSE_STAT"           ,(int)storeTraverseSilhouettesStat),
         Shader::define("STORE_EDGE_PLANES"             ,(int)storeEdgePlanes             ),
         Shader::define("ALIGNED_NOF_EDGES"             ,alignedNofEdges                  ),
-        Shader::define("MERGED_BUFFERS"                ,(int)mergedBuffers               ),
         Shader::define("COMPUTE_PLANES_IN_CLIP_SPACE"  ,(int)computePlanesInClipSpace    ),
         Shader::define("USE_SKALA"                     ,(int)useSkala                    ),
         Shader::define("DUMP_POINTS_NOT_PLANES"        ,(int)dumpPointsNotPlanes         ),
@@ -138,8 +135,6 @@ void traverseSilhouettes(vars::Vars&vars){
   auto silhouetteCounter           = vars.get<Buffer >("rssv.method.silhouetteCounter"         );
   auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
-  auto memoryOptim                 = vars.getInt32    ("rssv.param.memoryOptim"                );
-  auto mergedBuffers               = vars.getInt32    ("rssv.param.mergedBuffers"              );
   auto computeBridges              = vars.getBool     ("rssv.param.computeBridges"             );
 
 
@@ -151,19 +146,8 @@ void traverseSilhouettes(vars::Vars&vars){
   bridges->clear(GL_R32I,GL_RED_INTEGER,GL_INT);
   stencil->clear(0,GL_RED_INTEGER,GL_INT);
 
-  if(mergedBuffers){
-    auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
-    hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  }else{
-    auto nodePool = vars.get<Buffer >("rssv.method.nodePool"             );
-    auto aabbPool = vars.get<Buffer >("rssv.method.aabbPool"             );
-    nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-    aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
-    if(memoryOptim){
-      auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
-      aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,7);//TODO DEBUG????
-    }
-  }
+  auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
+  hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
 
   jobCounter       ->bindBase(GL_SHADER_STORAGE_BUFFER,2);
   edges            ->bindBase(GL_SHADER_STORAGE_BUFFER,3);

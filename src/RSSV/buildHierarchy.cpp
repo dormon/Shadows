@@ -22,7 +22,7 @@ using namespace ge::gl;
 
 namespace rssv::buildHier{
 
-void clearAndBindMergedNodePoolAndAABBPool(vars::Vars&vars){
+void clearAndBindNodePoolAndAABBPool(vars::Vars&vars){
   auto&cfg               = *vars.get<Config >("rssv.method.config"               );
   auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
   //clear node pool
@@ -34,33 +34,6 @@ void clearAndBindMergedNodePoolAndAABBPool(vars::Vars&vars){
   hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
 }
 
-void clearAndBindNonMergedNodePoolAndAABBPool(vars::Vars&vars){
-  auto&cfg               = *vars.get<Config >("rssv.method.config"               );
-  auto nodePool = vars.get<Buffer>("rssv.method.nodePool");
-  auto aabbPool = vars.get<Buffer>("rssv.method.aabbPool");
-  nodePool->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-  nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
-
-  if(cfg.memoryOptim){
-    auto aabbPointer = vars.get<Buffer>("rssv.method.aabbPointer");
-    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
-    ge::gl::glClearNamedBufferSubData(aabbPointer->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
-  }
-  if(cfg.useBridgePool){
-    auto bridgePool = vars.get<Buffer>("rssv.method.bridgePool");
-    bridgePool->bindBase(GL_SHADER_STORAGE_BUFFER,6);
-  }
-}
-
-void clearAndBindNodePoolAndAABBPool(vars::Vars&vars){
-  auto mergedBuffers     =  vars.getInt32    ("rssv.param.mergedBuffers"         );
-  if(mergedBuffers){
-    buildHier::clearAndBindMergedNodePoolAndAABBPool(vars);
-  }else{
-    buildHier::clearAndBindNonMergedNodePoolAndAABBPool(vars);
-  }
-}
 
 void ifEnabledSetupDiscardBackfacing(vars::Vars&vars){
   auto gBuffer           =  vars.get<GBuffer>("gBuffer"                          );

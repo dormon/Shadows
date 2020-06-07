@@ -27,8 +27,6 @@ void rssv::loadParams(
   vars.addUint32("rssv.param.useBridgePool"          ) = c->geti32   ("useBridgePool"        ,0   ,"create buffer containing information about bridges"                              );
   vars.addInt32 ("rssv.param.scaledQuantization"     ) = c->geti32   ("scaledQuantization"   ,0   ,"fix CPTSV quantization"                                                          );
 
-  vars.addInt32 ("rssv.param.mergedBuffers"               ,1);
-
   //FOR DEBUG
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat"  );
   vars.addBool  ("rssv.param.storeEdgePlanes"               );
