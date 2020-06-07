@@ -26,9 +26,12 @@ layout(std430,binding=2)buffer JobCounters       {
   uint triangleJobCounter  ;
 };
 
-layout(std430,binding=3)buffer EdgeBuffer        {float edgeBuffer       [];};
-layout(std430,binding=4)buffer MultBuffer        {uint  multBuffer       [];};
-layout(std430,binding=5)buffer SilhouetteCounter {uint  silhouetteCounter[];};
+layout(std430,binding=3)readonly buffer EdgeBuffer{float edgeBuffer       [];};
+layout(std430,binding=4)readonly buffer MultBuffer{
+  uint nofSilhouettes  ;
+  uint multBuffer    [];
+};
+
 layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
 
 layout(     binding=0)          uniform sampler2DRect depthTexture;
@@ -348,7 +351,7 @@ void main(){
       job = atomicAdd(silhouetteJobCounter,1);
 
     job = readFirstInvocationARB(job);
-    if(job >= silhouetteCounter[0])break;
+    if(job >= nofSilhouettes)break;
 
     //if(selectedEdge>=0 && job != uint(selectedEdge))continue;
 

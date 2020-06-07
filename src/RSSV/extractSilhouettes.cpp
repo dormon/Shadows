@@ -117,11 +117,6 @@ void createSilhouetteProgram(vars::Vars&vars){
         extractSilhouettesShader));
 }
 
-void allocateSilhouetteCounter(vars::Vars&vars){
-  FUNCTION_PROLOGUE("rssv.method");
-  vars.reCreate<Buffer>("rssv.method.silhouetteCounter",sizeof(uint32_t)*4);
-}
-
 void allocateMultBuffer(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"
       ,"adjacency");
@@ -136,10 +131,8 @@ void extractSilhouettes(vars::Vars&vars){
   createAdjacency(vars);
   allocateSilhouettesData(vars);
   createSilhouetteProgram(vars);
-  allocateSilhouetteCounter(vars);
   allocateMultBuffer(vars);
 
-  auto silhouetteCounter =  vars.get<Buffer>   ("rssv.method.silhouetteCounter"        );
   auto adj               =  vars.get<Adjacency>("adjacency"                            );
   auto program           =  vars.get<Program>  ("rssv.method.extractSilhouettesProgram");
   auto edgePlanes        =  vars.get<Buffer>   ("rssv.method.edgePlanes"               );
@@ -147,14 +140,14 @@ void extractSilhouettes(vars::Vars&vars){
   auto multBuffer        =  vars.get<Buffer>   ("rssv.method.multBuffer"               );
   auto lightPosition     = *vars.get<glm::vec4>("rssv.method.lightPosition"            );
 
-  silhouetteCounter->clear(GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT);
+  //clear silhouette counter
+  multBuffer->clear(GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT);
 
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
   program
     ->set4fv    ("lightPosition"     ,glm::value_ptr(lightPosition))
     ->bindBuffer("EdgePlanes"        ,edgePlanes                   )
-    ->bindBuffer("DrawIndirectBuffer",silhouetteCounter            )
     ->bindBuffer("MultBuffer"        ,multBuffer                   )
     ->dispatch((GLuint)getDispatchSize(adj->getNofEdges(),WGS));
 

@@ -127,7 +127,6 @@ void traverseSilhouettes(vars::Vars&vars){
   auto jobCounters                 = vars.get<Buffer >("rssv.method.traverseJobCounters"       );
   auto edges                       = vars.get<Buffer >("rssv.method.edgeBuffer"                );
   auto multBuffer                  = vars.get<Buffer >("rssv.method.multBuffer"                );
-  auto silhouetteCounter           = vars.get<Buffer >("rssv.method.silhouetteCounter"         );
   auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
   auto computeBridges              = vars.getBool     ("rssv.param.computeBridges"             );
@@ -147,7 +146,6 @@ void traverseSilhouettes(vars::Vars&vars){
   jobCounters      ->bindBase(GL_SHADER_STORAGE_BUFFER,2);
   edges            ->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   multBuffer       ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
-  silhouetteCounter->bindBase(GL_SHADER_STORAGE_BUFFER,5);
   bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
 
   depth     ->bind     (0);

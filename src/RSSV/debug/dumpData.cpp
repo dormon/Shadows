@@ -102,13 +102,6 @@ void dumpMultBuffer(vars::Vars&vars){
   target->copy(*source);
 }
 
-void dumpSilhouetteCounter(vars::Vars&vars){
-  FUNCTION_CALLER();
-  auto source = vars.get<Buffer>("rssv.method.silhouetteCounter");
-  auto target = vars.reCreate<Buffer>("rssv.method.debug.dump.silhouetteCounter",source->getSize());
-  target->copy(*source);
-}
-
 void dumpBasic(vars::Vars&vars){
   FUNCTION_CALLER();
   auto lp        = *vars.get<glm::vec4>("rssv.method.debug.lightPosition"   );
@@ -354,7 +347,6 @@ void dumpData(vars::Vars&vars){
 void dumpSilhouettes(vars::Vars&vars){
   //dumpEdges(vars);
   dumpMultBuffer(vars);
-  dumpSilhouetteCounter(vars);
 }
 
 }

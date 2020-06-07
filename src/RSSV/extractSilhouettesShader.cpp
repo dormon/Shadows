@@ -34,9 +34,10 @@ layout(local_size_x=WORKGROUP_SIZE_X)in;
 
 layout(std430,binding=0)readonly buffer EdgePlanes         {float edgePlanes [];};
 
-layout(std430,binding=2)volatile buffer DrawIndirectBuffer{uint drawIndirectBuffer[4];};
-
-layout(std430,binding=3)buffer MultBuffer{uint multBuffer[];};
+layout(std430,binding=3)buffer MultBuffer{
+  uint nofSilhouettes;
+  uint multBuffer[];
+};
 
 uniform vec4 lightPosition = vec4(100,100,100,1);
 uniform mat4 mvp           = mat4(1)            ;
@@ -90,7 +91,7 @@ void main(){
   #endif
 
   if(gl_LocalInvocationID.x==0){
-    globalOffset = atomicAdd(drawIndirectBuffer[0],localCounter);
+    globalOffset = atomicAdd(nofSilhouettes,localCounter);
   }
 
   #if WORKGROUP_SIZE_X > WARP

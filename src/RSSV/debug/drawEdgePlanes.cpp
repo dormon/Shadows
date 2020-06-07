@@ -44,8 +44,10 @@ void prepareDrawEdgePlanes(vars::Vars&vars){
   std::string const gsSrc = R".(
 
 layout(binding=0)buffer EdgeBuffer       {float edgeBuffer       [];};
-layout(binding=1)buffer MultBuffer       {uint  multBuffer       [];};
-layout(binding=2)buffer SilhouetteCounter{uint  silhouetteCounter[];};
+layout(binding=1)buffer MultBuffer       {
+  uint  nofSilhouettes  ;
+  uint  multBuffer    [];
+};
 
 layout(points)in;
 layout(line_strip,max_vertices=20)out;
@@ -64,7 +66,7 @@ uniform int selectedEdge = -1;
 void main(){
   uint thread = vId[0];
 
-  if(thread >= silhouetteCounter[0])return;
+  if(thread >= nofSilhouettes)return;
   if(selectedEdge >= 0 && int(thread) != selectedEdge)return;
 
   uint res = multBuffer[thread];
@@ -181,12 +183,10 @@ void drawEdgePlanes(vars::Vars&vars){
   auto const prg               =  vars.get<Program>    ("rssv.method.debug.drawEdgePlanesProgram" );
   auto const edges             =  vars.get<Buffer>     ("rssv.method.edgeBuffer"                  );
   auto const multBuffer        =  vars.get<Buffer>     ("rssv.method.debug.dump.multBuffer"       );
-  auto const silhouetteCounter =  vars.get<Buffer>     ("rssv.method.debug.dump.silhouetteCounter");
   auto nofEdges = adj->getNofEdges();
 
   edges->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   multBuffer->bindBase(GL_SHADER_STORAGE_BUFFER,1);
-  silhouetteCounter->bindBase(GL_SHADER_STORAGE_BUFFER,2);
 
   vao->bind();
   prg->use();
