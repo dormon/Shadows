@@ -30,8 +30,6 @@ void rssv::loadParams(
   //FOR DEBUG
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat"  );
   vars.addBool  ("rssv.param.storeEdgePlanes"               );
-  vars.addBool  ("rssv.param.computePlanesInClipSpace"      );
-  vars.addBool  ("rssv.param.useSkala"                      );
   vars.addBool  ("rssv.param.dumpPointsNotPlanes"           );
   vars.addBool  ("rssv.param.computeBridges"                ,true);
   vars.addBool  ("rssv.param.storeBridgesInLocalMemory"     );

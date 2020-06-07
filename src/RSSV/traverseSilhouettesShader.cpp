@@ -6,22 +6,6 @@ std::string const rssv::traverseSilhouettesShader = R".(
 #define WARP 64
 #endif//WARP
 
-#ifndef NOF_TRIANGLES
-#define NOF_TRIANGLES 0u
-#endif//NOF_TRIANGLES
-
-#ifndef SF_ALIGNMENT
-#define SF_ALIGNMENT 128
-#endif//SF_ALIGNMENT
-
-#ifndef SF_INTERLEAVE
-#define SF_INTERLEAVE 0
-#endif//SF_INTERLEAVE
-
-#ifndef NO_AABB
-#define NO_AABB 0
-#endif//NO_AABB
-
 //#pragma debug(on)
 
 layout(local_size_x=WARP)in;
@@ -347,7 +331,7 @@ void traverseSilhouette(){
 
 #endif
 
-uniform int selectedEdge = -1;
+//uniform int selectedEdge = -1;
 
 void main(){
   #if STORE_TRAVERSE_STAT != 1
@@ -362,7 +346,7 @@ void main(){
     job = readFirstInvocationARB(job);
     if(job >= silhouetteCounter[0])break;
 
-    if(selectedEdge>=0 && job != uint(selectedEdge))continue;
+    //if(selectedEdge>=0 && job != uint(selectedEdge))continue;
 
     loadSilhouette(job);
     traverseSilhouette();

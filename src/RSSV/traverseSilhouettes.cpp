@@ -44,8 +44,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"rssv.param.storeEdgePlanes"
       ,"rssv.method.config"
       ,"rssv.method.alignedNofEdges"
-      ,"rssv.param.computePlanesInClipSpace"
-      ,"rssv.param.useSkala"
       ,"rssv.param.dumpPointsNotPlanes"
       ,"rssv.param.computeBridges"
       ,"rssv.param.storeBridgesInLocalMemory"
@@ -56,8 +54,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const storeTraverseSilhouettesStat =  vars.getBool        ("rssv.param.storeTraverseSilhouettesStat");
   auto const storeEdgePlanes              =  vars.getBool        ("rssv.param.storeEdgePlanes"             );
   auto const alignedNofEdges              =  vars.getUint32      ("rssv.method.alignedNofEdges"            );
-  auto const computePlanesInClipSpace     =  vars.getBool        ("rssv.param.computePlanesInClipSpace"    );
-  auto const useSkala                     =  vars.getBool        ("rssv.param.useSkala"                    );
   auto const dumpPointsNotPlanes          =  vars.getBool        ("rssv.param.dumpPointsNotPlanes"         );
   auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
   auto const storeBridgesInLocalMemory    =  vars.getBool        ("rssv.param.storeBridgesInLocalMemory"   );
@@ -73,8 +69,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("STORE_TRAVERSE_STAT"           ,(int)storeTraverseSilhouettesStat),
         Shader::define("STORE_EDGE_PLANES"             ,(int)storeEdgePlanes             ),
         Shader::define("ALIGNED_NOF_EDGES"             ,alignedNofEdges                  ),
-        Shader::define("COMPUTE_PLANES_IN_CLIP_SPACE"  ,(int)computePlanesInClipSpace    ),
-        Shader::define("USE_SKALA"                     ,(int)useSkala                    ),
         Shader::define("DUMP_POINTS_NOT_PLANES"        ,(int)dumpPointsNotPlanes         ),
         Shader::define("COMPUTE_BRIDGES"               ,(int)computeBridges              ),
         Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY" ,(int)storeBridgesInLocalMemory   ),
@@ -125,9 +119,9 @@ void traverseSilhouettes(vars::Vars&vars){
 
   auto prg        = vars.get<Program>("rssv.method.traverseSilhouettesProgram");
 
-  auto const view              = *vars.get<glm::mat4>("rssv.method.viewMatrix"      );
-  auto const proj              = *vars.get<glm::mat4>("rssv.method.projectionMatrix");
-  auto const lightPosition     = *vars.get<glm::vec4>("rssv.method.lightPosition"   );
+  auto const&view              = *vars.get<glm::mat4>("rssv.method.viewMatrix"      );
+  auto const&proj              = *vars.get<glm::mat4>("rssv.method.projectionMatrix");
+  auto const&lightPosition     = *vars.get<glm::vec4>("rssv.method.lightPosition"   );
   auto const clipLightPosition = proj*view*lightPosition;
 
   auto jobCounter                  = vars.get<Buffer >("rssv.method.silhouettesJobCounter"     );
@@ -156,17 +150,6 @@ void traverseSilhouettes(vars::Vars&vars){
   silhouetteCounter->bindBase(GL_SHADER_STORAGE_BUFFER,5);
   bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
 
-
-  //std::vector<uint32_t>sil;
-  //multBuffer->getData(sil);
-  //for(auto const&x:sil){
-  //  auto res = x;
-  //  uint32_t edge = res & 0x1fffffffu;                                         
-  //  int  mult = int(res) >> 29;  
-  //  std::cerr << edge << " - " << mult << std::endl;
-  //}
-  //exit(1);
-
   depth     ->bind     (0);
   shadowMask->bindImage(1);
   stencil   ->bindImage(2);
@@ -176,26 +159,18 @@ void traverseSilhouettes(vars::Vars&vars){
 
   prg->use();
 
-  auto computePlanesInClipSpace = vars.getBool("rssv.param.computePlanesInClipSpace");
-  if(computePlanesInClipSpace){
+  auto invTran = glm::transpose(glm::inverse(proj*view));
+
+  prg->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
+  prg->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
+
+  if(computeBridges){
     auto projView = proj*view;
     prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
-  }else{
-    if(computeBridges){
-      auto projView = proj*view;
-      prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
-    }
-    auto invTran = glm::transpose(glm::inverse(proj*view));
-    prg->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
+    prg->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
   }
 
-  prg
-    //->setMatrix4fv("view"         ,glm::value_ptr(view         ))
-    //->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
-    //->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
-    ->set4fv      ("lightPosition",glm::value_ptr(lightPosition))
-    ->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
-  prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
+  //prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
 
   auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
   if(storeTraverseStat){
