@@ -197,12 +197,12 @@ void compute(uvec2 coord,uvec2 coord2){
         uint w = atomicAdd(aabbPointer[0],1);
         uint node = (referenceMorton >> (warpBits*0u));
         aabbPointer[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)]+node+1] = w;
-        aabbPool[w*6+0] = reductionArray[0];
-        aabbPool[w*6+1] = reductionArray[1];
-        aabbPool[w*6+2] = reductionArray[2];
-        aabbPool[w*6+3] = reductionArray[3];
-        aabbPool[w*6+4] = reductionArray[4];
-        aabbPool[w*6+5] = reductionArray[5];
+        aabbPool[w*floatsPerAABB+0] = reductionArray[0];
+        aabbPool[w*floatsPerAABB+1] = reductionArray[1];
+        aabbPool[w*floatsPerAABB+2] = reductionArray[2];
+        aabbPool[w*floatsPerAABB+3] = reductionArray[3];
+        aabbPool[w*floatsPerAABB+4] = reductionArray[4];
+        aabbPool[w*floatsPerAABB+5] = reductionArray[5];
       }
 #else
       if(gl_LocalInvocationIndex < floatsPerAABB){
@@ -282,12 +282,12 @@ void compute(uvec2 coord,uvec2 coord2){
           +ppp,
         };
 
-        aabbPool[w*6+0] = reductionArray[0] + size[0];
-        aabbPool[w*6+1] = reductionArray[1] + size[1];
-        aabbPool[w*6+2] = reductionArray[2] + size[2];
-        aabbPool[w*6+3] = reductionArray[3] + size[3];
-        aabbPool[w*6+4] = reductionArray[4] + size[4];
-        aabbPool[w*6+5] = reductionArray[5] + size[5];
+        aabbPool[w*floatsPerAABB+0] = reductionArray[0] + size[0];
+        aabbPool[w*floatsPerAABB+1] = reductionArray[1] + size[1];
+        aabbPool[w*floatsPerAABB+2] = reductionArray[2] + size[2];
+        aabbPool[w*floatsPerAABB+3] = reductionArray[3] + size[3];
+        aabbPool[w*floatsPerAABB+4] = reductionArray[4] + size[4];
+        aabbPool[w*floatsPerAABB+5] = reductionArray[5] + size[5];
 
 #if USE_BRIDGE_POOL == 1
         bridgePool[w*floatsPerBridge+0] = (reductionArray[0] + size[0] + reductionArray[1] + size[1])*0.5f;
@@ -296,12 +296,12 @@ void compute(uvec2 coord,uvec2 coord2){
 #endif
 
 #else
-        aabbPool[w*6+0] = reductionArray[0];
-        aabbPool[w*6+1] = reductionArray[1];
-        aabbPool[w*6+2] = reductionArray[2];
-        aabbPool[w*6+3] = reductionArray[3];
-        aabbPool[w*6+4] = reductionArray[4];
-        aabbPool[w*6+5] = reductionArray[5];
+        aabbPool[w*floatsPerAABB+0] = reductionArray[0];
+        aabbPool[w*floatsPerAABB+1] = reductionArray[1];
+        aabbPool[w*floatsPerAABB+2] = reductionArray[2];
+        aabbPool[w*floatsPerAABB+3] = reductionArray[3];
+        aabbPool[w*floatsPerAABB+4] = reductionArray[4];
+        aabbPool[w*floatsPerAABB+5] = reductionArray[5];
 
 #if USE_BRIDGE_POOL == 1
         bridgePool[w*floatsPerBridge+0] = (reductionArray[0] + reductionArray[1])*0.5f;

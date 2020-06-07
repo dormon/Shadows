@@ -42,8 +42,8 @@ void prepareDrawStencil(vars::Vars&vars){
   layout(r32i,binding=2)          uniform iimage2D      stencil     ;
   void main(){
     int value = imageLoad(stencil,ivec2(gl_FragCoord.xy)).r;
-    if(value > 0)fColor = vec4(1,0,0,1);
-    if(value < 0)fColor = vec4(0,0,1,1);
+    if(value > 0)fColor = vec4(.5,0,0,1);
+    if(value < 0)fColor = vec4(0,0,.5,1);
     if(value == 0)discard;//fColor = vec4(0,0,0,1);
   }
   ).";

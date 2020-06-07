@@ -105,8 +105,10 @@ shared vec4 lightClipSpace;
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
 
-//shared vec3 edgeAE;
-//shared vec3 edgeBE;
+#if STORE_TRAVERSE_STAT == 1
+layout(std430,binding = 7)buffer Debug{uint debug[];};
+#endif
+
 
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){
@@ -123,29 +125,6 @@ void loadSilhouette(uint job){
     edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
     edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
 
-    ////debug
-    //edgeAE = edgeA;
-    //edgeBE = edgeB;
-
-    //edgeA = vec3(-1,2,1);
-    //edgeB = vec3(1,2,-1);
-
-#if COMPUTE_PLANES_IN_CLIP_SPACE == 1
-    edgeAClipSpace = projView*vec4(edgeA,1.f);
-    edgeBClipSpace = projView*vec4(edgeB,1.f);
-    lightClipSpace = projView*lightPosition  ;
-
-    edgeAClipSpace /= abs(edgeAClipSpace.w);
-    edgeBClipSpace /= abs(edgeBClipSpace.w);
-    lightClipSpace /= abs(lightClipSpace.w);
-
-
-    #if USE_SKALA == 1
-      getEdgePlanesSkala(edgePlane,aPlane,bPlane,abPlane,edgeAClipSpace,edgeBClipSpace,lightClipSpace);
-    #else
-      getEdgePlanes(edgePlane,aPlane,bPlane,abPlane,edgeAClipSpace,edgeBClipSpace,lightClipSpace);
-    #endif
-#else
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
     edgePlane = invTran*vec4(n,-dot(n,edgeA));
 
@@ -162,11 +141,6 @@ void loadSilhouette(uint job){
     edgeAClipSpace = projView*vec4(edgeA,1.f);
     edgeBClipSpace = projView*vec4(edgeB,1.f);
     lightClipSpace = projView*lightPosition  ;
-#endif
-    //edgeAClipSpace = projView*vec4(edgeA,1.f);
-    //edgeBClipSpace = projView*vec4(edgeB,1.f);
-    //lightClipSpace = projView*lightPosition  ;
-
 #endif
 
 #if STORE_EDGE_PLANES == 1
@@ -205,83 +179,6 @@ void loadSilhouette(uint job){
   memoryBarrierShared();
 }
 
-//int computeBridge(in vec3 bridgeStart,in vec3 bridgeEnd){
-//  // m n c 
-//  // - - 0
-//  // 0 - 1
-//  // + - 1
-//  // - 0 1
-//  // 0 0 0
-//  // + 0 0
-//  // - + 1
-//  // 0 + 0
-//  // + + 0
-//  //
-//  // m<0 && n>=0 || m>=0 && n<0
-//  // m<0 xor n<0
-//
-//  int result = edgeMult;
-//  float ss = dot(edgePlane,vec4(bridgeStart,1));
-//  float es = dot(edgePlane,vec4(bridgeEnd  ,1));
-//  if((ss<0)==(es<0))return 0;
-//  result *= 1-2*int(ss<0.f);
-//
-//  vec4 samplePlane    = getClipPlaneSkala(vec4(bridgeStart,1),vec4(bridgeEnd,1),lightClipSpace);
-//  ss = dot(samplePlane,edgeAClipSpace);
-//  es = dot(samplePlane,edgeBClipSpace);
-//  ss*=es;
-//  if(ss>0.f)return 0;
-//  result *= 1+int(ss<0.f);
-//
-//  vec4 trianglePlane  = getClipPlaneSkala(vec4(bridgeStart,1),vec4(bridgeEnd,1),vec4(bridgeStart,1) + (edgeBClipSpace-edgeAClipSpace));
-//  trianglePlane *= sign(dot(trianglePlane,lightClipSpace));
-//  if(dot(trianglePlane,edgeAClipSpace)<=0)return 0;
-//
-//  return result;
-//
-//}
-
-//vec4 plane(vec3 a,vec3 b,vec3 c){
-//  vec3 n = normalize(cross(b-a,c-a));
-//  return vec4(n,-dot(n,a));
-//}
-//
-//int computeBridgeEuclid(in vec4 bridgeStart,in vec4 bridgeEnd){
-//  vec4 bs = inverse(projView)*bridgeStart;
-//  vec4 be = inverse(projView)*bridgeEnd  ;
-//  bs/=bs.w;
-//  be/=be.w;
-//
-//  //edgeAE = vec3(-1,2,1);
-//  //edgeBE = vec3( 1,2,1);
-//  //vec4 edgePlaneE = plane(edgeAE,edgeBE,lightPosition.xyz);
-//  vec4 edgePlaneE = plane(vec3(-1,2,1),vec3( 1,2,1),vec3(0,5,0));
-//
-//  int result = edgeMult;
-//  float ss = dot(edgePlaneE,bs);
-//  float es = dot(edgePlaneE,be);
-//  //if((ss<0)==(es<0))return 0;
-//  //result *= 1-2*int(ss<0.f);
-//  ////return result;
-//  if((ss<0))return  1;
-//  if((ss>0))return -1;
-//  return 0;//abs(result);
-//
-//  vec4 samplePlane = plane(bs.xyz,be.xyz,lightPosition.xyz);
-//  ss = dot(samplePlane,vec4(edgeAE,1));
-//  es = dot(samplePlane,vec4(edgeBE,1));
-//  ss*=es;
-//  if(ss>0.f)return 0;
-//  result *= 1+int(ss<0.f);
-//
-//
-//  vec4 trianglePlane  = plane(bs.xyz,be.xyz,bs.xyz + (edgeBE-edgeAE));
-//  trianglePlane *= sign(dot(trianglePlane,lightPosition));
-//  if(dot(trianglePlane,vec4(edgeAE,1))<=0)return 0;
-//
-//  return result;
-//}
-
 int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
   // m n c 
   // - - 0
@@ -317,7 +214,6 @@ int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
   if(dot(trianglePlane,edgeAClipSpace)<=0)return 0;
 
   return result;
-
 }
 
 void lastLevel(uint node){
@@ -334,10 +230,6 @@ void lastLevel(uint node){
 
   if(mult!=0)imageAtomicAdd(stencil,ivec2(sampleCoord),mult);
 }
-
-#if STORE_TRAVERSE_STAT == 1
-layout(std430,binding = 7)buffer Debug{uint debug[];};
-#endif
 
 vec3 trivialRejectCorner3D(vec3 Normal){
   return vec3((ivec3(sign(Normal))+1)>>1);
@@ -357,16 +249,6 @@ shared uint64_t intersection[nofLevels];
 shared vec3     localBridgeEnd   [nofLevels][WARP];
 #endif
 #endif
-
-
-//int computeBridgeMultiplicity(){
-//#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-//  return computeBridge(bridgeStart,bridgeEnd[level][gl_LocalInvocationIndex]);
-//#else
-//  vec3 bridgeStart = loadAABBCenter(level-1,node>>warpBits);
-//  return computeBridge(bridgeStart,minCorner + aabbSize/2.f)+1;
-//#endif
-//}
 
 
 void traverse(){
@@ -432,27 +314,6 @@ void traverse(){
         //mult = computeBridgeEuclid(bridgeStart,bridgeEnd);
         if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
  
-  
-//  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-//          bridgeEnd[level][gl_LocalInvocationIndex] = minCorner + aabbSize * 0.5f;
-//  
-//          vec3 bridgeStart;
-//          if(level == 0)
-//            bridgeStart = lightPosition.xyz;
-//          else
-//            bridgeStart = bridgeEnd[level-1][node&warpMask];
-//  #endif
-//  
-//          if(level > 0){
-//  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-//            int mult = computeBridge(bridgeStart,bridgeEnd[level][gl_LocalInvocationIndex]);
-//  #else
-//
-//            vec3 bridgeStart = loadAABBCenter(level-1,node>>warpBits);
-//            int mult = computeBridge(bridgeStart,minCorner + aabbSize/2.f)+1;
-//  #endif
-//            if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
-//          }
 #endif
 
 
