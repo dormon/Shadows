@@ -128,6 +128,7 @@ void traverseSilhouettes(vars::Vars&vars){
   auto const view              = *vars.get<glm::mat4>("rssv.method.viewMatrix"      );
   auto const proj              = *vars.get<glm::mat4>("rssv.method.projectionMatrix");
   auto const lightPosition     = *vars.get<glm::vec4>("rssv.method.lightPosition"   );
+  auto const clipLightPosition = proj*view*lightPosition;
 
   auto jobCounter                  = vars.get<Buffer >("rssv.method.silhouettesJobCounter"     );
   auto edges                       = vars.get<Buffer >("rssv.method.edgeBuffer"                );
@@ -192,7 +193,8 @@ void traverseSilhouettes(vars::Vars&vars){
     //->setMatrix4fv("view"         ,glm::value_ptr(view         ))
     //->setMatrix4fv("proj"         ,glm::value_ptr(proj         ))
     //->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ))
-    ->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
+    ->set4fv      ("lightPosition",glm::value_ptr(lightPosition))
+    ->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
   prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
 
   auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");

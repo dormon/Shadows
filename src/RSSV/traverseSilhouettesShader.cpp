@@ -47,9 +47,8 @@ layout(     binding=0)          uniform sampler2DRect depthTexture;
 layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
 layout(r32i,binding=2)          uniform iimage2D      stencil     ;
 
-uniform mat4 view;
-uniform mat4 proj;
 uniform vec4 lightPosition;
+uniform vec4 clipLightPosition;
 
 uniform mat4 invTran;
 uniform mat4 projView;
@@ -66,49 +65,9 @@ shared vec4 edgeAClipSpace;
 shared vec4 edgeBClipSpace;
 shared vec4 lightClipSpace;
 
-#line 52
-
-// Silhouette VS AABB and BRIDGE
-// Input:
-// edge (A,B) worldspace
-// light (L) worldspace / clipspace
-// AABB: clip space minCorner + size
-// Bridge: clip space bridgeStart(M) bridgeEnd(N)
-//
-// col(AABB,sil):
-//   Sil: aPlane (AL) bPlane (BL) abPlane (AB) edgePlane (ABL)
-//   AABB: clip
-//   for collision we need aPlane bPlane abPlane edgePlane
-//   edgePlane = proj*plane(ABL)        noclip(ABL)
-//   aPlane = proj*plane(A,L,nor(ABL))  noclip(ABL)
-//   bPlane = proj*plane(B,L,nor(ABL))  noclip(ABL)
-//   abPlane = proj*plane(A,B,nor(ABL)) noclip(ABL)
-//
-// col(bridge,sil):
-//   bridge: M N clip
-//   Sil: edgePlane (ABL) samplePlane (MNL) trianglePlane (ABMN)
-//   edgePlane = proj*plane(ABL) - same as for AABB
-//   samplePlane = skala(M,N,L) - new
-//   trianglePlane = 
-//   
-// //separate issue
-// col(AABB,tri):
-//   shadowFrustaPlanes needed
-//
-// col(bridge,tri):
-//   trianglePlane (ABMN) (BCMN) (CAMN)
-//
-//
-
-
-#if STORE_EDGE_PLANES == 1
+#if (STORE_EDGE_PLANES == 1) || (STORE_TRAVERSE_STAT == 1)
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
-
-#if STORE_TRAVERSE_STAT == 1
-layout(std430,binding = 7)buffer Debug{uint debug[];};
-#endif
-
 
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){
@@ -140,7 +99,7 @@ void loadSilhouette(uint job){
 #if COMPUTE_BRIDGES == 1
     edgeAClipSpace = projView*vec4(edgeA,1.f);
     edgeBClipSpace = projView*vec4(edgeB,1.f);
-    lightClipSpace = projView*lightPosition  ;
+    lightClipSpace = clipLightPosition;
 #endif
 
 #if STORE_EDGE_PLANES == 1
@@ -179,7 +138,7 @@ void loadSilhouette(uint job){
   memoryBarrierShared();
 }
 
-int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
+int computeBridgeSilhouetteMultiplicity(in vec4 bridgeStart,in vec4 bridgeEnd){
   // m n c 
   // - - 0
   // 0 - 1
@@ -193,8 +152,6 @@ int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
   //
   // m<0 && n>=0 || m>=0 && n<0
   // m<0 xor n<0
-  //
-  //
   
   int result = edgeMult;
   float ss = dot(edgePlane,bridgeStart);
@@ -216,7 +173,8 @@ int computeBridge(in vec4 bridgeStart,in vec4 bridgeEnd){
   return result;
 }
 
-void lastLevel(uint node){
+void lastLevelSilhouette(uint node){
+#if COMPUTE_LAST_LEVEL_SILHOUETTES == 1
   uvec2 sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
 
   vec4 bridgeEnd;
@@ -226,9 +184,10 @@ void lastLevel(uint node){
 
   vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node),1.f);
 
-  int mult = computeBridge(bridgeStart,bridgeEnd);
+  int mult = computeBridgeSilhouetteMultiplicity(bridgeStart,bridgeEnd);
 
   if(mult!=0)imageAtomicAdd(stencil,ivec2(sampleCoord),mult);
+#endif
 }
 
 vec3 trivialRejectCorner3D(vec3 Normal){
@@ -250,8 +209,76 @@ shared vec3     localBridgeEnd   [nofLevels][WARP];
 #endif
 #endif
 
+void debug_storeSilhouetteTraverseStatLastLevel(){
+#if STORE_TRAVERSE_STAT == 1
+  if(gl_LocalInvocationIndex==0){
+    uint w = atomicAdd(debug[0],1);
+    debug[1+w*4+0] = job;
+    debug[1+w*4+1] = node;
+    debug[1+w*4+2] = uint(level);
+    debug[1+w*4+3] = 0xff;
+  }
+#endif
+}
 
-void traverse(){
+void debug_storeSilhouetteTraverseStat(){
+#if STORE_TRAVERSE_STAT == 1
+  uint w = atomicAdd(debug[0],1);
+  debug[1+w*4+0] = job;
+  debug[1+w*4+1] = node*WARP + gl_LocalInvocationIndex;
+  debug[1+w*4+2] = uint(level);
+  debug[1+w*4+3] = status;
+#endif
+}
+
+void computeBridgeSilhouetteIntersection(in vec3 minCorner,in vec3 aabbSize,int level,uint node){
+#if COMPUTE_BRIDGES == 1
+  vec4 bridgeStart;
+  vec4 bridgeEnd  ;
+  int  mult       ;
+
+
+  bridgeEnd = vec4(minCorner + aabbSize*.5f,1.f);
+
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+  localBridgeEnd[level][gl_LocalInvocationIndex] = vec3(bridgeEnd);
+#endif
+
+  if(level == 0){
+    bridgeStart = clipLightPosition;
+  }else{
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+    bridgeStart = vec4(localBridgeEnd[level-1][node&warpMask],1);
+#else
+    bridgeStart = vec4(getAABBCenter(level-1,node),1);
+#endif
+  }
+
+  mult = computeBridgeSilhouetteMultiplicity(bridgeStart,bridgeEnd);
+  if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
+#endif
+}
+
+void computeAABBSilhouetteIntersection(out uint status,in vec3 minCorner,in vec3 aabbSize){
+  status = TRIVIAL_REJECT;
+  vec3 tr;
+  tr = trivialRejectCorner3D(edgePlane.xyz);
+  if(dot(edgePlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
+    if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(aabbSize),1.f))<=0.f){
+      tr = trivialRejectCorner3D(aPlane.xyz);
+      if(dot(aPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
+        tr = trivialRejectCorner3D(bPlane.xyz);
+        if(dot(bPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
+          tr = trivialRejectCorner3D(abPlane.xyz);
+          if(dot(abPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f)
+            status = INTERSECTS;
+        }
+      }
+    }
+  }
+}
+
+void traverseSilhouette(){
   int level = 0;
 
   uint64_t currentIntersection;
@@ -260,19 +287,10 @@ void traverse(){
   while(level >= 0){
     if(level == int(nofLevels)){
 
-#if STORE_TRAVERSE_STAT == 1
-      if(gl_LocalInvocationIndex==0){
-        uint w = atomicAdd(debug[0],1);
-        debug[1+w*4+0] = job;
-        debug[1+w*4+1] = node;
-        debug[1+w*4+2] = uint(level);
-        debug[1+w*4+3] = 0xff;
-      }
-#endif
+      debug_storeSilhouetteTraverseStatLastLevel();
 
-#if COMPUTE_LAST_LEVEL_SILHOUETTES == 1
-      lastLevel(node);
-#endif
+      lastLevelSilhouette(node);
+
       node >>= warpBits;
       level--;
     }else{
@@ -286,84 +304,13 @@ void traverse(){
         getAABB(minCorner,aabbSize,level,(node<<warpBits)+gl_LocalInvocationIndex);
         aabbSize -= minCorner;
 
+        computeBridgeSilhouetteIntersection(minCorner,aabbSize,level,node);
 
-#if COMPUTE_BRIDGES == 1
-        vec4 bridgeStart;
-        vec4 bridgeEnd  ;
-        int  mult       ;
-
-  
-        bridgeEnd = vec4(minCorner + aabbSize*.5f,1.f);
-
-  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-        localBridgeEnd[level][gl_LocalInvocationIndex] = vec3(bridgeEnd);
-  #endif
-  
-        if(level == 0){
-          bridgeStart = proj*view*lightPosition;
-        }else{
-  #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
-          bridgeStart = vec4(localBridgeEnd[level-1][node&warpMask],1);
-  #else
-        bridgeStart = vec4(getAABBCenter(level-1,node),1);
-  #endif
-        }
-
-        mult = computeBridge(bridgeStart,bridgeEnd);
-
-        //mult = computeBridgeEuclid(bridgeStart,bridgeEnd);
-        if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
- 
-#endif
-
-
-        vec3 tr;
-        bool planeTest;
-
-#if 1
-          status = TRIVIAL_REJECT;
-          tr = trivialRejectCorner3D(edgePlane.xyz);
-          if(dot(edgePlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
-            if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(aabbSize),1.f))<=0.f){
-              tr = trivialRejectCorner3D(aPlane.xyz);
-              if(dot(aPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
-                tr = trivialRejectCorner3D(bPlane.xyz);
-                if(dot(bPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
-                  tr = trivialRejectCorner3D(abPlane.xyz);
-                  if(dot(abPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f)
-                    status = INTERSECTS;
-                }
-              }
-            }
-          }
-#endif
-
-#if 0
-        tr = trivialRejectCorner3D(edgePlane.xyz);
-        planeTest =              dot(edgePlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f;
-        planeTest = planeTest && dot(edgePlane,vec4(minCorner + (1.f-tr)*(aabbSize),1.f))<=0.f;
-        tr = trivialRejectCorner3D(aPlane.xyz);
-        planeTest = planeTest && dot(aPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f;
-        tr = trivialRejectCorner3D(bPlane.xyz);
-        planeTest = planeTest && dot(bPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f;
-        tr = trivialRejectCorner3D(abPlane.xyz);
-        planeTest = planeTest && dot(abPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f;
-
-        if(planeTest)
-          status = INTERSECTS;
-        else
-          status = TRIVIAL_REJECT;
-#endif
+        computeAABBSilhouetteIntersection(status,minCorner,aabbSize);
 
       }
 
-#if STORE_TRAVERSE_STAT == 1
-        uint w = atomicAdd(debug[0],1);
-        debug[1+w*4+0] = job;
-        debug[1+w*4+1] = node*WARP + gl_LocalInvocationIndex;
-        debug[1+w*4+2] = uint(level);
-        debug[1+w*4+3] = status;
-#endif
+      debug_storeSilhouetteTraverseStat();
 
       currentIntersection = ballotARB(status == INTERSECTS    );
       if(gl_LocalInvocationIndex==0)
@@ -402,28 +349,32 @@ void traverse(){
 
 uniform int selectedEdge = -1;
 
-#line 36
 void main(){
-  #if STORE_TRAVERSE_STAT == 1
-  #else
+  #if STORE_TRAVERSE_STAT != 1
   uint job;
   #endif
 
+  //silhouette loop
   for(;;){
-    if(gl_LocalInvocationIndex==0){
+    if(gl_LocalInvocationIndex==0)
       job = atomicAdd(jobCounter[0],1);
-    }
 
     job = readFirstInvocationARB(job);
-    if(job >= silhouetteCounter[0])return;
+    if(job >= silhouetteCounter[0])break;
 
     if(selectedEdge>=0 && job != uint(selectedEdge))continue;
-    //job=3;
-    loadSilhouette(job);
 
-    traverse();
-    //break;
+    loadSilhouette(job);
+    traverseSilhouette();
 
   }
+
+  //triangle loop
+  //for(;;){
+  //
+  //
+  //
+  //
+  //}
 }
 ).";
