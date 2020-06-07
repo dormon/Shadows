@@ -48,6 +48,8 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"rssv.param.computeBridges"
       ,"rssv.param.storeBridgesInLocalMemory"
       ,"rssv.param.computeLastLevelSilhouettes"
+      ,"rssv.param.alignment"
+      ,"adjacency"
       );
 
   auto const noAABB                       =  vars.getInt32       ("rssv.param.noAABB"                      );
@@ -59,6 +61,10 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const storeBridgesInLocalMemory    =  vars.getBool        ("rssv.param.storeBridgesInLocalMemory"   );
   auto const computeLastLevelSilhouettes  =  vars.getBool        ("rssv.param.computeLastLevelSilhouettes" );
   auto const&cfg                          = *vars.get<Config>    ("rssv.method.config"                     );
+  auto const alignSize                    =  vars.getSizeT       ("rssv.param.alignment"                   );
+  auto adj                                =  vars.get<Adjacency> ("adjacency"                              );
+  auto const nofEdges                     =  adj->getNofEdges();
+
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
@@ -73,7 +79,9 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("COMPUTE_BRIDGES"               ,(int)computeBridges              ),
         Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY" ,(int)storeBridgesInLocalMemory   ),
         Shader::define("USE_BRIDGE_POOL"               ,(int)cfg.useBridgePool           ),
-        Shader::define("COMPUTE_LAST_LEVEL_SILHOUETTES",(int)computeLastLevelSilhouettes )
+        Shader::define("COMPUTE_LAST_LEVEL_SILHOUETTES",(int)computeLastLevelSilhouettes ),
+        Shader::define("ALIGN_SIZE"                    ,(uint32_t)alignSize              ),
+        Shader::define("NOF_EDGES"                     ,(uint32_t)nofEdges               )
         ,rssv::demortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader
@@ -125,7 +133,7 @@ void traverseSilhouettes(vars::Vars&vars){
   auto const clipLightPosition = proj*view*lightPosition;
 
   auto jobCounters                 = vars.get<Buffer >("rssv.method.traverseJobCounters"       );
-  auto edges                       = vars.get<Buffer >("rssv.method.edgeBuffer"                );
+  auto edgePlanes                  = vars.get<Buffer >("rssv.method.edgePlanes"                );
   auto multBuffer                  = vars.get<Buffer >("rssv.method.multBuffer"                );
   auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
@@ -144,7 +152,7 @@ void traverseSilhouettes(vars::Vars&vars){
   hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
 
   jobCounters      ->bindBase(GL_SHADER_STORAGE_BUFFER,2);
-  edges            ->bindBase(GL_SHADER_STORAGE_BUFFER,3);
+  edgePlanes       ->bindBase(GL_SHADER_STORAGE_BUFFER,3);
   multBuffer       ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
 

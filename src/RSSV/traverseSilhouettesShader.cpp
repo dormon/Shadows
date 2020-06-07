@@ -26,7 +26,7 @@ layout(std430,binding=2)buffer JobCounters       {
   uint triangleJobCounter  ;
 };
 
-layout(std430,binding=3)readonly buffer EdgeBuffer{float edgeBuffer       [];};
+layout(std430,binding=3)readonly buffer EdgePlanes{float edgePlanes       [];};
 layout(std430,binding=4)readonly buffer MultBuffer{
   uint nofSilhouettes  ;
   uint multBuffer    [];
@@ -56,6 +56,14 @@ shared vec4 edgeAClipSpace;
 shared vec4 edgeBClipSpace;
 shared vec4 lightClipSpace;
 
+
+#ifndef ALIGN_SIZE
+#define ALIGN_SIZE 128
+#endif//ALIGN_SIZE
+#define ALIGN(W,A) uint(uint(uint(W)/uint(A))*uint(A) + uint((uint(W)%uint(A))!=0u)*uint(A))
+#define ALIGN_SIZE_FLOAT ALIGN(ALIGN_SIZE,4u)
+#define ALIGN_OFFSET(i) uint(ALIGN(NOF_EDGES,ALIGN_SIZE_FLOAT)*uint(i))
+
 #if (STORE_EDGE_PLANES == 1) || (STORE_TRAVERSE_STAT == 1)
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
@@ -68,12 +76,12 @@ void loadSilhouette(uint job){
 
     vec3 edgeA;
     vec3 edgeB;
-    edgeA[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
-    edgeA[1] = edgeBuffer[edge+1*ALIGNED_NOF_EDGES];
-    edgeA[2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
-    edgeB[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
-    edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
-    edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
+    edgeA[0] = edgePlanes[edge+ALIGN_OFFSET(0)];
+    edgeA[1] = edgePlanes[edge+ALIGN_OFFSET(1)];
+    edgeA[2] = edgePlanes[edge+ALIGN_OFFSET(2)];
+    edgeB[0] = edgePlanes[edge+ALIGN_OFFSET(3)];
+    edgeB[1] = edgePlanes[edge+ALIGN_OFFSET(4)];
+    edgeB[2] = edgePlanes[edge+ALIGN_OFFSET(5)];
 
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
     edgePlane = invTran*vec4(n,-dot(n,edgeA));
