@@ -19,6 +19,7 @@
 
 #include <RSSV/extractSilhouettes.h>
 #include <RSSV/extractSilhouettesShader.h>
+#include <RSSV/loadEdgeShader.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -84,7 +85,10 @@ void createSilhouetteProgram(vars::Vars&vars){
         Shader::define("NOF_EDGES"                ,uint32_t( adj->getNofEdges()                                  )),
         ballotSrc,
         silhouetteFunctions,
-        extractSilhouettesShader));
+        loadEdgeShaderFWD,
+        extractSilhouettesShader,
+        loadEdgeShader
+        ));
 }
 
 void allocateMultBuffer(vars::Vars&vars){

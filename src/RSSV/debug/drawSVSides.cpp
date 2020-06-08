@@ -10,6 +10,7 @@
 #include <FastAdjacency.h>
 
 #include <RSSV/getEdgePlanesShader.h>
+#include <RSSV/loadEdgeShader.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -67,10 +68,6 @@ uniform mat4 debugProj;
 uniform vec4 light;
 uniform int selectedEdge = -1;
 
-#define ALIGN(W,A) uint(uint(uint(W)/uint(A))*uint(A) + uint((uint(W)%uint(A))!=0u)*uint(A))
-#define ALIGN_SIZE_FLOAT ALIGN(ALIGN_SIZE,4u)
-#define ALIGN_OFFSET(i) uint(ALIGN(NOF_EDGES,ALIGN_SIZE_FLOAT)*uint(i))
-
 void main(){
   uint thread = vId[0];
 
@@ -81,26 +78,19 @@ void main(){
   uint edge = res & 0x1fffffffu;
   int  mult = int(res) >> 29;
 
-  vec4 P[4];
-  P[0][0] = edgePlanes[edge+ALIGN_OFFSET(0)];
-  P[0][1] = edgePlanes[edge+ALIGN_OFFSET(1)];
-  P[0][2] = edgePlanes[edge+ALIGN_OFFSET(2)];
-  P[0][3] = 1;
-  P[1][0] = edgePlanes[edge+ALIGN_OFFSET(3)];
-  P[1][1] = edgePlanes[edge+ALIGN_OFFSET(4)];
-  P[1][2] = edgePlanes[edge+ALIGN_OFFSET(5)];
-  P[1][3] = 1;
+  vec3 P[4];
+  loadEdge(P[0],P[1],edge);
 
   float len = 10;
-  P[2] = P[0]+len*(P[0]-light);
-  P[3] = P[1]+len*(P[1]-light);
+  P[2] = P[0]+len*(P[0]-light.xyz);
+  P[3] = P[1]+len*(P[1]-light.xyz);
 
   mat4 M = proj*view;
 
-  gl_Position = M * P[0];EmitVertex();
-  gl_Position = M * P[1];EmitVertex();
-  gl_Position = M * P[2];EmitVertex();
-  gl_Position = M * P[3];EmitVertex();
+  gl_Position = M * vec4(P[0],1);EmitVertex();
+  gl_Position = M * vec4(P[1],1);EmitVertex();
+  gl_Position = M * vec4(P[2],1);EmitVertex();
+  gl_Position = M * vec4(P[3],1);EmitVertex();
   EndPrimitive();
 }
 
@@ -113,7 +103,10 @@ void main(){
       Shader::define("ALIGN_SIZE",(uint32_t)alignSize),
       Shader::define("NOF_EDGES" ,(uint32_t)nofEdges ),
       getEdgePlanesShader,
-      gsSrc);
+      loadEdgeShaderFWD,
+      gsSrc,
+      loadEdgeShader
+      );
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",
       fsSrc);

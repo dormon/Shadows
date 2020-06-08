@@ -24,12 +24,6 @@ std::string const rssv::extractSilhouettesShader = R".(
 #define NOF_EDGES 0
 #endif//NOF_EDGES
 
-#define ALIGN(W,A) uint(uint(uint(W)/uint(A))*uint(A) + uint((uint(W)%uint(A))!=0u)*uint(A))
-
-#define ALIGN_SIZE_FLOAT ALIGN(ALIGN_SIZE,4u)
-
-#define ALIGN_OFFSET(i) uint(ALIGN(NOF_EDGES,ALIGN_SIZE_FLOAT)*uint(i))
-
 layout(local_size_x=WORKGROUP_SIZE_X)in;
 
 layout(std430,binding=0)readonly buffer EdgePlanes         {float edgePlanes [];};
@@ -53,25 +47,7 @@ void main(){
   }
   barrier();
 
-  uint gid=gl_GlobalInvocationID.x;
-
-  if(gid>=NOF_EDGES)return;
-
-  vec4 P[2];
-
-  gid*=3+3+4*MAX_MULTIPLICITY;
-
-  P[0].x = edgePlanes[gl_GlobalInvocationID.x+ALIGN_OFFSET(0)];
-  P[0].y = edgePlanes[gl_GlobalInvocationID.x+ALIGN_OFFSET(1)];
-  P[0].z = edgePlanes[gl_GlobalInvocationID.x+ALIGN_OFFSET(2)];
-  P[0].w = 1;
-  P[1].x = edgePlanes[gl_GlobalInvocationID.x+ALIGN_OFFSET(3)];
-  P[1].y = edgePlanes[gl_GlobalInvocationID.x+ALIGN_OFFSET(4)];
-  P[1].z = edgePlanes[gl_GlobalInvocationID.x+ALIGN_OFFSET(5)];
-  P[1].w = 1;
-  
-  int Num=int(P[0].w)+2;
-  P[0].w=1;
+  if(gl_GlobalInvocationID.x>=NOF_EDGES)return;
 
   precise int Multiplicity=0;
 

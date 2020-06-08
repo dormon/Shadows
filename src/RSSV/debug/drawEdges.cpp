@@ -9,6 +9,8 @@
 #include <FunctionPrologue.h>
 #include <FastAdjacency.h>
 
+#include <RSSV/loadEdgeShader.h>
+
 using namespace ge::gl;
 using namespace std;
 
@@ -55,25 +57,14 @@ flat in uint vId[];
 uniform mat4 view;
 uniform mat4 proj;
 
-#define ALIGN(W,A) uint(uint(uint(W)/uint(A))*uint(A) + uint((uint(W)%uint(A))!=0u)*uint(A))
-#define ALIGN_SIZE_FLOAT ALIGN(ALIGN_SIZE,4u)
-#define ALIGN_OFFSET(i) uint(ALIGN(NOF_EDGES,ALIGN_SIZE_FLOAT)*uint(i))
-
 void main(){
   uint edge = vId[0];
 
-  vec4 P[2];
-  P[0][0] = edgePlanes[edge+ALIGN_OFFSET(0)];
-  P[0][1] = edgePlanes[edge+ALIGN_OFFSET(1)];
-  P[0][2] = edgePlanes[edge+ALIGN_OFFSET(2)];
-  P[0][3] = 1;
-  P[1][0] = edgePlanes[edge+ALIGN_OFFSET(3)];
-  P[1][1] = edgePlanes[edge+ALIGN_OFFSET(4)];
-  P[1][2] = edgePlanes[edge+ALIGN_OFFSET(5)];
-  P[1][3] = 1;
+  vec3 P[2];
+  loadEdge(P[0],P[1],edge);
 
-  gl_Position = proj*view*P[0];EmitVertex();
-  gl_Position = proj*view*P[1];EmitVertex();
+  gl_Position = proj*view*vec4(P[0],1);EmitVertex();
+  gl_Position = proj*view*vec4(P[1],1);EmitVertex();
   EndPrimitive();
 }
 
@@ -85,7 +76,10 @@ void main(){
       "#version 450\n",
       Shader::define("ALIGN_SIZE",(uint32_t)alignSize),
       Shader::define("NOF_EDGES" ,(uint32_t)nofEdges ),
-      gsSrc);
+      loadEdgeShaderFWD,
+      gsSrc,
+      loadEdgeShader
+      );
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",
       fsSrc);

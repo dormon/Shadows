@@ -56,11 +56,6 @@ shared vec4 edgeAClipSpace;
 shared vec4 edgeBClipSpace;
 shared vec4 lightClipSpace;
 
-
-#define ALIGN(W,A) uint(uint(uint(W)/uint(A))*uint(A) + uint((uint(W)%uint(A))!=0u)*uint(A))
-#define ALIGN_SIZE_FLOAT ALIGN(ALIGN_SIZE,4u)
-#define ALIGN_OFFSET(i) uint(ALIGN(NOF_EDGES,ALIGN_SIZE_FLOAT)*uint(i))
-
 #if (STORE_EDGE_PLANES == 1) || (STORE_TRAVERSE_STAT == 1)
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
@@ -73,12 +68,7 @@ void loadSilhouette(uint job){
 
     vec3 edgeA;
     vec3 edgeB;
-    edgeA[0] = edgePlanes[edge+ALIGN_OFFSET(0)];
-    edgeA[1] = edgePlanes[edge+ALIGN_OFFSET(1)];
-    edgeA[2] = edgePlanes[edge+ALIGN_OFFSET(2)];
-    edgeB[0] = edgePlanes[edge+ALIGN_OFFSET(3)];
-    edgeB[1] = edgePlanes[edge+ALIGN_OFFSET(4)];
-    edgeB[2] = edgePlanes[edge+ALIGN_OFFSET(5)];
+    loadEdge(edgeA,edgeB,edge);
 
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
     edgePlane = invTran*vec4(n,-dot(n,edgeA));

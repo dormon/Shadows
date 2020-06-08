@@ -10,6 +10,7 @@
 #include <FastAdjacency.h>
 
 #include <RSSV/getEdgePlanesShader.h>
+#include <RSSV/loadEdgeShader.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -67,10 +68,6 @@ uniform mat4 debugProj;
 uniform vec4 light;
 uniform int selectedEdge = -1;
 
-#define ALIGN(W,A) uint(uint(uint(W)/uint(A))*uint(A) + uint((uint(W)%uint(A))!=0u)*uint(A))
-#define ALIGN_SIZE_FLOAT ALIGN(ALIGN_SIZE,4u)
-#define ALIGN_OFFSET(i) uint(ALIGN(NOF_EDGES,ALIGN_SIZE_FLOAT)*uint(i))
-
 void main(){
   uint thread = vId[0];
 
@@ -81,20 +78,13 @@ void main(){
   uint edge = res & 0x1fffffffu;
   int  mult = int(res) >> 29;
 
-  vec4 P[2];
-  P[0][0] = edgePlanes[edge+ALIGN_OFFSET(0)];
-  P[0][1] = edgePlanes[edge+ALIGN_OFFSET(1)];
-  P[0][2] = edgePlanes[edge+ALIGN_OFFSET(2)];
-  P[0][3] = 1;
-  P[1][0] = edgePlanes[edge+ALIGN_OFFSET(3)];
-  P[1][1] = edgePlanes[edge+ALIGN_OFFSET(4)];
-  P[1][2] = edgePlanes[edge+ALIGN_OFFSET(5)];
-  P[1][3] = 1;
+  vec3 P[2];
+  loadEdge(P[0],P[1],edge);
 
   if(debugProj[0][0]==1337 && debugView[0][0] == 1337)return;
   mat4 debugM = debugProj * debugView;
-  vec4 aa = P[0];
-  vec4 bb = P[1];
+  vec4 aa = vec4(P[0],1);
+  vec4 bb = vec4(P[1],1);
   vec4 cc = light;
 
   aa = debugM*aa;
@@ -115,8 +105,8 @@ void main(){
   bPlane    = invTranDebug * bPlane   ;
   abPlane   = invTranDebug * abPlane  ;
 
-  vec3 a  = P[0].xyz;
-  vec3 b  = P[1].xyz;
+  vec3 a  = P[0];
+  vec3 b  = P[1];
   vec3 l  = light.xyz;
 
   float sc = 10;
@@ -162,8 +152,11 @@ void main(){
       "#version 450\n",
       Shader::define("ALIGN_SIZE",(uint32_t)alignSize),
       Shader::define("NOF_EDGES" ,(uint32_t)nofEdges ),
+      loadEdgeShaderFWD,
       getEdgePlanesShader,
-      gsSrc);
+      gsSrc,
+      loadEdgeShader
+      );
   auto fs = make_shared<Shader>(GL_FRAGMENT_SHADER,
       "#version 450\n",
       fsSrc);
