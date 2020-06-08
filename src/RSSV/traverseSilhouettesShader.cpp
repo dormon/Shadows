@@ -57,9 +57,6 @@ shared vec4 edgeBClipSpace;
 shared vec4 lightClipSpace;
 
 
-#ifndef ALIGN_SIZE
-#define ALIGN_SIZE 128
-#endif//ALIGN_SIZE
 #define ALIGN(W,A) uint(uint(uint(W)/uint(A))*uint(A) + uint((uint(W)%uint(A))!=0u)*uint(A))
 #define ALIGN_SIZE_FLOAT ALIGN(ALIGN_SIZE,4u)
 #define ALIGN_OFFSET(i) uint(ALIGN(NOF_EDGES,ALIGN_SIZE_FLOAT)*uint(i))

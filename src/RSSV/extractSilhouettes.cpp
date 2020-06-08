@@ -65,36 +65,6 @@ void createEdgePlanes(vars::Vars&vars){
   vars.reCreate<Buffer>("rssv.method.edgePlanes",dst);
 }
 
-void createEdges(vars::Vars&vars){
-  FUNCTION_PROLOGUE("rssv.method"
-      ,"adjacency"
-      );
-
-  auto adj = vars.get<Adjacency>("adjacency");
-  std::cerr << "nofEdges: " << adj->getNofEdges() << std::endl;
-  auto&vert = adj->getVertices();
-
-  auto nofE = adj->getNofEdges();
-  auto anofE = divRoundUp(nofE,1024)*1024;
-
-  std::vector<float>edges;
-  edges.resize(anofE*6,0);
-  for(size_t e=0;e<adj->getNofEdges();++e)edges[e+0*anofE] = vert[adj->getEdgeVertexA(e)+0];
-  for(size_t e=0;e<adj->getNofEdges();++e)edges[e+1*anofE] = vert[adj->getEdgeVertexA(e)+1];
-  for(size_t e=0;e<adj->getNofEdges();++e)edges[e+2*anofE] = vert[adj->getEdgeVertexA(e)+2];
-  for(size_t e=0;e<adj->getNofEdges();++e)edges[e+3*anofE] = vert[adj->getEdgeVertexB(e)+0];
-  for(size_t e=0;e<adj->getNofEdges();++e)edges[e+4*anofE] = vert[adj->getEdgeVertexB(e)+1];
-  for(size_t e=0;e<adj->getNofEdges();++e)edges[e+5*anofE] = vert[adj->getEdgeVertexB(e)+2];
-  vars.reCreate<uint32_t>("rssv.method.alignedNofEdges",anofE);
-  
-  vars.reCreate<Buffer>("rssv.method.edgeBuffer",edges);
-}
-
-void allocateSilhouettesData(vars::Vars&vars){
-  createEdgePlanes(vars);
-  createEdges(vars);
-}
-
 void createSilhouetteProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"         ,
       "rssv.param.alignment"              ,
@@ -129,7 +99,7 @@ void allocateMultBuffer(vars::Vars&vars){
 void extractSilhouettes(vars::Vars&vars){
   FUNCTION_CALLER();
   createAdjacency(vars);
-  allocateSilhouettesData(vars);
+  createEdgePlanes(vars);
   createSilhouetteProgram(vars);
   allocateMultBuffer(vars);
 
