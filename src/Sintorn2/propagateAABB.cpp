@@ -23,7 +23,7 @@ void sintorn2::propagateAABB(vars::Vars&vars){
   auto aabbPool         =  vars.get<Buffer>("sintorn2.method.aabbPool"        );
   auto levelNodeCounter =  vars.get<Buffer>("sintorn2.method.levelNodeCounter");
   auto activeNodes      =  vars.get<Buffer>("sintorn2.method.activeNodes"     );
-  auto memoryOptim      =  vars.getInt32   ("sintorn2.param.memoryOptim"      );
+  auto memoryOptim      =  vars.getBool    ("sintorn2.param.memoryOptim"      );
 
   nodePool        ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   aabbPool        ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
@@ -31,7 +31,7 @@ void sintorn2::propagateAABB(vars::Vars&vars){
   levelNodeCounter->bind    (GL_DISPATCH_INDIRECT_BUFFER);
   levelNodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
 
-  if(memoryOptim == 1){
+  if(memoryOptim){
     auto aabbPointer = vars.get<Buffer>("sintorn2.method.aabbPointer");
     aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
   }

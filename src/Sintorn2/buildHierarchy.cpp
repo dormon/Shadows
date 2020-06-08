@@ -30,7 +30,7 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   auto aabbPool         =  vars.get<Buffer >("sintorn2.method.aabbPool"             );
   auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter"     );
   auto activeNodes      =  vars.get<Buffer >("sintorn2.method.activeNodes"          );
-  auto memoryOptim      =  vars.getInt32    ("sintorn2.param.memoryOptim"           );
+  auto memoryOptim      =  vars.getBool     ("sintorn2.param.memoryOptim"           );
 
   auto cfg              = *vars.get<Config >("sintorn2.method.config");
 

@@ -22,7 +22,7 @@ void sintorn2::allocateHierarchy(vars::Vars&vars){
       );
 
   auto cfg          = *vars.get<Config>("sintorn2.method.config"     );
-  auto memoryOptim  =  vars.getInt32   ("sintorn2.param.memoryOptim" );
+  auto memoryOptim  =  vars.getBool    ("sintorn2.param.memoryOptim" );
   auto memoryFactor =  vars.getUint32  ("sintorn2.param.memoryFactor"); 
 
   vars.reCreate<Buffer>("sintorn2.method.nodePool"        ,cfg.nodesSize                   );

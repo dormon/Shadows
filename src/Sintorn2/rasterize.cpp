@@ -50,6 +50,7 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"sintorn2.param.storeTraverseStat"
       ,"sintorn2.param.memoryOptim"
       ,"sintorn2.param.taOptim"
+      ,"sintorn2.param.triangleIntersect"
       ,"args.camera.near"
       ,"args.camera.far"
       ,"args.camera.fovy"
@@ -59,17 +60,18 @@ void createRasterizeProgram(vars::Vars&vars){
   auto const nofTriangles        =  vars.getUint32          ("sintorn2.method.nofTriangles"     );
   auto const triangleAlignment   =  vars.getUint32          ("sintorn2.param.triangleAlignment" );
   auto const sfAlignment         =  vars.getUint32          ("sintorn2.param.sfAlignment"       );
-  auto const sfInterleave        =  vars.getInt32           ("sintorn2.param.sfInterleave"      );
+  auto const sfInterleave        =  vars.getBool            ("sintorn2.param.sfInterleave"      );
   auto const windowSize          = *vars.get<glm::uvec2>    ("windowSize"                       );
   auto const tileX               =  vars.getUint32          ("sintorn2.param.tileX"             );
   auto const tileY               =  vars.getUint32          ("sintorn2.param.tileY"             );
   auto const minZBits            =  vars.getUint32          ("sintorn2.param.minZBits"          );
-  auto const morePlanes          =  vars.getInt32           ("sintorn2.param.morePlanes"        );
-  auto const ffc                 =  vars.getInt32           ("sintorn2.param.ffc"               );
-  auto const noAABB              =  vars.getInt32           ("sintorn2.param.noAABB"            );
+  auto const morePlanes          =  vars.getBool            ("sintorn2.param.morePlanes"        );
+  auto const ffc                 =  vars.getBool            ("sintorn2.param.ffc"               );
+  auto const noAABB              =  vars.getBool            ("sintorn2.param.noAABB"            );
   auto const storeTraverseStat   =  vars.getBool            ("sintorn2.param.storeTraverseStat" );
-  auto const memoryOptim         =  vars.getInt32           ("sintorn2.param.memoryOptim"       );
-  auto const taOptim             =  vars.getInt32           ("sintorn2.param.taOptim"           );
+  auto const memoryOptim         =  vars.getBool            ("sintorn2.param.memoryOptim"       );
+  auto const taOptim             =  vars.getBool            ("sintorn2.param.taOptim"           );
+  auto const triangleIntersect   =  vars.getBool            ("sintorn2.param.triangleIntersect" );
   auto const nnear               =  vars.getFloat           ("args.camera.near"                 );
   auto const ffar                =  vars.getFloat           ("args.camera.far"                  );
   auto const fovy                =  vars.getFloat           ("args.camera.fovy"                 );
@@ -91,6 +93,7 @@ void createRasterizeProgram(vars::Vars&vars){
         Shader::define("ENABLE_FFC"         ,(int)     ffc               ),
         Shader::define("NO_AABB"            ,(int)     noAABB            ),
         Shader::define("USE_TA_OPTIM"       ,(int)     taOptim           ),
+        Shader::define("TRIANGLE_INTERSECT" ,(int)     triangleIntersect ),
 
 #if SAVE_COLLISION == 1
         Shader::define("SAVE_COLLISION"     ,(int)1),
@@ -150,7 +153,7 @@ void sintorn2::rasterize(vars::Vars&vars){
   auto jobCounter  = vars.get<Buffer >("sintorn2.method.jobCounter"      );
   auto depth       = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask  = vars.get<Texture>("shadowMask");
-  auto memoryOptim = vars.getInt32    ("sintorn2.param.memoryOptim"      );
+  auto memoryOptim = vars.getBool     ("sintorn2.param.memoryOptim"      );
 
 
   jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);

@@ -89,6 +89,7 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   uint status = TRIVIAL_ACCEPT;
   vec4 plane;
   vec3 tr;
+  //if(minCorner.x != 1337)return TRIVIAL_REJECT;
 
   plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
   tr    = trivialRejectCorner3D(plane.xyz);
@@ -116,6 +117,10 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = vec3(1.f)-tr;
+#if TRIANGLE_INTERSECT == 1
+  if(dot(plane,vec4(minCorner + tr*size,1.f))>0.f)
+    return TRIVIAL_REJECT;
+#endif
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1.f),plane)>0.f);
 
 #if MORE_PLANES == 1

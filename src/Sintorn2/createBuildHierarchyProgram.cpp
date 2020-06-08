@@ -35,7 +35,7 @@ void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
   auto const minZBits            =  vars.getUint32          ("sintorn2.param.minZBits"   );
   auto const tileX               =  vars.getUint32          ("sintorn2.param.tileX"      );
   auto const tileY               =  vars.getUint32          ("sintorn2.param.tileY"      );
-  auto const memoryOptim         =  vars.getInt32           ("sintorn2.param.memoryOptim");
+  auto const memoryOptim         =  vars.getBool            ("sintorn2.param.memoryOptim");
 
 #define PRINT(x) std::cerr << #x ": " << x << std::endl
 

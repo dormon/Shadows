@@ -26,7 +26,7 @@ void sintorn2::createPropagateAABBProgram(vars::Vars&vars){
   auto const tileX         =  vars.getUint32      ("sintorn2.param.tileX"         );
   auto const tileY         =  vars.getUint32      ("sintorn2.param.tileY"         );
   auto const nofWarps      =  vars.getUint32      ("sintorn2.param.propagateWarps");
-  auto const memoryOptim   =  vars.getInt32       ("sintorn2.param.memoryOptim"   );
+  auto const memoryOptim   =  vars.getBool        ("sintorn2.param.memoryOptim"   );
 
   vars.reCreate<ge::gl::Program>("sintorn2.method.propagateAABBProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
