@@ -96,6 +96,12 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
 
 }
 
+void createTriangleBuffer(vars::Vars&vars){
+  FUNCTION_PROLOGUE("rssv.method","adjacency");
+  auto const adj = vars.get<Adjacency>("adjacency");
+  vars.reCreate<Buffer>("rssv.method.triangles",adj->getVertices());
+}
+
 void createTraverseJobCounters(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method");
   vars.reCreate<Buffer>("rssv.method.traverseJobCounters",sizeof(uint32_t)*2);
@@ -126,6 +132,7 @@ void traverseSilhouettes(vars::Vars&vars){
   createTraverseJobCounters(vars);
   createDebugSilhouetteTraverseBuffers(vars);
   createDebugEdgePlanesBuffer(vars);
+  createTriangleBuffer(vars);
 
   auto prg        = vars.get<Program>("rssv.method.traverseSilhouettesProgram");
 
@@ -138,6 +145,7 @@ void traverseSilhouettes(vars::Vars&vars){
   auto edgePlanes                  = vars.get<Buffer >("rssv.method.edgePlanes"                );
   auto multBuffer                  = vars.get<Buffer >("rssv.method.multBuffer"                );
   auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
+  auto triangles                   = vars.get<Buffer >("rssv.method.triangles"                 );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
   auto computeBridges              = vars.getBool     ("rssv.param.computeBridges"             );
 
@@ -177,6 +185,8 @@ void traverseSilhouettes(vars::Vars&vars){
     prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
     prg->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
   }
+
+  prg->bindBuffer("Triangles",triangles);
 
   //prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
 
