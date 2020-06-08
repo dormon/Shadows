@@ -63,6 +63,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const alignSize                    =  vars.getSizeT       ("rssv.param.alignment"                   );
   auto adj                                =  vars.get<Adjacency> ("adjacency"                              );
   auto const nofEdges                     =  adj->getNofEdges();
+  auto const nofTriangles                 =  adj->getNofTriangles();
 
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
@@ -79,7 +80,8 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("USE_BRIDGE_POOL"               ,(int)cfg.useBridgePool           ),
         Shader::define("COMPUTE_LAST_LEVEL_SILHOUETTES",(int)computeLastLevelSilhouettes ),
         Shader::define("ALIGN_SIZE"                    ,(uint32_t)alignSize              ),
-        Shader::define("NOF_EDGES"                     ,(uint32_t)nofEdges               )
+        Shader::define("NOF_EDGES"                     ,(uint32_t)nofEdges               ),
+        Shader::define("NOF_TRIANGLES"                 ,(uint32_t)nofTriangles           )
         ,rssv::demortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader

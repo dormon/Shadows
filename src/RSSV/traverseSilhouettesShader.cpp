@@ -47,14 +47,24 @@ uniform mat4 projView;
 
 shared int  edgeMult;
 
-shared vec4 edgePlane;
-shared vec4 aPlane   ;
-shared vec4 bPlane   ;
-shared vec4 abPlane  ;
+shared vec4 sharedVec4[7];
 
-shared vec4 edgeAClipSpace;
-shared vec4 edgeBClipSpace;
-shared vec4 lightClipSpace;
+#define edgePlane      sharedVec4[0]
+#define aPlane         sharedVec4[1]
+#define bPlane         sharedVec4[2]
+#define abPlane        sharedVec4[3]
+#define edgeAClipSpace sharedVec4[4]
+#define edgeBClipSpace sharedVec4[5]
+#define lightClipSpace sharedVec4[6]
+
+//shared vec4 edgePlane;
+//shared vec4 aPlane   ;
+//shared vec4 bPlane   ;
+//shared vec4 abPlane  ;
+//
+//shared vec4 edgeAClipSpace;
+//shared vec4 edgeBClipSpace;
+//shared vec4 lightClipSpace;
 
 #if (STORE_EDGE_PLANES == 1) || (STORE_TRAVERSE_STAT == 1)
 layout(std430,binding = 7)buffer Debug{uint debug[];};
@@ -333,6 +343,12 @@ void traverseSilhouette(){
 
 #endif
 
+void loadTriangle(uint job){
+}
+
+void traverseTriangle(){
+}
+
 //uniform int selectedEdge = -1;
 
 void main(){
@@ -356,11 +372,19 @@ void main(){
   }
 
   //triangle loop
-  //for(;;){
-  //
-  //
-  //
-  //
-  //}
+  for(;;){
+  
+    if(gl_LocalInvocationIndex==0)
+      job = atomicAdd(triangleJobCounter,1);
+
+    job = readFirstInvocationARB(job);
+    if(job >= NOF_TRIANGLES)break;
+
+    //if(selectedEdge>=0 && job != uint(selectedEdge))continue;
+
+    loadTriangle(job);
+    traverseTriangle();
+  
+  }
 }
 ).";
