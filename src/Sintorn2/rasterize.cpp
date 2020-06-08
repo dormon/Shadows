@@ -49,6 +49,7 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"sintorn2.param.noAABB"
       ,"sintorn2.param.storeTraverseStat"
       ,"sintorn2.param.memoryOptim"
+      ,"sintorn2.param.taOptim"
       ,"args.camera.near"
       ,"args.camera.far"
       ,"args.camera.fovy"
@@ -68,6 +69,7 @@ void createRasterizeProgram(vars::Vars&vars){
   auto const noAABB              =  vars.getInt32           ("sintorn2.param.noAABB"            );
   auto const storeTraverseStat   =  vars.getBool            ("sintorn2.param.storeTraverseStat" );
   auto const memoryOptim         =  vars.getInt32           ("sintorn2.param.memoryOptim"       );
+  auto const taOptim             =  vars.getInt32           ("sintorn2.param.taOptim"           );
   auto const nnear               =  vars.getFloat           ("args.camera.near"                 );
   auto const ffar                =  vars.getFloat           ("args.camera.far"                  );
   auto const fovy                =  vars.getFloat           ("args.camera.fovy"                 );
@@ -88,6 +90,8 @@ void createRasterizeProgram(vars::Vars&vars){
         Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
         Shader::define("ENABLE_FFC"         ,(int)     ffc               ),
         Shader::define("NO_AABB"            ,(int)     noAABB            ),
+        Shader::define("USE_TA_OPTIM"       ,(int)     taOptim           ),
+
 #if SAVE_COLLISION == 1
         Shader::define("SAVE_COLLISION"     ,(int)1),
 #endif

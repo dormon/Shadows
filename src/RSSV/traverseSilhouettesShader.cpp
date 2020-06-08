@@ -274,23 +274,6 @@ void computeAABBSilhouetteIntersection(out uint status,in vec3 minCorner,in vec3
   if(dot(abPlane  ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
 
   status = INTERSECTS;
-#if 0
-  vec3 tr;
-  tr = trivialRejectCorner3D(edgePlane.xyz);
-  if(dot(edgePlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
-    if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(aabbSize),1.f))<=0.f){
-      tr = trivialRejectCorner3D(aPlane.xyz);
-      if(dot(aPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
-        tr = trivialRejectCorner3D(bPlane.xyz);
-        if(dot(bPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
-          tr = trivialRejectCorner3D(abPlane.xyz);
-          if(dot(abPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f)
-            status = INTERSECTS;
-        }
-      }
-    }
-  }
-#endif
 }
 
 void traverseSilhouette(){
@@ -362,7 +345,7 @@ void traverseSilhouette(){
 
 #endif
 
-#if 0
+#if 1
 void loadTriangle(uint job){
   if(gl_LocalInvocationIndex == 0){
     vec3 A;
@@ -384,7 +367,6 @@ void loadTriangle(uint job){
       n *= -1;
     }
     vec3 n2;
-
     n2 = normalize(cross(n,B-A));
     tri_abPlane = invTran*vec4(n2,-dot(n2,A));
     n2 = normalize(cross(n,C-B));
@@ -392,25 +374,36 @@ void loadTriangle(uint job){
     n2 = normalize(cross(n,A-C));
     tri_caPlane = invTran*vec4(n2,-dot(n2,C));
   }
+  memoryBarrierShared();
 }
 
 void computeAABBTriangleIntersection(out uint status,in vec3 minCorner,in vec3 aabbSize){
   status = TRIVIAL_REJECT;
+
   vec3 tr;
-  tr = trivialRejectCorner3D(edgePlane.xyz);
-  if(dot(edgePlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
-    if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(aabbSize),1.f))<=0.f){
-      tr = trivialRejectCorner3D(aPlane.xyz);
-      if(dot(aPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
-        tr = trivialRejectCorner3D(bPlane.xyz);
-        if(dot(bPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f){
-          tr = trivialRejectCorner3D(abPlane.xyz);
-          if(dot(abPlane,vec4(minCorner + (    tr)*(aabbSize),1.f))>=0.f)
-            status = INTERSECTS;
-        }
-      }
-    }
-  }
+
+  //if(tri_trianglePlane.x != 1337)return;
+  //if(tri_abPlane.x != 1337)return;
+  //if(tri_bcPlane.x != 1337)return;
+  //if(tri_caPlane.x != 1337)return;
+
+  tr = trivialRejectCorner3D(tri_trianglePlane.xyz);
+  if(dot(tri_trianglePlane,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+
+  tr = 1.f-tr;
+  if(dot(tri_trianglePlane,vec4(minCorner + (tr)*(aabbSize),1.f))>0.f)return;
+
+  tr = trivialRejectCorner3D(tri_abPlane.xyz);
+  if(dot(tri_abPlane      ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+
+  tr = trivialRejectCorner3D(tri_bcPlane.xyz);
+  if(dot(tri_bcPlane      ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+
+  tr = trivialRejectCorner3D(tri_caPlane.xyz);
+  if(dot(tri_caPlane      ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+
+
+  status = INTERSECTS;
 }
 
 void traverseTriangle(){
@@ -442,6 +435,7 @@ void traverseTriangle(){
         //computeBridgeSilhouetteIntersection(minCorner,aabbSize,level,node);
 
         computeAABBTriangleIntersection(status,minCorner,aabbSize);
+        //if(gl_LocalInvocationIndex > 31)status = TRIVIAL_REJECT;
         //computeAABBSilhouetteIntersection(status,minCorner,aabbSize);
         //status == 0u;//TODO REMOVE
 
@@ -490,6 +484,7 @@ void main(){
   uint job;
   #endif
 
+#if 0
   //silhouette loop
   for(;;){
     if(gl_LocalInvocationIndex==0)
@@ -504,8 +499,11 @@ void main(){
     traverseSilhouette();
 
   }
+#endif
+  if(lightPosition.x == 1337)return;
+  if(projView[0][0] == 1337)return;
 
-#if 0
+#if 1
   //triangle loop
   for(;;){
   

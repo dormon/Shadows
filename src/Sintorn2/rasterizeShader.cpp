@@ -275,9 +275,9 @@ void traverse(){
       intersection[level] = unpackUint2x32(ballotARB(status == INTERSECTS    ))[0];
 #endif
 
-      uint     trA        = unpackUint2x32(ballotARB(status == TRIVIAL_ACCEPT))[0];
 
-#if 1
+#if USE_TA_OPTIM == 1
+      uint     trA        = unpackUint2x32(ballotARB(status == TRIVIAL_ACCEPT))[0];
       if(gl_LocalInvocationIndex == 0u){
         if(trA != 0u)
           atomicAnd(nodePool[nodeLevelOffsetInUints[level]+node],~trA);
@@ -465,9 +465,9 @@ void traverse(){
       intersection[level] = ballotARB(status == INTERSECTS    );
 #endif
 
-      uint64_t trA        = ballotARB(status == TRIVIAL_ACCEPT);
 
-#if 1
+#if USE_TA_OPTIM == 1
+      uint64_t trA        = ballotARB(status == TRIVIAL_ACCEPT);
       if(gl_LocalInvocationIndex == 0u){
         if(unpackUint2x32(trA)[0] != 0u)
           atomicAnd(nodePool[nodeLevelOffsetInUints[level]+node*uintsPerWarp+0],~unpackUint2x32(trA)[0]);

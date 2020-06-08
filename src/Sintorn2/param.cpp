@@ -22,6 +22,7 @@ void sintorn2::loadParams(
   vars.addInt32 ("sintorn2.param.noAABB"                 ) = c->geti32   ("noAABB"            ,0   ,"no tight aabb"                                                                   );
   vars.addInt32 ("sintorn2.param.memoryOptim"            ) = c->geti32   ("memoryOptim"       ,0   ,"apply memory optimization"                                                       );
   vars.addUint32("sintorn2.param.memoryFactor"           ) = c->getu32   ("memoryFactor"      ,10  ,"memory optimization - this value is average number of nodes per screen tile"     );
+  vars.addInt32 ("sintorn2.param.taOptim"                ) = c->geti32   ("taOptim"           ,1   ,"apply trivial accept optim. that erases parts of already shadowed tree"          );
 
 
   vars.addBool  ("sintorn2.param.storeTraverseStat");
