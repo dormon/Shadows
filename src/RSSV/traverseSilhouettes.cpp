@@ -50,9 +50,12 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"rssv.param.computeLastLevelSilhouettes"
       ,"rssv.param.alignment"
       ,"adjacency"
+      ,"rssv.param.sfAlignment"      
+      ,"rssv.param.sfInterleave"     
+
       );
 
-  auto const noAABB                       =  vars.getInt32       ("rssv.param.noAABB"                      );
+  auto const noAABB                       =  vars.getBool        ("rssv.param.noAABB"                      );
   auto const storeTraverseSilhouettesStat =  vars.getBool        ("rssv.param.storeTraverseSilhouettesStat");
   auto const storeEdgePlanes              =  vars.getBool        ("rssv.param.storeEdgePlanes"             );
   auto const dumpPointsNotPlanes          =  vars.getBool        ("rssv.param.dumpPointsNotPlanes"         );
@@ -64,6 +67,9 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto adj                                =  vars.get<Adjacency> ("adjacency"                              );
   auto const nofEdges                     =  adj->getNofEdges();
   auto const nofTriangles                 =  adj->getNofTriangles();
+
+  auto const sfAlignment         =  vars.getUint32          ("rssv.param.sfAlignment"       );
+  auto const sfInterleave        =  vars.getBool            ("rssv.param.sfInterleave"      );
 
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
@@ -81,7 +87,9 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("COMPUTE_LAST_LEVEL_SILHOUETTES",(int)computeLastLevelSilhouettes ),
         Shader::define("ALIGN_SIZE"                    ,(uint32_t)alignSize              ),
         Shader::define("NOF_EDGES"                     ,(uint32_t)nofEdges               ),
-        Shader::define("NOF_TRIANGLES"                 ,(uint32_t)nofTriangles           )
+        Shader::define("NOF_TRIANGLES"                 ,(uint32_t)nofTriangles           ),
+        Shader::define("SF_ALIGNMENT"                  ,(uint32_t)sfAlignment            ),
+        Shader::define("SF_INTERLEAVE"                 ,(int)     sfInterleave           )
         ,rssv::demortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader
@@ -145,10 +153,11 @@ void traverseSilhouettes(vars::Vars&vars){
   auto edgePlanes                  = vars.get<Buffer >("rssv.method.edgePlanes"                );
   auto multBuffer                  = vars.get<Buffer >("rssv.method.multBuffer"                );
   auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
-  auto triangles                   = vars.get<Buffer >("rssv.method.triangles"                 );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
   auto computeBridges              = vars.getBool     ("rssv.param.computeBridges"             );
 
+  //auto triangles                   = vars.get<Buffer >("rssv.method.triangles"                 );
+  auto shadowFrusta                = vars.get<Buffer >("rssv.method.shadowFrusta"              );
 
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
@@ -186,7 +195,8 @@ void traverseSilhouettes(vars::Vars&vars){
     prg->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
   }
 
-  prg->bindBuffer("Triangles",triangles);
+  //prg->bindBuffer("Triangles",triangles);
+  prg->bindBuffer("ShadowFrusta",shadowFrusta);
 
   //prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
 

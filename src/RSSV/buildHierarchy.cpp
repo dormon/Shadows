@@ -38,7 +38,7 @@ void clearAndBindNodePoolAndAABBPool(vars::Vars&vars){
 void ifEnabledSetupDiscardBackfacing(vars::Vars&vars){
   auto gBuffer           =  vars.get<GBuffer>("gBuffer"                          );
   auto prg               =  vars.get<Program>("rssv.method.buildHierarchyProgram");
-  auto discardBackfacing =  vars.getUint32   ("rssv.param.discardBackfacing"     );
+  auto discardBackfacing =  vars.getBool     ("rssv.param.discardBackfacing"     );
   if(!discardBackfacing)return;
 
   auto normal              =  gBuffer->normal;

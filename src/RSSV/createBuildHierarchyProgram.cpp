@@ -28,8 +28,8 @@ void rssv::createBuildHierarchyProgram(vars::Vars&vars){
       ,"rssv.param.discardBackfacing"
       );
 
-  auto const usePadding        =  vars.getUint32      ("rssv.param.usePadding"       );
-  auto const discardBackfacing =  vars.getUint32      ("rssv.param.discardBackfacing");
+  auto const usePadding        =  vars.getBool        ("rssv.param.usePadding"       );
+  auto const discardBackfacing =  vars.getBool        ("rssv.param.discardBackfacing");
   auto const cfg               = *vars.get<Config    >("rssv.method.config"          );
 
 #define PRINT(x) std::cerr << #x ": " << x << std::endl

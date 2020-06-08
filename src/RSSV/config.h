@@ -57,13 +57,13 @@ class Config{
         uint32_t winX            = 512u     ,
         uint32_t winY            = 512u     ,
         uint32_t minZ            = 9u       ,
-        int32_t  memOptim        = 0        ,
+        bool     memOptim        = false    ,
         uint32_t memFactor       = 10       ,
-        int32_t  useBridgeBuffer = 0        ,
+        bool     useBridgeBuffer = false    ,
         float    nn              = 0.1f     ,
         float    ff              = 1000.f   ,
         float    fo              = 3.149256f,
-        int32_t  scaledQ         = 0        ){
+        bool     scaledQ         = false    ){
       windowX                 = winX;
       windowY                 = winY;
       minZBits                = minZ;
@@ -157,14 +157,14 @@ class Config{
     uint32_t windowX                           ;
     uint32_t windowY                           ;
     uint32_t minZBits                          ;
-    int32_t  memoryOptim                       ;
+    bool     memoryOptim                       ;
     uint32_t memoryFactor                      ;
-    int32_t  useBridgePool                     ;
+    bool     useBridgePool                     ;
     uint32_t warpBits                          ;
     float    nnear                             ;
     float    ffar                              ;
     float    fovy                              ;
-    int32_t  scaledQuantization                ;
+    bool     scaledQuantization                ;
 
     uint32_t clustersX                         ;
     uint32_t clustersY                         ;

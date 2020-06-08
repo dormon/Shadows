@@ -41,13 +41,9 @@ std::string const rssv::shadowFrustaShader = R".(
 #define MORE_PLANES 0
 #endif//MORE_PLANES
 
-#ifndef ENABLE_FFC
-#define ENABLE_FFC 0
-#endif//ENABLE_FFC
-
 const uint planesPerSF = 4u + MORE_PLANES*3u;
 const uint floatsPerPlane = 4u;
-const uint floatsPerSF = planesPerSF * floatsPerPlane + uint(ENABLE_FFC);
+const uint floatsPerSF = planesPerSF * floatsPerPlane;
 
 #line 38
 
@@ -121,42 +117,94 @@ void main(){
   vec4 e2 = vec4(v2,1);
   vec4 e3 = vec4(lightPosition.xyz,transposeInverseModelViewProjection[0][1]);
 #else
-	vec4 e0 = getPlane(v0,v1,lightPosition);
-	vec4 e1 = getPlane(v1,v2,lightPosition);
-	vec4 e2 = getPlane(v2,v0,lightPosition);
-	vec4 e3 = getPlane(
+
+#if 0
+  vec4 e0;
+  vec4 e1;
+  vec4 e2;
+  vec4 e3;
+
+  if(lightPosition.x == 1337)return;
+  if(transposeInverseModelViewProjection[0][0] == 1337)return;
+  vec3 n = normalize(cross(v1-v0,v2-v0));
+  e0 = vec4(n,-dot(n,v0));
+  e0 *= sign(dot(e0,lightPosition));
+  //e0 = transposeInverseModelViewProjection*e0;
+
+  vec3 nn;
+  nn = normalize(cross(v1-v0,n));
+  e1 = vec4(nn,-dot(nn,v0));
+  e1 *= sign(dot(e1,vec4(v2,1)));
+  //e1 = transposeInverseModelViewProjection*e1;
+
+  nn = normalize(cross(v2-v1,n));
+  e2 = vec4(nn,-dot(nn,v1));
+  e2 *= sign(dot(e2,vec4(v0,1)));
+  //e2 = transposeInverseModelViewProjection*e2;
+
+  nn = normalize(cross(v0-v2,n));
+  e3 = vec4(nn,-dot(nn,v2));
+  e3 *= sign(dot(e3,vec4(v1,1)));
+  //e3 = transposeInverseModelViewProjection*e3;
+
+  //e3 = vec4(1000,2000,3000,4000);
+  //e2 = vec4(100,200,300,400);
+  //e1 = vec4(10,20,30,40);
+  //e0 = vec4(1,2,3,4);
+#endif
+
+	vec4 e1 = getPlane(v0,v1,lightPosition);
+	vec4 e2 = getPlane(v1,v2,lightPosition);
+	vec4 e3 = getPlane(v2,v0,lightPosition);
+	vec4 e0 = getPlane(
 			v0 + BIAS*normalize(v0*lightPosition.w-lightPosition.xyz),
 			v1 + BIAS*normalize(v1*lightPosition.w-lightPosition.xyz),
 			v2 + BIAS*normalize(v2*lightPosition.w-lightPosition.xyz));
 
-
-#if MORE_PLANES == 1
-  vec4 f0;
-  vec4 f1;
-  vec4 f2;
-  vec3 l0 = normalize(lightPosition.xyz-v0*lightPosition.w);
-  vec3 l1 = normalize(lightPosition.xyz-v1*lightPosition.w);
-  vec3 l2 = normalize(lightPosition.xyz-v2*lightPosition.w);
-  f0.xyz = -normalize(cross(cross(l0,normalize(v0-v1)+normalize(v0-v2)),l0));
-  f1.xyz = -normalize(cross(cross(l1,normalize(v1-v0)+normalize(v1-v2)),l1));
-  f2.xyz = -normalize(cross(cross(l2,normalize(v2-v0)+normalize(v2-v1)),l2));
-  f0.w = -dot(f0.xyz,v0);
-  f1.w = -dot(f1.xyz,v1);
-  f2.w = -dot(f2.xyz,v2);
-  f0 = transposeInverseModelViewProjection*f0;
-  f1 = transposeInverseModelViewProjection*f1;
-  f2 = transposeInverseModelViewProjection*f2;
-#endif
-
-	float ffc = 1.f;
-	if(dot(e3,lightPosition)>0){
-		ffc=0.f;
+	if(dot(e0,lightPosition)>0){
 		e0=-e0;
 		e1=-e1;
 		e2=-e2;
 		e3=-e3;
 	}
-	e3=transposeInverseModelViewProjection*e3;
+	e0=transposeInverseModelViewProjection*e0;
+  //e3[3] = 1337;
+
+
+	//vec4 e0 = getPlane(v0,v1,v2);
+	//vec4 e1 = getPlane(v1,v2,lightPosition);
+	//vec4 e2 = getPlane(v2,v0,lightPosition);
+	//vec4 e3 = getPlane(
+	//		v0 + BIAS*normalize(v0*lightPosition.w-lightPosition.xyz),
+	//		v1 + BIAS*normalize(v1*lightPosition.w-lightPosition.xyz),
+	//		v2 + BIAS*normalize(v2*lightPosition.w-lightPosition.xyz));
+
+
+//#if MORE_PLANES == 1
+//  vec4 f0;
+//  vec4 f1;
+//  vec4 f2;
+//  vec3 l0 = normalize(lightPosition.xyz-v0*lightPosition.w);
+//  vec3 l1 = normalize(lightPosition.xyz-v1*lightPosition.w);
+//  vec3 l2 = normalize(lightPosition.xyz-v2*lightPosition.w);
+//  f0.xyz = -normalize(cross(cross(l0,normalize(v0-v1)+normalize(v0-v2)),l0));
+//  f1.xyz = -normalize(cross(cross(l1,normalize(v1-v0)+normalize(v1-v2)),l1));
+//  f2.xyz = -normalize(cross(cross(l2,normalize(v2-v0)+normalize(v2-v1)),l2));
+//  f0.w = -dot(f0.xyz,v0);
+//  f1.w = -dot(f1.xyz,v1);
+//  f2.w = -dot(f2.xyz,v2);
+//  f0 = transposeInverseModelViewProjection*f0;
+//  f1 = transposeInverseModelViewProjection*f1;
+//  f2 = transposeInverseModelViewProjection*f2;
+//#endif
+
+	//if(dot(e3,lightPosition)>0){
+	//	e0=-e0;
+	//	e1=-e1;
+	//	e2=-e2;
+	//	e3=-e3;
+	//}
+	//e3=transposeInverseModelViewProjection*e3;
 #endif
 
 
@@ -182,29 +230,22 @@ void main(){
   shadowFrusta[alignedNofSF*14u + gid] = e3[2];
   shadowFrusta[alignedNofSF*15u + gid] = e3[3];
 
-  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
-    shadowFrusta[alignedNofSF*16u + gid] = ffc;
-  #endif
-
-  #if MORE_PLANES == 1
-    shadowFrusta[alignedNofSF*16u + gid] = f0[0];
-    shadowFrusta[alignedNofSF*17u + gid] = f0[1];
-    shadowFrusta[alignedNofSF*18u + gid] = f0[2];
-    shadowFrusta[alignedNofSF*19u + gid] = f0[3];
-
-    shadowFrusta[alignedNofSF*20u + gid] = f1[0];
-    shadowFrusta[alignedNofSF*21u + gid] = f1[1];
-    shadowFrusta[alignedNofSF*22u + gid] = f1[2];
-    shadowFrusta[alignedNofSF*23u + gid] = f1[3];
-
-    shadowFrusta[alignedNofSF*24u + gid] = f2[0];
-    shadowFrusta[alignedNofSF*25u + gid] = f2[1];
-    shadowFrusta[alignedNofSF*26u + gid] = f2[2];
-    shadowFrusta[alignedNofSF*27u + gid] = f2[3];
-    #if ENABLE_FFC == 1
-      shadowFrusta[alignedNofSF*28u + gid] = ffc;
-    #endif
-  #endif
+//  #if MORE_PLANES == 1
+//    shadowFrusta[alignedNofSF*16u + gid] = f0[0];
+//    shadowFrusta[alignedNofSF*17u + gid] = f0[1];
+//    shadowFrusta[alignedNofSF*18u + gid] = f0[2];
+//    shadowFrusta[alignedNofSF*19u + gid] = f0[3];
+//
+//    shadowFrusta[alignedNofSF*20u + gid] = f1[0];
+//    shadowFrusta[alignedNofSF*21u + gid] = f1[1];
+//    shadowFrusta[alignedNofSF*22u + gid] = f1[2];
+//    shadowFrusta[alignedNofSF*23u + gid] = f1[3];
+//
+//    shadowFrusta[alignedNofSF*24u + gid] = f2[0];
+//    shadowFrusta[alignedNofSF*25u + gid] = f2[1];
+//    shadowFrusta[alignedNofSF*26u + gid] = f2[2];
+//    shadowFrusta[alignedNofSF*27u + gid] = f2[3];
+//  #endif
 #else
   shadowFrusta[gid*floatsPerSF+ 0u] = e0[0];
   shadowFrusta[gid*floatsPerSF+ 1u] = e0[1];
@@ -223,29 +264,21 @@ void main(){
   shadowFrusta[gid*floatsPerSF+14u] = e3[2];
   shadowFrusta[gid*floatsPerSF+15u] = e3[3];
 
-  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
-    shadowFrusta[gid*floatsPerSF+16u] = ffc;
-  #endif
-
-  #if MORE_PLANES == 1
-    shadowFrusta[gid*floatsPerSF+16u] = f0[0];
-    shadowFrusta[gid*floatsPerSF+17u] = f0[1];
-    shadowFrusta[gid*floatsPerSF+18u] = f0[2];
-    shadowFrusta[gid*floatsPerSF+19u] = f0[3];
-    shadowFrusta[gid*floatsPerSF+20u] = f1[0];
-    shadowFrusta[gid*floatsPerSF+21u] = f1[1];
-    shadowFrusta[gid*floatsPerSF+22u] = f1[2];
-    shadowFrusta[gid*floatsPerSF+23u] = f1[3];
-    shadowFrusta[gid*floatsPerSF+24u] = f2[0];
-    shadowFrusta[gid*floatsPerSF+25u] = f2[1];
-    shadowFrusta[gid*floatsPerSF+26u] = f2[2];
-    shadowFrusta[gid*floatsPerSF+27u] = f2[3];
-
-    #if ENABLE_FFC == 1
-      shadowFrusta[gid*floatsPerSF+28u] = ffc;
-    #endif
- 
-  #endif
+//  #if MORE_PLANES == 1
+//    shadowFrusta[gid*floatsPerSF+16u] = f0[0];
+//    shadowFrusta[gid*floatsPerSF+17u] = f0[1];
+//    shadowFrusta[gid*floatsPerSF+18u] = f0[2];
+//    shadowFrusta[gid*floatsPerSF+19u] = f0[3];
+//    shadowFrusta[gid*floatsPerSF+20u] = f1[0];
+//    shadowFrusta[gid*floatsPerSF+21u] = f1[1];
+//    shadowFrusta[gid*floatsPerSF+22u] = f1[2];
+//    shadowFrusta[gid*floatsPerSF+23u] = f1[3];
+//    shadowFrusta[gid*floatsPerSF+24u] = f2[0];
+//    shadowFrusta[gid*floatsPerSF+25u] = f2[1];
+//    shadowFrusta[gid*floatsPerSF+26u] = f2[2];
+//    shadowFrusta[gid*floatsPerSF+27u] = f2[3];
+//
+//  #endif
 #endif
 }
 

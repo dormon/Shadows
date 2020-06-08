@@ -37,10 +37,10 @@ void createShadowFrustaProgram(vars::Vars&vars){
   auto const triangleAlignment   = vars.getUint32("rssv.param.triangleAlignment" );
   auto const sfAlignment         = vars.getUint32("rssv.param.sfAlignment"       );
   auto const bias                = vars.getFloat ("rssv.param.bias"              );
-  auto const sfInterleave        = vars.getInt32 ("rssv.param.sfInterleave"      );
-  auto const triangleInterleave  = vars.getInt32 ("rssv.param.triangleInterleave");
-  auto const morePlanes          = vars.getInt32 ("rssv.param.morePlanes"        );
-  auto const ffc                 = vars.getInt32 ("rssv.param.ffc"               );
+  auto const sfInterleave        = vars.getBool  ("rssv.param.sfInterleave"      );
+  auto const triangleInterleave  = vars.getBool  ("rssv.param.triangleInterleave");
+  auto const morePlanes          = vars.getBool  ("rssv.param.morePlanes"        );
+  auto const ffc                 = vars.getBool  ("rssv.param.ffc"               );
 
 
   vars.reCreate<ge::gl::Program>("rssv.method.shadowFrustaProgram",
@@ -67,28 +67,28 @@ void allocateShadowFrusta(vars::Vars&vars){
       ,"rssv.param.sfAlignment"
       ,"rssv.param.triangleInterleave"
       ,"rssv.param.morePlanes"
-      ,"rssv.param.ffc"
       ,"model"
       );
 
   auto const triangleAlignment   = vars.getUint32("rssv.param.triangleAlignment");
   auto const sfAlignment         = vars.getUint32("rssv.param.sfAlignment"      );
-  auto const triangleInterleave  = vars.getInt32 ("rssv.param.triangleInterleave");
-  auto const morePlanes          = vars.getInt32 ("rssv.param.morePlanes"        );
-  auto const ffc                 = vars.getInt32 ("rssv.param.ffc"               );
+  auto const triangleInterleave  = vars.getBool  ("rssv.param.triangleInterleave");
+  auto const morePlanes          = vars.getBool  ("rssv.param.morePlanes"        );
 
   vector<float>vertices = vars.get<Model>("model")->getVertices();
   auto nofTriangles = (uint32_t)(vertices.size()/3/3);
   
   uint32_t const planesPerSF = 4 + morePlanes*3;
   uint32_t const floatsPerPlane = 4;
-  uint32_t const floatsPerSF = floatsPerPlane * planesPerSF + (uint32_t)ffc;
+  uint32_t const floatsPerSF = floatsPerPlane * planesPerSF;
+
+  std::cerr << "floatsPerSF: " << floatsPerSF << std::endl;
 
   auto const aNofT = align(nofTriangles,(uint32_t)triangleAlignment);
 
   std::vector<float>triData(aNofT * 3 * 3);
 
-  if(triangleInterleave == 1){
+  if(triangleInterleave){
     for(uint32_t p=0;p<3;++p)
       for(uint32_t k=0;k<3;++k)
         for(uint32_t t=0;t<nofTriangles;++t)triData[aNofT*(p*3+k)+t] = vertices[(t*3+p)*3+k];
@@ -128,6 +128,7 @@ void rssv::computeShadowFrusta(vars::Vars&vars){
   triangles->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   sf       ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
 
+  //sf->clear(GL_R32F,GL_RED,GL_FLOAT);//TODO REMOVE we dont have to clear shadow frusta only debug
 
   prg
     ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                    )
@@ -150,5 +151,17 @@ void rssv::computeShadowFrusta(vars::Vars&vars){
     glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   }
+
+  //std::vector<float>sfd;
+  //sf->getData(sfd);
+  //auto ds = 16u;
+  //for(size_t j=0;j<sfd.size()/ds;++j){
+  //  for(size_t i=0;i<ds;++i){
+  //    std::cerr << sfd[i*(sfd.size()/ds)+j] << " ";
+  //  }
+  //  std::cerr << std::endl;
+  //}
+  //exit(0);
+
 
 }
