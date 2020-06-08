@@ -123,7 +123,7 @@ void allocateMultBuffer(vars::Vars&vars){
 
   auto const adj = vars.get<Adjacency>("adjacency");
 
-  vars.reCreate<Buffer>("rssv.method.multBuffer",sizeof(uint32_t)*adj->getNofEdges());
+  vars.reCreate<Buffer>("rssv.method.multBuffer",sizeof(uint32_t)*(1+adj->getNofEdges()));
 }
 
 void extractSilhouettes(vars::Vars&vars){
