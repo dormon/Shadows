@@ -28,7 +28,7 @@ void createShadowFrustaProgram(vars::Vars&vars){
       ,"rssv.param.sfInterleave"
       ,"rssv.param.triangleInterleave"
       ,"rssv.param.morePlanes"
-      ,"rssv.param.ffc"
+      ,"rssv.param.exactTriangleAABB"
       );
   std::cerr << "createShadowFrustaProgram" << std::endl;
 
@@ -42,7 +42,7 @@ void createShadowFrustaProgram(vars::Vars&vars){
   auto const triangleInterleave  = vars.getBool  ("rssv.param.triangleInterleave");
 
   auto const morePlanes          = vars.getBool  ("rssv.param.morePlanes"        );
-  auto const ffc                 = vars.getBool  ("rssv.param.ffc"               );
+  auto const exactTriangleAABB   = vars.getBool  ("rssv.param.exactTriangleAABB" );
 
 
   vars.reCreate<ge::gl::Program>("rssv.method.shadowFrustaProgram",
@@ -57,7 +57,7 @@ void createShadowFrustaProgram(vars::Vars&vars){
         Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
         Shader::define("TRIANGLE_INTERLEAVE",(int)     triangleInterleave),
         Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
-        Shader::define("ENABLE_FFC"         ,(int)     ffc               ),
+        Shader::define("EXACT_TRIANGLE_AABB",(int)     exactTriangleAABB ),
         rssv::shadowFrustaShader
         ));
 }
@@ -69,6 +69,7 @@ void allocateShadowFrusta(vars::Vars&vars){
       ,"rssv.param.sfAlignment"
       ,"rssv.param.triangleInterleave"
       ,"rssv.param.morePlanes"
+      ,"rssv.param.exactTriangleAABB"
       ,"model"
       );
 
@@ -77,12 +78,15 @@ void allocateShadowFrusta(vars::Vars&vars){
   auto const triangleInterleave  = vars.getBool  ("rssv.param.triangleInterleave");
 
   auto const morePlanes          = vars.getBool  ("rssv.param.morePlanes"        );
+  auto const exactTriangleAABB   = vars.getBool  ("rssv.param.exactTriangleAABB" );
 
   vector<float>vertices = vars.get<Model>("model")->getVertices();
   auto nofTriangles = (uint32_t)(vertices.size()/3/3);
   
-  uint32_t const planesPerSF = 4 + ((uint32_t)morePlanes)*3;
+  uint32_t const planesPerSF = 4 + ((uint32_t)morePlanes)*3 + ((uint32_t)exactTriangleAABB)*3;
   uint32_t const floatsPerPlane = 4;
+
+
   uint32_t const floatsPerSF = floatsPerPlane * planesPerSF;
 
   std::cerr << "floatsPerSF: " << floatsPerSF << std::endl;
@@ -129,6 +133,7 @@ void rssv::computeShadowFrusta(vars::Vars&vars){
   auto const projMatrix    = *vars.get<glm::mat4>("rssv.method.projectionMatrix"   );
   auto const sfWGS         =  vars.getUint32     ("rssv.param.sfWGS"               );
   auto       prg           =  vars.get<Program>  ("rssv.method.shadowFrustaProgram");
+  auto const exactTriangleAABB   = vars.getBool  ("rssv.param.exactTriangleAABB" );
 
   auto const mvp = projMatrix * viewMatrix;
 
@@ -141,6 +146,9 @@ void rssv::computeShadowFrusta(vars::Vars&vars){
     ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                    )
     ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp))))
     ->use();
+
+  if(exactTriangleAABB)
+    prg->setMatrix4fv("projView",glm::value_ptr(mvp));
 
   if(vars.addOrGetBool("rssv.method.perfCounters.shadowFrusta")){
     if(vars.addOrGetBool("rssv.method.perfCounters.oneCounter")){

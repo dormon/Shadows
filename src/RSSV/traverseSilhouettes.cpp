@@ -72,6 +72,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const sfAlignment         =  vars.getUint32          ("rssv.param.sfAlignment"       );
   auto const sfInterleave        =  vars.getBool            ("rssv.param.sfInterleave"      );
   auto const morePlanes          =  vars.getBool            ("rssv.param.morePlanes"        );
+  auto const exactTriangleAABB   = vars.getBool  ("rssv.param.exactTriangleAABB" );
 
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
@@ -92,7 +93,8 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("NOF_TRIANGLES"                 ,(uint32_t)nofTriangles           ),
         Shader::define("SF_ALIGNMENT"                  ,(uint32_t)sfAlignment            ),
         Shader::define("SF_INTERLEAVE"                 ,(int)     sfInterleave           ),
-        Shader::define("MORE_PLANES"                   ,(int)     morePlanes             )
+        Shader::define("MORE_PLANES"                   ,(int)     morePlanes             ),
+        Shader::define("EXACT_TRIANGLE_AABB"           ,(int)     exactTriangleAABB      )
         ,rssv::demortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader

@@ -50,6 +50,10 @@ layout(std430,binding=4)readonly buffer MultBuffer{
 #define MORE_PLANES 0
 #endif//MORE_PLANES
 
+#ifndef EXACT_TRIANGLE_AABB
+#define EXACT_TRIANGLE_AABB 0
+#endif//EXACT_TRIANGLE_AABB
+
 layout(std430,binding=5)readonly buffer ShadowFrusta{float shadowFrusta[];};
 
 layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
@@ -64,7 +68,7 @@ uniform vec4 clipLightPosition;
 uniform mat4 invTran;
 uniform mat4 projView;
 
-const uint planesPerSF = 4u + MORE_PLANES*3u;
+const uint planesPerSF = 4u + MORE_PLANES*3u + EXACT_TRIANGLE_AABB*3u;
 const uint floatsPerPlane = 4u;
 const uint floatsPerSF = planesPerSF * floatsPerPlane;
 

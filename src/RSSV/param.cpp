@@ -15,7 +15,7 @@ void rssv::loadParams(
   vars.addUint32("rssv.param.sfWGS"                  ) =       c->getu32   ("sfWGS"                ,64  ,"shadow frusta work group size"                                                   );
   vars.addBool  ("rssv.param.sfInterleave"           ) = (bool)c->geti32   ("sfInterleave"         ,1   ,"interleave shadow frusta floats"                                                 );
   vars.addBool  ("rssv.param.triangleInterleave"     ) = (bool)c->geti32   ("triangleInterleave"   ,1   ,"interleave triangle floats"                                                      );
-  vars.addBool  ("rssv.param.morePlanes"             ) = (bool)c->geti32   ("morePlanes"           ,0   ,"additional frustum planes"                                                       );
+  vars.addBool  ("rssv.param.morePlanes"             ) = (bool)c->geti32   ("morePlanes"           ,1   ,"additional frustum planes"                                                       );
   vars.addBool  ("rssv.param.ffc"                    ) = (bool)c->geti32   ("ffc"                  ,0   ,"active front face culling"                                                       );
   vars.addBool  ("rssv.param.noAABB"                 ) = (bool)c->geti32   ("noAABB"               ,0   ,"no tight aabb"                                                                   );
   vars.addSizeT ("rssv.param.alignment"              ) =       c->getu64   ("alignment"            ,128 ,"buffer alignment in bytes"                                                       );
@@ -34,5 +34,6 @@ void rssv::loadParams(
   vars.addBool  ("rssv.param.computeBridges"                ,true);
   vars.addBool  ("rssv.param.storeBridgesInLocalMemory"     );
   vars.addBool  ("rssv.param.computeLastLevelSilhouettes"   ,true);
+  vars.addBool  ("rssv.param.exactTriangleAABB"             ,true);
 
 }
