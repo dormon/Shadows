@@ -164,7 +164,7 @@ void traverseSilhouettes(vars::Vars&vars){
 
   jobCounters->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
 
-  stencil->clear(0,GL_RED_INTEGER,GL_INT);
+  //stencil->clear(0,GL_RED_INTEGER,GL_INT);
   //bridges->clear(GL_R32I,GL_RED_INTEGER,GL_INT);
 
   auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
