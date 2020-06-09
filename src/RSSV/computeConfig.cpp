@@ -34,7 +34,7 @@ void rssv::computeConfig(vars::Vars&vars){
   auto const ffar               =  vars.getFloat       ("args.camera.far"              );
   auto const fovy               =  vars.getFloat       ("args.camera.fovy"             );
 
-  vars.reCreate<Config>("rssv.method.config"
+  auto&cfg = *vars.reCreate<Config>("rssv.method.config"
       ,wavefrontSize
       ,windowSize.x
       ,windowSize.y
@@ -47,4 +47,5 @@ void rssv::computeConfig(vars::Vars&vars){
       ,fovy
       ,scaledQuantization
       );
+  cfg.print();
 }
