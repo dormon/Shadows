@@ -1,7 +1,7 @@
 #include <RSSV/traverseSilhouettesShader.h>
 
 std::string const rssv::traverseSilhouettesShader = 
-#if 0
+#if 1
 R".(
 
 #ifndef WARP
@@ -97,7 +97,7 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   uint status = TRIVIAL_ACCEPT;
   vec4 plane;
   vec3 tr;
-  if(minCorner.x != 1337)return TRIVIAL_REJECT;
+  //if(minCorner.x != 1337)return TRIVIAL_REJECT;
 
   plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
   tr    = trivialRejectCorner3D(plane.xyz);
@@ -125,7 +125,29 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = vec3(1.f)-tr;
+  if(dot(plane,vec4(minCorner + tr*size,1.f))>0.f)
+    return TRIVIAL_REJECT;
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1.f),plane)>0.f);
+
+
+#if MORE_PLANES == 1
+  if(status == INTERSECTS){
+    plane = vec4(shadowFrustaPlanes[16],shadowFrustaPlanes[17],shadowFrustaPlanes[18],shadowFrustaPlanes[19]);
+    tr    = trivialRejectCorner3D(plane.xyz);
+    if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+      return TRIVIAL_REJECT;
+
+    plane = vec4(shadowFrustaPlanes[20],shadowFrustaPlanes[21],shadowFrustaPlanes[22],shadowFrustaPlanes[23]);
+    tr    = trivialRejectCorner3D(plane.xyz);
+    if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+      return TRIVIAL_REJECT;
+
+    plane = vec4(shadowFrustaPlanes[24],shadowFrustaPlanes[25],shadowFrustaPlanes[26],shadowFrustaPlanes[27]);
+    tr    = trivialRejectCorner3D(plane.xyz);
+    if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+      return TRIVIAL_REJECT;
+  }
+#endif
 
   return status;
 }
@@ -213,12 +235,12 @@ void traverse(){
 
 
 void main(){
-  if(texelFetch(depthTexture,ivec2(0,0)).x != 1337)return;
+  //if(texelFetch(depthTexture,ivec2(0,0)).x != 1337)return;
   if(lightPosition.x == 1337)return;
   if(projView[0][0] == 1337)return;
   if(invTran[0][0] == 1337)return;
   if(clipLightPosition.x == 1337)return;
-  if(lightPosition.y != 1337)return;
+  //if(lightPosition.y != 1337)return;
 
   for(;;){
     if(gl_LocalInvocationIndex==0){
@@ -950,7 +972,7 @@ void main(){
 //WORKING silhouettes
 /////////////////////
 /////////////////////
-#if 1
+#if 0
 R".(
 
 layout(local_size_x=WARP)in;

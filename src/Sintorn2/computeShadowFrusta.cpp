@@ -84,11 +84,13 @@ void allocateShadowFrusta(vars::Vars&vars){
   uint32_t const floatsPerPlane = 4;
   uint32_t const floatsPerSF = floatsPerPlane * planesPerSF + (uint32_t)ffc;
 
+  std::cerr << "floatsPerSF: " << floatsPerSF << std::endl;
+
   auto const aNofT = align(nofTriangles,(uint32_t)triangleAlignment);
 
   std::vector<float>triData(aNofT * 3 * 3);
 
-  if(triangleInterleave == 1){
+  if(triangleInterleave){
     for(uint32_t p=0;p<3;++p)
       for(uint32_t k=0;k<3;++k)
         for(uint32_t t=0;t<nofTriangles;++t)triData[aNofT*(p*3+k)+t] = vertices[(t*3+p)*3+k];
@@ -127,6 +129,7 @@ void sintorn2::computeShadowFrusta(vars::Vars&vars){
 
   triangles->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   sf       ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  sf->clear(GL_R32F,GL_RED,GL_FLOAT);//TODO REMOVE we dont have to clear shadow frusta only debug
 
 
   prg
@@ -151,4 +154,16 @@ void sintorn2::computeShadowFrusta(vars::Vars&vars){
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
   }
 
+  //std::vector<float>sfd;
+  //sf->getData(sfd);
+  //for(auto const&x:sfd)
+  //  std::cerr << x << std::endl;
+  ////auto ds = 16u;
+  ////for(size_t j=0;j<sfd.size()/ds;++j){
+  ////  for(size_t i=0;i<ds;++i){
+  ////    std::cerr << sfd[i*(sfd.size()/ds)+j] << " ";
+  ////  }
+  ////  std::cerr << std::endl;
+  ////}
+  //exit(0);
 }

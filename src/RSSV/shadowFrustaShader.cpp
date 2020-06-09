@@ -24,7 +24,7 @@ R".(
 #endif//SF_ALIGNMENT
 
 #ifndef BIAS
-#define BIAS 0.1f
+#define BIAS 1.0f
 #endif//BIAS
 
 #ifndef SF_INTERLEAVE

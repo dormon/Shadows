@@ -30,6 +30,7 @@ void createShadowFrustaProgram(vars::Vars&vars){
       ,"rssv.param.morePlanes"
       ,"rssv.param.ffc"
       );
+  std::cerr << "createShadowFrustaProgram" << std::endl;
 
   auto const wavefrontSize       = vars.getSizeT ("wavefrontSize"                    );
   auto const nofTriangles        = vars.getUint32("rssv.method.nofTriangles"     );
@@ -39,6 +40,7 @@ void createShadowFrustaProgram(vars::Vars&vars){
   auto const bias                = vars.getFloat ("rssv.param.bias"              );
   auto const sfInterleave        = vars.getBool  ("rssv.param.sfInterleave"      );
   auto const triangleInterleave  = vars.getBool  ("rssv.param.triangleInterleave");
+
   auto const morePlanes          = vars.getBool  ("rssv.param.morePlanes"        );
   auto const ffc                 = vars.getBool  ("rssv.param.ffc"               );
 
@@ -73,12 +75,13 @@ void allocateShadowFrusta(vars::Vars&vars){
   auto const triangleAlignment   = vars.getUint32("rssv.param.triangleAlignment");
   auto const sfAlignment         = vars.getUint32("rssv.param.sfAlignment"      );
   auto const triangleInterleave  = vars.getBool  ("rssv.param.triangleInterleave");
+
   auto const morePlanes          = vars.getBool  ("rssv.param.morePlanes"        );
 
   vector<float>vertices = vars.get<Model>("model")->getVertices();
   auto nofTriangles = (uint32_t)(vertices.size()/3/3);
   
-  uint32_t const planesPerSF = 4 + morePlanes*3;
+  uint32_t const planesPerSF = 4 + ((uint32_t)morePlanes)*3;
   uint32_t const floatsPerPlane = 4;
   uint32_t const floatsPerSF = floatsPerPlane * planesPerSF;
 
@@ -101,6 +104,10 @@ void allocateShadowFrusta(vars::Vars&vars){
 
   auto const aNofSF = align(nofTriangles,(uint32_t)sfAlignment);
   uint32_t const sfSize = sizeof(float)*floatsPerSF*aNofSF;
+
+  std::cerr << "sfSize: " << sfSize << std::endl;
+  std::cerr << "triData.size(): " << triData.size() << std::endl;
+  std::cerr << "nofTriangles: " << nofTriangles << std::endl;
 
   vars.reCreate<Buffer  >("rssv.method.shadowFrusta",sfSize      );
   vars.reCreate<Buffer  >("rssv.method.triangles"   ,triData     );
@@ -128,7 +135,7 @@ void rssv::computeShadowFrusta(vars::Vars&vars){
   triangles->bindBase(GL_SHADER_STORAGE_BUFFER,0);
   sf       ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
 
-  //sf->clear(GL_R32F,GL_RED,GL_FLOAT);//TODO REMOVE we dont have to clear shadow frusta only debug
+  sf->clear(GL_R32F,GL_RED,GL_FLOAT);//TODO REMOVE we dont have to clear shadow frusta only debug
 
   prg
     ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                    )
@@ -154,13 +161,15 @@ void rssv::computeShadowFrusta(vars::Vars&vars){
 
   //std::vector<float>sfd;
   //sf->getData(sfd);
-  //auto ds = 16u;
-  //for(size_t j=0;j<sfd.size()/ds;++j){
-  //  for(size_t i=0;i<ds;++i){
-  //    std::cerr << sfd[i*(sfd.size()/ds)+j] << " ";
-  //  }
-  //  std::cerr << std::endl;
-  //}
+  //for(auto const&x:sfd)
+  //  std::cerr << x << std::endl;
+  ////auto ds = 16u;
+  ////for(size_t j=0;j<sfd.size()/ds;++j){
+  ////  for(size_t i=0;i<ds;++i){
+  ////    std::cerr << sfd[i*(sfd.size()/ds)+j] << " ";
+  ////  }
+  ////  std::cerr << std::endl;
+  ////}
   //exit(0);
 
 

@@ -39,7 +39,6 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"wavefrontSize"
       ,"rssv.param.sfWGS"
       ,"rssv.param.bias"
-      ,"rssv.param.triangleInterleave"
       ,"rssv.param.noAABB"
       ,"rssv.param.storeTraverseSilhouettesStat"
       ,"rssv.param.storeEdgePlanes"
@@ -52,8 +51,10 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"adjacency"
       ,"rssv.param.sfAlignment"      
       ,"rssv.param.sfInterleave"     
+      ,"rssv.param.morePlanes"     
 
       );
+  std::cerr << "createTraverseSilhouettesProgram" << std::endl;
 
   auto const noAABB                       =  vars.getBool        ("rssv.param.noAABB"                      );
   auto const storeTraverseSilhouettesStat =  vars.getBool        ("rssv.param.storeTraverseSilhouettesStat");
@@ -70,6 +71,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
 
   auto const sfAlignment         =  vars.getUint32          ("rssv.param.sfAlignment"       );
   auto const sfInterleave        =  vars.getBool            ("rssv.param.sfInterleave"      );
+  auto const morePlanes          =  vars.getBool            ("rssv.param.morePlanes"        );
 
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
@@ -89,7 +91,8 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         Shader::define("NOF_EDGES"                     ,(uint32_t)nofEdges               ),
         Shader::define("NOF_TRIANGLES"                 ,(uint32_t)nofTriangles           ),
         Shader::define("SF_ALIGNMENT"                  ,(uint32_t)sfAlignment            ),
-        Shader::define("SF_INTERLEAVE"                 ,(int)     sfInterleave           )
+        Shader::define("SF_INTERLEAVE"                 ,(int)     sfInterleave           ),
+        Shader::define("MORE_PLANES"                   ,(int)     morePlanes             )
         ,rssv::demortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader
@@ -104,11 +107,11 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
 
 }
 
-void createTriangleBuffer(vars::Vars&vars){
-  FUNCTION_PROLOGUE("rssv.method","adjacency");
-  auto const adj = vars.get<Adjacency>("adjacency");
-  vars.reCreate<Buffer>("rssv.method.triangles",adj->getVertices());
-}
+//void createTriangleBuffer(vars::Vars&vars){
+//  FUNCTION_PROLOGUE("rssv.method","adjacency");
+//  auto const adj = vars.get<Adjacency>("adjacency");
+//  vars.reCreate<Buffer>("rssv.method.triangles",adj->getVertices());
+//}
 
 void createTraverseJobCounters(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method");
@@ -140,7 +143,7 @@ void traverseSilhouettes(vars::Vars&vars){
   createTraverseJobCounters(vars);
   createDebugSilhouetteTraverseBuffers(vars);
   createDebugEdgePlanesBuffer(vars);
-  createTriangleBuffer(vars);
+  //createTriangleBuffer(vars);
 
   auto prg        = vars.get<Program>("rssv.method.traverseSilhouettesProgram");
 
@@ -157,7 +160,8 @@ void traverseSilhouettes(vars::Vars&vars){
   auto computeBridges              = vars.getBool     ("rssv.param.computeBridges"             );
 
   //auto triangles                   = vars.get<Buffer >("rssv.method.triangles"                 );
-  auto shadowFrusta                = vars.get<Buffer >("rssv.method.shadowFrusta"              );
+  //auto shadowFrusta                = vars.get<Buffer >("rssv.method.shadowFrusta"              );
+  auto sf          = vars.get<Buffer >("rssv.method.shadowFrusta"    );
 
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
@@ -196,7 +200,8 @@ void traverseSilhouettes(vars::Vars&vars){
   }
 
   //prg->bindBuffer("Triangles",triangles);
-  prg->bindBuffer("ShadowFrusta",shadowFrusta);
+  //prg->bindBuffer("ShadowFrusta",shadowFrusta);
+  sf        ->bindBase(GL_SHADER_STORAGE_BUFFER,5);
 
   //prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
 

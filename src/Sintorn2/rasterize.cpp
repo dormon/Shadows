@@ -40,7 +40,6 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"sintorn2.param.sfAlignment"
       ,"sintorn2.param.bias"
       ,"sintorn2.param.sfInterleave"
-      ,"sintorn2.param.triangleInterleave"
       ,"sintorn2.param.minZBits"
       ,"sintorn2.param.tileX"   
       ,"sintorn2.param.tileY"   

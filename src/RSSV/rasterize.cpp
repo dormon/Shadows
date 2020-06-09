@@ -40,7 +40,6 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"rssv.param.sfAlignment"
       ,"rssv.param.bias"
       ,"rssv.param.sfInterleave"
-      ,"rssv.param.triangleInterleave"
       ,"rssv.param.minZBits"
       ,"rssv.param.tileX"   
       ,"rssv.param.tileY"   
