@@ -231,8 +231,6 @@ void compute(uvec2 coord,uvec2 coord2){
       uint selectedBit     = unpackUint2x32(notDone)[0]!=0?findLSB(unpackUint2x32(notDone)[0]):findLSB(unpackUint2x32(notDone)[1])+32u;
       uint referenceMorton = readInvocationARB(morton,selectedBit);
 
-      uint64_t sameCluster = ballotARB(referenceMorton == morton && activeThread != 0);
-
       if(gl_LocalInvocationIndex == 0){
 
         if(nofLevels>0){
@@ -252,6 +250,7 @@ void compute(uvec2 coord,uvec2 coord2){
 
       }
       
+      uint64_t sameCluster = ballotARB(referenceMorton == morton && activeThread != 0);
 
       reductionArray[gl_LocalInvocationIndex+WARP*0u] = -1.f + 2.f/float(WINDOW_X)*(coord.x+0.5f);
       reductionArray[gl_LocalInvocationIndex+WARP*1u] = -1.f + 2.f/float(WINDOW_Y)*(coord.y+0.5f);
