@@ -34,6 +34,7 @@ layout(std430,binding=0)buffer NodePool{
 
 layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
+layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
 
 
 layout(std430,binding=7)buffer DebugBuffer{uint debugBuffer[];};
@@ -246,6 +247,8 @@ void main(){
     if(THREAD_IN_WARP < floatsPerAABB)
       aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+THREAD_IN_WARP] = reductionArray[WARP_OFFSET+THREAD_IN_WARP];
 #endif
+    if(THREAD_IN_WARP == 0)
+      bridges[nodeLevelOffset[destLevel] + node] = 0;
 
     nodeUint ^= 1u << bit;
 
@@ -303,6 +306,7 @@ void main(){
     uint node = (activeNodeUint>>1u)*WARP + (activeNodeUint&1u)*halfWarp + bit;
 
     uint isActive = uint(nodePool[nodeLevelOffsetInUints[destLevel+1u]+node*uintsPerWarp + uint(THREAD_IN_WARP>31)] & uint(1u<<(uint(THREAD_IN_WARP)&0x1fu)));
+
 
     uint64_t activeThreads = ballotARB(isActive != 0);
     uint selectedBit       = unpackUint2x32(activeThreads)[0]!=0u?findLSB(unpackUint2x32(activeThreads)[0]):findLSB(unpackUint2x32(activeThreads)[1])+32u;
@@ -365,6 +369,9 @@ void main(){
 #endif
 
 #endif
+    if(THREAD_IN_WARP == 0)
+      bridges[nodeLevelOffset[destLevel] + node] = 0;
+
 
     nodeUint ^= 1u << bit;
 
@@ -377,6 +384,7 @@ void main(){
 
     uint bit  = (activeNodeUint>>1u)& warpMask;
     uint node = (activeNodeUint>>1u)>>warpBits;
+
 
     if(destLevel > 0){
       uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[destLevel-1]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));

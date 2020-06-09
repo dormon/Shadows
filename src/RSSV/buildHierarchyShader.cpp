@@ -58,6 +58,7 @@ layout(std430,binding=0)buffer Hierarchy{
 
 layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
+layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
 
 layout(binding=1)uniform sampler2DRect depthTexture;
 
@@ -130,6 +131,8 @@ void compute(uvec2 coord,uvec2 coord2){
       uint referenceMorton = readInvocationARB(morton[uint(selectedBit>31u)],selectedBit&uint(0x1fu));
 
       if(gl_LocalInvocationIndex == 0){
+        bridges[nodeLevelOffsetInUints[clamp(nofLevels-1u,0u,5u)] + (referenceMorton)] = 0;
+
         if(nofLevels>0){
           uint bit  = (referenceMorton >> (warpBits*0u)) & warpMask;
           uint node = (referenceMorton >> (warpBits*1u));
@@ -232,6 +235,7 @@ void compute(uvec2 coord,uvec2 coord2){
       uint referenceMorton = readInvocationARB(morton,selectedBit);
 
       if(gl_LocalInvocationIndex == 0){
+        bridges[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)] + (referenceMorton)] = 0;
 
         if(nofLevels>0){
           uint bit  = (referenceMorton >> (warpBits*0u)) & warpMask;

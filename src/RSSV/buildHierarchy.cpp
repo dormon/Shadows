@@ -102,10 +102,15 @@ void rssv::buildHierarchy(vars::Vars&vars){
 
   buildHier::useProgram(vars);
 
+
   buildHier::ifEnabledSetupDiscardBackfacing(vars);
 
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
   stencil   ->bindImage(2);
+  auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
+  bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
+
+
   buildHier::compute(vars);
 
   propagateAABB(vars);

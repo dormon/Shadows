@@ -39,6 +39,8 @@ void rssv::propagateAABB(vars::Vars&vars){
   debugBuffer->bindBase(GL_SHADER_STORAGE_BUFFER,7);
 #endif
 
+  auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
+  bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
 
   for(int32_t level=cfg.nofLevels-2;level>=0;--level){
     prg->set1ui("destLevel",level);

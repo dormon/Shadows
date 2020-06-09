@@ -191,7 +191,7 @@ void main(){
 
   mat4 nodeProjView = inverse(nodeView)*inverse(nodeProj);
 
-  int mult = bridges[nodeLevelOffsetInUints[levelToDraw] + gId];
+  int mult = bridges[nodeLevelOffset[levelToDraw] + gId];
 
   vec4 bridgeStart;
   vec4 bridgeEnd  ;

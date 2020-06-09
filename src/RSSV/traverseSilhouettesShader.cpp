@@ -523,7 +523,7 @@ void computeBridgeSilhouetteIntersection(in vec3 minCorner,in vec3 aabbSize,int 
   }
 
   mult = computeBridgeSilhouetteMultiplicity(bridgeStart,bridgeEnd);
-  if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
+  if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
 #endif
 }
 
@@ -1189,7 +1189,7 @@ void computeBridgeSilhouetteIntersection(in vec3 minCorner,in vec3 aabbSize,int 
   }
 
   mult = computeBridgeSilhouetteMultiplicity(bridgeStart,bridgeEnd);
-  if(mult!=0)atomicAdd(bridges[nodeLevelOffsetInUints[level] + node*WARP + gl_LocalInvocationIndex],mult);
+  if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
 #endif
 }
 

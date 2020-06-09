@@ -1,5 +1,3 @@
-clear bridges in propage
-why propagate build level 2x
 triangle vs aabb
  - debug speed
  - shadow frusta outside
@@ -7,3 +5,4 @@ triangle vs bridges
 merge kernel
 nvidia?
 napsat o preusporadani vypoctu pri minimalizaci tak aby to bylo bez divergence
+napsat o clearingu bridges and stencil v buildu
