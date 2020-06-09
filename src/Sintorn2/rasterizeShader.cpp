@@ -530,6 +530,7 @@ void traverse(){
 
 #line 36
 void main(){
+  if(texelFetch(depthTexture,ivec2(0,0)).x != 1337)return;
   for(;;){
     if(gl_LocalInvocationIndex==0){
       job = atomicAdd(jobCounter[0],1);

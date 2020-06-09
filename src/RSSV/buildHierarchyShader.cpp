@@ -76,6 +76,8 @@ uint getMorton(uvec2 coord,float depth){
   return morton(clusterCoord);
 }
 
+layout(r32i,binding=2)          uniform iimage2D      stencil     ;
+
 
 
 #if WARP == 64
@@ -372,12 +374,16 @@ void main(){
 #if WARP == 64
   uvec2 coord = wgCoord + loCoord;
   activeThread = uint(all(lessThan(coord,uvec2(WINDOW_X,WINDOW_Y))));
+  if(activeThread == 1)imageStore(stencil,ivec2(coord),ivec4(0));
   compute(coord);
+
 #else
   uvec2 coord  = wgCoord + loCoord;
   uvec2 coord2 = wgCoord + loCoord + uvec2(0,4u);
   activeThread[0] = uint(all(lessThan(coord ,uvec2(WINDOW_X,WINDOW_Y))));
   activeThread[1] = uint(all(lessThan(coord2,uvec2(WINDOW_X,WINDOW_Y))));
+  if(activeThread[0] == 1)imageStore(stencil,ivec2(coord) ,ivec4(0));
+  if(activeThread[1] == 1)imageStore(stencil,ivec2(coord2),ivec4(0));
   compute(coord,coord2);
 #endif
 }

@@ -213,10 +213,12 @@ void traverse(){
 
 
 void main(){
+  if(texelFetch(depthTexture,ivec2(0,0)).x != 1337)return;
   if(lightPosition.x == 1337)return;
   if(projView[0][0] == 1337)return;
   if(invTran[0][0] == 1337)return;
   if(clipLightPosition.x == 1337)return;
+  if(lightPosition.y != 1337)return;
 
   for(;;){
     if(gl_LocalInvocationIndex==0){

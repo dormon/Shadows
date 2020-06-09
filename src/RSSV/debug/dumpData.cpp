@@ -23,17 +23,10 @@ namespace rssv::debug{
 
 void dumpNodePool(vars::Vars&vars){
   FUNCTION_CALLER();
-  auto const mergedBuffers =  vars.getInt32("rssv.param.mergedBuffers");
   auto const cfg           = *vars.get<Config>("rssv.method.debug.dump.config");
-  if(mergedBuffers){
-    auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
-    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.nodePool",cfg.nodeBufferSize);
-    ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.nodeBufferOffsetInHierarchy,0,buf->getSize());
-  }else{
-    auto nodePool = vars.get<Buffer>("rssv.method.nodePool");
-    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.nodePool",nodePool->getSize());
-    buf->copy(*nodePool);
-  }
+  auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
+  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.nodePool",cfg.nodeBufferSize);
+  ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.nodeBufferOffsetInHierarchy,0,buf->getSize());
 }
 
 void dumpAABBPointer(vars::Vars&vars){
@@ -41,16 +34,9 @@ void dumpAABBPointer(vars::Vars&vars){
   auto const cfg           = *vars.get<Config>("rssv.method.debug.dump.config");
   if(!cfg.memoryOptim)return;
 
-  auto const mergedBuffers =  vars.getInt32("rssv.param.mergedBuffers");
-  if(mergedBuffers){
-    auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
-    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPointer",cfg.aabbPointerBufferSize);
-    ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.aabbPointerBufferOffsetInHierarchy,0,buf->getSize());
-  }else{
-    auto toBackup = vars.get<Buffer>("rssv.method.aabbPointer");
-    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPointer",toBackup->getSize());
-    buf->copy(*toBackup);
-  }
+  auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
+  auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPointer",cfg.aabbPointerBufferSize);
+  ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.aabbPointerBufferOffsetInHierarchy,0,buf->getSize());
 }
 
 void dumpBridges(vars::Vars&vars){
@@ -67,18 +53,11 @@ void dumpBridges(vars::Vars&vars){
 
 void dumpAABBPool(vars::Vars&vars){
   FUNCTION_CALLER();
-  auto const mergedBuffers =  vars.getInt32   ("rssv.param.mergedBuffers");
   auto const cfg           = *vars.get<Config>("rssv.method.debug.dump.config");
 
-  if(mergedBuffers){
     auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
     auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPool",cfg.aabbBufferSize);
     ge::gl::glCopyNamedBufferSubData(hierarchy->getId(),buf->getId(),cfg.aabbBufferOffsetInHierarchy,0,buf->getSize());
-  }else{
-    auto aabbPool = vars.get<Buffer>("rssv.method.aabbPool");
-    auto buf = vars.reCreate<Buffer>("rssv.method.debug.dump.aabbPool",aabbPool->getSize());
-    buf->copy(*aabbPool);
-  }
 }
 
 void dumpSF(vars::Vars&vars){

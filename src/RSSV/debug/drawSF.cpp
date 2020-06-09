@@ -36,8 +36,8 @@ void prepareDrawSF(vars::Vars&vars){
       ,"rssv.param.ffc"
       );
 
-  auto const cfg            = *vars.get<Config>        ("rssv.method.debug.dump.config"    );
-  auto const ffc                 = vars.getInt32 ("rssv.param.ffc"               );
+  auto const cfg = *vars.get<Config>("rssv.method.debug.dump.config");
+  auto const ffc =  vars.getBool    ("rssv.param.ffc"               );
 
 
   std::string const vsSrc = R".(
@@ -344,9 +344,9 @@ void main(){
   ).";
 
   auto const sfAlignment         = vars.getUint32("rssv.param.sfAlignment"       );
-  auto const sfInterleave        = vars.getInt32 ("rssv.param.sfInterleave"      );
+  auto const sfInterleave        = vars.getBool  ("rssv.param.sfInterleave"      );
   auto const nofTriangles        = vars.getUint32("rssv.method.nofTriangles"      );
-  auto const morePlanes          = vars.getInt32 ("rssv.param.morePlanes"        );
+  auto const morePlanes          = vars.getBool  ("rssv.param.morePlanes"        );
 
   auto vs = make_shared<Shader>(GL_VERTEX_SHADER,vsSrc);
   auto gs = make_shared<Shader>(GL_GEOMETRY_SHADER,
