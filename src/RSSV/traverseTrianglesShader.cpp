@@ -82,6 +82,7 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
 
 
 #if EXACT_TRIANGLE_AABB == 1
+    if(doesSubFrustumDiagonalIntersectTriangle(minCorner,minCorner+size,tri_A,tri_B,tri_C,tri_trianglePlane))return INTERSECTS;
     if(doesLineInterectSubFrustum(tri_A,tri_B,minCorner,minCorner+size))return INTERSECTS;
     if(doesLineInterectSubFrustum(tri_B,tri_C,minCorner,minCorner+size))return INTERSECTS;
     if(doesLineInterectSubFrustum(tri_C,tri_A,minCorner,minCorner+size))return INTERSECTS;
