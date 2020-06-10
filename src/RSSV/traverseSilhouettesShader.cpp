@@ -973,6 +973,13 @@ void main(){
 
 //traverse triangles
 #if 1
+std::string const rssv::traverseTrianglesFWD = R".(
+void traverseTriangleJOB();
+#if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < 7*4+1
+#undef SHARED_MEMORY_SIZE
+#define SHARED_MEMORY_SIZE 7*4+1
+#endif
+).";
 std::string const rssv::traverseTriangles = R".(
 const uint alignedNofSF        = (uint(NOF_TRIANGLES /       SF_ALIGNMENT) + uint((NOF_TRIANGLES %       SF_ALIGNMENT) != 0u)) *       SF_ALIGNMENT;
 
@@ -1176,9 +1183,6 @@ void traverseTriangleJOB(){
 }
 ).";
 
-std::string const rssv::traverseTrianglesFWD = R".(
-void traverseTriangleJOB();
-).";
 #endif
 
 
