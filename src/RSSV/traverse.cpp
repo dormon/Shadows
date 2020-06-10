@@ -20,6 +20,7 @@
 #include <RSSV/collisionShader.h>
 #include <RSSV/getEdgePlanesShader.h>
 #include <RSSV/traverseSilhouettesShader.h>
+#include <RSSV/traverseTrianglesShader.h>
 #include <RSSV/traverseShader.h>
 #include <RSSV/getAABBShader.h>
 #include <RSSV/loadEdgeShader.h>
@@ -55,6 +56,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"rssv.param.morePlanes"     
       ,"rssv.param.exactTriangleAABB"
       ,"rssv.param.performTraverseSilhouettes"
+      ,"rssv.param.performTraverseTriangles"
 
       );
   std::cerr << "createTraverseSilhouettesProgram" << std::endl;
@@ -74,6 +76,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const morePlanes                   =  vars.getBool        ("rssv.param.morePlanes"                  );
   auto const exactTriangleAABB            =  vars.getBool        ("rssv.param.exactTriangleAABB"           );
   auto const performTraverseSilhouettes   =  vars.getBool        ("rssv.param.performTraverseSilhouettes"  );
+  auto const performTraverseTriangles     =  vars.getBool        ("rssv.param.performTraverseTriangles"    );
 
   auto const nofEdges                     =  adj->getNofEdges();
   auto const nofTriangles                 =  adj->getNofTriangles();
@@ -99,6 +102,7 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         ,Shader::define("MORE_PLANES"                   ,(int     )morePlanes                  )
         ,Shader::define("EXACT_TRIANGLE_AABB"           ,(int     )exactTriangleAABB           )
         ,Shader::define("PERFORM_TRAVERSE_SILHOUETTES"  ,(int     )performTraverseSilhouettes  )
+        ,Shader::define("PERFORM_TRAVERSE_TRIANGLES"    ,(int     )performTraverseTriangles    )
 
         ,rssv::demortonShader
         ,rssv::depthToZShader
@@ -108,7 +112,9 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         ,rssv::loadEdgeShaderFWD
         ,rssv::getEdgePlanesShader
         ,rssv::traverseSilhouettesFWD
-        ,rssv::traverseMain//,rssv::traverseSilhouettesShader
+        ,rssv::traverseTrianglesFWD
+        ,rssv::traverseMain
+        ,rssv::traverseTriangles
         ,rssv::traverseSilhouettes
         ,rssv::getAABBShader
         ,rssv::loadEdgeShader
@@ -167,11 +173,9 @@ void traverse(vars::Vars&vars){
   auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
   auto computeBridges              = vars.getBool     ("rssv.param.computeBridges"             );
-  auto const performTraverseSilhouettes   =  vars.getBool        ("rssv.param.performTraverseSilhouettes"  );
 
-  //auto triangles                   = vars.get<Buffer >("rssv.method.triangles"                 );
-  //auto shadowFrusta                = vars.get<Buffer >("rssv.method.shadowFrusta"              );
-  auto sf          = vars.get<Buffer >("rssv.method.shadowFrusta"    );
+  auto const performTraverseSilhouettes =  vars.getBool        ("rssv.param.performTraverseSilhouettes");
+  auto const performTraverseTriangles   =  vars.getBool        ("rssv.param.performTraverseTriangles"  );
 
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
@@ -203,28 +207,33 @@ void traverse(vars::Vars&vars){
       prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
       prg->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
     }
+    //prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
+    
+    auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
+    if(storeTraverseStat){
+      glFinish();
+      auto debug = vars.get<Buffer>("rssv.method.debug.traverseSilhouettesBuffer");
+      glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+      debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+    }
+
+    auto const storeEdgePlanes = vars.getBool("rssv.param.storeEdgePlanes");
+    if(storeEdgePlanes){
+      glFinish();
+      auto debug = vars.get<Buffer>("rssv.method.debug.edgePlanes");
+      glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+      debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+    }
   }
 
 
-  sf->bindBase(GL_SHADER_STORAGE_BUFFER,5);
-
-  //prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
-
-  auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
-  if(storeTraverseStat){
-    glFinish();
-    auto debug = vars.get<Buffer>("rssv.method.debug.traverseSilhouettesBuffer");
-    glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
-    debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+  if(performTraverseTriangles){
+    auto sf = vars.get<Buffer >("rssv.method.shadowFrusta"    );
+    sf->bindBase(GL_SHADER_STORAGE_BUFFER,5);
   }
 
-  auto const storeEdgePlanes = vars.getBool("rssv.param.storeEdgePlanes");
-  if(storeEdgePlanes){
-    glFinish();
-    auto debug = vars.get<Buffer>("rssv.method.debug.edgePlanes");
-    glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
-    debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
-  }
+
+
 
 
 

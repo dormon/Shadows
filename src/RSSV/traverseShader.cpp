@@ -89,6 +89,7 @@ shared uint64_t intersection[nofLevels];
 
 void main(){
   traverseSilhouetteJOB();
+  traverseTriangleJOB();
 }
 
 
