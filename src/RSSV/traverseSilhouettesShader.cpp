@@ -971,8 +971,215 @@ void main(){
 
 
 
+//traverse triangles
+#if 1
+std::string const rssv::traverseTriangles = R".(
+const uint alignedNofSF        = (uint(NOF_TRIANGLES /       SF_ALIGNMENT) + uint((NOF_TRIANGLES %       SF_ALIGNMENT) != 0u)) *       SF_ALIGNMENT;
 
+shared float shadowFrustaPlanes[floatsPerSF];
 
+#define tri_trianglePlane sharedVec4[0]
+#define tri_abPlane       sharedVec4[1]
+#define tri_bcPlane       sharedVec4[2]
+#define tri_caPlane       sharedVec4[3]
+
+void loadTriangle(uint job){
+  if(gl_LocalInvocationIndex < floatsPerSF){
+#if SF_INTERLEAVE == 1
+    shadowFrustaPlanes[gl_LocalInvocationIndex] = shadowFrusta[alignedNofSF*gl_LocalInvocationIndex + job];
+#else
+    shadowFrustaPlanes[gl_LocalInvocationIndex] = shadowFrusta[job*floatsPerSF+gl_LocalInvocationIndex];
+#endif
+  }
+#if WARP == 32
+  memoryBarrierShared();
+#endif
+}
+
+uint trivialRejectAccept(vec3 minCorner,vec3 size){
+  uint status = TRIVIAL_ACCEPT;
+  vec4 plane;
+  vec3 tr;
+  //if(minCorner.x != 1337)return TRIVIAL_REJECT;
+
+  plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
+  tr    = trivialRejectCorner3D(plane.xyz);
+  if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+    return TRIVIAL_REJECT;
+  tr = vec3(1.f)-tr;
+  status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
+
+  plane = vec4(shadowFrustaPlanes[4],shadowFrustaPlanes[5],shadowFrustaPlanes[6],shadowFrustaPlanes[7]);
+  tr    = trivialRejectCorner3D(plane.xyz);
+  if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+    return TRIVIAL_REJECT;
+  tr = vec3(1.f)-tr;
+  status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
+
+  plane = vec4(shadowFrustaPlanes[8],shadowFrustaPlanes[9],shadowFrustaPlanes[10],shadowFrustaPlanes[11]);
+  tr    = trivialRejectCorner3D(plane.xyz);
+  if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+    return TRIVIAL_REJECT;
+  tr = vec3(1.f)-tr;
+  status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
+
+  plane = vec4(shadowFrustaPlanes[12],shadowFrustaPlanes[13],shadowFrustaPlanes[14],shadowFrustaPlanes[15]);
+  tr    = trivialRejectCorner3D(plane.xyz);
+  if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+    return TRIVIAL_REJECT;
+  tr = vec3(1.f)-tr;
+  status &= 2u+uint(dot(vec4(minCorner + tr*size,1.f),plane)>0.f);
+
+  return status;
+}
+
+//void computeAABBTriangleIntersection(out uint status,in vec3 minCorner,in vec3 aabbSize){
+//  status = TRIVIAL_REJECT;
+//
+//  vec3 tr;
+//
+//  //if(tri_trianglePlane.x != 1337)return;
+//  //if(tri_abPlane.x != 1337)return;
+//  //if(tri_bcPlane.x != 1337)return;
+//  //if(tri_caPlane.x != 1337)return;
+//
+//  /*
+//  tr = trivialRejectCorner3D(tri_trianglePlane.xyz);
+//  if(dot(tri_trianglePlane,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+//
+//  tr = 1.f-tr;
+//  if(dot(tri_trianglePlane,vec4(minCorner + (tr)*(aabbSize),1.f))>0.f)return;
+//
+//  tr = trivialRejectCorner3D(tri_abPlane.xyz);
+//  if(dot(tri_abPlane      ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+//
+//  tr = trivialRejectCorner3D(tri_bcPlane.xyz);
+//  if(dot(tri_bcPlane      ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+//
+//  tr = trivialRejectCorner3D(tri_caPlane.xyz);
+//  if(dot(tri_caPlane      ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+//  */
+//
+//  //if(tri_caPlane.w == 1337)return;
+//  vec4 plane;
+//  plane = tri_abPlane;
+//  tr    = trivialRejectCorner3D(plane.xyz);
+//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))<0.f)return;
+//
+//  plane = tri_bcPlane;
+//  tr    = trivialRejectCorner3D(plane.xyz);
+//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))<0.f)return;
+//
+//  plane = tri_caPlane;
+//  tr    = trivialRejectCorner3D(plane.xyz);
+//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))<0.f)return;
+//
+//  plane = tri_trianglePlane;
+//  tr    = trivialRejectCorner3D(plane.xyz);
+//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))<0.f)return;
+//
+//  tr    = 1.f - tr;
+//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))>0.f)return;
+//
+//  status = INTERSECTS;
+//}
+
+void traverseTriangle(){
+  int level = 0;
+
+  uint64_t currentIntersection;
+
+  uint node = 0;
+  while(level >= 0){
+    if(level == int(nofLevels)){
+
+      //debug_storeSilhouetteTraverseStatLastLevel();
+
+      //lastLevelTriangles(node);
+
+      node >>= warpBits;
+      level--;
+    }else{
+      uint status = uint(nodePool[nodeLevelOffsetInUints[level] + node*uintsPerWarp + uint(gl_LocalInvocationIndex>31u)]&uint(1u<<(gl_LocalInvocationIndex&0x1fu)));
+      if(status != 0u){
+
+        if(level >  int(nofLevels))return;
+
+        vec3 minCorner;
+        vec3 aabbSize;
+        getAABB(minCorner,aabbSize,level,(node<<warpBits)+gl_LocalInvocationIndex);
+        aabbSize -= minCorner;
+
+        //computeBridgeSilhouetteIntersection(minCorner,aabbSize,level,node);
+
+        //computeAABBTriangleIntersection(status,minCorner,aabbSize);
+        status = trivialRejectAccept(minCorner,aabbSize);
+        if(status != INTERSECTS)status = TRIVIAL_REJECT;
+
+        //if(gl_LocalInvocationIndex > 31)status = TRIVIAL_REJECT;
+        //computeAABBSilhouetteIntersection(status,minCorner,aabbSize);
+        //status == 0u;//TODO REMOVE
+
+      }
+
+      //debug_storeSilhouetteTraverseStat();
+
+      currentIntersection = ballotARB(status == INTERSECTS    );
+      if(gl_LocalInvocationIndex==0)
+        intersection[level] = currentIntersection;
+
+    }
+
+    while(level >= 0 && currentIntersection == 0ul){
+      node >>= warpBits;
+      level--;
+      if(level < 0)break;
+      currentIntersection = intersection[level];
+    }
+
+    if(level < 0)break;
+    if(level>=0){
+
+      uint selectedBit = unpackUint2x32(currentIntersection)[0]!=0?findLSB(unpackUint2x32(currentIntersection)[0]):findLSB(unpackUint2x32(currentIntersection)[1])+32u;
+
+      node <<= warpBits   ;
+      node  += selectedBit;
+
+      uint64_t mask = 1ul;
+      mask <<= selectedBit;
+
+      currentIntersection ^= mask;
+      if(gl_LocalInvocationIndex==0)
+        intersection[level] = currentIntersection;
+
+      level++;
+    }
+  }
+}
+
+void traverseTriangleJOB(){
+#if PERFORM_TRAVERSE_TRIANGLES == 1
+  uint job = 0u;
+  //triangle loop
+  for(;;){
+  
+    if(gl_LocalInvocationIndex==0)
+      job = atomicAdd(triangleJobCounter,1);
+
+    job = readFirstInvocationARB(job);
+    if(job >= NOF_TRIANGLES)break;
+
+    loadTriangle(job);
+    traverseTriangle();
+  }
+#endif
+}
+).";
+
+std::string const rssv::traverseTrianglesFWD = R".(
+void traverseTriangleJOB();
+).";
+#endif
 
 
 
@@ -991,17 +1198,32 @@ void main(){
 
 //traverse silhouette
 #if 1
+std::string const rssv::traverseSilFWD = R".(
+void traverseSilhouetteJOB();
+#if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < 7*4+1
+#undef SHARED_MEMORY_SIZE
+#define SHARED_MEMORY_SIZE 7*4+1
+#endif
+).";
 std::string const extern rssv::traverseSil = R".(
 
-shared int  edgeMult;
+#define edgePlaneO      (0*4)
+#define aPlaneO         (1*4)
+#define bPlaneO         (2*4)
+#define abPlaneO        (3*4)
+#define edgeAClipSpaceO (4*4)
+#define edgeBClipSpaceO (5*4)
+#define lightClipSpaceO (6*4)
+#define edgeMultO       (7*4)
 
-#define edgePlane      sharedVec4[0]
-#define aPlane         sharedVec4[1]
-#define bPlane         sharedVec4[2]
-#define abPlane        sharedVec4[3]
-#define edgeAClipSpace sharedVec4[4]
-#define edgeBClipSpace sharedVec4[5]
-#define lightClipSpace sharedVec4[6]
+#define edgePlane      getShared4f(edgePlaneO     )
+#define aPlane         getShared4f(aPlaneO        )
+#define bPlane         getShared4f(bPlaneO        )
+#define abPlane        getShared4f(abPlaneO       )
+#define edgeAClipSpace getShared4f(edgeAClipSpaceO)
+#define edgeBClipSpace getShared4f(edgeBClipSpaceO)
+#define lightClipSpace getShared4f(lightClipSpaceO)
+#define edgeMult       getShared1i(edgeMultO      )
 
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){
@@ -1014,21 +1236,21 @@ void loadSilhouette(uint job){
     loadEdge(edgeA,edgeB,edge);
 
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
-    edgePlane = invTran*vec4(n,-dot(n,edgeA));
+    toShared(edgePlaneO,invTran*vec4(n  ,-dot(n  ,edgeA)));
 
     vec3 an = normalize(cross(n,edgeA-lightPosition.xyz));
-    aPlane = invTran*vec4(an,-dot(an,edgeA));
+    toShared(aPlaneO   ,invTran*vec4(an ,-dot(an ,edgeA)));
 
     vec3 bn = normalize(cross(edgeB-lightPosition.xyz,n));
-    bPlane = invTran*vec4(bn,-dot(bn,edgeB));
+    toShared(bPlaneO   ,invTran*vec4(bn ,-dot(bn ,edgeB)));
 
     vec3 abn = normalize(cross(edgeB-edgeA,n));
-    abPlane = invTran*vec4(abn,-dot(abn,edgeA));
+    toShared(abPlaneO  ,invTran*vec4(abn,-dot(abn,edgeA)));
 
 #if COMPUTE_BRIDGES == 1
-    edgeAClipSpace = projView*vec4(edgeA,1.f);
-    edgeBClipSpace = projView*vec4(edgeB,1.f);
-    lightClipSpace = clipLightPosition;
+    toShared(edgeAClipSpaceO,projView*vec4(edgeA,1.f));
+    toShared(edgeBClipSpaceO,projView*vec4(edgeB,1.f));
+    toShared(lightClipSpaceO,clipLightPosition       );
 #endif
 
 #if STORE_EDGE_PLANES == 1
@@ -1062,7 +1284,7 @@ void loadSilhouette(uint job){
 #endif
     
 
-    edgeMult = mult;
+    toShared(edgeMultO,mult);
   }
   memoryBarrierShared();
 }
@@ -1273,6 +1495,7 @@ void traverseSilhouette(uint job){
 //uniform int selectedEdge = -1;
 void traverseSilhouetteJOB(){
 #if PERFORM_TRAVERSE_SILHOUETTES == 1
+  uint job = 0u;
   //silhouette loop
   for(;;){
     if(gl_LocalInvocationIndex==0)
@@ -1292,9 +1515,6 @@ void traverseSilhouetteJOB(){
 
 ).";
 
-std::string const rssv::traverseSilFWD = R".(
-void traverseSilhouetteJOB();
-).";
 #endif
 
 
@@ -1343,7 +1563,36 @@ uniform mat4 invTran;
 uniform mat4 projView;
 
 
-shared vec4 sharedVec4[7];
+#if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < 0
+#undef SHARED_MEMORY_SIZE
+#define SHARED_MEMORY_SIZE 0
+#endif
+
+#if (SHARED_MEMORY_SIZE) != 0
+
+shared float sharedMemory[(SHARED_MEMORY_SIZE)];
+
+void toShared(in uint offset,in int value){
+  sharedMemory[offset] = intBitsToFloat(value);
+}
+
+int getShared1i(in uint offset){
+  return floatBitsToInt(sharedMemory[offset]);
+}
+
+void toShared(in uint offset,in vec4 value){
+  sharedMemory[offset+0] = value[0];
+  sharedMemory[offset+1] = value[1];
+  sharedMemory[offset+2] = value[2];
+  sharedMemory[offset+3] = value[3];
+}
+
+vec4 getShared4f(in uint offset){
+  return vec4(sharedMemory[offset+0],sharedMemory[offset+1],sharedMemory[offset+2],sharedMemory[offset+3]);
+}
+
+#endif
+
 
 #if (STORE_EDGE_PLANES == 1) || (STORE_TRAVERSE_STAT == 1)
 layout(std430,binding = 7)buffer Debug{uint debug[];};
@@ -1353,7 +1602,6 @@ vec3 trivialRejectCorner3D(vec3 Normal){
   return vec3((ivec3(sign(Normal))+1)>>1);
 }
 
-uint job = 0u;
 
 #if WARP == 64
 
