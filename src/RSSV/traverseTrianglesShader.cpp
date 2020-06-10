@@ -3,32 +3,70 @@
 std::string const rssv::traverseTrianglesFWD = R".(
 void traverseTriangleJOB();
 
-const uint planesPerSF = 4u + MORE_PLANES*3u + EXACT_TRIANGLE_AABB*3u;
-const uint floatsPerPlane = 4u;
-const uint floatsPerSF = planesPerSF * floatsPerPlane;
+#define PLANES_PER_SF    (4u + MORE_PLANES*3u + EXACT_TRIANGLE_AABB*3u)
+#define FLOATS_PER_PLANE 4u
+#define FLOATS_PER_SF    PLANES_PER_SF * FLOATS_PER_PLANE
+const uint floatsPerSF = FLOATS_PER_SF;
 
-#if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < floatsPerSF
+#if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < FLOATS_PER_SF
 #undef SHARED_MEMORY_SIZE
-#define SHARED_MEMORY_SIZE floatsPerSF
+#define SHARED_MEMORY_SIZE FLOATS_PER_SF
 #endif
 ).";
 
 std::string const rssv::traverseTriangles = R".(
 const uint alignedNofSF        = (uint(NOF_TRIANGLES /       SF_ALIGNMENT) + uint((NOF_TRIANGLES %       SF_ALIGNMENT) != 0u)) *       SF_ALIGNMENT;
 
-shared float shadowFrustaPlanes[floatsPerSF];
 
-#define tri_trianglePlane sharedVec4[0]
-#define tri_abPlane       sharedVec4[1]
-#define tri_bcPlane       sharedVec4[2]
-#define tri_caPlane       sharedVec4[3]
+#define tri_abPlaneO       (0*4)
+#define tri_bcPlaneO       (1*4)
+#define tri_caPlaneO       (2*4)
+#define tri_trianglePlaneO (3*4)
+
+#if MORE_PLANES == 1
+  #define tri_addPlane0O     (4*4)
+  #define tri_addPlane1O     (5*4)
+  #define tri_addPlane2O     (6*4)
+#endif
+
+#if MORE_PLANES == 1 && EXACT_TRIANGLE_AABB == 1
+  #define tri_AO             (7*4)
+  #define tri_BO             (8*4)
+  #define tri_CO             (9*4)
+#endif
+
+#if MORE_PLANES == 0 && EXACT_TRIANGLE_AABB == 1
+  #define tri_AO             (4*4)
+  #define tri_BO             (5*4)
+  #define tri_CO             (6*4)
+#endif
+
+
+#define tri_abPlane       getShared4f(tri_abPlaneO      )
+#define tri_bcPlane       getShared4f(tri_bcPlaneO      )
+#define tri_caPlane       getShared4f(tri_caPlaneO      )
+#define tri_trianglePlane getShared4f(tri_trianglePlaneO)
+
+#if MORE_PLANES == 1
+#define tri_addPlane0    getShared4f(tri_addPlane0O)
+#define tri_addPlane1    getShared4f(tri_addPlane1O)
+#define tri_addPlane2    getShared4f(tri_addPlane2O)
+#endif
+
+#if EXACT_TRIANGLE_AABB == 1
+#define tri_A            getShared4f(tri_AO)
+#define tri_B            getShared4f(tri_BO)
+#define tri_C            getShared4f(tri_CO)
+#endif
+
+#define shadowFrustaPlanes sharedMemory
 
 void loadTriangle(uint job){
   if(gl_LocalInvocationIndex < floatsPerSF){
 #if SF_INTERLEAVE == 1
-    shadowFrustaPlanes[gl_LocalInvocationIndex] = shadowFrusta[alignedNofSF*gl_LocalInvocationIndex + job];
+    toShared1f(gl_LocalInvocationIndex,shadowFrusta[alignedNofSF*gl_LocalInvocationIndex + job]);
 #else
-    shadowFrustaPlanes[gl_LocalInvocationIndex] = shadowFrusta[job*floatsPerSF+gl_LocalInvocationIndex];
+    toShared1f(gl_LocalInvocationIndex,shadowFrusta[job*floatsPerSF+gl_LocalInvocationIndex]);
 #endif
   }
 #if WARP == 32
@@ -43,42 +81,36 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   //if(minCorner.x != 1337)return TRIVIAL_REJECT;
 
 
-#if ((EXACT_TRIANGLE_AABB == 1) && (MORE_PLANES == 1))
-    vec4 A;
-    vec4 B;
-    A = vec4(shadowFrustaPlanes[28+0],shadowFrustaPlanes[28+1],shadowFrustaPlanes[28+2],shadowFrustaPlanes[28+3]);
-    B = vec4(shadowFrustaPlanes[32+0],shadowFrustaPlanes[32+1],shadowFrustaPlanes[32+2],shadowFrustaPlanes[32+3]);
-    if(doesLineInterectSubFrustum(A,B,minCorner,minCorner+size))return INTERSECTS;
-    A = vec4(shadowFrustaPlanes[36+0],shadowFrustaPlanes[36+1],shadowFrustaPlanes[36+2],shadowFrustaPlanes[36+3]);
-    if(doesLineInterectSubFrustum(B,A,minCorner,minCorner+size))return INTERSECTS;
-    B = vec4(shadowFrustaPlanes[28+0],shadowFrustaPlanes[28+1],shadowFrustaPlanes[28+2],shadowFrustaPlanes[28+3]);
-    if(doesLineInterectSubFrustum(A,B,minCorner,minCorner+size))return INTERSECTS;
+#if EXACT_TRIANGLE_AABB == 1
+    if(doesLineInterectSubFrustum(tri_A,tri_B,minCorner,minCorner+size))return INTERSECTS;
+    if(doesLineInterectSubFrustum(tri_B,tri_C,minCorner,minCorner+size))return INTERSECTS;
+    if(doesLineInterectSubFrustum(tri_C,tri_A,minCorner,minCorner+size))return INTERSECTS;
     return TRIVIAL_REJECT;
 #endif
 
 
-  plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
+  plane = tri_abPlane;
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = vec3(1.f)-tr;
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
 
-  plane = vec4(shadowFrustaPlanes[4],shadowFrustaPlanes[5],shadowFrustaPlanes[6],shadowFrustaPlanes[7]);
+  plane = tri_bcPlane;
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = vec3(1.f)-tr;
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
 
-  plane = vec4(shadowFrustaPlanes[8],shadowFrustaPlanes[9],shadowFrustaPlanes[10],shadowFrustaPlanes[11]);
+  plane = tri_caPlane;
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = vec3(1.f)-tr;
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
 
-  plane = vec4(shadowFrustaPlanes[12],shadowFrustaPlanes[13],shadowFrustaPlanes[14],shadowFrustaPlanes[15]);
+  plane = tri_trianglePlane;
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
@@ -90,17 +122,17 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
 
 #if MORE_PLANES == 1
   if(status == INTERSECTS){
-    plane = vec4(shadowFrustaPlanes[16],shadowFrustaPlanes[17],shadowFrustaPlanes[18],shadowFrustaPlanes[19]);
+    plane = tri_addPlane0;
     tr    = trivialRejectCorner3D(plane.xyz);
     if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
       return TRIVIAL_REJECT;
 
-    plane = vec4(shadowFrustaPlanes[20],shadowFrustaPlanes[21],shadowFrustaPlanes[22],shadowFrustaPlanes[23]);
+    plane = tri_addPlane1;
     tr    = trivialRejectCorner3D(plane.xyz);
     if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
       return TRIVIAL_REJECT;
 
-    plane = vec4(shadowFrustaPlanes[24],shadowFrustaPlanes[25],shadowFrustaPlanes[26],shadowFrustaPlanes[27]);
+    plane = tri_addPlane2;
     tr    = trivialRejectCorner3D(plane.xyz);
     if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
       return TRIVIAL_REJECT;
@@ -111,94 +143,6 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
 
   return status;
 }
-
-//uint trivialRejectAccept(vec3 minCorner,vec3 size){
-//  uint status = TRIVIAL_ACCEPT;
-//  vec4 plane;
-//  vec3 tr;
-//  //if(minCorner.x != 1337)return TRIVIAL_REJECT;
-//
-//  plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
-//  tr    = trivialRejectCorner3D(plane.xyz);
-//  if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
-//    return TRIVIAL_REJECT;
-//  tr = vec3(1.f)-tr;
-//  status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
-//
-//  plane = vec4(shadowFrustaPlanes[4],shadowFrustaPlanes[5],shadowFrustaPlanes[6],shadowFrustaPlanes[7]);
-//  tr    = trivialRejectCorner3D(plane.xyz);
-//  if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
-//    return TRIVIAL_REJECT;
-//  tr = vec3(1.f)-tr;
-//  status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
-//
-//  plane = vec4(shadowFrustaPlanes[8],shadowFrustaPlanes[9],shadowFrustaPlanes[10],shadowFrustaPlanes[11]);
-//  tr    = trivialRejectCorner3D(plane.xyz);
-//  if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
-//    return TRIVIAL_REJECT;
-//  tr = vec3(1.f)-tr;
-//  status &= 2u+uint(dot(vec4(minCorner + tr*size,1),plane)>0.f);
-//
-//  plane = vec4(shadowFrustaPlanes[12],shadowFrustaPlanes[13],shadowFrustaPlanes[14],shadowFrustaPlanes[15]);
-//  tr    = trivialRejectCorner3D(plane.xyz);
-//  if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
-//    return TRIVIAL_REJECT;
-//  tr = vec3(1.f)-tr;
-//  status &= 2u+uint(dot(vec4(minCorner + tr*size,1.f),plane)>0.f);
-//
-//  return status;
-//}
-
-//void computeAABBTriangleIntersection(out uint status,in vec3 minCorner,in vec3 aabbSize){
-//  status = TRIVIAL_REJECT;
-//
-//  vec3 tr;
-//
-//  //if(tri_trianglePlane.x != 1337)return;
-//  //if(tri_abPlane.x != 1337)return;
-//  //if(tri_bcPlane.x != 1337)return;
-//  //if(tri_caPlane.x != 1337)return;
-//
-//  /*
-//  tr = trivialRejectCorner3D(tri_trianglePlane.xyz);
-//  if(dot(tri_trianglePlane,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
-//
-//  tr = 1.f-tr;
-//  if(dot(tri_trianglePlane,vec4(minCorner + (tr)*(aabbSize),1.f))>0.f)return;
-//
-//  tr = trivialRejectCorner3D(tri_abPlane.xyz);
-//  if(dot(tri_abPlane      ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
-//
-//  tr = trivialRejectCorner3D(tri_bcPlane.xyz);
-//  if(dot(tri_bcPlane      ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
-//
-//  tr = trivialRejectCorner3D(tri_caPlane.xyz);
-//  if(dot(tri_caPlane      ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
-//  */
-//
-//  //if(tri_caPlane.w == 1337)return;
-//  vec4 plane;
-//  plane = tri_abPlane;
-//  tr    = trivialRejectCorner3D(plane.xyz);
-//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))<0.f)return;
-//
-//  plane = tri_bcPlane;
-//  tr    = trivialRejectCorner3D(plane.xyz);
-//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))<0.f)return;
-//
-//  plane = tri_caPlane;
-//  tr    = trivialRejectCorner3D(plane.xyz);
-//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))<0.f)return;
-//
-//  plane = tri_trianglePlane;
-//  tr    = trivialRejectCorner3D(plane.xyz);
-//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))<0.f)return;
-//
-//  tr    = 1.f - tr;
-//  if(dot(plane,vec4(minCorner + tr*aabbSize,1.f))>0.f)return;
-//
-//  status = INTERSECTS;
-//}
 
 void traverseTriangle(){
   int level = 0;

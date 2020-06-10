@@ -64,6 +64,10 @@ void toShared(in uint offset,in vec4 value){
   sharedMemory[offset+3] = value[3];
 }
 
+void toShared1f(in uint offset,in float value){
+  sharedMemory[offset] = value;
+}
+
 vec4 getShared4f(in uint offset){
   return vec4(sharedMemory[offset+0],sharedMemory[offset+1],sharedMemory[offset+2],sharedMemory[offset+3]);
 }
