@@ -48,14 +48,21 @@ add_library(${PROJECT_NAME} STATIC
   merge.h
   mergeShader.cpp
   mergeShader.h
+
   extractSilhouettesShader.cpp
   extractSilhouettesShader.h
   extractSilhouettes.cpp
   extractSilhouettes.h
-  traverseSilhouettes.cpp
-  traverseSilhouettes.h
+
+  traverse.cpp
+  traverse.h
   traverseSilhouettesShader.cpp
   traverseSilhouettesShader.h
+  traverseTrianglesShader.cpp
+  traverseTrianglesShader.h
+  traverseShader.cpp
+  traverseShader.h
+
   collisionShader.cpp
   collisionShader.h
   getConfigShader.cpp

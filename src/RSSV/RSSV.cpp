@@ -11,7 +11,7 @@
 #include <RSSV/buildHierarchy.h>
 #include <RSSV/computeShadowFrusta.h>
 #include <RSSV/rasterize.h>
-#include <RSSV/traverseSilhouettes.h>
+#include <RSSV/traverse.h>
 #include <RSSV/merge.h>
 #include <RSSV/debug/drawDebug.h>
 #include <RSSV/extractSilhouettes.h>
@@ -41,8 +41,8 @@ void RSSV::create(glm::vec4 const& lightPosition,
   ifExistStamp("extractSilhouettes");
   rssv::buildHierarchy(vars);
   ifExistStamp("buildHierarchy");
-  rssv::traverseSilhouettes(vars);
-  ifExistStamp("traverseSilhouettes");
+  rssv::traverse(vars);
+  ifExistStamp("traverse");
   //rssv::rasterize(vars);
   //ifExistStamp("rasterize");
   //rssv::merge(vars);

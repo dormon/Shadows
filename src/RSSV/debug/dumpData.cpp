@@ -14,7 +14,7 @@
 #include <RSSV/debug/dumpData.h>
 #include <RSSV/debug/dumpSamples.h>
 #include <RSSV/buildHierarchy.h>
-#include <RSSV/traverseSilhouettes.h>
+#include <RSSV/traverse.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -99,7 +99,7 @@ void dumpBasic(vars::Vars&vars){
 void dumpTraversePlanes(vars::Vars&vars){
   vars.getBool("rssv.param.storeEdgePlanes") = true;
   vars.updateTicks("rssv.param.storeEdgePlanes");
-  traverseSilhouettes(vars);
+  traverse(vars);
   vars.getBool("rssv.param.storeEdgePlanes") = false;
   vars.updateTicks("rssv.param.storeEdgePlanes");
 
@@ -131,7 +131,7 @@ void dumpTraversePlanes(vars::Vars&vars){
 void dumpTraverse(vars::Vars&vars){
   vars.getBool("rssv.param.storeTraverseSilhouettesStat") = true;
   vars.updateTicks("rssv.param.storeTraverseSilhouettesStat");
-  traverseSilhouettes(vars);
+  traverse(vars);
   vars.getBool("rssv.param.storeTraverseSilhouettesStat") = false;
   vars.updateTicks("rssv.param.storeTraverseSilhouettesStat");
 

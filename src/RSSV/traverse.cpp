@@ -20,6 +20,7 @@
 #include <RSSV/collisionShader.h>
 #include <RSSV/getEdgePlanesShader.h>
 #include <RSSV/traverseSilhouettesShader.h>
+#include <RSSV/traverseShader.h>
 #include <RSSV/getAABBShader.h>
 #include <RSSV/loadEdgeShader.h>
 
@@ -106,9 +107,9 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         ,rssv::getAABBShaderFWD
         ,rssv::loadEdgeShaderFWD
         ,rssv::getEdgePlanesShader
-        ,rssv::traverseSilFWD
+        ,rssv::traverseSilhouettesFWD
         ,rssv::traverseMain//,rssv::traverseSilhouettesShader
-        ,rssv::traverseSil
+        ,rssv::traverseSilhouettes
         ,rssv::getAABBShader
         ,rssv::loadEdgeShader
         ));
@@ -145,7 +146,7 @@ void createDebugEdgePlanesBuffer(vars::Vars&vars){
 
 
 
-void traverseSilhouettes(vars::Vars&vars){
+void traverse(vars::Vars&vars){
   FUNCTION_CALLER();
   createTraverseSilhouettesProgram(vars);
   createTraverseJobCounters(vars);
