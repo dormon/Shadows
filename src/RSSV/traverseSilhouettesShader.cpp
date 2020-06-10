@@ -50,7 +50,7 @@ void loadSilhouette(uint job){
     vec3 abn = normalize(cross(edgeB-edgeA,n));
     toShared(abPlaneO  ,invTran*vec4(abn,-dot(abn,edgeA)));
 
-#if COMPUTE_BRIDGES == 1
+#if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
     toShared(edgeAClipSpaceO,projView*vec4(edgeA,1.f));
     toShared(edgeBClipSpaceO,projView*vec4(edgeB,1.f));
     toShared(lightClipSpaceO,clipLightPosition       );
@@ -202,29 +202,38 @@ void computeBridgeSilhouetteIntersection(in vec3 minCorner,in vec3 aabbSize,int 
   if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
 #endif
 }
-
-void computeAABBSilhouetteIntersection(out uint status,in vec3 minCorner,in vec3 aabbSize){
-  status = TRIVIAL_REJECT;
-
+#line 205
+uint computeAABBSilhouetteIntersection(in vec3 minCorner,in vec3 aabbSize){
   vec3 tr;
 
   tr = trivialRejectCorner3D(edgePlane.xyz);
-  if(dot(edgePlane,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+  if(dot(edgePlane,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return TRIVIAL_REJECT;
 
   tr = 1.f-tr;
-  if(dot(edgePlane,vec4(minCorner + (tr)*(aabbSize),1.f))>0.f)return;
+  if(dot(edgePlane,vec4(minCorner + (tr)*(aabbSize),1.f))>0.f)return TRIVIAL_REJECT;
 
   tr = trivialRejectCorner3D(aPlane.xyz);
-  if(dot(aPlane   ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+  if(dot(aPlane   ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return TRIVIAL_REJECT;
 
   tr = trivialRejectCorner3D(bPlane.xyz);
-  if(dot(bPlane   ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+  if(dot(bPlane   ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return TRIVIAL_REJECT;
 
   tr = trivialRejectCorner3D(abPlane.xyz);
-  if(dot(abPlane  ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return;
+  if(dot(abPlane  ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return TRIVIAL_REJECT;
 
-  status = INTERSECTS;
+  return INTERSECTS;
 }
+
+#if EXACT_SILHOUETTE_AABB == 1
+uint computeAABBSilhouetteIntersectionEXACT(in vec3 minCorner,in vec3 maxCorner){
+    if(doesLineInterectSubFrustum(edgeAClipSpace,edgeAClipSpace-clipLightPosition,minCorner,maxCorner))return INTERSECTS;
+    if(doesLineInterectSubFrustum(edgeBClipSpace,edgeBClipSpace-clipLightPosition,minCorner,maxCorner))return INTERSECTS;
+    if(doesSubFrustumDiagonalIntersectSilhouette(minCorner,maxCorner,edgeAClipSpace,edgeBClipSpace,clipLightPosition,edgePlane))return INTERSECTS;
+    if(doesLineInterectSubFrustum(edgeAClipSpace,edgeBClipSpace,minCorner,maxCorner))return INTERSECTS;
+    return TRIVIAL_REJECT;
+}
+#endif
+
 
 void traverseSilhouette(uint job){
   int level = 0;
@@ -235,7 +244,7 @@ void traverseSilhouette(uint job){
   while(level >= 0){
     if(level == int(nofLevels)){
 
-      //debug_storeSilhouetteTraverseStatLastLevel(job,node,level);
+      debug_storeSilhouetteTraverseStatLastLevel(job,node,level);
 
       lastLevelSilhouette(node);
 
@@ -250,15 +259,26 @@ void traverseSilhouette(uint job){
         vec3 minCorner;
         vec3 aabbSize;
         getAABB(minCorner,aabbSize,level,(node<<warpBits)+gl_LocalInvocationIndex);
+
+
+#if EXACT_SILHOUETTE_AABB == 1
+        if(level <= EXACT_SILHOUETTE_AABB_LEVEL){
+          status = computeAABBSilhouetteIntersectionEXACT(minCorner,aabbSize);
+          aabbSize -= minCorner;
+        }else{
+          aabbSize -= minCorner;
+          status = computeAABBSilhouetteIntersection(minCorner,aabbSize);
+        }
+#else
         aabbSize -= minCorner;
+        status = computeAABBSilhouetteIntersection(minCorner,aabbSize);
+#endif
 
         computeBridgeSilhouetteIntersection(minCorner,aabbSize,level,node);
 
-        computeAABBSilhouetteIntersection(status,minCorner,aabbSize);
-
       }
 
-      //debug_storeSilhouetteTraverseStat(job,node,level,status);
+      debug_storeSilhouetteTraverseStat(job,node,level,status);
 
       currentIntersection = ballotARB(status == INTERSECTS    );
       if(gl_LocalInvocationIndex==0)

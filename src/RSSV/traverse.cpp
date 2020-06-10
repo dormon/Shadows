@@ -36,7 +36,7 @@ using namespace std;
 
 namespace rssv{
 
-void createTraverseSilhouettesProgram(vars::Vars&vars){
+void createTraverseProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"
       ,"wavefrontSize"
       ,"adjacency"
@@ -54,6 +54,8 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
       ,"rssv.param.sfAlignment"      
       ,"rssv.param.sfInterleave"     
       ,"rssv.param.morePlanes"     
+      ,"rssv.param.exactSilhouetteAABB"
+      ,"rssv.param.exactSilhouetteAABBLevel"
       ,"rssv.param.exactTriangleAABB"
       ,"rssv.param.performTraverseSilhouettes"
       ,"rssv.param.performTraverseTriangles"
@@ -74,6 +76,8 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const sfAlignment                  =  vars.getUint32      ("rssv.param.sfAlignment"                 );
   auto const sfInterleave                 =  vars.getBool        ("rssv.param.sfInterleave"                );
   auto const morePlanes                   =  vars.getBool        ("rssv.param.morePlanes"                  );
+  auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
+  auto const exactSilhouetteAABBLevel     =  vars.getInt32       ("rssv.param.exactSilhouetteAABBLevel"    );
   auto const exactTriangleAABB            =  vars.getBool        ("rssv.param.exactTriangleAABB"           );
   auto const performTraverseSilhouettes   =  vars.getBool        ("rssv.param.performTraverseSilhouettes"  );
   auto const performTraverseTriangles     =  vars.getBool        ("rssv.param.performTraverseTriangles"    );
@@ -100,6 +104,8 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         ,Shader::define("SF_ALIGNMENT"                  ,(uint32_t)sfAlignment                 )
         ,Shader::define("SF_INTERLEAVE"                 ,(int     )sfInterleave                )
         ,Shader::define("MORE_PLANES"                   ,(int     )morePlanes                  )
+        ,Shader::define("EXACT_SILHOUETTE_AABB"         ,(int     )exactSilhouetteAABB         )
+        ,Shader::define("EXACT_SILHOUETTE_AABB_LEVEL"   ,(int     )exactSilhouetteAABBLevel    )
         ,Shader::define("EXACT_TRIANGLE_AABB"           ,(int     )exactTriangleAABB           )
         ,Shader::define("PERFORM_TRAVERSE_SILHOUETTES"  ,(int     )performTraverseSilhouettes  )
         ,Shader::define("PERFORM_TRAVERSE_TRIANGLES"    ,(int     )performTraverseTriangles    )
@@ -154,7 +160,7 @@ void createDebugEdgePlanesBuffer(vars::Vars&vars){
 
 void traverse(vars::Vars&vars){
   FUNCTION_CALLER();
-  createTraverseSilhouettesProgram(vars);
+  createTraverseProgram(vars);
   createTraverseJobCounters(vars);
   createDebugSilhouetteTraverseBuffers(vars);
   createDebugEdgePlanesBuffer(vars);

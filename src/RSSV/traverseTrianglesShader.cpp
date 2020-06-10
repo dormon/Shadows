@@ -80,6 +80,13 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   vec3 tr;
   //if(minCorner.x != 1337)return TRIVIAL_REJECT;
 
+  //plane = tri_trianglePlane;
+  //tr    = trivialRejectCorner3D(plane.xyz);
+  //if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
+  //  return TRIVIAL_REJECT;
+  //tr = vec3(1.f)-tr;
+  //if(dot(plane,vec4(minCorner + tr*size,1.f))>0.f)
+  //  return TRIVIAL_REJECT;
 
 #if EXACT_TRIANGLE_AABB == 1
     if(doesSubFrustumDiagonalIntersectTriangle(minCorner,minCorner+size,tri_A,tri_B,tri_C,tri_trianglePlane))return INTERSECTS;

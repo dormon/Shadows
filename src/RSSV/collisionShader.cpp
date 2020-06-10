@@ -91,7 +91,7 @@ bool doesLineInterectSubFrustum(in vec4 A,in vec4 B,in vec3 minCorner,in vec3 ma
   return tt[0] <= tt[1];
 }
 
-bool doesSubFrustumDiagonalIntersectSide(in vec3 minCorner,in vec3 maxCorner,in vec4 A,in vec4 B,in vec4 L,in vec4 plane){
+bool doesSubFrustumDiagonalIntersectSilhouette(in vec3 minCorner,in vec3 maxCorner,in vec4 A,in vec4 B,in vec4 L,in vec4 plane){
   if(sign(plane.x)*sign(plane.z) < 0){
     float z = minCorner.x;
     minCorner.x = maxCorner.x;

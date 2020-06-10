@@ -10,6 +10,6 @@ void dumpAABBPointer(vars::Vars&vars);
 void dumpBridges(vars::Vars&vars);
 void dumpData(vars::Vars&vars);
 void dumpSilhouettes(vars::Vars&vars);
-void dumpTraverse(vars::Vars&vars);
+void dumpTraverseSilhouettes(vars::Vars&vars);
 void dumpTraversePlanes(vars::Vars&vars);
 }

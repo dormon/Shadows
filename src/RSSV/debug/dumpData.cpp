@@ -128,12 +128,28 @@ void dumpTraversePlanes(vars::Vars&vars){
 
 }
 
-void dumpTraverse(vars::Vars&vars){
+void dumpTraverseSilhouettes(vars::Vars&vars){
+  bool old0 = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
+  bool old1 = vars.getBool("rssv.param.performTraverseSilhouettes"  );
+  bool old2 = vars.getBool("rssv.param.performTraverseTriangles"    );
+
   vars.getBool("rssv.param.storeTraverseSilhouettesStat") = true;
+  vars.getBool("rssv.param.performTraverseSilhouettes"  ) = true;
+  vars.getBool("rssv.param.performTraverseTriangles"    ) = false;
+
   vars.updateTicks("rssv.param.storeTraverseSilhouettesStat");
+  vars.updateTicks("rssv.param.performTraverseSilhouettes"  );
+  vars.updateTicks("rssv.param.performTraverseTriangles"    );
+
   traverse(vars);
-  vars.getBool("rssv.param.storeTraverseSilhouettesStat") = false;
+
+  vars.getBool("rssv.param.storeTraverseSilhouettesStat") = old0;
+  vars.getBool("rssv.param.performTraverseSilhouettes"  ) = old1;
+  vars.getBool("rssv.param.performTraverseTriangles"    ) = old2;
+
   vars.updateTicks("rssv.param.storeTraverseSilhouettesStat");
+  vars.updateTicks("rssv.param.performTraverseSilhouettes"  );
+  vars.updateTicks("rssv.param.performTraverseTriangles"    );
 
 
   auto debug = vars.get<Buffer>("rssv.method.debug.traverseSilhouettesBuffer");
@@ -317,7 +333,7 @@ void dumpData(vars::Vars&vars){
   dumpNodePool(vars);
   dumpAABBPool(vars);
 
-  dumpTraverse(vars);
+  dumpTraverseSilhouettes(vars);
 
 
   std::cerr << "dump" << std::endl;
