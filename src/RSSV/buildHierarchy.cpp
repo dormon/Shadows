@@ -105,8 +105,9 @@ void rssv::buildHierarchy(vars::Vars&vars){
 
   buildHier::ifEnabledSetupDiscardBackfacing(vars);
 
-  auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
-  stencil   ->bindImage(2);
+  vars.get<Texture>("rssv.method.stencil")       ->bindImage(2);
+  vars.get<Texture>("shadowMask"         )       ->bindImage(3);
+
   auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
   bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
 

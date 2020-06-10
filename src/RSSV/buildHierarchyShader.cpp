@@ -77,7 +77,8 @@ uint getMorton(uvec2 coord,float depth){
   return morton(clusterCoord);
 }
 
-layout(r32i,binding=2)          uniform iimage2D      stencil     ;
+layout(r32i,binding=2)uniform iimage2D stencil   ;
+layout(r32f,binding=3)uniform  image2D shadowMask;
 
 
 
@@ -378,7 +379,10 @@ void main(){
 #if WARP == 64
   uvec2 coord = wgCoord + loCoord;
   activeThread = uint(all(lessThan(coord,uvec2(WINDOW_X,WINDOW_Y))));
-  if(activeThread == 1)imageStore(stencil,ivec2(coord),ivec4(0));
+  if(activeThread == 1){
+    imageStore(stencil   ,ivec2(coord),ivec4(0));
+    imageStore(shadowMask,ivec2(coord), vec4(1));
+  }
   compute(coord);
 
 #else
@@ -386,8 +390,14 @@ void main(){
   uvec2 coord2 = wgCoord + loCoord + uvec2(0,4u);
   activeThread[0] = uint(all(lessThan(coord ,uvec2(WINDOW_X,WINDOW_Y))));
   activeThread[1] = uint(all(lessThan(coord2,uvec2(WINDOW_X,WINDOW_Y))));
-  if(activeThread[0] == 1)imageStore(stencil,ivec2(coord) ,ivec4(0));
-  if(activeThread[1] == 1)imageStore(stencil,ivec2(coord2),ivec4(0));
+  if(activeThread[0] == 1){
+    imageStore(stencil   ,ivec2(coord) ,ivec4(0));
+    imageStore(shadowMask,ivec2(coord),  vec4(1));
+  }
+  if(activeThread[1] == 1){
+    imageStore(stencil   ,ivec2(coord2),ivec4(0));
+    imageStore(shadowMask,ivec2(coord2), vec4(1));
+  }
   compute(coord,coord2);
 #endif
 }

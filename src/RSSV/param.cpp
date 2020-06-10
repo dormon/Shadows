@@ -34,6 +34,7 @@ void rssv::loadParams(
   vars.addBool  ("rssv.param.computeBridges"                ,true);
   vars.addBool  ("rssv.param.storeBridgesInLocalMemory"     );
   vars.addBool  ("rssv.param.computeLastLevelSilhouettes"   ,true);
-  vars.addBool  ("rssv.param.exactTriangleAABB"             ,true);
+  vars.addBool  ("rssv.param.exactTriangleAABB"             ,false);
+  vars.addBool  ("rssv.param.performTraverseSilhouettes"    ,true  );
 
 }

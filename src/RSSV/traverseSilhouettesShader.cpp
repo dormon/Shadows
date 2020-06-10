@@ -1,7 +1,6 @@
 #include <RSSV/traverseSilhouettesShader.h>
 
-std::string const rssv::traverseSilhouettesShader = 
-#if 1
+#if 0
 R".(
 
 #ifndef WARP
@@ -103,6 +102,21 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   vec3 tr;
   //if(minCorner.x != 1337)return TRIVIAL_REJECT;
 
+
+#if ((EXACT_TRIANGLE_AABB == 1) && (MORE_PLANES == 1))
+    vec4 A;
+    vec4 B;
+    A = vec4(shadowFrustaPlanes[28+0],shadowFrustaPlanes[28+1],shadowFrustaPlanes[28+2],shadowFrustaPlanes[28+3]);
+    B = vec4(shadowFrustaPlanes[32+0],shadowFrustaPlanes[32+1],shadowFrustaPlanes[32+2],shadowFrustaPlanes[32+3]);
+    if(doesLineInterectSubFrustum(A,B,minCorner,minCorner+size))return INTERSECTS;
+    A = vec4(shadowFrustaPlanes[36+0],shadowFrustaPlanes[36+1],shadowFrustaPlanes[36+2],shadowFrustaPlanes[36+3]);
+    if(doesLineInterectSubFrustum(B,A,minCorner,minCorner+size))return INTERSECTS;
+    B = vec4(shadowFrustaPlanes[28+0],shadowFrustaPlanes[28+1],shadowFrustaPlanes[28+2],shadowFrustaPlanes[28+3]);
+    if(doesLineInterectSubFrustum(A,B,minCorner,minCorner+size))return INTERSECTS;
+    return TRIVIAL_REJECT;
+#endif
+
+
   plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
   tr    = trivialRejectCorner3D(plane.xyz);
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
@@ -152,6 +166,8 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
       return TRIVIAL_REJECT;
   }
 #endif
+
+
 
   return status;
 }
@@ -971,55 +987,13 @@ void main(){
 
 
 
-/////////////////////
-/////////////////////
-//WORKING silhouettes
-/////////////////////
-/////////////////////
-#if 0
-R".(
 
-layout(local_size_x=WARP)in;
 
-layout(std430,binding=0)buffer Hierarchy{
-  uint  nodePool[nodeBufferSizeInUints ];
-  float aabbPool[aabbBufferSizeInFloats];
-  #if MEMORY_OPTIM == 1
-    uint  aabbPointer[aabbPointerBufferSizeInUints];
-  #endif
-  #if USE_BRIDGE_POOL == 1
-    float bridgePool[bridgePoolSizeInFloats];
-  #endif
-};
-
-layout(std430,binding=2)buffer JobCounters       {
-  uint silhouetteJobCounter;
-  uint triangleJobCounter  ;
-};
-
-layout(std430,binding=3)readonly buffer EdgePlanes{float edgePlanes       [];};
-layout(std430,binding=4)readonly buffer MultBuffer{
-  uint nofSilhouettes  ;
-  uint multBuffer    [];
-};
-
-layout(std430,binding=5)readonly buffer ShadowFrusta{float shadowFrusta[];};
-
-layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
-
-layout(     binding=0)          uniform sampler2DRect depthTexture;
-layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
-layout(r32i,binding=2)          uniform iimage2D      stencil     ;
-
-uniform vec4 lightPosition;
-uniform vec4 clipLightPosition;
-
-uniform mat4 invTran;
-uniform mat4 projView;
+//traverse silhouette
+#if 1
+std::string const extern rssv::traverseSil = R".(
 
 shared int  edgeMult;
-
-shared vec4 sharedVec4[7];
 
 #define edgePlane      sharedVec4[0]
 #define aPlane         sharedVec4[1]
@@ -1028,10 +1002,6 @@ shared vec4 sharedVec4[7];
 #define edgeAClipSpace sharedVec4[4]
 #define edgeBClipSpace sharedVec4[5]
 #define lightClipSpace sharedVec4[6]
-
-#if (STORE_EDGE_PLANES == 1) || (STORE_TRAVERSE_STAT == 1)
-layout(std430,binding = 7)buffer Debug{uint debug[];};
-#endif
 
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){
@@ -1150,18 +1120,7 @@ void lastLevelSilhouette(uint node){
 }
 
 
-vec3 trivialRejectCorner3D(vec3 Normal){
-  return vec3((ivec3(sign(Normal))+1)>>1);
-}
-
-#if STORE_TRAVERSE_STAT == 1
-uint job = 0u;
-#endif
-
 #if WARP == 64
-#line 10000
-
-shared uint64_t intersection[nofLevels];
 
 #if COMPUTE_BRIDGES == 1
 #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
@@ -1169,7 +1128,7 @@ shared vec3     localBridgeEnd   [nofLevels][WARP];
 #endif
 #endif
 
-void debug_storeSilhouetteTraverseStatLastLevel(){
+void debug_storeSilhouetteTraverseStatLastLevel(in uint job,in uint node,in int level){
 #if STORE_TRAVERSE_STAT == 1
   if(gl_LocalInvocationIndex==0){
     uint w = atomicAdd(debug[0],1);
@@ -1181,7 +1140,7 @@ void debug_storeSilhouetteTraverseStatLastLevel(){
 #endif
 }
 
-void debug_storeSilhouetteTraverseStat(){
+void debug_storeSilhouetteTraverseStat(in uint job,in uint node,in int level,uint status){
 #if STORE_TRAVERSE_STAT == 1
   uint w = atomicAdd(debug[0],1);
   debug[1+w*4+0] = job;
@@ -1242,7 +1201,7 @@ void computeAABBSilhouetteIntersection(out uint status,in vec3 minCorner,in vec3
   status = INTERSECTS;
 }
 
-void traverseSilhouette(){
+void traverseSilhouette(uint job){
   int level = 0;
 
   uint64_t currentIntersection;
@@ -1251,7 +1210,7 @@ void traverseSilhouette(){
   while(level >= 0){
     if(level == int(nofLevels)){
 
-      debug_storeSilhouetteTraverseStatLastLevel();
+      //debug_storeSilhouetteTraverseStatLastLevel(job,node,level);
 
       lastLevelSilhouette(node);
 
@@ -1274,7 +1233,7 @@ void traverseSilhouette(){
 
       }
 
-      debug_storeSilhouetteTraverseStat();
+      //debug_storeSilhouetteTraverseStat(job,node,level,status);
 
       currentIntersection = ballotARB(status == INTERSECTS    );
       if(gl_LocalInvocationIndex==0)
@@ -1311,17 +1270,9 @@ void traverseSilhouette(){
 
 #endif
 
-
-
-
-
 //uniform int selectedEdge = -1;
-
-void main(){
-  #if STORE_TRAVERSE_STAT != 1
-  uint job;
-  #endif
-
+void traverseSilhouetteJOB(){
+#if PERFORM_TRAVERSE_SILHOUETTES == 1
   //silhouette loop
   for(;;){
     if(gl_LocalInvocationIndex==0)
@@ -1333,13 +1284,88 @@ void main(){
     //if(selectedEdge>=0 && job != uint(selectedEdge))continue;
 
     loadSilhouette(job);
-    traverseSilhouette();
+    traverseSilhouette(job);
 
   }
+#endif
 }
-
-
 
 ).";
 
-#endif 
+std::string const rssv::traverseSilFWD = R".(
+void traverseSilhouetteJOB();
+).";
+#endif
+
+
+
+
+
+//main
+#if 1
+std::string const rssv::traverseMain = R".(
+layout(local_size_x=WARP)in;
+
+layout(std430,binding=0)buffer Hierarchy{
+  uint  nodePool[nodeBufferSizeInUints ];
+  float aabbPool[aabbBufferSizeInFloats];
+  #if MEMORY_OPTIM == 1
+    uint  aabbPointer[aabbPointerBufferSizeInUints];
+  #endif
+  #if USE_BRIDGE_POOL == 1
+    float bridgePool[bridgePoolSizeInFloats];
+  #endif
+};
+
+layout(std430,binding=2)buffer JobCounters       {
+  uint silhouetteJobCounter;
+  uint triangleJobCounter  ;
+};
+
+layout(std430,binding=3)readonly buffer EdgePlanes{float edgePlanes       [];};
+layout(std430,binding=4)readonly buffer MultBuffer{
+  uint nofSilhouettes  ;
+  uint multBuffer    [];
+};
+
+layout(std430,binding=5)readonly buffer ShadowFrusta{float shadowFrusta[];};
+
+layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
+
+layout(     binding=0)          uniform sampler2DRect depthTexture;
+layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
+layout(r32i,binding=2)          uniform iimage2D      stencil     ;
+
+uniform vec4 lightPosition;
+uniform vec4 clipLightPosition;
+
+uniform mat4 invTran;
+uniform mat4 projView;
+
+
+shared vec4 sharedVec4[7];
+
+#if (STORE_EDGE_PLANES == 1) || (STORE_TRAVERSE_STAT == 1)
+layout(std430,binding = 7)buffer Debug{uint debug[];};
+#endif
+
+vec3 trivialRejectCorner3D(vec3 Normal){
+  return vec3((ivec3(sign(Normal))+1)>>1);
+}
+
+uint job = 0u;
+
+#if WARP == 64
+
+shared uint64_t intersection[nofLevels];
+
+#endif
+
+
+void main(){
+  traverseSilhouetteJOB();
+}
+
+
+).";
+#endif

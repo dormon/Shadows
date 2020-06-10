@@ -37,25 +37,29 @@ namespace rssv{
 void createTraverseSilhouettesProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"
       ,"wavefrontSize"
+      ,"adjacency"
+      ,"rssv.method.config"
       ,"rssv.param.sfWGS"
       ,"rssv.param.bias"
       ,"rssv.param.noAABB"
       ,"rssv.param.storeTraverseSilhouettesStat"
       ,"rssv.param.storeEdgePlanes"
-      ,"rssv.method.config"
       ,"rssv.param.dumpPointsNotPlanes"
       ,"rssv.param.computeBridges"
       ,"rssv.param.storeBridgesInLocalMemory"
       ,"rssv.param.computeLastLevelSilhouettes"
       ,"rssv.param.alignment"
-      ,"adjacency"
       ,"rssv.param.sfAlignment"      
       ,"rssv.param.sfInterleave"     
       ,"rssv.param.morePlanes"     
+      ,"rssv.param.exactTriangleAABB"
+      ,"rssv.param.performTraverseSilhouettes"
 
       );
   std::cerr << "createTraverseSilhouettesProgram" << std::endl;
 
+  auto const adj                          =  vars.get<Adjacency> ("adjacency"                              );
+  auto const&cfg                          = *vars.get<Config>    ("rssv.method.config"                     );
   auto const noAABB                       =  vars.getBool        ("rssv.param.noAABB"                      );
   auto const storeTraverseSilhouettesStat =  vars.getBool        ("rssv.param.storeTraverseSilhouettesStat");
   auto const storeEdgePlanes              =  vars.getBool        ("rssv.param.storeEdgePlanes"             );
@@ -63,38 +67,38 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
   auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
   auto const storeBridgesInLocalMemory    =  vars.getBool        ("rssv.param.storeBridgesInLocalMemory"   );
   auto const computeLastLevelSilhouettes  =  vars.getBool        ("rssv.param.computeLastLevelSilhouettes" );
-  auto const&cfg                          = *vars.get<Config>    ("rssv.method.config"                     );
   auto const alignSize                    =  vars.getSizeT       ("rssv.param.alignment"                   );
-  auto adj                                =  vars.get<Adjacency> ("adjacency"                              );
+  auto const sfAlignment                  =  vars.getUint32      ("rssv.param.sfAlignment"                 );
+  auto const sfInterleave                 =  vars.getBool        ("rssv.param.sfInterleave"                );
+  auto const morePlanes                   =  vars.getBool        ("rssv.param.morePlanes"                  );
+  auto const exactTriangleAABB            =  vars.getBool        ("rssv.param.exactTriangleAABB"           );
+  auto const performTraverseSilhouettes   =  vars.getBool        ("rssv.param.performTraverseSilhouettes"  );
+
   auto const nofEdges                     =  adj->getNofEdges();
   auto const nofTriangles                 =  adj->getNofTriangles();
-
-  auto const sfAlignment         =  vars.getUint32          ("rssv.param.sfAlignment"       );
-  auto const sfInterleave        =  vars.getBool            ("rssv.param.sfInterleave"      );
-  auto const morePlanes          =  vars.getBool            ("rssv.param.morePlanes"        );
-  auto const exactTriangleAABB   = vars.getBool  ("rssv.param.exactTriangleAABB" );
-
 
   vars.reCreate<ge::gl::Program>("rssv.method.traverseSilhouettesProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
         "#version 450\n",
         ballotSrc,
-        getConfigShader(vars),
-        Shader::define("NO_AABB"                       ,(int)     noAABB                 ),
-        Shader::define("STORE_TRAVERSE_STAT"           ,(int)storeTraverseSilhouettesStat),
-        Shader::define("STORE_EDGE_PLANES"             ,(int)storeEdgePlanes             ),
-        Shader::define("DUMP_POINTS_NOT_PLANES"        ,(int)dumpPointsNotPlanes         ),
-        Shader::define("COMPUTE_BRIDGES"               ,(int)computeBridges              ),
-        Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY" ,(int)storeBridgesInLocalMemory   ),
-        Shader::define("USE_BRIDGE_POOL"               ,(int)cfg.useBridgePool           ),
-        Shader::define("COMPUTE_LAST_LEVEL_SILHOUETTES",(int)computeLastLevelSilhouettes ),
-        Shader::define("ALIGN_SIZE"                    ,(uint32_t)alignSize              ),
-        Shader::define("NOF_EDGES"                     ,(uint32_t)nofEdges               ),
-        Shader::define("NOF_TRIANGLES"                 ,(uint32_t)nofTriangles           ),
-        Shader::define("SF_ALIGNMENT"                  ,(uint32_t)sfAlignment            ),
-        Shader::define("SF_INTERLEAVE"                 ,(int)     sfInterleave           ),
-        Shader::define("MORE_PLANES"                   ,(int)     morePlanes             ),
-        Shader::define("EXACT_TRIANGLE_AABB"           ,(int)     exactTriangleAABB      )
+        getConfigShader(vars)
+        ,Shader::define("NO_AABB"                       ,(int     )noAABB                      )
+        ,Shader::define("STORE_TRAVERSE_STAT"           ,(int     )storeTraverseSilhouettesStat)
+        ,Shader::define("STORE_EDGE_PLANES"             ,(int     )storeEdgePlanes             )
+        ,Shader::define("DUMP_POINTS_NOT_PLANES"        ,(int     )dumpPointsNotPlanes         )
+        ,Shader::define("COMPUTE_BRIDGES"               ,(int     )computeBridges              )
+        ,Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY" ,(int     )storeBridgesInLocalMemory   )
+        ,Shader::define("USE_BRIDGE_POOL"               ,(int     )cfg.useBridgePool           )
+        ,Shader::define("COMPUTE_LAST_LEVEL_SILHOUETTES",(int     )computeLastLevelSilhouettes )
+        ,Shader::define("ALIGN_SIZE"                    ,(uint32_t)alignSize                   )
+        ,Shader::define("NOF_EDGES"                     ,(uint32_t)nofEdges                    )
+        ,Shader::define("NOF_TRIANGLES"                 ,(uint32_t)nofTriangles                )
+        ,Shader::define("SF_ALIGNMENT"                  ,(uint32_t)sfAlignment                 )
+        ,Shader::define("SF_INTERLEAVE"                 ,(int     )sfInterleave                )
+        ,Shader::define("MORE_PLANES"                   ,(int     )morePlanes                  )
+        ,Shader::define("EXACT_TRIANGLE_AABB"           ,(int     )exactTriangleAABB           )
+        ,Shader::define("PERFORM_TRAVERSE_SILHOUETTES"  ,(int     )performTraverseSilhouettes  )
+
         ,rssv::demortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader
@@ -102,7 +106,9 @@ void createTraverseSilhouettesProgram(vars::Vars&vars){
         ,rssv::getAABBShaderFWD
         ,rssv::loadEdgeShaderFWD
         ,rssv::getEdgePlanesShader
-        ,rssv::traverseSilhouettesShader
+        ,rssv::traverseSilFWD
+        ,rssv::traverseMain//,rssv::traverseSilhouettesShader
+        ,rssv::traverseSil
         ,rssv::getAABBShader
         ,rssv::loadEdgeShader
         ));
@@ -160,6 +166,7 @@ void traverseSilhouettes(vars::Vars&vars){
   auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
   auto computeBridges              = vars.getBool     ("rssv.param.computeBridges"             );
+  auto const performTraverseSilhouettes   =  vars.getBool        ("rssv.param.performTraverseSilhouettes"  );
 
   //auto triangles                   = vars.get<Buffer >("rssv.method.triangles"                 );
   //auto shadowFrusta                = vars.get<Buffer >("rssv.method.shadowFrusta"              );
@@ -169,9 +176,6 @@ void traverseSilhouettes(vars::Vars&vars){
   auto shadowMask = vars.get<Texture>("shadowMask");
 
   jobCounters->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
-
-  //stencil->clear(0,GL_RED_INTEGER,GL_INT);
-  //bridges->clear(GL_R32I,GL_RED_INTEGER,GL_INT);
 
   auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
   hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
@@ -185,25 +189,23 @@ void traverseSilhouettes(vars::Vars&vars){
   shadowMask->bindImage(1);
   stencil   ->bindImage(2);
 
-  float data[1] = {1.f};
-  vars.get<ge::gl::Texture>("shadowMask")->clear(0,GL_RED,GL_FLOAT,data);
-
   prg->use();
 
-  auto invTran = glm::transpose(glm::inverse(proj*view));
 
-  prg->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
-  prg->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
+  if(performTraverseSilhouettes){
+    auto invTran = glm::transpose(glm::inverse(proj*view));
+    prg->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
+    prg->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
 
-  if(computeBridges){
-    auto projView = proj*view;
-    prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
-    prg->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
+    if(computeBridges){
+      auto projView = proj*view;
+      prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
+      prg->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
+    }
   }
 
-  //prg->bindBuffer("Triangles",triangles);
-  //prg->bindBuffer("ShadowFrusta",shadowFrusta);
-  sf        ->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+
+  sf->bindBase(GL_SHADER_STORAGE_BUFFER,5);
 
   //prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
 
