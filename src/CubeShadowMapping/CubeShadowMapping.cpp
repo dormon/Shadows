@@ -47,7 +47,12 @@ void createShadowMapProgram(vars::Vars&vars){
         createShadowMapVertexShaderSource  ),
       make_shared<Shader>(GL_GEOMETRY_SHADER,
         "#version 450\n",
-        createShadowMapGeometryShaderSource));
+        createShadowMapGeometryShaderSource),
+      make_shared<Shader>(GL_FRAGMENT_SHADER,
+        "#version 450\n",
+        createShadowMapFragmentShaderSource)
+      
+      );
 }
 
 void createMaskFBO(vars::Vars&vars){

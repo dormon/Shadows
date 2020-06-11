@@ -283,6 +283,11 @@ layout(std430,binding=5)buffer AABBPointer     {uint  aabbPointer     [];};
 
 layout(binding=1)uniform sampler2DRect depthTexture;
 
+#if DISCARD_BACK_FACING == 1
+layout(binding=2)uniform sampler2D     normalTexture;
+uniform vec4 lightPosition;
+#endif
+
 uint getMorton(uvec2 coord,float depth){
   const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
   const uint tileBitsY     = uint(ceil(log2(float(TILE_Y))));
@@ -315,6 +320,11 @@ void compute(uvec2 coord,uvec2 coord2){
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
   uint morton = getMorton(coord,depth);
   if(depth >= 1.f)activeThread = 0;
+
+#if DISCARD_BACK_FACING == 1
+  activeThread &= uint(dot(lightPosition,texelFetch(normalTexture,ivec2(coord),0))>0);
+#endif
+
 #else
   float depth [2];
   uint  morton[2];
@@ -322,6 +332,14 @@ void compute(uvec2 coord,uvec2 coord2){
   depth [1] = texelFetch(depthTexture,ivec2(coord2)).x*2-1;
   morton[0] = getMorton(coord ,depth[0]);
   morton[1] = getMorton(coord2,depth[1]);
+  if(depth[0] >= 1.f)activeThread[0] = 0;
+  if(depth[1] >= 1.f)activeThread[1] = 0;
+
+#if DISCARD_BACK_FACING == 1
+  activeThread[0] &= uint(dot(lightPosition,texelFetch(normalTexture,ivec2(coord ),0))>0);
+  activeThread[1] &= uint(dot(lightPosition,texelFetch(normalTexture,ivec2(coord2),0))>0);
+#endif
+
 #endif
 
 #line 322

@@ -231,7 +231,7 @@ void traverse(){
       }
 #endif
 
-#if 1
+#if COMPUTE_LAST_LEVEL == 1
       lastLevel(node);
 #endif
       node >>= warpBits;
@@ -367,7 +367,7 @@ void traverse(){
       }
 #endif
 
-#if 1
+#if COMPUTE_LAST_LEVEL == 1
       lastLevel(node);
 #endif
       node >>= warpBits;

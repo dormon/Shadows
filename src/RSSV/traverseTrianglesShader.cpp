@@ -75,11 +75,11 @@ void loadTriangle(uint job){
 }
 
 #if EXACT_TRIANGLE_AABB == 1
-uint computeAABBTriangleIntersetionEXACT(in vec3 minCorner,in vec3 size){
-  if(doesSubFrustumDiagonalIntersectTriangle(minCorner,minCorner+size,tri_A,tri_B,tri_C,tri_trianglePlane))return INTERSECTS;
-  if(doesLineInterectSubFrustum(tri_A,tri_B,minCorner,minCorner+size))return INTERSECTS;
-  if(doesLineInterectSubFrustum(tri_B,tri_C,minCorner,minCorner+size))return INTERSECTS;
-  if(doesLineInterectSubFrustum(tri_C,tri_A,minCorner,minCorner+size))return INTERSECTS;
+uint computeAABBTriangleIntersetionEXACT(in vec3 minCorner,in vec3 maxCorner){
+  if(doesSubFrustumDiagonalIntersectTriangle(minCorner,maxCorner,tri_A,tri_B,tri_C,tri_trianglePlane))return INTERSECTS;
+  if(doesLineInterectSubFrustum(tri_A,tri_B,minCorner,maxCorner))return INTERSECTS;
+  if(doesLineInterectSubFrustum(tri_B,tri_C,minCorner,maxCorner))return INTERSECTS;
+  if(doesLineInterectSubFrustum(tri_C,tri_A,minCorner,maxCorner))return INTERSECTS;
   return TRIVIAL_REJECT;
 }
 #endif
@@ -179,7 +179,6 @@ void traverseTriangle(){
         vec3 minCorner;
         vec3 aabbSize;
         getAABB(minCorner,aabbSize,level,(node<<warpBits)+gl_LocalInvocationIndex);
-        aabbSize -= minCorner;
 
         //computeBridgeSilhouetteIntersection(minCorner,aabbSize,level,node);
 
@@ -191,6 +190,7 @@ void traverseTriangle(){
         if(level <= EXACT_TRIANGLE_AABB_LEVEL){
           status = computeAABBTriangleIntersetionEXACT(minCorner,aabbSize);
         }else{
+          aabbSize -= minCorner;
           status = computeAABBTriangleIntersetion(minCorner,aabbSize);
         }
   #endif

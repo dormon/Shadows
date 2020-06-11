@@ -20,10 +20,12 @@ void sintorn2::loadParams(
   vars.addBool  ("sintorn2.param.morePlanes"             ) = (bool)c->geti32   ("morePlanes"        ,1   ,"additional frustum planes"                                                       );
   vars.addBool  ("sintorn2.param.ffc"                    ) = (bool)c->geti32   ("ffc"               ,1   ,"active front face culling"                                                       );
   vars.addBool  ("sintorn2.param.noAABB"                 ) = (bool)c->geti32   ("noAABB"            ,0   ,"no tight aabb"                                                                   );
-  vars.addBool  ("sintorn2.param.memoryOptim"            ) = (bool)c->geti32   ("memoryOptim"       ,0   ,"apply memory optimization"                                                       );
+  vars.addBool  ("sintorn2.param.memoryOptim"            ) = (bool)c->geti32   ("memoryOptim"       ,1   ,"apply memory optimization"                                                       );
   vars.addUint32("sintorn2.param.memoryFactor"           ) =       c->getu32   ("memoryFactor"      ,10  ,"memory optimization - this value is average number of nodes per screen tile"     );
   vars.addBool  ("sintorn2.param.taOptim"                ) = (bool)c->geti32   ("taOptim"           ,1   ,"apply trivial accept optim. that erases parts of already shadowed tree"          );
   vars.addBool  ("sintorn2.param.triangleIntersect"      ) = (bool)c->geti32   ("triangleIntersect" ,0   ,"debug only, converts shadow frustum to triangle during intersection"             );
+  vars.addBool  ("sintorn2.param.discardBackfacing"      ) = (bool)c->geti32   ("discardBackfacing" ,1   ,"discard light backfacing fragments"                                              );
+  vars.addBool  ("sintorn2.param.computeLastLevel"       ) = (bool)c->geti32   ("computeLastLevel"  ,1   ,"computes last level of hierarchy during raterization"                            );
 
 
   vars.addBool  ("sintorn2.param.storeTraverseStat");

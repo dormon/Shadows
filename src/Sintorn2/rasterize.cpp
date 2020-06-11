@@ -50,6 +50,7 @@ void createRasterizeProgram(vars::Vars&vars){
       ,"sintorn2.param.memoryOptim"
       ,"sintorn2.param.taOptim"
       ,"sintorn2.param.triangleIntersect"
+      ,"sintorn2.param.computeLastLevel"
       ,"args.camera.near"
       ,"args.camera.far"
       ,"args.camera.fovy"
@@ -74,6 +75,7 @@ void createRasterizeProgram(vars::Vars&vars){
   auto const nnear               =  vars.getFloat           ("args.camera.near"                 );
   auto const ffar                =  vars.getFloat           ("args.camera.far"                  );
   auto const fovy                =  vars.getFloat           ("args.camera.fovy"                 );
+  auto const computeLastLevel    =  vars.getBool            ("sintorn2.param.computeLastLevel"  );
 
   vars.reCreate<ge::gl::Program>("sintorn2.method.rasterizeProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
@@ -93,6 +95,7 @@ void createRasterizeProgram(vars::Vars&vars){
         Shader::define("NO_AABB"            ,(int)     noAABB            ),
         Shader::define("USE_TA_OPTIM"       ,(int)     taOptim           ),
         Shader::define("TRIANGLE_INTERSECT" ,(int)     triangleIntersect ),
+        Shader::define("COMPUTE_LAST_LEVEL" ,(int)     computeLastLevel  ),
 
 #if SAVE_COLLISION == 1
         Shader::define("SAVE_COLLISION"     ,(int)1),

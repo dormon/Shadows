@@ -24,13 +24,15 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   sintorn2::allocateHierarchy(vars);
   sintorn2::createBuildHierarchyProgram(vars);
   //exit(0);
-  auto depth            =  vars.get<GBuffer>("gBuffer")->depth;
+  auto gBuffer          = vars.get<GBuffer>("gBuffer");
+  auto depth            = gBuffer->depth;
   auto prg              =  vars.get<Program>("sintorn2.method.buildHierarchyProgram");
   auto nodePool         =  vars.get<Buffer >("sintorn2.method.nodePool"             );
   auto aabbPool         =  vars.get<Buffer >("sintorn2.method.aabbPool"             );
   auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter"     );
   auto activeNodes      =  vars.get<Buffer >("sintorn2.method.activeNodes"          );
   auto memoryOptim      =  vars.getBool     ("sintorn2.param.memoryOptim"           );
+  auto discardBackfacing =  vars.getBool    ("sintorn2.param.discardBackfacing"     );
 
   auto cfg              = *vars.get<Config >("sintorn2.method.config");
 
@@ -44,6 +46,13 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   
   depth->bind(1);
+
+  if(discardBackfacing){
+    auto normal              =  gBuffer->normal;
+    auto const lightPosition = vars.get<glm::vec4>("sintorn2.method.lightPosition"   );
+    normal->bind(2);
+    prg->set4fv("lightPosition",(float*)(lightPosition));
+  }
   
   if(memoryOptim){
     auto aabbPointer = vars.get<Buffer>("sintorn2.method.aabbPointer");

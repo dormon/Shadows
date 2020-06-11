@@ -257,24 +257,30 @@ void traverseSilhouette(uint job){
         if(level >  int(nofLevels))return;
 
         vec3 minCorner;
-        vec3 aabbSize;
-        getAABB(minCorner,aabbSize,level,(node<<warpBits)+gl_LocalInvocationIndex);
+        vec3 maxCorner;
+        getAABB(minCorner,maxCorner,level,(node<<warpBits)+gl_LocalInvocationIndex);
 
 
 #if EXACT_SILHOUETTE_AABB == 1
+  #if EXACT_SILHOUETTE_AABB_LEVEL < 0
+        status = computeAABBSilhouetteIntersectionEXACT(minCorner,maxCorner);
+        maxCorner -= minCorner;
+  #else
         if(level <= EXACT_SILHOUETTE_AABB_LEVEL){
-          status = computeAABBSilhouetteIntersectionEXACT(minCorner,aabbSize);
-          aabbSize -= minCorner;
+          status = computeAABBSilhouetteIntersectionEXACT(minCorner,maxCorner);
+          maxCorner -= minCorner;
         }else{
-          aabbSize -= minCorner;
-          status = computeAABBSilhouetteIntersection(minCorner,aabbSize);
+          maxCorner -= minCorner;
+          status = computeAABBSilhouetteIntersection(minCorner,maxCorner);
         }
+  #endif
 #else
-        aabbSize -= minCorner;
-        status = computeAABBSilhouetteIntersection(minCorner,aabbSize);
+        maxCorner -= minCorner;
+        status = computeAABBSilhouetteIntersection(minCorner,maxCorner);
 #endif
 
-        computeBridgeSilhouetteIntersection(minCorner,aabbSize,level,node);
+        if(level > 0)
+          computeBridgeSilhouetteIntersection(minCorner,maxCorner,level,node);
 
       }
 

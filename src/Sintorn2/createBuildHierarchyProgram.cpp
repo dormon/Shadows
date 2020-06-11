@@ -25,6 +25,7 @@ void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
       ,"sintorn2.param.tileX"   
       ,"sintorn2.param.tileY"   
       ,"sintorn2.param.memoryOptim"
+      ,"sintorn2.param.discardBackfacing"
       );
 
   auto const wavefrontSize       =  vars.getSizeT           ("wavefrontSize"             );
@@ -36,6 +37,7 @@ void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
   auto const tileX               =  vars.getUint32          ("sintorn2.param.tileX"      );
   auto const tileY               =  vars.getUint32          ("sintorn2.param.tileY"      );
   auto const memoryOptim         =  vars.getBool            ("sintorn2.param.memoryOptim");
+  auto const discardBackfacing =  vars.getBool              ("sintorn2.param.discardBackfacing");
 
 #define PRINT(x) std::cerr << #x ": " << x << std::endl
 
@@ -59,6 +61,7 @@ void sintorn2::createBuildHierarchyProgram(vars::Vars&vars){
         ge::gl::Shader::define("TILE_X"      ,tileX                  ),
         ge::gl::Shader::define("TILE_Y"      ,tileY                  ),
         ge::gl::Shader::define("MEMORY_OPTIM",(int)memoryOptim       ),
+        ge::gl::Shader::define("DISCARD_BACK_FACING",(int)discardBackfacing     ),
         ballotSrc,
         sintorn2::configShader,
         sintorn2::mortonShader,
