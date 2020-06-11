@@ -58,6 +58,7 @@ void createTraverseProgram(vars::Vars&vars){
       ,"rssv.param.exactSilhouetteAABB"
       ,"rssv.param.exactSilhouetteAABBLevel"
       ,"rssv.param.exactTriangleAABB"
+      ,"rssv.param.exactTriangleAABBLevel"
       ,"rssv.param.performTraverseSilhouettes"
       ,"rssv.param.performTraverseTriangles"
 
@@ -80,6 +81,7 @@ void createTraverseProgram(vars::Vars&vars){
   auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
   auto const exactSilhouetteAABBLevel     =  vars.getInt32       ("rssv.param.exactSilhouetteAABBLevel"    );
   auto const exactTriangleAABB            =  vars.getBool        ("rssv.param.exactTriangleAABB"           );
+  auto const exactTriangleAABBLevel       =  vars.getInt32       ("rssv.param.exactTriangleAABBLevel"      );
   auto const performTraverseSilhouettes   =  vars.getBool        ("rssv.param.performTraverseSilhouettes"  );
   auto const performTraverseTriangles     =  vars.getBool        ("rssv.param.performTraverseTriangles"    );
 
@@ -108,6 +110,7 @@ void createTraverseProgram(vars::Vars&vars){
         ,Shader::define("EXACT_SILHOUETTE_AABB"         ,(int     )exactSilhouetteAABB         )
         ,Shader::define("EXACT_SILHOUETTE_AABB_LEVEL"   ,(int     )exactSilhouetteAABBLevel    )
         ,Shader::define("EXACT_TRIANGLE_AABB"           ,(int     )exactTriangleAABB           )
+        ,Shader::define("EXACT_TRIANGLE_AABB_LEVEL"     ,(int     )exactTriangleAABBLevel      )
         ,Shader::define("PERFORM_TRAVERSE_SILHOUETTES"  ,(int     )performTraverseSilhouettes  )
         ,Shader::define("PERFORM_TRAVERSE_TRIANGLES"    ,(int     )performTraverseTriangles    )
 

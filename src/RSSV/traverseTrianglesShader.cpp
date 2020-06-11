@@ -74,7 +74,17 @@ void loadTriangle(uint job){
 #endif
 }
 
-uint trivialRejectAccept(vec3 minCorner,vec3 size){
+#if EXACT_TRIANGLE_AABB == 1
+uint computeAABBTriangleIntersetionEXACT(in vec3 minCorner,in vec3 size){
+  if(doesSubFrustumDiagonalIntersectTriangle(minCorner,minCorner+size,tri_A,tri_B,tri_C,tri_trianglePlane))return INTERSECTS;
+  if(doesLineInterectSubFrustum(tri_A,tri_B,minCorner,minCorner+size))return INTERSECTS;
+  if(doesLineInterectSubFrustum(tri_B,tri_C,minCorner,minCorner+size))return INTERSECTS;
+  if(doesLineInterectSubFrustum(tri_C,tri_A,minCorner,minCorner+size))return INTERSECTS;
+  return TRIVIAL_REJECT;
+}
+#endif
+
+uint computeAABBTriangleIntersetion(in vec3 minCorner,in vec3 size){
   uint status = TRIVIAL_ACCEPT;
   vec4 plane;
   vec3 tr;
@@ -88,13 +98,6 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   //if(dot(plane,vec4(minCorner + tr*size,1.f))>0.f)
   //  return TRIVIAL_REJECT;
 
-#if EXACT_TRIANGLE_AABB == 1
-    if(doesSubFrustumDiagonalIntersectTriangle(minCorner,minCorner+size,tri_A,tri_B,tri_C,tri_trianglePlane))return INTERSECTS;
-    if(doesLineInterectSubFrustum(tri_A,tri_B,minCorner,minCorner+size))return INTERSECTS;
-    if(doesLineInterectSubFrustum(tri_B,tri_C,minCorner,minCorner+size))return INTERSECTS;
-    if(doesLineInterectSubFrustum(tri_C,tri_A,minCorner,minCorner+size))return INTERSECTS;
-    return TRIVIAL_REJECT;
-#endif
 
 
   plane = tri_abPlane;
@@ -181,7 +184,19 @@ void traverseTriangle(){
         //computeBridgeSilhouetteIntersection(minCorner,aabbSize,level,node);
 
         //computeAABBTriangleIntersection(status,minCorner,aabbSize);
-        status = trivialRejectAccept(minCorner,aabbSize);
+#if EXACT_TRIANGLE_AABB == 1
+  #if EXACT_TRIANGLE_AABB_LEVEL < 0
+        status = computeAABBTriangleIntersetionEXACT(minCorner,aabbSize);
+  #else
+        if(level <= EXACT_TRIANGLE_AABB_LEVEL){
+          status = computeAABBTriangleIntersetionEXACT(minCorner,aabbSize);
+        }else{
+          status = computeAABBTriangleIntersetion(minCorner,aabbSize);
+        }
+  #endif
+#else
+        status = computeAABBTriangleIntersetion(minCorner,aabbSize);
+#endif
         if(status != INTERSECTS)status = TRIVIAL_REJECT;
 
         //if(gl_LocalInvocationIndex > 31)status = TRIVIAL_REJECT;
