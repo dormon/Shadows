@@ -9,6 +9,7 @@
 #include <divRoundUp.h>
 #include <align.h>
 #include <perfCounters.h>
+#include <BallotShader.h>
 
 #include <RSSV/computeShadowFrusta.h>
 #include <RSSV/shadowFrustaShader.h>
@@ -29,35 +30,39 @@ void createShadowFrustaProgram(vars::Vars&vars){
       ,"rssv.param.triangleInterleave"
       ,"rssv.param.morePlanes"
       ,"rssv.param.exactTriangleAABB"
+      ,"rssv.param.usePersistentThreadsSF"
       );
   std::cerr << "createShadowFrustaProgram" << std::endl;
 
-  auto const wavefrontSize       = vars.getSizeT ("wavefrontSize"                    );
-  auto const nofTriangles        = vars.getUint32("rssv.method.nofTriangles"     );
-  auto const sfWGS               = vars.getUint32("rssv.param.sfWGS"             );
-  auto const triangleAlignment   = vars.getUint32("rssv.param.triangleAlignment" );
-  auto const sfAlignment         = vars.getUint32("rssv.param.sfAlignment"       );
-  auto const bias                = vars.getFloat ("rssv.param.bias"              );
-  auto const sfInterleave        = vars.getBool  ("rssv.param.sfInterleave"      );
-  auto const triangleInterleave  = vars.getBool  ("rssv.param.triangleInterleave");
+  auto const wavefrontSize          = vars.getSizeT ("wavefrontSize"                    );
+  auto const nofTriangles           = vars.getUint32("rssv.method.nofTriangles"         );
+  auto const sfWGS                  = vars.getUint32("rssv.param.sfWGS"                 );
+  auto const triangleAlignment      = vars.getUint32("rssv.param.triangleAlignment"     );
+  auto const sfAlignment            = vars.getUint32("rssv.param.sfAlignment"           );
+  auto const bias                   = vars.getFloat ("rssv.param.bias"                  );
+  auto const sfInterleave           = vars.getBool  ("rssv.param.sfInterleave"          );
+  auto const triangleInterleave     = vars.getBool  ("rssv.param.triangleInterleave"    );
 
-  auto const morePlanes          = vars.getBool  ("rssv.param.morePlanes"        );
-  auto const exactTriangleAABB   = vars.getBool  ("rssv.param.exactTriangleAABB" );
+  auto const morePlanes             = vars.getBool  ("rssv.param.morePlanes"            );
+  auto const exactTriangleAABB      = vars.getBool  ("rssv.param.exactTriangleAABB"     );
+  auto const usePersistentThreadsSF = vars.getBool  ("rssv.param.usePersistentThreadsSF");
 
 
   vars.reCreate<ge::gl::Program>("rssv.method.shadowFrustaProgram",
       std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
         "#version 450\n",
-        Shader::define("WARP"               ,(uint32_t)wavefrontSize     ),
-        Shader::define("NOF_TRIANGLES"      ,(uint32_t)nofTriangles      ),
-        Shader::define("WGS"                ,(uint32_t)sfWGS             ),
-        Shader::define("TRIANGLE_ALIGNMENT" ,(uint32_t)triangleAlignment ),
-        Shader::define("SF_ALIGNMENT"       ,(uint32_t)sfAlignment       ),
-        Shader::define("BIAS"               ,(float   )bias              ),
-        Shader::define("SF_INTERLEAVE"      ,(int)     sfInterleave      ),
-        Shader::define("TRIANGLE_INTERLEAVE",(int)     triangleInterleave),
-        Shader::define("MORE_PLANES"        ,(int)     morePlanes        ),
-        Shader::define("EXACT_TRIANGLE_AABB",(int)     exactTriangleAABB ),
+        ballotSrc,
+        Shader::define("WARP"                  ,(uint32_t)wavefrontSize        ),
+        Shader::define("NOF_TRIANGLES"         ,(uint32_t)nofTriangles         ),
+        Shader::define("WGS"                   ,(uint32_t)sfWGS                ),
+        Shader::define("TRIANGLE_ALIGNMENT"    ,(uint32_t)triangleAlignment    ),
+        Shader::define("SF_ALIGNMENT"          ,(uint32_t)sfAlignment          ),
+        Shader::define("BIAS"                  ,(float   )bias                 ),
+        Shader::define("SF_INTERLEAVE"         ,(int)     sfInterleave         ),
+        Shader::define("TRIANGLE_INTERLEAVE"   ,(int)     triangleInterleave   ),
+        Shader::define("MORE_PLANES"           ,(int)     morePlanes           ),
+        Shader::define("EXACT_TRIANGLE_AABB"   ,(int)     exactTriangleAABB    ),
+        Shader::define("USE_PERSISTENT_THREADS",(int)     usePersistentThreadsSF),
         rssv::shadowFrustaShader
         ));
 }
@@ -118,11 +123,23 @@ void allocateShadowFrusta(vars::Vars&vars){
   vars.reCreate<uint32_t>("rssv.method.nofTriangles",nofTriangles);
 }
 
+void allocateShadowFrustaJobCounter(vars::Vars&vars){
+  FUNCTION_PROLOGUE("rssv.method"
+      ,"rssv.param.usePersistentThreadsSF"
+      );
+  auto const usePersistentThreadsSF = vars.getBool  ("rssv.param.usePersistentThreadsSF");
+  if(usePersistentThreadsSF)
+    vars.reCreate<Buffer  >("rssv.method.shadowFrustaJobCounter",sizeof(uint32_t));
+  else
+    vars.erase("rssv.method.shadowFrustaJobCounter");
+}
+
 }
 
 void rssv::computeShadowFrusta(vars::Vars&vars){
   allocateShadowFrusta(vars);
   createShadowFrustaProgram(vars);
+  allocateShadowFrustaJobCounter(vars);
   //exit(1);
 
   auto triangles           =  vars.get<Buffer>   ("rssv.method.triangles"          );
@@ -134,6 +151,7 @@ void rssv::computeShadowFrusta(vars::Vars&vars){
   auto const sfWGS         =  vars.getUint32     ("rssv.param.sfWGS"               );
   auto       prg           =  vars.get<Program>  ("rssv.method.shadowFrustaProgram");
   auto const exactTriangleAABB   = vars.getBool  ("rssv.param.exactTriangleAABB" );
+  auto const usePersistentThreadsSF = vars.getBool  ("rssv.param.usePersistentThreadsSF");
 
   auto const mvp = projMatrix * viewMatrix;
 
@@ -150,21 +168,35 @@ void rssv::computeShadowFrusta(vars::Vars&vars){
   if(exactTriangleAABB)
     prg->setMatrix4fv("projView",glm::value_ptr(mvp));
 
+  if(usePersistentThreadsSF){
+    auto jobCounter = vars.get<Buffer>("rssv.method.shadowFrustaJobCounter");
+    jobCounter->clear(GL_R32UI,GL_RED_INTEGER,GL_UNSIGNED_INT);
+    prg->bindBuffer("ShadowFrustaJobCounter",jobCounter);
+  }
+
+
+  auto const compute = [&](){
+    if(usePersistentThreadsSF)
+      glDispatchCompute(1000,1,1);
+    else
+      glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+  };
+
   if(vars.addOrGetBool("rssv.method.perfCounters.shadowFrusta")){
     if(vars.addOrGetBool("rssv.method.perfCounters.oneCounter")){
       perf::printComputeShaderProf([&](){
-      glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
-      glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+          compute();
       },vars.addOrGetUint32("rssv.method.perfCounters.counter"));
     }else{
       perf::printComputeShaderProf([&](){
-      glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
-      glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+          compute();
       });
     }
   }else{
-    glDispatchCompute(divRoundUp(nofTriangles,sfWGS),1,1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    compute();
+    
   }
 
   //std::vector<float>sfd;
