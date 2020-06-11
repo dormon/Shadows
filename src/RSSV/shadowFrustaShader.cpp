@@ -1,8 +1,9 @@
 #include <RSSV/shadowFrustaShader.h>
 
-std::string const rssv::shadowFrustaShader = 
 
-R".(
+std::string const rssv::shadowFrusta::fwdShader = R".(
+void computeShadowFrustaJOB();
+
 #ifndef WARP
 #define WARP 64
 #endif//WARP
@@ -47,6 +48,24 @@ R".(
 #define EXACT_TRIANGLE_AABB 0
 #endif//EXACT_TRIANGLE_AABB
 
+#if WGS > WARP
+
+#if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < 1
+#undef SHARED_MEMORY_SIZE
+#define SHARED_MEMORY_SIZE 1
+#endif
+
+#define shadowFrustaJobStartO 0
+#define shadowFrustaJobStart getShared1u(shadowFrustaJobStartO)
+
+#endif
+
+).";
+
+
+std::string const rssv::shadowFrusta::computeShader = R".(
+
+
 const uint planesPerSF = 4u + MORE_PLANES*3u + EXACT_TRIANGLE_AABB*3u;
 const uint floatsPerPlane = 4u;
 const uint floatsPerSF = planesPerSF * floatsPerPlane;
@@ -56,14 +75,6 @@ const uint floatsPerSF = planesPerSF * floatsPerPlane;
 const uint alignedNofTriangles = (uint(NOF_TRIANGLES / TRIANGLE_ALIGNMENT) + uint((NOF_TRIANGLES % TRIANGLE_ALIGNMENT) != 0u)) * TRIANGLE_ALIGNMENT;
 const uint alignedNofSF        = (uint(NOF_TRIANGLES /       SF_ALIGNMENT) + uint((NOF_TRIANGLES %       SF_ALIGNMENT) != 0u)) *       SF_ALIGNMENT;
 
-layout(local_size_x=WGS)in;
-
-layout(std430,binding=0)buffer Triangles   {float triangles   [];};
-layout(std430,binding=1)buffer ShadowFrusta{float shadowFrusta[];};
-
-#if USE_PERSISTENT_THREADS == 1
-layout(std430,binding=2)buffer ShadowFrustaJobCounter  {uint  shadowFrustaJobCounter ;};
-#endif
 
 uniform vec4 lightPosition                      ;
 uniform mat4 transposeInverseModelViewProjection;
@@ -95,7 +106,7 @@ vec4 getPlane(vec3 A,vec3 B,vec3 C){
 	return vec4(n,-dot(n,A));
 }
 
-void compute(uint gid){
+void computeShadowFrusta(uint gid){
   vec3 v0;
   vec3 v1;
   vec3 v2;
@@ -313,23 +324,28 @@ void computeShadowFrustaJOB(){
     if(gl_LocalInvocationIndex == 0)
       job = atomicAdd(shadowFrustaJobCounter,gl_WorkGroupSize.x);
 
+#if WGS > WARP
+    if(gl_LocalInvocationIndex == 0)
+      toShared1u(shadowFrustaJobStartO,job);
+    //memoryBarrierShared();
+    barrier();
+    job = shadowFrustaJobStart;
+#else
     job = readFirstInvocationARB(job);
-    if(job >= NOF_TRIANGLES)break;
+#endif
 
-    compute(job+gl_LocalInvocationIndex);
+    if(job+gl_LocalInvocationIndex >= NOF_TRIANGLES)break;
+
+    computeShadowFrusta(job+gl_LocalInvocationIndex);
 
   }
 #else
 	uint gid=gl_GlobalInvocationID.x;
   if(gid >= NOF_TRIANGLES)return;
-  compute(gid);
+  computeShadowFrusta(gid);
 #endif
 }
 
-
-void main(){
-  computeShadowFrustaJOB();
-}
 
 
 
@@ -337,6 +353,21 @@ void main(){
 ).";
 
 
+std::string const rssv::shadowFrusta::mainShader = R".(
+layout(local_size_x=WGS)in;
+
+layout(std430,binding=0)buffer Triangles   {float triangles   [];};
+layout(std430,binding=1)buffer ShadowFrusta{float shadowFrusta[];};
+
+#if USE_PERSISTENT_THREADS == 1
+layout(std430,binding=2)buffer ShadowFrustaJobCounter  {uint  shadowFrustaJobCounter ;};
+#endif
+
+
+void main(){
+  computeShadowFrustaJOB();
+}
+).";
 
 
 

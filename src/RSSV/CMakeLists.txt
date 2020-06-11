@@ -73,6 +73,9 @@ add_library(${PROJECT_NAME} STATIC
   getAABBShader.h
   loadEdgeShader.cpp
   loadEdgeShader.h
+
+  sharedMemoryShader.cpp
+  sharedMemoryShader.h
   )
 
 add_subdirectory(debug)

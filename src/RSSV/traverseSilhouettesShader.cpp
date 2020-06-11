@@ -39,21 +39,21 @@ void loadSilhouette(uint job){
     loadEdge(edgeA,edgeB,edge);
 
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
-    toShared(edgePlaneO,invTran*vec4(n  ,-dot(n  ,edgeA)));
+    toShared4f(edgePlaneO,invTran*vec4(n  ,-dot(n  ,edgeA)));
 
     vec3 an = normalize(cross(n,edgeA-lightPosition.xyz));
-    toShared(aPlaneO   ,invTran*vec4(an ,-dot(an ,edgeA)));
+    toShared4f(aPlaneO   ,invTran*vec4(an ,-dot(an ,edgeA)));
 
     vec3 bn = normalize(cross(edgeB-lightPosition.xyz,n));
-    toShared(bPlaneO   ,invTran*vec4(bn ,-dot(bn ,edgeB)));
+    toShared4f(bPlaneO   ,invTran*vec4(bn ,-dot(bn ,edgeB)));
 
     vec3 abn = normalize(cross(edgeB-edgeA,n));
-    toShared(abPlaneO  ,invTran*vec4(abn,-dot(abn,edgeA)));
+    toShared4f(abPlaneO  ,invTran*vec4(abn,-dot(abn,edgeA)));
 
 #if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
-    toShared(edgeAClipSpaceO,projView*vec4(edgeA,1.f));
-    toShared(edgeBClipSpaceO,projView*vec4(edgeB,1.f));
-    toShared(lightClipSpaceO,clipLightPosition       );
+    toShared4f(edgeAClipSpaceO,projView*vec4(edgeA,1.f));
+    toShared4f(edgeBClipSpaceO,projView*vec4(edgeB,1.f));
+    toShared4f(lightClipSpaceO,clipLightPosition       );
 #endif
 
 #if STORE_EDGE_PLANES == 1
@@ -87,7 +87,7 @@ void loadSilhouette(uint job){
 #endif
     
 
-    toShared(edgeMultO,mult);
+    toShared1i(edgeMultO,mult);
   }
   memoryBarrierShared();
 }

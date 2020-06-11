@@ -13,6 +13,7 @@
 
 #include <RSSV/computeShadowFrusta.h>
 #include <RSSV/shadowFrustaShader.h>
+#include <RSSV/sharedMemoryShader.h>
 
 using namespace ge::gl;
 using namespace std;
@@ -63,7 +64,10 @@ void createShadowFrustaProgram(vars::Vars&vars){
         Shader::define("MORE_PLANES"           ,(int)     morePlanes           ),
         Shader::define("EXACT_TRIANGLE_AABB"   ,(int)     exactTriangleAABB    ),
         Shader::define("USE_PERSISTENT_THREADS",(int)     usePersistentThreadsSF),
-        rssv::shadowFrustaShader
+        rssv::shadowFrusta::fwdShader,
+        rssv::sharedMemoryShader,
+        rssv::shadowFrusta::mainShader,
+        rssv::shadowFrusta::computeShader
         ));
 }
 

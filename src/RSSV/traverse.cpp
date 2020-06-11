@@ -24,6 +24,7 @@
 #include <RSSV/traverseShader.h>
 #include <RSSV/getAABBShader.h>
 #include <RSSV/loadEdgeShader.h>
+#include <RSSV/sharedMemoryShader.h>
 
 #include <iomanip>
 #include <Timer.h>
@@ -119,6 +120,7 @@ void createTraverseProgram(vars::Vars&vars){
         ,rssv::getEdgePlanesShader
         ,rssv::traverseSilhouettesFWD
         ,rssv::traverseTrianglesFWD
+        ,rssv::sharedMemoryShader
         ,rssv::traverseMain
         ,rssv::traverseTriangles
         ,rssv::traverseSilhouettes
