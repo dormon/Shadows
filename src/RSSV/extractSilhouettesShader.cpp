@@ -55,25 +55,19 @@ void storeSilhouettePlanes(in uint wh,in uint edge,in int mult){
 
   vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
   vec4 edgePlane = invTran*vec4(n  ,-dot(n  ,edgeA));
-  //vec4 edgePlane = vec4(edgeA,1);
 
   vec3 an = normalize(cross(n,edgeA-lightPosition.xyz));
   vec4 aPlane    = invTran*vec4(an ,-dot(an ,edgeA));
-  //vec4 aPlane    = vec4(edgeB,1);
 
   vec3 bn = normalize(cross(edgeB-lightPosition.xyz,n));
   vec4 bPlane     = invTran*vec4(bn ,-dot(bn ,edgeB));
-  //vec4 bPlane     = vec4(lightPosition);
 
   vec3 abn = normalize(cross(edgeB-edgeA,n));
   vec4 abPlane    = invTran*vec4(abn,-dot(abn,edgeA));
-  //if(abPlane.x != 1337)abPlane = vec4(0);
 
 #if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
   vec4 edgeAClipSpace = projView*vec4(edgeA,1.f);
   vec4 edgeBClipSpace = projView*vec4(edgeB,1.f);
-  //if(edgeAClipSpace.x != 1337)edgeAClipSpace = vec4(0);
-  //if(edgeBClipSpace.x != 1337)edgeBClipSpace = vec4(0);
   const uint floatsPerSilhouette = 4*6+1;
 #else
   const uint floatsPerSilhouette = 4*4+1;
@@ -155,12 +149,14 @@ void main(){
 
   uint WH = globalOffset + localOffset;
   
+#if COMPUTE_SILHOUETTE_PLANES != 1
   if(Multiplicity != 0){
     uint res = 0;
     res |= uint(Multiplicity << 29);
     res |= uint(gl_GlobalInvocationID.x);
     multBuffer[WH] = res;
   }
+#endif
 
   if(Multiplicity != 0)
     storeSilhouettePlanes(WH,gid,Multiplicity);
