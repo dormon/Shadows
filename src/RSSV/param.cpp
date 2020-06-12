@@ -33,6 +33,7 @@ void rssv::loadParams(
   vars.addBool  ("rssv.param.exactTriangleAABB"         ) = (bool)c->geti32("exactTriangleAABB"       ,1   ,"perform exact triangle AABB test"                                                );
   vars.addInt32 ("rssv.param.exactTriangleAABBLevel"    ) =       c->geti32("exactTriangleAABBLevel"  ,2   ,"perform exact triangle AABB test up to level"                                    );
   vars.addBool  ("rssv.param.usePersistentThreadsSF"    ) = (bool)c->geti32("usePersistentThreadsSF"  ,1   ,"use persisten threads for computation of shadow frusta"                          );
+  vars.addBool  ("rssv.param.computeSilhouettePlanes"   ) = (bool)c->geti32("computeSilhouettePlanes" ,0   ,"compute collision planes during silhouette extraction"                           );
 
   //FOR DEBUG
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat"  );

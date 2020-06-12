@@ -19,11 +19,20 @@ layout(std430,binding=2)buffer JobCounters       {
   uint triangleJobCounter  ;
 };
 
+
+// silhouette buffers
+#if COMPUTE_SILHOUETTE_PLANES == 1
+layout(std430,binding=3)buffer SilhouettePlanes{
+  float silhouettePlanes[];
+};
+#else
 layout(std430,binding=3)readonly buffer EdgePlanes{float edgePlanes       [];};
+#endif
 layout(std430,binding=4)readonly buffer MultBuffer{
   uint nofSilhouettes  ;
   uint multBuffer    [];
 };
+
 
 layout(std430,binding=5)readonly buffer ShadowFrusta{float shadowFrusta[];};
 

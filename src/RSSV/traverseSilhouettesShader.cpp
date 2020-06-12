@@ -2,22 +2,52 @@
 
 std::string const rssv::traverseSilhouettesFWD = R".(
 void traverseSilhouetteJOB();
-#if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < 7*4+1
-#undef SHARED_MEMORY_SIZE
-#define SHARED_MEMORY_SIZE 7*4+1
+#if COMPUTE_SILHOUETTE_PLANES == 1
+
+  #if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+    #if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < (6*4+1)
+      #undef SHARED_MEMORY_SIZE
+      #define SHARED_MEMORY_SIZE (6*4+1)
+    #endif
+  #else
+    #if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < (4*4+1)
+      #undef SHARED_MEMORY_SIZE
+      #define SHARED_MEMORY_SIZE (4*4+1)
+    #endif
+  #endif
+
+#else
+  #if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < (6*4+1)
+    #undef SHARED_MEMORY_SIZE
+    #define SHARED_MEMORY_SIZE (6*4+1)
+  #endif
 #endif
+
 ).";
 
 std::string const extern rssv::traverseSilhouettes = R".(
 
-#define edgePlaneO      (0*4)
-#define aPlaneO         (1*4)
-#define bPlaneO         (2*4)
-#define abPlaneO        (3*4)
-#define edgeAClipSpaceO (4*4)
-#define edgeBClipSpaceO (5*4)
-#define lightClipSpaceO (6*4)
-#define edgeMultO       (7*4)
+#if COMPUTE_SILHOUETTE_PLANES == 1
+  #define edgePlaneO      (0*4)
+  #define aPlaneO         (1*4)
+  #define bPlaneO         (2*4)
+  #define abPlaneO        (3*4)
+  #define edgeAClipSpaceO (4*4)
+  #define edgeBClipSpaceO (5*4)
+  #if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+    #define edgeMultO       (6*4)
+  #else
+    #define edgeMultO       (4*4)
+  #endif
+#else
+  #define edgePlaneO      (0*4)
+  #define aPlaneO         (1*4)
+  #define bPlaneO         (2*4)
+  #define abPlaneO        (3*4)
+  #define edgeAClipSpaceO (4*4)
+  #define edgeBClipSpaceO (5*4)
+  #define edgeMultO       (6*4)
+#endif
 
 #define edgePlane      getShared4f(edgePlaneO     )
 #define aPlane         getShared4f(aPlaneO        )
@@ -25,9 +55,22 @@ std::string const extern rssv::traverseSilhouettes = R".(
 #define abPlane        getShared4f(abPlaneO       )
 #define edgeAClipSpace getShared4f(edgeAClipSpaceO)
 #define edgeBClipSpace getShared4f(edgeBClipSpaceO)
-#define lightClipSpace getShared4f(lightClipSpaceO)
 #define edgeMult       getShared1i(edgeMultO      )
 
+#if COMPUTE_SILHOUETTE_PLANES == 1
+void loadSilhouette(uint job){
+  #if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+  const uint floatsPerSilhouette = 6*4+1;
+  #else
+  const uint floatsPerSilhouette = 4*4+1;
+  #endif
+
+  if(gl_LocalInvocationIndex < floatsPerSilhouette){
+    toShared1f(gl_LocalInvocationIndex,silhouettePlanes[job*floatsPerSilhouette+gl_LocalInvocationIndex]);
+  }
+  memoryBarrierShared();
+}
+#else
 void loadSilhouette(uint job){
   if(gl_LocalInvocationIndex == 0){
     uint res  = multBuffer[job];
@@ -53,7 +96,6 @@ void loadSilhouette(uint job){
 #if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
     toShared4f(edgeAClipSpaceO,projView*vec4(edgeA,1.f));
     toShared4f(edgeBClipSpaceO,projView*vec4(edgeB,1.f));
-    toShared4f(lightClipSpaceO,clipLightPosition       );
 #endif
 
 #if STORE_EDGE_PLANES == 1
@@ -67,10 +109,10 @@ void loadSilhouette(uint job){
           debug[1+w*16+ 4+i] = floatBitsToUint(edgeBClipSpace[i]);
     
         for(int i=0;i<4;++i)
-          debug[1+w*16+ 8+i] = floatBitsToUint(lightClipSpace[i]);
+          debug[1+w*16+ 8+i] = floatBitsToUint(clipLightPosition[i]);
     
         for(int i=0;i<4;++i)
-          debug[1+w*16+12+i] = floatBitsToUint(lightClipSpace[i]);
+          debug[1+w*16+12+i] = floatBitsToUint(clipLightPosition[i]);
     #else
         for(int i=0;i<4;++i)
           debug[1+w*16+ 0+i] = floatBitsToUint(edgePlane[i]);
@@ -91,6 +133,7 @@ void loadSilhouette(uint job){
   }
   memoryBarrierShared();
 }
+#endif
 
 int computeBridgeSilhouetteMultiplicity(in vec4 bridgeStart,in vec4 bridgeEnd){
   // m n c 
@@ -113,7 +156,7 @@ int computeBridgeSilhouetteMultiplicity(in vec4 bridgeStart,in vec4 bridgeEnd){
   if((ss<0)==(es<0))return 0;
   result *= 1-2*int(ss<0.f);
 
-  vec4 samplePlane    = getClipPlaneSkala(bridgeStart,bridgeEnd,lightClipSpace);
+  vec4 samplePlane    = getClipPlaneSkala(bridgeStart,bridgeEnd,clipLightPosition);
   ss = dot(samplePlane,edgeAClipSpace);
   es = dot(samplePlane,edgeBClipSpace);
   ss*=es;
@@ -121,7 +164,7 @@ int computeBridgeSilhouetteMultiplicity(in vec4 bridgeStart,in vec4 bridgeEnd){
   result *= 1+int(ss<0.f);
 
   vec4 trianglePlane  = getClipPlaneSkala(bridgeStart,bridgeEnd,bridgeStart + (edgeBClipSpace-edgeAClipSpace));
-  trianglePlane *= sign(dot(trianglePlane,lightClipSpace));
+  trianglePlane *= sign(dot(trianglePlane,clipLightPosition));
   if(dot(trianglePlane,edgeAClipSpace)<=0)return 0;
 
   return result;

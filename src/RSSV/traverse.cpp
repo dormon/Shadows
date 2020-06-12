@@ -61,6 +61,7 @@ void createTraverseProgram(vars::Vars&vars){
       ,"rssv.param.exactTriangleAABBLevel"
       ,"rssv.param.performTraverseSilhouettes"
       ,"rssv.param.performTraverseTriangles"
+      ,"rssv.param.computeSilhouettePlanes"
 
       );
   std::cerr << "createTraverseSilhouettesProgram" << std::endl;
@@ -84,6 +85,7 @@ void createTraverseProgram(vars::Vars&vars){
   auto const exactTriangleAABBLevel       =  vars.getInt32       ("rssv.param.exactTriangleAABBLevel"      );
   auto const performTraverseSilhouettes   =  vars.getBool        ("rssv.param.performTraverseSilhouettes"  );
   auto const performTraverseTriangles     =  vars.getBool        ("rssv.param.performTraverseTriangles"    );
+  auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
 
   auto const nofEdges                     =  adj->getNofEdges();
   auto const nofTriangles                 =  adj->getNofTriangles();
@@ -113,13 +115,14 @@ void createTraverseProgram(vars::Vars&vars){
         ,Shader::define("EXACT_TRIANGLE_AABB_LEVEL"     ,(int     )exactTriangleAABBLevel      )
         ,Shader::define("PERFORM_TRAVERSE_SILHOUETTES"  ,(int     )performTraverseSilhouettes  )
         ,Shader::define("PERFORM_TRAVERSE_TRIANGLES"    ,(int     )performTraverseTriangles    )
+        ,Shader::define("COMPUTE_SILHOUETTE_PLANES"     ,(int     )computeSilhouettePlanes     )
 
         ,rssv::demortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader
         ,rssv::collisionShader
         ,rssv::getAABBShaderFWD
-        ,rssv::loadEdgeShaderFWD
+        ,computeSilhouettePlanes?"":rssv::loadEdgeShaderFWD
         ,rssv::getEdgePlanesShader
         ,rssv::traverseSilhouettesFWD
         ,rssv::traverseTrianglesFWD
@@ -128,7 +131,7 @@ void createTraverseProgram(vars::Vars&vars){
         ,rssv::traverseTriangles
         ,rssv::traverseSilhouettes
         ,rssv::getAABBShader
-        ,rssv::loadEdgeShader
+        ,computeSilhouettePlanes?"":rssv::loadEdgeShader
         ));
 
 }
@@ -179,14 +182,13 @@ void traverse(vars::Vars&vars){
   auto const clipLightPosition = proj*view*lightPosition;
 
   auto jobCounters                 = vars.get<Buffer >("rssv.method.traverseJobCounters"       );
-  auto edgePlanes                  = vars.get<Buffer >("rssv.method.edgePlanes"                );
-  auto multBuffer                  = vars.get<Buffer >("rssv.method.multBuffer"                );
-  auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
   auto computeBridges              = vars.getBool     ("rssv.param.computeBridges"             );
 
+  auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
   auto const performTraverseSilhouettes =  vars.getBool        ("rssv.param.performTraverseSilhouettes");
   auto const performTraverseTriangles   =  vars.getBool        ("rssv.param.performTraverseTriangles"  );
+  auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
 
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
@@ -197,9 +199,6 @@ void traverse(vars::Vars&vars){
   hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
 
   jobCounters      ->bindBase(GL_SHADER_STORAGE_BUFFER,2);
-  edgePlanes       ->bindBase(GL_SHADER_STORAGE_BUFFER,3);
-  multBuffer       ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
-  bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
 
   depth     ->bind     (0);
   shadowMask->bindImage(1);
@@ -209,14 +208,28 @@ void traverse(vars::Vars&vars){
 
 
   if(performTraverseSilhouettes){
-    auto invTran = glm::transpose(glm::inverse(proj*view));
-    prg->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
-    prg->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
+    auto bridges = vars.get<Buffer >("rssv.method.bridges"                   );
+    prg->bindBuffer("Bridges",bridges);
 
-    if(computeBridges){
+
+    if(computeBridges || exactSilhouetteAABB){
+      prg->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
+    }
+
+    auto multBuffer = vars.get<Buffer >("rssv.method.multBuffer"                );
+    prg->bindBuffer("MultBuffer",multBuffer);
+
+    if(computeSilhouettePlanes){
+      auto sil = vars.get<Buffer>("rssv.method.silhouettePlanes");
+      prg->bindBuffer("SilhouettePlanes",sil);
+    }else{
+      auto invTran = glm::transpose(glm::inverse(proj*view));
+      prg->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
+      prg->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
       auto projView = proj*view;
       prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
-      prg->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
+      auto edgePlanes = vars.get<Buffer >("rssv.method.edgePlanes"                );
+      prg->bindBuffer("EdgePlanes" ,edgePlanes);
     }
     //prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
     

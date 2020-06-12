@@ -67,12 +67,22 @@ void createEdgePlanes(vars::Vars&vars){
 }
 
 void createSilhouetteProgram(vars::Vars&vars){
-  FUNCTION_PROLOGUE("rssv.method"         ,
-      "rssv.param.alignment"              ,
-      "rssv.param.extractSilhouettesWGS"  ,
-      "maxMultiplicity"                   ,
-      "wavefrontSize"                     ,
-      "adjacency"                         );
+  FUNCTION_PROLOGUE("rssv.method"         
+      ,"rssv.param.alignment"              
+      ,"rssv.param.extractSilhouettesWGS"  
+      ,"maxMultiplicity"                   
+      ,"wavefrontSize"                     
+      ,"adjacency"                         
+      ,"rssv.param.computeBridges"
+      ,"rssv.param.exactSilhouetteAABB"
+      ,"rssv.param.computeSilhouettePlanes"
+      
+      
+      );
+
+  auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
+  auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
+  auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
 
   auto adj = vars.get<Adjacency>("adjacency");
   vars.reCreate<Program>("rssv.method.extractSilhouettesProgram",
@@ -83,6 +93,9 @@ void createSilhouetteProgram(vars::Vars&vars){
         Shader::define("WORKGROUP_SIZE_X"         ,int32_t ( vars.getUint32("rssv.param.extractSilhouettesWGS"  ))),
         Shader::define("MAX_MULTIPLICITY"         ,int32_t ( vars.getUint32("maxMultiplicity"                   ))),
         Shader::define("NOF_EDGES"                ,uint32_t( adj->getNofEdges()                                  )),
+        Shader::define("COMPUTE_BRIDGES"               ,(int     )computeBridges              ),
+        Shader::define("EXACT_SILHOUETTE_AABB"         ,(int     )exactSilhouetteAABB         ),
+        Shader::define("COMPUTE_SILHOUETTE_PLANES"     ,(int     )computeSilhouettePlanes     ),
         ballotSrc,
         silhouetteFunctions,
         loadEdgeShaderFWD,
@@ -100,12 +113,33 @@ void allocateMultBuffer(vars::Vars&vars){
   vars.reCreate<Buffer>("rssv.method.multBuffer",sizeof(uint32_t)*(1+adj->getNofEdges()));
 }
 
+void allocateSilhouettePlanes(vars::Vars&vars){
+  FUNCTION_PROLOGUE("rssv.method"         
+      ,"adjacency"                         
+      ,"rssv.param.computeBridges"
+      ,"rssv.param.exactSilhouetteAABB"
+      ,"rssv.param.computeSilhouettePlanes"
+      );
+  auto const adj = vars.get<Adjacency>("adjacency");
+  auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
+  auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
+  auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
+  if(computeSilhouettePlanes){
+    uint32_t floatsPerSilhouette = 1+4*4;
+    if(computeBridges || exactSilhouetteAABB)floatsPerSilhouette += 2*4;
+    vars.reCreate<Buffer>("rssv.method.silhouettePlanes",sizeof(float)*floatsPerSilhouette*adj->getNofEdges());
+  }else{
+    vars.erase("rssv.method.silhouettePlanes");
+  }
+}
+
 void extractSilhouettes(vars::Vars&vars){
   FUNCTION_CALLER();
   createAdjacency(vars);
   createEdgePlanes(vars);
   createSilhouetteProgram(vars);
   allocateMultBuffer(vars);
+  allocateSilhouettePlanes(vars);
 
   auto adj               =  vars.get<Adjacency>("adjacency"                            );
   auto program           =  vars.get<Program>  ("rssv.method.extractSilhouettesProgram");
@@ -113,6 +147,26 @@ void extractSilhouettes(vars::Vars&vars){
   auto WGS               =  vars.getUint32     ("rssv.param.extractSilhouettesWGS"     );
   auto multBuffer        =  vars.get<Buffer>   ("rssv.method.multBuffer"               );
   auto lightPosition     = *vars.get<glm::vec4>("rssv.method.lightPosition"            );
+
+  auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
+  auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
+  auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
+
+
+  if(computeSilhouettePlanes){
+    auto sil = vars.get<Buffer>("rssv.method.silhouettePlanes");
+    program->bindBuffer("SilhouettePlanes",sil);
+
+    auto const&view              = *vars.get<glm::mat4>("rssv.method.viewMatrix"      );
+    auto const&proj              = *vars.get<glm::mat4>("rssv.method.projectionMatrix");
+    auto invTran = glm::transpose(glm::inverse(proj*view));
+    program->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
+    program->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
+    if(computeBridges || exactSilhouetteAABB){
+      auto projView = proj*view;
+      program->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
+    }
+  }
 
   //clear silhouette counter
   multBuffer->clear(GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT);
@@ -126,6 +180,22 @@ void extractSilhouettes(vars::Vars&vars){
     ->dispatch((GLuint)getDispatchSize(adj->getNofEdges(),WGS));
 
   glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+
+
+  //if(computeSilhouettePlanes){
+  //  auto sil = vars.get<Buffer>("rssv.method.silhouettePlanes");
+  //  std::vector<float>data;
+  //  sil->getData(data);
+  //  for(size_t e=0;e<6;++e){
+  //    uint32_t floatsPerSilhouette = 1+4*4;
+  //    if(computeBridges || exactSilhouetteAABB)floatsPerSilhouette += 2*4;
+  //    for(size_t i=0;i<floatsPerSilhouette;++i)
+  //      std::cerr << data[e*floatsPerSilhouette+i] << " ";
+  //    std::cerr << std::endl;
+  //  }
+
+  //  exit(0);
+  //}
 }
 
 }

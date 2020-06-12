@@ -189,7 +189,7 @@ void Shadows::draw() {
   auto time = timer.elapsedFromStart();
   auto&t = vars.addOrGetFloat("frameTime");
   auto&fps = vars.addOrGetFloat("fps");
-  t = time;
+  t = time*1000;
   fps = 1.f/time;
 }
 

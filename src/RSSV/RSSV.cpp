@@ -33,6 +33,7 @@ void RSSV::create(glm::vec4 const& lightPosition,
   *vars.addOrGet<glm::mat4>("rssv.method.viewMatrix"      ) = viewMatrix      ;
   *vars.addOrGet<glm::mat4>("rssv.method.projectionMatrix") = projectionMatrix;
 
+  //return;
   //glFinish();
   ifExistStamp("");
   rssv::computeShadowFrusta(vars);
