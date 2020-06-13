@@ -49,7 +49,7 @@ uniform mat4 invTran;
 uniform mat4 projView;
 
 
-#if (STORE_EDGE_PLANES == 1) || (STORE_TRAVERSE_STAT == 1)
+#if (STORE_EDGE_PLANES == 1) || (STORE_SILHOUETTE_TRAVERSE_STAT == 1) || (STORE_TRIANGLE_TRAVERSE_STAT == 1)
 layout(std430,binding = 7)buffer Debug{uint debug[];};
 #endif
 

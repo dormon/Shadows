@@ -197,7 +197,7 @@ shared vec3     localBridgeEnd   [nofLevels][WARP];
 #endif
 
 void debug_storeSilhouetteTraverseStatLastLevel(in uint job,in uint node,in int level){
-#if STORE_TRAVERSE_STAT == 1
+#if STORE_SILHOUETTE_TRAVERSE_STAT == 1
   if(gl_LocalInvocationIndex==0){
     uint w = atomicAdd(debug[0],1);
     debug[1+w*4+0] = job;
@@ -209,7 +209,7 @@ void debug_storeSilhouetteTraverseStatLastLevel(in uint job,in uint node,in int 
 }
 
 void debug_storeSilhouetteTraverseStat(in uint job,in uint node,in int level,uint status){
-#if STORE_TRAVERSE_STAT == 1
+#if STORE_SILHOUETTE_TRAVERSE_STAT == 1
   uint w = atomicAdd(debug[0],1);
   debug[1+w*4+0] = job;
   debug[1+w*4+1] = node*WARP + gl_LocalInvocationIndex;

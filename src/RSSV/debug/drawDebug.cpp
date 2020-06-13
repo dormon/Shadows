@@ -232,6 +232,14 @@ void rssv::drawDebug(vars::Vars&vars){
         rssv::debug::dumpTraverseSilhouettes(vars);
       }
 
+      if(ImGui::MenuItem("dump traverse triangles data")){
+        rssv::debug::dumpBasic(vars);
+        rssv::debug::dumpNodePool(vars);
+        rssv::debug::dumpAABBPool(vars);
+        rssv::debug::dumpAABBPointer(vars);
+        rssv::debug::dumpTraverseTriangles(vars);
+      }
+
       if(ImGui::MenuItem("dump planes")){
         rssv::debug::dumpBasic(vars);
         rssv::debug::dumpNodePool(vars);

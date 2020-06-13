@@ -45,9 +45,13 @@ void createTraverseProgram(vars::Vars&vars){
       ,"rssv.param.sfWGS"
       ,"rssv.param.bias"
       ,"rssv.param.noAABB"
+
+      //debug
       ,"rssv.param.storeTraverseSilhouettesStat"
+      ,"rssv.param.storeTraverseTrianglesStat"
       ,"rssv.param.storeEdgePlanes"
       ,"rssv.param.dumpPointsNotPlanes"
+
       ,"rssv.param.storeBridgesInLocalMemory"
       ,"rssv.param.alignment"
       ,"rssv.param.sfAlignment"      
@@ -75,9 +79,13 @@ void createTraverseProgram(vars::Vars&vars){
   auto const adj                          =  vars.get<Adjacency> ("adjacency"                              );
   auto const&cfg                          = *vars.get<Config>    ("rssv.method.config"                     );
   auto const noAABB                       =  vars.getBool        ("rssv.param.noAABB"                      );
+
+  //debug
   auto const storeTraverseSilhouettesStat =  vars.getBool        ("rssv.param.storeTraverseSilhouettesStat");
+  auto const storeTraverseTrianglesStat   =  vars.getBool        ("rssv.param.storeTraverseTrianglesStat"  );
   auto const storeEdgePlanes              =  vars.getBool        ("rssv.param.storeEdgePlanes"             );
   auto const dumpPointsNotPlanes          =  vars.getBool        ("rssv.param.dumpPointsNotPlanes"         );
+
   auto const storeBridgesInLocalMemory    =  vars.getBool        ("rssv.param.storeBridgesInLocalMemory"   );
   auto const alignSize                    =  vars.getSizeT       ("rssv.param.alignment"                   );
   auto const sfAlignment                  =  vars.getUint32      ("rssv.param.sfAlignment"                 );
@@ -107,8 +115,12 @@ void createTraverseProgram(vars::Vars&vars){
         ballotSrc,
         getConfigShader(vars)
         ,Shader::define("NO_AABB"                       ,(int     )noAABB                      )
-        ,Shader::define("STORE_TRAVERSE_STAT"           ,(int     )storeTraverseSilhouettesStat)
+
+        //debug dumps
+        ,Shader::define("STORE_SILHOUETTE_TRAVERSE_STAT",(int     )storeTraverseSilhouettesStat)
+        ,Shader::define("STORE_TRIANGLE_TRAVERSE_STAT"  ,(int     )storeTraverseTrianglesStat  )
         ,Shader::define("STORE_EDGE_PLANES"             ,(int     )storeEdgePlanes             )
+
         ,Shader::define("DUMP_POINTS_NOT_PLANES"        ,(int     )dumpPointsNotPlanes         )
         ,Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY" ,(int     )storeBridgesInLocalMemory   )
         ,Shader::define("USE_BRIDGE_POOL"               ,(int     )cfg.useBridgePool           )
@@ -152,12 +164,6 @@ void createTraverseProgram(vars::Vars&vars){
 
 }
 
-//void createTriangleBuffer(vars::Vars&vars){
-//  FUNCTION_PROLOGUE("rssv.method","adjacency");
-//  auto const adj = vars.get<Adjacency>("adjacency");
-//  vars.reCreate<Buffer>("rssv.method.triangles",adj->getVertices());
-//}
-
 void createTraverseJobCounters(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method");
   vars.reCreate<Buffer>("rssv.method.traverseJobCounters",sizeof(uint32_t)*2);
@@ -168,7 +174,24 @@ void createDebugSilhouetteTraverseBuffers(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"
       ,"rssv.param.storeTraverseSilhouettesStat"
       );
-  vars.reCreate<Buffer>("rssv.method.debug.traverseSilhouettesBuffer",sizeof(uint32_t)*(1+1024*1024*128));
+  auto storeTraverseSilhouettesStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
+
+  if(storeTraverseSilhouettesStat)
+    vars.reCreate<Buffer>("rssv.method.debug.traverseSilhouettesBuffer",sizeof(uint32_t)*(1+1024*1024*128));
+  else
+    vars.erase("rssv.method.debug.traverseSilhouettesBuffer");
+}
+
+void createDebugTriangleTraverseBuffers(vars::Vars&vars){
+  FUNCTION_PROLOGUE("rssv.method"
+      ,"rssv.param.storeTraverseTrianglesStat"
+      );
+  auto storeTraverseTrianglesStat = vars.getBool("rssv.param.storeTraverseTrianglesStat");
+
+  if(storeTraverseTrianglesStat)
+    vars.reCreate<Buffer>("rssv.method.debug.traverseTrianglesBuffer",sizeof(uint32_t)*(1+1024*1024*128));
+  else
+    vars.erase("rssv.method.debug.traverseTrianglesBuffer");
 }
 
 void createDebugEdgePlanesBuffer(vars::Vars&vars){
@@ -186,9 +209,12 @@ void traverse(vars::Vars&vars){
   FUNCTION_CALLER();
   createTraverseProgram(vars);
   createTraverseJobCounters(vars);
+
+  //debug
   createDebugSilhouetteTraverseBuffers(vars);
+  createDebugTriangleTraverseBuffers(vars);
   createDebugEdgePlanesBuffer(vars);
-  //createTriangleBuffer(vars);
+
 
   auto prg        = vars.get<Program>("rssv.method.traverseSilhouettesProgram");
 
@@ -249,12 +275,12 @@ void traverse(vars::Vars&vars){
     }
     //prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
     
-    auto const storeTraverseStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
-    if(storeTraverseStat){
+    auto const storeTraverseSilhouettesStat = vars.getBool("rssv.param.storeTraverseSilhouettesStat");
+    if(storeTraverseSilhouettesStat){
       glFinish();
       auto debug = vars.get<Buffer>("rssv.method.debug.traverseSilhouettesBuffer");
       glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
-      debug->bindBase(GL_SHADER_STORAGE_BUFFER,7);
+      prg->bindBuffer("Debug",debug);
     }
 
     auto const storeEdgePlanes = vars.getBool("rssv.param.storeEdgePlanes");
@@ -270,6 +296,14 @@ void traverse(vars::Vars&vars){
   if(performTraverseTriangles){
     auto sf = vars.get<Buffer >("rssv.method.shadowFrusta"    );
     sf->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+
+    auto const storeTraverseTrianglesStat = vars.getBool("rssv.param.storeTraverseTrianglesStat");
+    if(storeTraverseTrianglesStat){
+      glFinish();
+      auto debug = vars.get<Buffer>("rssv.method.debug.traverseTrianglesBuffer");
+      glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+      prg->bindBuffer("Debug",debug);
+    }
   }
 
 
