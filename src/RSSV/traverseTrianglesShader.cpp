@@ -155,6 +155,35 @@ uint computeAABBTriangleIntersetion(in vec3 minCorner,in vec3 size){
   return status;
 }
 
+void computeBridgeTriangleIntersection(in vec3 minCorner,in vec3 aabbSize,int level,uint node){
+#if COMPUTE_TRIANGLE_BRIDGES == 1 && EXACT_TRIANGLE_AABB == 1
+  //TODO computation when we dont have tri_A,tri_B,tri_C if EXACT == false
+  vec4 bridgeStart;
+  vec4 bridgeEnd  ;
+  int  mult       ;
+
+
+  bridgeEnd = vec4(minCorner + aabbSize*.5f,1.f);
+
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+  localBridgeEnd[level][gl_LocalInvocationIndex] = vec3(bridgeEnd);
+#endif
+
+  if(level == 0){
+    bridgeStart = clipLightPosition;
+  }else{
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+    bridgeStart = vec4(localBridgeEnd[level-1][node&warpMask],1);
+#else
+    bridgeStart = vec4(getAABBCenter(level-1,node),1);
+#endif
+  }
+
+  mult = doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition)+1;
+  if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
+#endif
+}
+
 void traverseTriangle(){
   int level = 0;
 
@@ -166,7 +195,9 @@ void traverseTriangle(){
 
       //debug_storeSilhouetteTraverseStatLastLevel();
 
+#if COMPUTE_LAST_LEVEL_TRIANGLES == 1
       //lastLevelTriangles(node);
+#endif
 
       node >>= warpBits;
       level--;
@@ -199,9 +230,9 @@ void traverseTriangle(){
 #endif
         if(status != INTERSECTS)status = TRIVIAL_REJECT;
 
-        //if(gl_LocalInvocationIndex > 31)status = TRIVIAL_REJECT;
-        //computeAABBSilhouetteIntersection(status,minCorner,aabbSize);
-        //status == 0u;//TODO REMOVE
+#if COMPUTE_TRIANGLE_BRIDGES == 1
+        computeBridgeTriangleIntersection(minCorner,aabbSize,level,node);
+#endif
 
       }
 

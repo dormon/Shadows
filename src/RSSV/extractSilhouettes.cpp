@@ -73,14 +73,16 @@ void createSilhouetteProgram(vars::Vars&vars){
       ,"maxMultiplicity"                   
       ,"wavefrontSize"                     
       ,"adjacency"                         
-      ,"rssv.param.computeBridges"
+      ,"rssv.param.computeSilhouetteBridges"
+      ,"rssv.param.computeTriangleBridges"
       ,"rssv.param.exactSilhouetteAABB"
       ,"rssv.param.computeSilhouettePlanes"
       
       
       );
 
-  auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
+  auto const computeSilhouetteBridges               =  vars.getBool        ("rssv.param.computeSilhouetteBridges");
+  auto const computeTriangleBridges                 =  vars.getBool        ("rssv.param.computeTriangleBridges"  );
   auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
   auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
 
@@ -88,14 +90,15 @@ void createSilhouetteProgram(vars::Vars&vars){
   vars.reCreate<Program>("rssv.method.extractSilhouettesProgram",
       make_shared<Shader>(GL_COMPUTE_SHADER,
         "#version 450 core\n",
-        Shader::define("WARP"                     ,uint32_t( vars.getSizeT ("wavefrontSize"                     ))),
-        Shader::define("ALIGN_SIZE"               ,uint32_t( vars.getSizeT ("rssv.param.alignment"              ))),
-        Shader::define("WORKGROUP_SIZE_X"         ,int32_t ( vars.getUint32("rssv.param.extractSilhouettesWGS"  ))),
-        Shader::define("MAX_MULTIPLICITY"         ,int32_t ( vars.getUint32("maxMultiplicity"                   ))),
-        Shader::define("NOF_EDGES"                ,uint32_t( adj->getNofEdges()                                  )),
-        Shader::define("COMPUTE_BRIDGES"               ,(int     )computeBridges              ),
-        Shader::define("EXACT_SILHOUETTE_AABB"         ,(int     )exactSilhouetteAABB         ),
-        Shader::define("COMPUTE_SILHOUETTE_PLANES"     ,(int     )computeSilhouettePlanes     ),
+        Shader::define("WARP"                      ,(uint32_t)vars.getSizeT ("wavefrontSize"                     )),
+        Shader::define("ALIGN_SIZE"                ,(uint32_t)vars.getSizeT ("rssv.param.alignment"              )),
+        Shader::define("WORKGROUP_SIZE_X"          ,(int32_t )vars.getUint32("rssv.param.extractSilhouettesWGS"  )),
+        Shader::define("MAX_MULTIPLICITY"          ,(int32_t )vars.getUint32("maxMultiplicity"                   )),
+        Shader::define("NOF_EDGES"                 ,(uint32_t)adj->getNofEdges()                                  ),
+        Shader::define("COMPUTE_SILHOUETTE_BRIDGES",(int     )computeSilhouetteBridges                            ),
+        Shader::define("COMPUTE_TRIANGLE_BRIDGES"  ,(int     )computeTriangleBridges                              ),
+        Shader::define("EXACT_SILHOUETTE_AABB"     ,(int     )exactSilhouetteAABB                                 ),
+        Shader::define("COMPUTE_SILHOUETTE_PLANES" ,(int     )computeSilhouettePlanes                             ),
         ballotSrc,
         silhouetteFunctions,
         loadEdgeShaderFWD,
@@ -116,17 +119,19 @@ void allocateMultBuffer(vars::Vars&vars){
 void allocateSilhouettePlanes(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"         
       ,"adjacency"                         
-      ,"rssv.param.computeBridges"
+      ,"rssv.param.computeSilhouetteBridges"
+      ,"rssv.param.computeTriangleBridges"
       ,"rssv.param.exactSilhouetteAABB"
       ,"rssv.param.computeSilhouettePlanes"
       );
   auto const adj = vars.get<Adjacency>("adjacency");
-  auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
+  auto const computeSilhouetteBridges     =  vars.getBool        ("rssv.param.computeSilhouetteBridges"    );
+  auto const computeTriangleBridges       =  vars.getBool        ("rssv.param.computeTriangleBridges"      );
   auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
   auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
   if(computeSilhouettePlanes){
     uint32_t floatsPerSilhouette = 1+4*4;
-    if(computeBridges || exactSilhouetteAABB)floatsPerSilhouette += 2*4;
+    if(computeSilhouetteBridges || computeTriangleBridges || exactSilhouetteAABB)floatsPerSilhouette += 2*4;
     vars.reCreate<Buffer>("rssv.method.silhouettePlanes",sizeof(float)*floatsPerSilhouette*adj->getNofEdges());
   }else{
     vars.erase("rssv.method.silhouettePlanes");
@@ -148,9 +153,10 @@ void extractSilhouettes(vars::Vars&vars){
   auto multBuffer        =  vars.get<Buffer>   ("rssv.method.multBuffer"               );
   auto lightPosition     = *vars.get<glm::vec4>("rssv.method.lightPosition"            );
 
-  auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
-  auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
-  auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
+  auto const computeSilhouettePlanes  = vars.getBool("rssv.param.computeSilhouettePlanes" );
+  auto const computeSilhouetteBridges = vars.getBool("rssv.param.computeSilhouetteBridges");
+  auto const computeTriangleBridges   = vars.getBool("rssv.param.computeTriangleBridges"  );
+  auto const exactSilhouetteAABB      = vars.getBool("rssv.param.exactSilhouetteAABB"     );
 
 
   if(computeSilhouettePlanes){
@@ -162,7 +168,7 @@ void extractSilhouettes(vars::Vars&vars){
     auto invTran = glm::transpose(glm::inverse(proj*view));
     program->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
     program->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
-    if(computeBridges || exactSilhouetteAABB){
+    if(computeSilhouetteBridges || computeTriangleBridges || exactSilhouetteAABB){
       auto projView = proj*view;
       program->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
     }

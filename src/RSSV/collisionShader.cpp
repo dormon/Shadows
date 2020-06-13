@@ -197,6 +197,41 @@ bool doesSubFrustumDiagonalIntersectTriangle(in vec3 minCorner,in vec3 maxCorner
   return true;
 }
 
+int doesLineIntersectTriangle(in vec4 m,in vec4 n,in vec4 a,in vec4 b,in vec4 c,in vec4 l){
+  vec4 tt = getClipPlaneSkala(a,b,c);
+  float flip = sign(dot(tt,l));
+  tt *= flip;
+  float tm = dot(tt,m);
+  float tn = dot(tt,n);
+
+  //tm tn c
+  // -  - 0
+  // 0  - +
+  // +  - +
+  // -  0 -
+  // 0  0 0
+  // +  0 0
+  // -  + -
+  // 0  + 0
+  // +  + 0
+  // (m>=0&&n>=0)||(m<0&&n<0)
+  if((tm<0) == (tn<0))return 0;
+  int res = int(sign(tm));
+
+  flip *= sign(dot(tt,m-n));
+
+  vec4 ab = getClipPlaneSkala(m,n,m + (b-a)) * flip;
+  if(dot(ab,a)<0)return 0; 
+
+  vec4 bc = getClipPlaneSkala(m,n,m + (c-b)) * flip;
+  if(dot(bc,b)<0)return 0; 
+
+  vec4 ca = getClipPlaneSkala(m,n,m + (a-c)) * flip;
+  if(dot(ca,c)<0)return 0; 
+
+  return res;
+}
+
 
 #line 110
 bool doesEdgeIntersectFrustum(in vec4 A,in vec4 B){

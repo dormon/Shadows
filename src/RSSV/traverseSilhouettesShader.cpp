@@ -4,7 +4,7 @@ std::string const rssv::traverseSilhouettesFWD = R".(
 void traverseSilhouetteJOB();
 #if COMPUTE_SILHOUETTE_PLANES == 1
 
-  #if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+  #if COMPUTE_SILHOUETTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
     #if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < (6*4+1)
       #undef SHARED_MEMORY_SIZE
       #define SHARED_MEMORY_SIZE (6*4+1)
@@ -34,7 +34,7 @@ std::string const extern rssv::traverseSilhouettes = R".(
   #define abPlaneO        (3*4)
   #define edgeAClipSpaceO (4*4)
   #define edgeBClipSpaceO (5*4)
-  #if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+  #if COMPUTE_SILHOUETTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
     #define edgeMultO       (6*4)
   #else
     #define edgeMultO       (4*4)
@@ -59,7 +59,7 @@ std::string const extern rssv::traverseSilhouettes = R".(
 
 #if COMPUTE_SILHOUETTE_PLANES == 1
 void loadSilhouette(uint job){
-  #if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+  #if COMPUTE_SILHOUETTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
   const uint floatsPerSilhouette = 6*4+1;
   #else
   const uint floatsPerSilhouette = 4*4+1;
@@ -93,7 +93,7 @@ void loadSilhouette(uint job){
     vec3 abn = normalize(cross(edgeB-edgeA,n));
     toShared4f(abPlaneO  ,invTran*vec4(abn,-dot(abn,edgeA)));
 
-#if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+#if COMPUTE_SILHOUETTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
     toShared4f(edgeAClipSpaceO,projView*vec4(edgeA,1.f));
     toShared4f(edgeBClipSpaceO,projView*vec4(edgeB,1.f));
 #endif
@@ -190,7 +190,7 @@ void lastLevelSilhouette(uint node){
 
 #if WARP == 64
 
-#if COMPUTE_BRIDGES == 1
+#if COMPUTE_SILHOUETTE_BRIDGES == 1 || COMPUTE_TRIANGLE_BRIDGES == 1
 #if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
 shared vec3     localBridgeEnd   [nofLevels][WARP];
 #endif
@@ -219,7 +219,7 @@ void debug_storeSilhouetteTraverseStat(in uint job,in uint node,in int level,uin
 }
 
 void computeBridgeSilhouetteIntersection(in vec3 minCorner,in vec3 aabbSize,int level,uint node){
-#if COMPUTE_BRIDGES == 1
+#if COMPUTE_SILHOUETTE_BRIDGES == 1
   vec4 bridgeStart;
   vec4 bridgeEnd  ;
   int  mult       ;

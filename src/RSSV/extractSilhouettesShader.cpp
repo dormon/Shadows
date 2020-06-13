@@ -65,7 +65,7 @@ void storeSilhouettePlanes(in uint wh,in uint edge,in int mult){
   vec3 abn = normalize(cross(edgeB-edgeA,n));
   vec4 abPlane    = invTran*vec4(abn,-dot(abn,edgeA));
 
-#if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+#if COMPUTE_SILHOUETTE_BRIDGES == 1 || COMPUTE_TRIANGLE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
   vec4 edgeAClipSpace = projView*vec4(edgeA,1.f);
   vec4 edgeBClipSpace = projView*vec4(edgeB,1.f);
   const uint floatsPerSilhouette = 4*6+1;
@@ -91,7 +91,7 @@ void storeSilhouettePlanes(in uint wh,in uint edge,in int mult){
   silhouettePlanes[wh*floatsPerSilhouette+0+3*4+2] =   abPlane[2]; 
   silhouettePlanes[wh*floatsPerSilhouette+0+3*4+3] =   abPlane[3]; 
 
-#if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+#if COMPUTE_SILHOUETTE_BRIDGES == 1 || COMPUTE_TRIANGLE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
   silhouettePlanes[wh*floatsPerSilhouette+0+4*4+0] =   edgeAClipSpace[0]; 
   silhouettePlanes[wh*floatsPerSilhouette+0+4*4+1] =   edgeAClipSpace[1]; 
   silhouettePlanes[wh*floatsPerSilhouette+0+4*4+2] =   edgeAClipSpace[2]; 
@@ -102,7 +102,7 @@ void storeSilhouettePlanes(in uint wh,in uint edge,in int mult){
   silhouettePlanes[wh*floatsPerSilhouette+0+5*4+3] =   edgeBClipSpace[3]; 
 #endif
 
-#if COMPUTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+#if COMPUTE_SILHOUETTE_BRIDGES == 1 || COMPUTE_TRIANGLE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
   silhouettePlanes[wh*floatsPerSilhouette+6*4+0] = float(mult); 
 #else
   silhouettePlanes[wh*floatsPerSilhouette+4*4+0] = float(mult); 

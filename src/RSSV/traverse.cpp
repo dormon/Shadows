@@ -48,19 +48,25 @@ void createTraverseProgram(vars::Vars&vars){
       ,"rssv.param.storeTraverseSilhouettesStat"
       ,"rssv.param.storeEdgePlanes"
       ,"rssv.param.dumpPointsNotPlanes"
-      ,"rssv.param.computeBridges"
       ,"rssv.param.storeBridgesInLocalMemory"
-      ,"rssv.param.computeLastLevelSilhouettes"
       ,"rssv.param.alignment"
       ,"rssv.param.sfAlignment"      
       ,"rssv.param.sfInterleave"     
       ,"rssv.param.morePlanes"     
+
+      ,"rssv.param.performTraverseSilhouettes"
       ,"rssv.param.exactSilhouetteAABB"
       ,"rssv.param.exactSilhouetteAABBLevel"
+      ,"rssv.param.computeSilhouetteBridges"
+      ,"rssv.param.computeLastLevelSilhouettes"
+
+      ,"rssv.param.performTraverseTriangles"
       ,"rssv.param.exactTriangleAABB"
       ,"rssv.param.exactTriangleAABBLevel"
-      ,"rssv.param.performTraverseSilhouettes"
-      ,"rssv.param.performTraverseTriangles"
+      ,"rssv.param.computeTriangleBridges"
+      ,"rssv.param.computeLastLevelTriangles"
+
+
       ,"rssv.param.computeSilhouettePlanes"
 
       );
@@ -72,19 +78,24 @@ void createTraverseProgram(vars::Vars&vars){
   auto const storeTraverseSilhouettesStat =  vars.getBool        ("rssv.param.storeTraverseSilhouettesStat");
   auto const storeEdgePlanes              =  vars.getBool        ("rssv.param.storeEdgePlanes"             );
   auto const dumpPointsNotPlanes          =  vars.getBool        ("rssv.param.dumpPointsNotPlanes"         );
-  auto const computeBridges               =  vars.getBool        ("rssv.param.computeBridges"              );
   auto const storeBridgesInLocalMemory    =  vars.getBool        ("rssv.param.storeBridgesInLocalMemory"   );
-  auto const computeLastLevelSilhouettes  =  vars.getBool        ("rssv.param.computeLastLevelSilhouettes" );
   auto const alignSize                    =  vars.getSizeT       ("rssv.param.alignment"                   );
   auto const sfAlignment                  =  vars.getUint32      ("rssv.param.sfAlignment"                 );
   auto const sfInterleave                 =  vars.getBool        ("rssv.param.sfInterleave"                );
   auto const morePlanes                   =  vars.getBool        ("rssv.param.morePlanes"                  );
+
+  auto const performTraverseSilhouettes   =  vars.getBool        ("rssv.param.performTraverseSilhouettes"  );
   auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
   auto const exactSilhouetteAABBLevel     =  vars.getInt32       ("rssv.param.exactSilhouetteAABBLevel"    );
+  auto const computeLastLevelSilhouettes  =  vars.getBool        ("rssv.param.computeLastLevelSilhouettes" );
+  auto const computeSilhouetteBridges     =  vars.getBool        ("rssv.param.computeSilhouetteBridges"    );
+
+  auto const performTraverseTriangles     =  vars.getBool        ("rssv.param.performTraverseTriangles"    );
   auto const exactTriangleAABB            =  vars.getBool        ("rssv.param.exactTriangleAABB"           );
   auto const exactTriangleAABBLevel       =  vars.getInt32       ("rssv.param.exactTriangleAABBLevel"      );
-  auto const performTraverseSilhouettes   =  vars.getBool        ("rssv.param.performTraverseSilhouettes"  );
-  auto const performTraverseTriangles     =  vars.getBool        ("rssv.param.performTraverseTriangles"    );
+  auto const computeLastLevelTriangles    =  vars.getBool        ("rssv.param.computeLastLevelTriangles"   );
+  auto const computeTriangleBridges       =  vars.getBool        ("rssv.param.computeTriangleBridges"      );
+
   auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
 
   auto const nofEdges                     =  adj->getNofEdges();
@@ -99,31 +110,36 @@ void createTraverseProgram(vars::Vars&vars){
         ,Shader::define("STORE_TRAVERSE_STAT"           ,(int     )storeTraverseSilhouettesStat)
         ,Shader::define("STORE_EDGE_PLANES"             ,(int     )storeEdgePlanes             )
         ,Shader::define("DUMP_POINTS_NOT_PLANES"        ,(int     )dumpPointsNotPlanes         )
-        ,Shader::define("COMPUTE_BRIDGES"               ,(int     )computeBridges              )
         ,Shader::define("STORE_BRIDGES_IN_LOCAL_MEMORY" ,(int     )storeBridgesInLocalMemory   )
         ,Shader::define("USE_BRIDGE_POOL"               ,(int     )cfg.useBridgePool           )
-        ,Shader::define("COMPUTE_LAST_LEVEL_SILHOUETTES",(int     )computeLastLevelSilhouettes )
         ,Shader::define("ALIGN_SIZE"                    ,(uint32_t)alignSize                   )
         ,Shader::define("NOF_EDGES"                     ,(uint32_t)nofEdges                    )
         ,Shader::define("NOF_TRIANGLES"                 ,(uint32_t)nofTriangles                )
         ,Shader::define("SF_ALIGNMENT"                  ,(uint32_t)sfAlignment                 )
         ,Shader::define("SF_INTERLEAVE"                 ,(int     )sfInterleave                )
         ,Shader::define("MORE_PLANES"                   ,(int     )morePlanes                  )
+
+        ,Shader::define("PERFORM_TRAVERSE_SILHOUETTES"  ,(int     )performTraverseSilhouettes  )
         ,Shader::define("EXACT_SILHOUETTE_AABB"         ,(int     )exactSilhouetteAABB         )
         ,Shader::define("EXACT_SILHOUETTE_AABB_LEVEL"   ,(int     )exactSilhouetteAABBLevel    )
+        ,Shader::define("COMPUTE_LAST_LEVEL_SILHOUETTES",(int     )computeLastLevelSilhouettes )
+        ,Shader::define("COMPUTE_SILHOUETTE_BRIDGES"    ,(int     )computeSilhouetteBridges    )
+
+        ,Shader::define("PERFORM_TRAVERSE_TRIANGLES"    ,(int     )performTraverseTriangles    )
         ,Shader::define("EXACT_TRIANGLE_AABB"           ,(int     )exactTriangleAABB           )
         ,Shader::define("EXACT_TRIANGLE_AABB_LEVEL"     ,(int     )exactTriangleAABBLevel      )
-        ,Shader::define("PERFORM_TRAVERSE_SILHOUETTES"  ,(int     )performTraverseSilhouettes  )
-        ,Shader::define("PERFORM_TRAVERSE_TRIANGLES"    ,(int     )performTraverseTriangles    )
+        ,Shader::define("COMPUTE_LAST_LEVEL_TRIANGLES"  ,(int     )computeLastLevelTriangles   )
+        ,Shader::define("COMPUTE_TRIANGLE_BRIDGES"      ,(int     )computeTriangleBridges      )
+
         ,Shader::define("COMPUTE_SILHOUETTE_PLANES"     ,(int     )computeSilhouettePlanes     )
 
         ,rssv::demortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader
-        ,rssv::collisionShader
         ,rssv::getAABBShaderFWD
         ,computeSilhouettePlanes?"":rssv::loadEdgeShaderFWD
         ,rssv::getEdgePlanesShader
+        ,rssv::collisionShader
         ,rssv::traverseSilhouettesFWD
         ,rssv::traverseTrianglesFWD
         ,rssv::sharedMemoryShader
@@ -183,12 +199,12 @@ void traverse(vars::Vars&vars){
 
   auto jobCounters                 = vars.get<Buffer >("rssv.method.traverseJobCounters"       );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
-  auto computeBridges              = vars.getBool     ("rssv.param.computeBridges"             );
+  auto computeSilhouetteBridges    = vars.getBool     ("rssv.param.computeSilhouetteBridges"   );
 
-  auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
+  auto const exactSilhouetteAABB        =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
   auto const performTraverseSilhouettes =  vars.getBool        ("rssv.param.performTraverseSilhouettes");
   auto const performTraverseTriangles   =  vars.getBool        ("rssv.param.performTraverseTriangles"  );
-  auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
+  auto const computeSilhouettePlanes    =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
 
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
@@ -212,7 +228,7 @@ void traverse(vars::Vars&vars){
     prg->bindBuffer("Bridges",bridges);
 
 
-    if(computeBridges || exactSilhouetteAABB){
+    if(computeSilhouetteBridges || exactSilhouetteAABB){
       prg->set4fv      ("clipLightPosition",glm::value_ptr(clipLightPosition));
     }
 
