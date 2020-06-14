@@ -179,12 +179,54 @@ void computeBridgeTriangleIntersection(in vec3 minCorner,in vec3 aabbSize,int le
 #endif
   }
 
-  mult = doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition)+1;
+  mult = //2*
+    doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition);
   if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
 #endif
 }
 
-void traverseTriangle(){
+void debug_storeTriangleTraverseStatLastLevel(in uint job,in uint node,in int level){
+#if STORE_TRIANGLE_TRAVERSE_STAT == 1
+  if(gl_LocalInvocationIndex==0){
+    uint w = atomicAdd(debug[0],1);
+    debug[1+w*4+0] = job;
+    debug[1+w*4+1] = node;
+    debug[1+w*4+2] = uint(level);
+    debug[1+w*4+3] = 0xff;
+  }
+#endif
+}
+
+void debug_storeTriangleTraverseStat(in uint job,in uint node,in int level,uint status){
+#if STORE_TRIANGLE_TRAVERSE_STAT == 1
+  uint w = atomicAdd(debug[0],1);
+  debug[1+w*4+0] = job;
+  debug[1+w*4+1] = node*WARP + gl_LocalInvocationIndex;
+  debug[1+w*4+2] = uint(level);
+  debug[1+w*4+3] = status;
+#endif
+}
+
+void lastLevelTriangles(uint node){
+#if COMPUTE_LAST_LEVEL_TRIANGLES == 1
+  uvec2 sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+
+  vec4 bridgeEnd;
+  bridgeEnd.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
+  bridgeEnd.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
+  bridgeEnd.w = 1.f;
+
+  vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node),1.f);
+
+  int mult = //2*
+    doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition);
+
+  if(mult!=0)imageAtomicAdd(stencil,ivec2(sampleCoord),mult);
+#endif
+}
+
+
+void traverseTriangle(uint job){
   int level = 0;
 
   uint64_t currentIntersection;
@@ -193,11 +235,9 @@ void traverseTriangle(){
   while(level >= 0){
     if(level == int(nofLevels)){
 
-      //debug_storeSilhouetteTraverseStatLastLevel();
+      debug_storeTriangleTraverseStatLastLevel(job,node,level);
 
-#if COMPUTE_LAST_LEVEL_TRIANGLES == 1
-      //lastLevelTriangles(node);
-#endif
+      lastLevelTriangles(node);
 
       node >>= warpBits;
       level--;
@@ -230,13 +270,11 @@ void traverseTriangle(){
 #endif
         if(status != INTERSECTS)status = TRIVIAL_REJECT;
 
-#if COMPUTE_TRIANGLE_BRIDGES == 1
         computeBridgeTriangleIntersection(minCorner,aabbSize,level,node);
-#endif
 
       }
 
-      //debug_storeSilhouetteTraverseStat();
+      debug_storeTriangleTraverseStat(job,node,level,status);
 
       currentIntersection = ballotARB(status == INTERSECTS    );
       if(gl_LocalInvocationIndex==0)
@@ -284,7 +322,7 @@ void traverseTriangleJOB(){
     if(job >= NOF_TRIANGLES)break;
 
     loadTriangle(job);
-    traverseTriangle();
+    traverseTriangle(job);
   }
 #endif
 }

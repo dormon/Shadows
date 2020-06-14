@@ -14,9 +14,12 @@ layout(std430,binding=0)buffer Hierarchy{
   #endif
 };
 
-layout(std430,binding=2)buffer JobCounters       {
+layout(std430,binding=2)volatile buffer JobCounters       {
   uint silhouetteJobCounter;
   uint triangleJobCounter  ;
+  uint traverseDoneCounter ;
+  uint mergeJobCounter     ;
+  uint dummy               [6];
 };
 
 
@@ -68,6 +71,8 @@ shared uint64_t intersection[nofLevels];
 void main(){
   traverseSilhouetteJOB();
   traverseTriangleJOB();
+
+  mergeJOB();
 }
 
 

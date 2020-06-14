@@ -25,6 +25,7 @@
 #include <RSSV/getAABBShader.h>
 #include <RSSV/loadEdgeShader.h>
 #include <RSSV/sharedMemoryShader.h>
+#include <RSSV/mergeShader.h>
 
 #include <iomanip>
 #include <Timer.h>
@@ -70,6 +71,8 @@ void createTraverseProgram(vars::Vars&vars){
       ,"rssv.param.computeTriangleBridges"
       ,"rssv.param.computeLastLevelTriangles"
 
+      ,"rssv.param.performMerge"
+
 
       ,"rssv.param.computeSilhouettePlanes"
 
@@ -105,6 +108,8 @@ void createTraverseProgram(vars::Vars&vars){
   auto const computeTriangleBridges       =  vars.getBool        ("rssv.param.computeTriangleBridges"      );
 
   auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
+
+  auto const performMerge                 =  vars.getBool        ("rssv.param.performMerge"                );
 
   auto const nofEdges                     =  adj->getNofEdges();
   auto const nofTriangles                 =  adj->getNofTriangles();
@@ -145,7 +150,10 @@ void createTraverseProgram(vars::Vars&vars){
 
         ,Shader::define("COMPUTE_SILHOUETTE_PLANES"     ,(int     )computeSilhouettePlanes     )
 
+        ,Shader::define("PERFORM_MERGE"                 ,(int     )performMerge                )
+
         ,rssv::demortonShader
+        ,rssv::mortonShader
         ,rssv::depthToZShader
         ,rssv::quantizeZShader
         ,rssv::getAABBShaderFWD
@@ -155,7 +163,9 @@ void createTraverseProgram(vars::Vars&vars){
         ,rssv::traverseSilhouettesFWD
         ,rssv::traverseTrianglesFWD
         ,rssv::sharedMemoryShader
+        ,rssv::mergeShaderFWD
         ,rssv::traverseMain
+        ,rssv::mergeShader
         ,rssv::traverseTriangles
         ,rssv::traverseSilhouettes
         ,rssv::getAABBShader
@@ -166,7 +176,11 @@ void createTraverseProgram(vars::Vars&vars){
 
 void createTraverseJobCounters(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method");
-  vars.reCreate<Buffer>("rssv.method.traverseJobCounters",sizeof(uint32_t)*2);
+  //traverseSilhouettes
+  //traverseTriangles
+  //traverseDone
+  //merge
+  vars.reCreate<Buffer>("rssv.method.traverseJobCounters",sizeof(uint32_t)*10);
 }
 
 
@@ -312,16 +326,26 @@ void traverse(vars::Vars&vars){
 
 
 
+  auto const compute = [&]{
+    auto wg = vars.getUint32("rssv.param.persistentWG");
+    glDispatchCompute(wg,1,1);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+  };
+
 
   if(vars.addOrGetBool("rssv.method.perfCounters.traverseSilhouettes")){
     perf::printComputeShaderProf([&](){
-      glDispatchCompute(1024,1,1);
-      glMemoryBarrier(GL_ALL_BARRIER_BITS);
+      compute();
     });
   }else{
-    glDispatchCompute(1024,1,1);
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    compute();
   }
+
+  //std::vector<uint32_t>jd;
+  //jobCounters->getData(jd);
+  //for(auto const&x:jd)
+  //  std::cerr << x << std::endl;
+  //exit(1);
 
 }
 

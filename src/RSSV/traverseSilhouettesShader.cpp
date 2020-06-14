@@ -154,14 +154,14 @@ int computeBridgeSilhouetteMultiplicity(in vec4 bridgeStart,in vec4 bridgeEnd){
   float ss = dot(edgePlane,bridgeStart);
   float es = dot(edgePlane,bridgeEnd  );
   if((ss<0)==(es<0))return 0;
-  result *= 1-2*int(ss<0.f);
+  //result *= 1-2*int(ss<0.f);
 
   vec4 samplePlane    = getClipPlaneSkala(bridgeStart,bridgeEnd,clipLightPosition);
   ss = dot(samplePlane,edgeAClipSpace);
   es = dot(samplePlane,edgeBClipSpace);
   ss*=es;
   if(ss>0.f)return 0;
-  result *= 1+int(ss<0.f);
+  //result *= 1+int(ss<0.f);
 
   vec4 trianglePlane  = getClipPlaneSkala(bridgeStart,bridgeEnd,bridgeStart + (edgeBClipSpace-edgeAClipSpace));
   trianglePlane *= sign(dot(trianglePlane,clipLightPosition));

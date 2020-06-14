@@ -39,6 +39,9 @@ void rssv::loadParams(
   vars.addBool  ("rssv.param.computeTriangleBridges"     ) = (bool)c->geti32("computeTriangleBridges"     ,1   ,"compute triangle bridge intersections"                                           );
   vars.addBool  ("rssv.param.computeLastLevelTriangles"  ) = (bool)c->geti32("computeLastLevelTriangles"  ,1   ,"compute last level of triangles"                                                 );
 
+  vars.addBool  ("rssv.param.performMerge"               ) = (bool)c->geti32("performMerge"               ,1   ,"perform merge step"                                                              );
+  vars.addUint32("rssv.param.persistentWG"               ) =       c->getu32("persistentWG"               ,256 ,"number of persistent work groups"                                                );
+
 
   vars.addBool  ("rssv.param.usePersistentThreadsSF"     ) = (bool)c->geti32("usePersistentThreadsSF"     ,1   ,"use persisten threads for computation of shadow frusta"                          );
   vars.addBool  ("rssv.param.computeSilhouettePlanes"    ) = (bool)c->geti32("computeSilhouettePlanes"    ,0   ,"compute collision planes during silhouette extraction"                           );
