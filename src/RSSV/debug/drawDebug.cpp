@@ -61,7 +61,7 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&drawTightAABB      = vars.addOrGetBool  ("rssv.method.debug.drawTightAABB");
   auto&wireframe          = vars.addOrGetBool  ("rssv.method.debug.wireframe",true);
 
-  auto&clearScreen        = vars.addOrGetBool("rssv.method.debug.clearScreen"     );
+  auto&clearScreen        = vars.addOrGetBool("rssv.method.debug.clearScreen"     ,true);
   auto&drawSamples        = vars.addOrGetBool("rssv.method.debug.drawSamples"     );
   auto&drawNodePool       = vars.addOrGetBool("rssv.method.debug.drawNodePool"    );
   auto&drawTraverse       = vars.addOrGetBool("rssv.method.debug.drawTraverse"    );
@@ -74,7 +74,7 @@ void rssv::drawDebug(vars::Vars&vars){
 
   auto&drawBridges        = vars.addOrGetBool  ("rssv.method.debug.drawBridges"  );
   auto&drawAllBridges     = vars.addOrGetBool  ("rssv.method.debug.drawAllBridges");
-  auto&bridgesToDraw      = vars.addOrGetUint32("rssv.method.debug.bridgesToDraw");
+  auto&bridgesToDraw      = vars.addOrGetUint32("rssv.method.debug.bridgesToDraw",0x7);
 
   auto&drawStencil        = vars.addOrGetBool  ("rssv.method.debug.drawStencil"   );
 
@@ -148,7 +148,7 @@ void rssv::drawDebug(vars::Vars&vars){
 
     if(ImGui::BeginMenu("bridges")){
 
-      if(ImGui::MenuItem("dump")){
+      if(ImGui::MenuItem("dump","CTRL+D")){
         rssv::debug::dumpBasic(vars);
         rssv::debug::dumpNodePool(vars);
         rssv::debug::dumpAABBPool(vars);
@@ -156,7 +156,7 @@ void rssv::drawDebug(vars::Vars&vars){
         rssv::debug::dumpBridges(vars);
       }
 
-      if(ImGui::MenuItem(drawBridges?"hide":"draw")){
+      if(ImGui::MenuItem(drawBridges?"hide":"draw","CTRL+B")){
         drawBridges = !drawBridges;
         vars.updateTicks("rssv.method.debug.drawBridges");
       }
@@ -170,7 +170,8 @@ void rssv::drawDebug(vars::Vars&vars){
           auto const cfg = *vars.get<Config>        ("rssv.method.debug.dump.config"    );
           for(uint32_t i=0;i<cfg.nofLevels;++i){
             std::stringstream ss;
-            ss << "level" << i;
+            ss << (bridgesToDraw&(1<<i)?"hide":"show");
+            ss << " level" << i;
             if(ImGui::MenuItem(ss.str().c_str())){
               bridgesToDraw ^= 1<<i;
             }

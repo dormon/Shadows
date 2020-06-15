@@ -239,12 +239,16 @@ void traverse(vars::Vars&vars){
 
   auto jobCounters                 = vars.get<Buffer >("rssv.method.traverseJobCounters"       );
   auto stencil                     = vars.get<Texture>("rssv.method.stencil"                   );
-  auto computeSilhouetteBridges    = vars.getBool     ("rssv.param.computeSilhouetteBridges"   );
 
-  auto const exactSilhouetteAABB        =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
+  auto const exactSilhouetteAABB        =  vars.getBool        ("rssv.param.exactSilhouetteAABB"       );
   auto const performTraverseSilhouettes =  vars.getBool        ("rssv.param.performTraverseSilhouettes");
+  auto const computeSilhouetteBridges   =  vars.getBool        ("rssv.param.computeSilhouetteBridges"  );
+
+
   auto const performTraverseTriangles   =  vars.getBool        ("rssv.param.performTraverseTriangles"  );
-  auto const computeSilhouettePlanes    =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
+  auto const computeTriangleBridges     =  vars.getBool        ("rssv.param.computeTriangleBridges"    );
+
+  auto const computeSilhouettePlanes    =  vars.getBool        ("rssv.param.computeSilhouettePlanes"   );
 
   auto depth      = vars.get<GBuffer>("gBuffer")->depth;
   auto shadowMask = vars.get<Texture>("shadowMask");
@@ -262,6 +266,15 @@ void traverse(vars::Vars&vars){
 
   prg->use();
 
+  //{
+  //  auto projView = proj*view;
+  //    for(int i=0;i<16;++i){
+  //      std::cerr << ((uint32_t*)&projView)[i] << std::endl;
+  //    }
+  //    exit(1);
+  //}
+      //auto projView = proj*view;
+      //prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
 
   if(performTraverseSilhouettes){
     auto bridges = vars.get<Buffer >("rssv.method.bridges"                   );
@@ -282,8 +295,10 @@ void traverse(vars::Vars&vars){
       auto invTran = glm::transpose(glm::inverse(proj*view));
       prg->setMatrix4fv("invTran"      ,glm::value_ptr(invTran      ));
       prg->set4fv      ("lightPosition",glm::value_ptr(lightPosition));
+
       auto projView = proj*view;
       prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
+
       auto edgePlanes = vars.get<Buffer >("rssv.method.edgePlanes"                );
       prg->bindBuffer("EdgePlanes" ,edgePlanes);
     }
@@ -318,6 +333,10 @@ void traverse(vars::Vars&vars){
       glClearNamedBufferSubData(debug->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
       prg->bindBuffer("Debug",debug);
     }
+
+    if(computeTriangleBridges){
+      prg->set4fv("clipLightPosition",glm::value_ptr(clipLightPosition));
+    }
   }
 
 
@@ -340,6 +359,33 @@ void traverse(vars::Vars&vars){
   }else{
     compute();
   }
+
+
+  /*
+  uint32_t level = 0;
+  uint32_t node = 34;
+  std::vector<uint32_t>hi;
+  hierarchy->getData(hi);
+  auto const ptr = hi.data();
+  auto const&cfg = *vars.get<Config>("rssv.method.config");
+  uint32_t const*nodePool = ptr;
+  float    const*aabbPool = (float*)(ptr + cfg.nodeBufferSize / sizeof(uint32_t));
+  uint32_t const*aabbPointer = (uint32_t*)(aabbPool + cfg.aabbBufferSize / sizeof(float));
+  float aabb[6];
+  for(size_t i=0;i<cfg.floatsPerAABB;++i){
+    aabb[i] = aabbPool[aabbPointer[1+cfg.nodeLevelOffset[level]+node]*cfg.floatsPerAABB+i];
+  }
+  for(size_t i=0;i<cfg.floatsPerAABB;++i){
+    std::cerr << aabb[i] << std::endl;
+  }
+  for(size_t i=0;i<cfg.floatsPerAABB;++i){
+    std::cerr << ((uint32_t*)aabb)[i] << std::endl;
+  }
+  exit(1);
+  */
+  
+  
+
 
   //std::vector<uint32_t>jd;
   //jobCounters->getData(jd);

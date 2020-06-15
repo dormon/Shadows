@@ -18,6 +18,7 @@
 #include <RSSV/config.h>
 #include <RSSV/getEdgePlanesShader.h>
 #include <RSSV/getAABBShader.h>
+#include <RSSV/collisionShader.h>
 
 
 using namespace ge::gl;
@@ -189,7 +190,6 @@ void main(){
   if(doesNodeExist == 0)return;
 
 
-  mat4 nodeProjView = inverse(nodeView)*inverse(nodeProj);
 
   int mult = bridges[nodeLevelOffset[levelToDraw] + gId];
 
@@ -201,52 +201,123 @@ void main(){
   else
     bridgeStart = vec4(getAABBCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
 
-  vec4 center       = nodeProjView*bridgeEnd  ;
-  vec4 parentCenter = nodeProjView*bridgeStart;
-  ////we draw from child to parent
-  //vec4 center = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw,0u,5u),gId),1);
-  //vec4 parentCenter;
-  //if(mult == 0)gColor = vec3(0.1);
-  //else gColor = vec3(1.f);
-  //if(levelToDraw == 0){
-  //  parentCenter = lightPosition;
-  //}else{
-  //  parentCenter = nodeProjView*vec4(getAABBCenter(clamp(levelToDraw-1,0u,5u),gId>>warpBits),1);
+
+  vec3 startColor;
+  vec3 endColor  ;
+
+  if(mult ==  0)endColor = startColor = vec3(0.1);
+  if(mult ==  1)endColor = startColor = vec3(1,0,0);
+  if(mult ==  2)endColor = startColor = vec3(0,1,0);
+  if(mult ==  3)endColor = startColor = vec3(1,1,0);
+  if(mult == -1)endColor = startColor = vec3(0,1,1);
+  if(mult == -2)endColor = startColor = vec3(0,0,1);
+  if(mult == -3)endColor = startColor = vec3(0,0,.5);
+  
+
+  //if(levelToDraw == 0 && gId == 34 && mult == 0){
+  //  startColor = vec3(1,1,0);
+  //  endColor   = vec3(1,1,0);
+  //  mult = 1;
   //}
 
-  if(false){
-    vec4 A = vec4(-1,2,1,1);
-    vec4 B = vec4(1,2,1,1);
-    vec4 L = vec4(0,5,0,1);
-    vec3 n = normalize(cross(vec3(B-A),vec3(L-A)));
-    edgePlane = inverse(transpose(nodeProj*nodeView))*vec4(n,-dot(n,A.xyz));
-    edgeAClipSpace = nodeProj*nodeView*A;
-    edgeBClipSpace = nodeProj*nodeView*B;
-    lightClipSpace = nodeProj*nodeView*L;
-    float ss = dot(edgePlane,bridgeStart);
-    float es = dot(edgePlane,bridgeEnd  );
-    if(ss < 0)mult = 1;
-    else mult = -1;
-    //edgePlane = getClipPlaneSkala(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
-    //mult = computeBridge(bridgeStart,bridgeEnd);
-  }
-  if(mult == 0)gColor = vec3(0.1);
-  if(mult > 0)gColor = vec3(0,1,0);
-  if(mult < 0)gColor = vec3(0,0,1);
+  //if(levelToDraw == 0 && gId == 34){
+  //  mat4 nodeTran;
+  //  nodeTran[0][0] = uintBitsToFloat(1060262557u);
+  //  nodeTran[0][1] = uintBitsToFloat(3200271021u);
+  //  nodeTran[0][2] = uintBitsToFloat(3206316816u);
+  //  nodeTran[0][3] = uintBitsToFloat(3206316816u);
+  //  nodeTran[1][0] = uintBitsToFloat(         0u);
+  //  nodeTran[1][1] = uintBitsToFloat(1062871986u);
+  //  nodeTran[1][2] = uintBitsToFloat(3204840296u);
+  //  nodeTran[1][3] = uintBitsToFloat(3204840296u);
+  //  nodeTran[2][0] = uintBitsToFloat(3208097063u);
+  //  nodeTran[2][1] = uintBitsToFloat(3199903766u);
+  //  nodeTran[2][2] = uintBitsToFloat(3206017847u);
+  //  nodeTran[2][3] = uintBitsToFloat(3206017847u);
+  //  nodeTran[3][0] = uintBitsToFloat(3221392974u);
+  //  nodeTran[3][1] = uintBitsToFloat(1063916002u);
+  //  nodeTran[3][2] = uintBitsToFloat(1091679437u);
+  //  nodeTran[3][3] = uintBitsToFloat(1091889152u);
 
-  center       /= center      .w;
+  //  
+  //  
+  //  vec4 L = nodeTran*vec4( 0,5, 0,1);
+  //  vec4 A = nodeTran*vec4( 1,2, 1,1);
+  //  vec4 B = nodeTran*vec4( 1,2,-1,1);
+  //  vec4 C = nodeTran*vec4(-1,2, 1,1);
+  //  vec3 mmin;
+  //  vec3 mmax;
+  //  mmin.x = uintBitsToFloat(3207585792u);
+  //  mmax.x = uintBitsToFloat(3120562176u);
+  //  mmin.y = uintBitsToFloat( 973078528u);
+  //  mmax.y = uintBitsToFloat(1050853376u);
+  //  mmin.z = uintBitsToFloat(1064877835u);
+  //  mmax.z = uintBitsToFloat(1065008125u);
+  //  vec4 newEnd = vec4((mmin+mmax)/2.f,1);
+  //  //mult = int(length(newEnd-bridgeEnd) == 0.f);
+  //  mult = abs(doesLineIntersectTriangle(L,newEnd,A,B,C,L));
+  //  startColor = vec3(1,0,0);
+  //  endColor   = vec3(0,1,1);
+  //}
+
+
+  //if(levelToDraw == 0){
+  //  mat4 nodeTran = nodeProj*nodeView;
+  //  vec4 L = nodeTran*vec4( 0,5, 0,1);
+  //  vec4 A = nodeTran*vec4( 1,2, 1,1);
+  //  vec4 B = nodeTran*vec4( 1,2,-1,1);
+  //  vec4 C = nodeTran*vec4(-1,2, 1,1);
+  //  vec4 p = getClipPlaneSkala(A,B,C);
+  //  p *= sign(dot(p,L));
+
+  //  //mult = int(dot(p,bridgeStart)*dot(p,bridgeEnd) < 0);
+
+  //  if(gId == 34){
+  //    vec3 mmin;
+  //    vec3 mmax;
+  //    mmin.x = uintBitsToFloat(3207585792u);
+  //    mmax.x = uintBitsToFloat(3120562176u);
+  //    mmin.y = uintBitsToFloat( 973078528u);
+  //    mmax.y = uintBitsToFloat(1050853376u);
+  //    mmin.z = uintBitsToFloat(1064877835u);
+  //    mmax.z = uintBitsToFloat(1065008125u);
+  //    mult = doesLineIntersectTriangle(L,vec4((mmin+mmax)/2.f,1),A,B,C,L);
+
+  //  }else{
+  //    mult = doesLineIntersectTriangle(L,bridgeEnd,A,B,C,L);
+  //  }
+  //  //mult = int(gId == 34);
+  //  startColor = vec3(1,0,0);
+  //  endColor   = vec3(0,1,1);
+  //}
+
+  //if(dot(p,bridgeStart)<0)startColor = vec3(1,0,0);
+  //else                    startColor = vec3(0,1,1);
+
+  //if(dot(p,bridgeEnd)<0)endColor = vec3(1,0,0);
+  //else                  endColor = vec3(0,1,1);
+
+  //mult = 1;
+
+
+
+  mat4 nodeProjView = inverse(nodeView)*inverse(nodeProj);
+  mat4 projView     = proj*view;
+  vec4 parentCenter = nodeProjView*bridgeStart;
+  vec4 center       = nodeProjView*bridgeEnd  ;
   parentCenter /= parentCenter.w;
-
-  mat4 M = proj*view;
+  center       /= center      .w;
+  parentCenter = projView*parentCenter;
+  center       = projView*center      ;
 
   if(drawAllBridges > 0){
-    gl_Position = M*vec4(center      );EmitVertex();
-    gl_Position = M*vec4(parentCenter);EmitVertex();
+    gl_Position = parentCenter;gColor = startColor;EmitVertex();
+    gl_Position = center      ;gColor = endColor  ;EmitVertex();
     EndPrimitive();
   }else{
     if(mult != 0){
-      gl_Position = M*vec4(center      );EmitVertex();
-      gl_Position = M*vec4(parentCenter);EmitVertex();
+      gl_Position = parentCenter;gColor = startColor;EmitVertex();
+      gl_Position = center      ;gColor = endColor  ;EmitVertex();
       EndPrimitive();
     }
   }
@@ -263,6 +334,7 @@ void main(){
       ,rssv::demortonShader
       ,rssv::getEdgePlanesShader
       ,rssv::getAABBShaderFWD
+      ,rssv::collisionShader
       ,gsSrc
       ,rssv::getAABBShader
       );
@@ -320,6 +392,7 @@ void drawBridges(vars::Vars&vars){
     ->set1f       ("zPadding"       ,(float)zPadding              )
     ;
   prg->set1i("drawAllBridges",(int)vars.getBool("rssv.method.debug.drawAllBridges"));
+
 
   if(memoryOptim){
     auto aabbPointer = vars.get<Buffer>("rssv.method.debug.dump.aabbPointer");
