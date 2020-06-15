@@ -178,7 +178,7 @@ void computeBridgeTriangleIntersection(in vec3 minCorner,in vec3 aabbSize,int le
 #endif
   }
 
-  int mult = doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition);
+  int mult = 2*doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition);
   if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
   //if(level == 0 && gl_LocalInvocationIndex == 34){
   //  mat4 nodeTran = projView;
@@ -257,7 +257,7 @@ void lastLevelTriangles(uint node){
 
   vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node),1.f);
 
-  int mult = doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition);
+  int mult = 2*doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition);
 
   if(mult!=0)imageAtomicAdd(stencil,ivec2(sampleCoord),mult);
 #endif

@@ -42,9 +42,18 @@ void prepareDrawStencil(vars::Vars&vars){
   layout(r32i,binding=2)          uniform iimage2D      stencil     ;
   void main(){
     int value = imageLoad(stencil,ivec2(gl_FragCoord.xy)).r;
-    if(value > 0)fColor = vec4(.5,0,0,1);
-    if(value < 0)fColor = vec4(0,0,.5,1);
-    if(value == 0)discard;//fColor = vec4(0,0,0,1);
+
+    vec3 endColor;
+    if(value ==  1)endColor = vec3(.5,0,0);
+    if(value ==  2)endColor = vec3(0,1,0);
+    if(value ==  3)endColor = vec3(1,1,0);
+    if(value == -1)endColor = vec3(0,1,1);
+    if(value == -2)endColor = vec3(0,0,1);
+    if(value == -3)endColor = vec3(0,0,.5);
+
+
+    fColor = vec4(endColor,1);
+    if(value == 0)discard;
   }
   ).";
 
@@ -55,7 +64,7 @@ void prepareDrawStencil(vars::Vars&vars){
       fsSrc);
 
   vars.reCreate<Program>(
-      "rssv.method.debug.drawStencil",
+      "rssv.method.debug.drawStencilProgram",
       vs,
       fs
       );
@@ -67,7 +76,7 @@ void drawStencil(vars::Vars&vars){
   prepareDrawStencil(vars);
   auto vao = vars.get<VertexArray>("rssv.method.debug.vao");
 
-  auto prg = vars.get<Program>("rssv.method.debug.drawStencil");
+  auto prg = vars.get<Program>("rssv.method.debug.drawStencilProgram");
   auto stencil = vars.get<Texture>("rssv.method.stencil"                   );
   stencil->bindImage(2);
 

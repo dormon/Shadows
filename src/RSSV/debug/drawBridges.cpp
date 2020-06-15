@@ -205,13 +205,15 @@ void main(){
   vec3 startColor;
   vec3 endColor  ;
 
-  if(mult ==  0)endColor = startColor = vec3(0.1);
-  if(mult ==  1)endColor = startColor = vec3(1,0,0);
-  if(mult ==  2)endColor = startColor = vec3(0,1,0);
-  if(mult ==  3)endColor = startColor = vec3(1,1,0);
-  if(mult == -1)endColor = startColor = vec3(0,1,1);
-  if(mult == -2)endColor = startColor = vec3(0,0,1);
-  if(mult == -3)endColor = startColor = vec3(0,0,.5);
+  startColor = vec3(0.2);
+
+  if(mult ==  0)endColor = vec3(0.1);
+  if(mult ==  1)endColor = vec3(.5,0,0);
+  if(mult ==  2)endColor = vec3(0,1,0);
+  if(mult ==  3)endColor = vec3(1,1,0);
+  if(mult == -1)endColor = vec3(0,1,1);
+  if(mult == -2)endColor = vec3(0,0,1);
+  if(mult == -3)endColor = vec3(0,0,.5);
   
 
   //if(levelToDraw == 0 && gId == 34 && mult == 0){

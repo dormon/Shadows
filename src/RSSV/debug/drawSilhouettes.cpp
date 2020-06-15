@@ -40,8 +40,9 @@ void prepareDrawSilhouettes(vars::Vars&vars){
   std::string const fsSrc = R".(
 
   layout(location=0)out vec4 fColor;
+  in vec3 gColor;
   void main(){
-    fColor = vec4(1,0,0,1);
+    fColor = vec4(gColor,1);
   }
   ).";
 
@@ -62,6 +63,8 @@ flat in uint vId[];
 uniform mat4 view;
 uniform mat4 proj;
 
+out vec3 gColor;
+
 void main(){
   uint thread = vId[0];
 
@@ -74,8 +77,16 @@ void main(){
   vec3 P[2];
   loadEdge(P[0],P[1],edge);
 
-  gl_Position = proj*view*vec4(P[0],1);EmitVertex();
-  gl_Position = proj*view*vec4(P[1],1);EmitVertex();
+  vec3 endColor;
+  if(mult ==  1)endColor = vec3(.5,0,0);
+  if(mult ==  2)endColor = vec3(0,1,0);
+  if(mult ==  3)endColor = vec3(1,1,0);
+  if(mult == -1)endColor = vec3(0,1,1);
+  if(mult == -2)endColor = vec3(0,0,1);
+  if(mult == -3)endColor = vec3(0,0,.5);
+
+  gl_Position = proj*view*vec4(P[0],1);gColor = vec3(0.2);EmitVertex();
+  gl_Position = proj*view*vec4(P[1],1);gColor = endColor ;EmitVertex();
   EndPrimitive();
 }
 
