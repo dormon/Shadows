@@ -103,9 +103,9 @@ void storeSilhouettePlanes(in uint wh,in uint edge,in int mult){
 #endif
 
 #if COMPUTE_SILHOUETTE_BRIDGES == 1 || COMPUTE_TRIANGLE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
-  silhouettePlanes[wh*floatsPerSilhouette+6*4+0] = float(mult); 
+  silhouettePlanes[wh*floatsPerSilhouette+6*4+0] = intBitsToFloat(mult); 
 #else
-  silhouettePlanes[wh*floatsPerSilhouette+4*4+0] = float(mult); 
+  silhouettePlanes[wh*floatsPerSilhouette+4*4+0] = intBitsToFloat(mult); 
 #endif
 
 #endif

@@ -266,16 +266,6 @@ void traverse(vars::Vars&vars){
 
   prg->use();
 
-  //{
-  //  auto projView = proj*view;
-  //    for(int i=0;i<16;++i){
-  //      std::cerr << ((uint32_t*)&projView)[i] << std::endl;
-  //    }
-  //    exit(1);
-  //}
-      //auto projView = proj*view;
-      //prg->setMatrix4fv("projView"      ,glm::value_ptr(projView      ));
-
   if(performTraverseSilhouettes){
     auto bridges = vars.get<Buffer >("rssv.method.bridges"                   );
     prg->bindBuffer("Bridges",bridges);
