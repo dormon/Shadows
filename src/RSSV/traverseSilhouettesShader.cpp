@@ -179,7 +179,7 @@ void lastLevelSilhouette(uint node){
   bridgeEnd.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
   bridgeEnd.w = 1.f;
 
-  vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node),1.f);
+  vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node>>warpBits),1.f);
 
   int mult = computeBridgeSilhouetteMultiplicity(bridgeStart,bridgeEnd);
 
@@ -322,7 +322,7 @@ void traverseSilhouette(uint job){
         status = computeAABBSilhouetteIntersection(minCorner,maxCorner);
 #endif
 
-        if(level > 0)
+        if(level > 0)//TODO can we acually do this (shouldnt we compute it for 0. level as well?
           computeBridgeSilhouetteIntersection(minCorner,maxCorner,level,node);
 
       }
