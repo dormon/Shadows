@@ -255,6 +255,9 @@ void lastLevelTriangles(uint node){
   bridgeEnd.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
   bridgeEnd.w = 1.f;
 
+  uint sampleMorton = getMorton(sampleCoord,bridgeEnd.z);
+  if(sampleMorton != node)return;
+
   vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node>>warpBits),1.f);
 
   int mult = 2*doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition);
