@@ -132,15 +132,14 @@ void computeShadowFrusta(uint gid){
   v2[1] = triangles[gid*9u+7u];
   v2[2] = triangles[gid*9u+8u];
 #endif
+  v0 += BIAS*normalize(v0*lightPosition.w-lightPosition.xyz);
+  v1 += BIAS*normalize(v1*lightPosition.w-lightPosition.xyz);
+  v2 += BIAS*normalize(v2*lightPosition.w-lightPosition.xyz);
 
 	vec4 e0 = getPlane(v0,v1,lightPosition);
 	vec4 e1 = getPlane(v1,v2,lightPosition);
 	vec4 e2 = getPlane(v2,v0,lightPosition);
-	vec4 e3 = getPlane(
-			v0 + BIAS*normalize(v0*lightPosition.w-lightPosition.xyz),
-			v1 + BIAS*normalize(v1*lightPosition.w-lightPosition.xyz),
-			v2 + BIAS*normalize(v2*lightPosition.w-lightPosition.xyz));
-
+	vec4 e3 = getPlane(v0,v1,v2);
 
 #if MORE_PLANES == 1
   vec4 f0;

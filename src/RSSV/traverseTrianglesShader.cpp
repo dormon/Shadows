@@ -180,47 +180,6 @@ void computeBridgeTriangleIntersection(in vec3 minCorner,in vec3 aabbSize,int le
 
   int mult = 2*doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition);
   if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
-  //if(level == 0 && gl_LocalInvocationIndex == 34){
-  //  mat4 nodeTran = projView;
-  //  //nodeTran[0][0] = uintBitsToFloat(1060262557u);
-  //  //nodeTran[0][1] = uintBitsToFloat(3200271021u);
-  //  //nodeTran[0][2] = uintBitsToFloat(3206316816u);
-  //  //nodeTran[0][3] = uintBitsToFloat(3206316816u);
-  //  //nodeTran[1][0] = uintBitsToFloat(         0u);
-  //  //nodeTran[1][1] = uintBitsToFloat(1062871986u);
-  //  //nodeTran[1][2] = uintBitsToFloat(3204840296u);
-  //  //nodeTran[1][3] = uintBitsToFloat(3204840296u);
-  //  //nodeTran[2][0] = uintBitsToFloat(3208097063u);
-  //  //nodeTran[2][1] = uintBitsToFloat(3199903766u);
-  //  //nodeTran[2][2] = uintBitsToFloat(3206017847u);
-  //  //nodeTran[2][3] = uintBitsToFloat(3206017847u);
-  //  //nodeTran[3][0] = uintBitsToFloat(3221392974u);
-  //  //nodeTran[3][1] = uintBitsToFloat(1063916002u);
-  //  //nodeTran[3][2] = uintBitsToFloat(1091679437u);
-  //  //nodeTran[3][3] = uintBitsToFloat(1091889152u);
-
-  //  
-  //  
-  //  //vec4 L = nodeTran*vec4( 0,5, 0,1);
-  //  vec4 A = nodeTran*vec4( 1,2, 1,1);
-  //  vec4 B = nodeTran*vec4( 1,2,-1,1);
-  //  vec4 C = nodeTran*vec4(-1,2, 1,1);
-  //  //vec3 mmin;
-  //  //vec3 mmax;
-  //  //mmin.x = uintBitsToFloat(3207585792u);
-  //  //mmax.x = uintBitsToFloat(3120562176u);
-  //  //mmin.y = uintBitsToFloat( 973078528u);
-  //  //mmax.y = uintBitsToFloat(1050853376u);
-  //  //mmin.z = uintBitsToFloat(1064877835u);
-  //  //mmax.z = uintBitsToFloat(1065008125u);
-  //  //vec4 newEnd = vec4((mmin+mmax)/2.f,1);
-  //  int mult = abs(doesLineIntersectTriangle(clipLightPosition,bridgeEnd,A,B,C,clipLightPosition));
-
-  //  if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
-  //}else{
-  //  int mult = 2*doesLineIntersectTriangle(bridgeStart,bridgeEnd,tri_A,tri_B,tri_C,clipLightPosition);
-  //  if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
-  //}
 #endif
 }
 

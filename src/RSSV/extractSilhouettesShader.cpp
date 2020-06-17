@@ -53,6 +53,10 @@ void storeSilhouettePlanes(in uint wh,in uint edge,in int mult){
   vec3 edgeB;
   loadEdge(edgeA,edgeB,edge);
 
+
+  edgeA += BIAS*normalize(edgeA*lightPosition.w-lightPosition.xyz);
+  edgeB += BIAS*normalize(edgeB*lightPosition.w-lightPosition.xyz);
+
   vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
   vec4 edgePlane = invTran*vec4(n  ,-dot(n  ,edgeA));
 

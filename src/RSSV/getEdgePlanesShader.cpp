@@ -3,7 +3,7 @@
 std::string const rssv::getEdgePlanesShader = R".(
 
 // this function computes plane in clip space from 3 points in clip space
-vec4 getClipPlaneSkala(in vec4 A,in vec4 B,in vec4 C){
+vec4 getClipPlaneSkala_(in vec4 A,in vec4 B,in vec4 C){
   float x1 = A.x;
   float x2 = B.x;
   float x3 = C.x;
@@ -22,6 +22,42 @@ vec4 getClipPlaneSkala(in vec4 A,in vec4 B,in vec4 C){
   float c =  x1*(y2*w3-y3*w2) - x2*(y1*w3-y3*w1) + x3*(y1*w2-y2*w1);
   float d = -x1*(y2*z3-y3*z2) + x2*(y1*z3-y3*z1) - x3*(y1*z2-y2*z1);
   return vec4(a,b,c,d);
+}
+
+bool less4(in vec4 a,in vec4 b){
+  if(a.x < b.x)return true;
+  if(a.x > b.x)return false;
+  if(a.y < b.y)return true;
+  if(a.y > b.y)return false;
+  if(a.z < b.z)return true;
+  if(a.z > b.z)return false;
+  if(a.w < b.w)return true;
+  if(a.w > b.w)return false;
+  return false;
+}
+
+vec4 getClipPlaneSkala(in vec4 A,in vec4 B,in vec4 C){
+  if(less4(A,B)){
+    if(less4(B,C)){
+      return getClipPlaneSkala_(A,B,C);
+    }else{
+      if(less4(A,C)){
+        return -getClipPlaneSkala_(A,C,B);
+      }else{
+        return getClipPlaneSkala_(C,A,B);
+      }
+    }
+  }else{
+    if(less4(C,B)){
+      return -getClipPlaneSkala_(C,B,A);
+    }else{
+      if(less4(C,A)){
+        return getClipPlaneSkala_(B,C,A);
+      }else{
+        return -getClipPlaneSkala_(B,A,C);
+      }
+    }
+  }
 }
 
 void getEdgePlanesSkala(

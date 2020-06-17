@@ -35,12 +35,12 @@ void storeCamera(vars::Vars&vars){
     return;
   }
 
-  file << pos.x << std::endl;
-  file << pos.y << std::endl;
-  file << pos.z << std::endl;
-  file << a0 << std::endl;
-  file << a1 << std::endl;
-  file << a2 << std::endl;
+  file << *(uint32_t*)&pos.x << std::endl;
+  file << *(uint32_t*)&pos.y << std::endl;
+  file << *(uint32_t*)&pos.z << std::endl;
+  file << *(uint32_t*)&a0 << std::endl;
+  file << *(uint32_t*)&a1 << std::endl;
+  file << *(uint32_t*)&a2 << std::endl;
 
   file.close();
 
@@ -57,13 +57,21 @@ void loadCamera(vars::Vars&vars){
     return;
   }
   glm::vec3 pos;
-  file >> pos.x;
-  file >> pos.y;
-  file >> pos.z;
+  uint32_t data[6];
+  file >> data[0];
+  file >> data[1];
+  file >> data[2];
+  file >> data[3];
+  file >> data[4];
+  file >> data[5];
+
+  pos.x = *(float*)(data+0);
+  pos.y = *(float*)(data+1);
+  pos.z = *(float*)(data+2);
   float a0,a1,a2;
-  file >> a0;
-  file >> a1;
-  file >> a2;
+  a0 = *(float*)(data+3);
+  a1 = *(float*)(data+4);
+  a2 = *(float*)(data+5);
 
   cam.setPosition(pos);
   cam.setAngle(0,a0);

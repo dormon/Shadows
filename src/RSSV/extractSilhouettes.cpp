@@ -77,14 +77,16 @@ void createSilhouetteProgram(vars::Vars&vars){
       ,"rssv.param.computeTriangleBridges"
       ,"rssv.param.exactSilhouetteAABB"
       ,"rssv.param.computeSilhouettePlanes"
+      ,"rssv.param.bias"
       
       
       );
 
-  auto const computeSilhouetteBridges               =  vars.getBool        ("rssv.param.computeSilhouetteBridges");
-  auto const computeTriangleBridges                 =  vars.getBool        ("rssv.param.computeTriangleBridges"  );
-  auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"         );
-  auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
+  auto const computeSilhouetteBridges     =  vars.getBool        ("rssv.param.computeSilhouetteBridges");
+  auto const computeTriangleBridges       =  vars.getBool        ("rssv.param.computeTriangleBridges"  );
+  auto const exactSilhouetteAABB          =  vars.getBool        ("rssv.param.exactSilhouetteAABB"     );
+  auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes" );
+  auto const bias                         =  vars.getFloat       ("rssv.param.bias"                    );
 
   auto adj = vars.get<Adjacency>("adjacency");
   vars.reCreate<Program>("rssv.method.extractSilhouettesProgram",
@@ -99,6 +101,7 @@ void createSilhouetteProgram(vars::Vars&vars){
         Shader::define("COMPUTE_TRIANGLE_BRIDGES"  ,(int     )computeTriangleBridges                              ),
         Shader::define("EXACT_SILHOUETTE_AABB"     ,(int     )exactSilhouetteAABB                                 ),
         Shader::define("COMPUTE_SILHOUETTE_PLANES" ,(int     )computeSilhouettePlanes                             ),
+        Shader::define("BIAS"                      ,(int     )bias                                                ),
         ballotSrc,
         silhouetteFunctions,
         loadEdgeShaderFWD,
