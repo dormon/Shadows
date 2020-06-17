@@ -36,7 +36,12 @@ bool less4(in vec4 a,in vec4 b){
   return false;
 }
 
+#if !defined(ORDERED_SKALA)
+#error "define ORDERED_SKALA"
+#endif
+
 vec4 getClipPlaneSkala(in vec4 A,in vec4 B,in vec4 C){
+#if ORDERED_SKALA == 1
   if(less4(A,B)){
     if(less4(B,C)){
       return getClipPlaneSkala_(A,B,C);
@@ -58,6 +63,9 @@ vec4 getClipPlaneSkala(in vec4 A,in vec4 B,in vec4 C){
       }
     }
   }
+#else
+ return getClipPlaneSkala_(A,B,C);
+#endif
 }
 
 void getEdgePlanesSkala(

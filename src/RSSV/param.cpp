@@ -45,6 +45,7 @@ void rssv::loadParams(
 
   vars.addBool  ("rssv.param.usePersistentThreadsSF"     ) = (bool)c->geti32("usePersistentThreadsSF"     ,1   ,"use persisten threads for computation of shadow frusta"                          );
   vars.addBool  ("rssv.param.computeSilhouettePlanes"    ) = (bool)c->geti32("computeSilhouettePlanes"    ,0   ,"compute collision planes during silhouette extraction"                           );
+  vars.addBool  ("rssv.param.orderedSkala"               ) = (bool)c->geti32("orderedSkala"               ,1   ,"ordered clip plane construction"                                                 );
 
   //FOR DEBUG
   vars.addBool  ("rssv.param.storeTraverseSilhouettesStat"  );

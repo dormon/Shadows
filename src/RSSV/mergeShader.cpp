@@ -49,41 +49,36 @@ void merge(uint job){
     imageStore(shadowMask,ivec2(coord),vec4(0.f));
 }
 
-void mergeJOB(){
-#if PERFORM_MERGE == 1
+void globalBarrier(){
   //every WGS increments counter
   if(gl_LocalInvocationIndex == 0){
     atomicAdd(traverseDoneCounter,1);
   }
-  //barrier();
 
   //and wait until all WGS finish
   for(int i=0;i<1000;++i){
+    //first thread read number of finished WGS
     uint finishedWGS;
-    int canWeContinue = 0;
-    if(gl_LocalInvocationIndex == 0){
+    if(gl_LocalInvocationIndex == 0)
       finishedWGS = traverseDoneCounter;
-      if(finishedWGS >= gl_NumWorkGroups.x)
-        canWeContinue = 1;
-    }
-    canWeContinue = readFirstInvocationARB(canWeContinue);
-    //barrier();
-    if(canWeContinue == 1){
-      //if(gl_LocalInvocationIndex==0)
-      //  atomicAdd(dummy[0],1);
-      //barrier();
-      //return;
-      break;
-    }
 
+    finishedWGS = readFirstInvocationARB(finishedWGS);
+    if(finishedWGS == gl_NumWorkGroups.x)break;
+
+    //active waiting to prevent excesive global memory read...
     if(gl_LocalInvocationIndex == 0){
       uint c=0;
       for(uint j=0;j<100;++j)
         c = (c+finishedWGS+j)%177;
       if(c == 1337)dummy[2] = 1111;
     }
-    //barrier();
   }
+}
+
+void mergeJOB(){
+#if PERFORM_MERGE == 1
+
+  globalBarrier();
 
   //if(gl_LocalInvocationIndex==0)
   //  atomicAdd(dummy[1],1);

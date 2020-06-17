@@ -72,6 +72,7 @@ void createTraverseProgram(vars::Vars&vars){
       ,"rssv.param.computeLastLevelTriangles"
 
       ,"rssv.param.performMerge"
+      ,"rssv.param.orderedSkala"
 
 
       ,"rssv.param.computeSilhouettePlanes"
@@ -110,6 +111,7 @@ void createTraverseProgram(vars::Vars&vars){
   auto const computeSilhouettePlanes      =  vars.getBool        ("rssv.param.computeSilhouettePlanes"     );
 
   auto const performMerge                 =  vars.getBool        ("rssv.param.performMerge"                );
+  auto const orderedSkala                 =  vars.getBool        ("rssv.param.orderedSkala"                );
 
   auto const nofEdges                     =  adj->getNofEdges();
   auto const nofTriangles                 =  adj->getNofTriangles();
@@ -151,6 +153,7 @@ void createTraverseProgram(vars::Vars&vars){
         ,Shader::define("COMPUTE_SILHOUETTE_PLANES"     ,(int     )computeSilhouettePlanes     )
 
         ,Shader::define("PERFORM_MERGE"                 ,(int     )performMerge                )
+        ,Shader::define("ORDERED_SKALA"                 ,(int     )orderedSkala                )
 
         ,rssv::demortonShader
         ,rssv::mortonShader
