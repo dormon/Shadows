@@ -58,7 +58,7 @@ void rssv::drawDebug(vars::Vars&vars){
   debug::blitDepth(vars);
 
   auto&levelsToDraw       = vars.addOrGetUint32("rssv.method.debug.levelsToDraw",0);
-  auto&drawTightAABB      = vars.addOrGetBool  ("rssv.method.debug.drawTightAABB");
+  auto&drawTightAABB      = vars.addOrGetBool  ("rssv.method.debug.drawTightAABB",true);
   auto&wireframe          = vars.addOrGetBool  ("rssv.method.debug.wireframe",true);
 
   auto&clearScreen        = vars.addOrGetBool("rssv.method.debug.clearScreen"     ,true);
@@ -76,7 +76,7 @@ void rssv::drawDebug(vars::Vars&vars){
   auto&drawAllBridges     = vars.addOrGetBool  ("rssv.method.debug.drawAllBridges");
   auto&bridgesToDraw      = vars.addOrGetUint32("rssv.method.debug.bridgesToDraw",0x7);
 
-  auto&drawStencil        = vars.addOrGetBool  ("rssv.method.debug.drawStencil"   );
+  auto&drawStencil        = vars.addOrGetBool  ("rssv.method.debug.drawStencil"   ,true);
 
   auto&taToDraw = vars.addOrGetUint32("rssv.method.debug.taToDraw",0);
   auto&trToDraw = vars.addOrGetUint32("rssv.method.debug.trToDraw",0);
@@ -264,21 +264,24 @@ void rssv::drawDebug(vars::Vars&vars){
           auto const cfg = *vars.get<Config>        ("rssv.method.debug.dump.config"    );
           for(uint32_t i=0;i<cfg.nofLevels;++i){
             std::stringstream ss;
-            ss << "trivialAccept" << i;
+            ss << (taToDraw&(1<<i)?"hide":"show");
+            ss << " trivialAccept " << i;
             if(ImGui::MenuItem(ss.str().c_str())){
               taToDraw ^= 1<<i;
             }
           }
           for(uint32_t i=0;i<cfg.nofLevels;++i){
             std::stringstream ss;
-            ss << "trivialReject" << i;
+            ss << (trToDraw&(1<<i)?"hide":"show");
+            ss << " trivialReject " << i;
             if(ImGui::MenuItem(ss.str().c_str())){
               trToDraw ^= 1<<i;
             }
           }
           for(uint32_t i=0;i<cfg.nofLevels;++i){
             std::stringstream ss;
-            ss << "intersect" << i;
+            ss << (inToDraw&(1<<i)?"hide":"show");
+            ss << " intersect " << i;
             if(ImGui::MenuItem(ss.str().c_str())){
               inToDraw ^= 1<<i;
             }

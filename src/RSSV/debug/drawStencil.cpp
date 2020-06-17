@@ -46,10 +46,14 @@ void prepareDrawStencil(vars::Vars&vars){
     vec3 endColor;
     if(value ==  1)endColor = vec3(.5,0,0);
     if(value ==  2)endColor = vec3(0,1,0);
-    if(value ==  3)endColor = vec3(1,1,0);
+    if(value ==  3)endColor = vec3(1,.5,0);
+    if(value ==  4)endColor = vec3(1,1,0);
+    if(value ==  5)endColor = vec3(1,1,.5);
+    if(value >   5)endColor = vec3(1);
     if(value == -1)endColor = vec3(0,1,1);
     if(value == -2)endColor = vec3(0,0,1);
     if(value == -3)endColor = vec3(0,0,.5);
+    if(value <  -3)endColor = vec3(.5);
 
 
     fColor = vec4(endColor,1);

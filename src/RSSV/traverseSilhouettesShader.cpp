@@ -58,7 +58,7 @@ std::string const extern rssv::traverseSilhouettes = R".(
 #define edgeMult       getShared1i(edgeMultO      )
 
 #if COMPUTE_SILHOUETTE_PLANES == 1
-void loadSilhouette(uint job){
+void loadSilhouette(in uint job){
   #if COMPUTE_SILHOUETTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
   const uint floatsPerSilhouette = 6*4+1;
   #else
@@ -71,7 +71,7 @@ void loadSilhouette(uint job){
   memoryBarrierShared();
 }
 #else
-void loadSilhouette(uint job){
+void loadSilhouette(in uint job){
   if(gl_LocalInvocationIndex == 0){
     uint res  = multBuffer[job];
     uint edge = res & 0x1fffffffu;
@@ -170,16 +170,35 @@ int computeBridgeSilhouetteMultiplicity(in vec4 bridgeStart,in vec4 bridgeEnd){
   return result;
 }
 
-void lastLevelSilhouette(uint node){
+void lastLevelSilhouette(in uint node,in uint job){
 #if COMPUTE_LAST_LEVEL_SILHOUETTES == 1
-  uvec2 sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+  uvec2 tileCoord   = demorton(node).xy<<uvec2(tileBitsX,tileBitsY);
+  uvec2 localCoord  = uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+  uvec2 sampleCoord = tileCoord + localCoord;
 
   vec4 bridgeEnd;
   bridgeEnd.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
   bridgeEnd.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
   bridgeEnd.w = 1.f;
+  uint sampleMorton = getMorton(sampleCoord,bridgeEnd.z);
+  if(sampleMorton != node)return;
 
-  vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node>>warpBits),1.f);
+
+  //uint www = node>>warpBits;
+  //if(www != 156201)return;
+  //if(job != 2)return;
+
+  //ivec2 loCo = ivec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+  //ivec2 tiCo = ivec2(demorton(node).xy<<uvec2(tileBitsX,tileBitsY));
+
+  //imageAtomicAdd(stencil,tiCo+loCo,1);
+  //imageAtomicAdd(stencil,ivec2(sampleCoord),1);
+  //return;
+  ////if(www > 156201)return;
+  ////if(www < 156200)return;
+
+
+  vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node),1.f);
 
   int mult = computeBridgeSilhouetteMultiplicity(bridgeStart,bridgeEnd);
 
@@ -278,7 +297,7 @@ uint computeAABBSilhouetteIntersectionEXACT(in vec3 minCorner,in vec3 maxCorner)
 #endif
 
 
-void traverseSilhouette(uint job){
+void traverseSilhouette(in uint job){
   int level = 0;
 
   uint64_t currentIntersection;
@@ -289,7 +308,7 @@ void traverseSilhouette(uint job){
 
       debug_storeSilhouetteTraverseStatLastLevel(job,node,level);
 
-      lastLevelSilhouette(node);
+      lastLevelSilhouette(node,job);
 
       node >>= warpBits;
       level--;
@@ -325,6 +344,10 @@ void traverseSilhouette(uint job){
         if(level > 0)//TODO can we acually do this (shouldnt we compute it for 0. level as well?
           computeBridgeSilhouetteIntersection(minCorner,maxCorner,level,node);
 
+        //if(level+1 == int(nofLevels)){
+        //  if(status == INTERSECTS)
+        //    status = TRIVIAL_ACCEPT;
+        //}
       }
 
       debug_storeSilhouetteTraverseStat(job,node,level,status);
@@ -369,6 +392,14 @@ void traverseSilhouetteJOB(){
 #if PERFORM_TRAVERSE_SILHOUETTES == 1
   uint job = 0u;
   //silhouette loop
+  
+  //job = gl_WorkGroupID.x;
+  //if(job>6)return;
+  //if(job!=2)return;
+  //loadSilhouette(job);
+  //traverseSilhouette(job);
+
+
   for(;;){
     if(gl_LocalInvocationIndex==0)
       job = atomicAdd(silhouetteJobCounter,1);
