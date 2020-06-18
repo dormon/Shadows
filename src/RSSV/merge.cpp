@@ -73,7 +73,6 @@ void rssv::merge(vars::Vars&vars){
   stencil   ->bindImage(2);
   auto bridges = vars.get<Buffer >("rssv.method.bridges"                   );
   prg->bindBuffer("Bridges",bridges);
-  
   prg->use();
   glDispatchCompute(1000,1,1);
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT|GL_COMMAND_BARRIER_BIT);
