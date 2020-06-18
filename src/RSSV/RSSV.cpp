@@ -46,8 +46,8 @@ void RSSV::create(glm::vec4 const& lightPosition,
   ifExistStamp("traverse");
   //rssv::rasterize(vars);
   //ifExistStamp("rasterize");
-  //rssv::merge(vars);
-  //ifExistStamp("merge");
+  rssv::merge(vars);
+  ifExistStamp("merge");
 
 }
 

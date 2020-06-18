@@ -76,6 +76,12 @@ add_library(${PROJECT_NAME} STATIC
 
   sharedMemoryShader.cpp
   sharedMemoryShader.h
+
+  globalBarrierShader.cpp
+  globalBarrierShader.h
+
+  mergeMainShader.cpp
+  mergeMainShader.h
   )
 
 add_subdirectory(debug)

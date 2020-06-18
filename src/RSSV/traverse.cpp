@@ -26,6 +26,7 @@
 #include <RSSV/loadEdgeShader.h>
 #include <RSSV/sharedMemoryShader.h>
 #include <RSSV/mergeShader.h>
+#include <RSSV/globalBarrierShader.h>
 
 #include <iomanip>
 #include <Timer.h>
@@ -73,6 +74,7 @@ void createTraverseProgram(vars::Vars&vars){
 
       ,"rssv.param.performMerge"
       ,"rssv.param.orderedSkala"
+      ,"rssv.param.mergeInMega"
 
 
       ,"rssv.param.computeSilhouettePlanes"
@@ -112,6 +114,7 @@ void createTraverseProgram(vars::Vars&vars){
 
   auto const performMerge                 =  vars.getBool        ("rssv.param.performMerge"                );
   auto const orderedSkala                 =  vars.getBool        ("rssv.param.orderedSkala"                );
+  auto const mergeInMega                  =  vars.getBool        ("rssv.param.mergeInMega"                 );
 
   auto const nofEdges                     =  adj->getNofEdges();
   auto const nofTriangles                 =  adj->getNofTriangles();
@@ -154,6 +157,7 @@ void createTraverseProgram(vars::Vars&vars){
 
         ,Shader::define("PERFORM_MERGE"                 ,(int     )performMerge                )
         ,Shader::define("ORDERED_SKALA"                 ,(int     )orderedSkala                )
+        ,Shader::define("MERGE_IN_MEGA"                 ,(int     )mergeInMega                 )
 
         ,rssv::demortonShader
         ,rssv::mortonShader
@@ -167,7 +171,9 @@ void createTraverseProgram(vars::Vars&vars){
         ,rssv::traverseTrianglesFWD
         ,rssv::sharedMemoryShader
         ,rssv::mergeShaderFWD
+        ,rssv::globalBarrierShaderFWD
         ,rssv::traverseMain
+        ,rssv::globalBarrierShader
         ,rssv::mergeShader
         ,rssv::traverseTriangles
         ,rssv::traverseSilhouettes

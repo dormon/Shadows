@@ -72,7 +72,10 @@ void main(){
   traverseSilhouetteJOB();
   traverseTriangleJOB();
 
+#if MERGE_IN_MEGA == 1
+  globalBarrier();
   mergeJOB();
+#endif
 }
 
 

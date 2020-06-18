@@ -16,6 +16,8 @@
 #include <RSSV/quantizeZShader.h>
 #include <RSSV/depthToZShader.h>
 #include <RSSV/config.h>
+#include <RSSV/mergeMainShader.h>
+#include <RSSV/getConfigShader.h>
 
 #include <iomanip>
 #include <Timer.h>
@@ -27,46 +29,26 @@ using namespace std;
 namespace rssv{
 void createMergeProgram(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method"
-      ,"windowSize"
       ,"wavefrontSize"
-      ,"args.camera.near"
-      ,"args.camera.far"
-      ,"args.camera.fovy"
-      ,"rssv.param.minZBits"
-      ,"rssv.param.tileX"   
-      ,"rssv.param.tileY"   
+      ,"rssv.method.config"
+      ,"rssv.param.performMerge"
       );
 
-
-  auto const wavefrontSize       =  vars.getSizeT           ("wavefrontSize"          );
-  auto const windowSize          = *vars.get<glm::uvec2>    ("windowSize"             );
-  auto const nnear               =  vars.getFloat           ("args.camera.near"       );
-  auto const ffar                =  vars.getFloat           ("args.camera.far"        );
-  auto const fovy                =  vars.getFloat           ("args.camera.fovy"       );
-  auto const minZBits            =  vars.getUint32          ("rssv.param.minZBits");
-  auto const tileX               =  vars.getUint32          ("rssv.param.tileX"   );
-  auto const tileY               =  vars.getUint32          ("rssv.param.tileY"   );
-
+  auto const performMerge                 =  vars.getBool        ("rssv.param.performMerge"                );
   vars.reCreate<ge::gl::Program>("rssv.method.mergeProgram",
-      std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER,
-        "#version 450\n",
-        ge::gl::Shader::define("WARP"      ,(uint32_t)wavefrontSize),
-        ge::gl::Shader::define("WINDOW_X"  ,(uint32_t)windowSize.x ),
-        ge::gl::Shader::define("WINDOW_Y"  ,(uint32_t)windowSize.y ),
-        ge::gl::Shader::define("MIN_Z_BITS",(uint32_t)minZBits     ),
-        ge::gl::Shader::define("NEAR"      ,nnear                  ),
-        glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
-        ge::gl::Shader::define("FOVY"      ,fovy                   ),
-        ge::gl::Shader::define("TILE_X"    ,tileX                  ),
-        ge::gl::Shader::define("TILE_Y"    ,tileY                  ),
-        ballotSrc,
-        rssv::configShader,
-        rssv::mortonShader,
-        rssv::depthToZShader,
-        rssv::quantizeZShader,
-        rssv::mergeShader
+      std::make_shared<ge::gl::Shader>(GL_COMPUTE_SHADER
+        ,"#version 450\n"
+        ,ballotSrc
+        ,getConfigShader(vars)
+        ,Shader::define("PERFORM_MERGE"                 ,(int     )performMerge                )
+        ,rssv::demortonShader
+        ,rssv::mortonShader
+        ,rssv::depthToZShader
+        ,rssv::quantizeZShader
+        ,rssv::mergeShaderFWD
+        ,rssv::mergeMainShader
+        ,rssv::mergeShader
         ));
-
 }
 
 }
@@ -74,21 +56,26 @@ void createMergeProgram(vars::Vars&vars){
 
 void rssv::merge(vars::Vars&vars){
   FUNCTION_CALLER();
+
+  auto const mergeInMega = vars.getBool("rssv.param.mergeInMega");
+  if(mergeInMega)return;
+
   createMergeProgram(vars);
 
-  auto depth            =  vars.get<GBuffer>("gBuffer")->depth;
-  auto prg              =  vars.get<Program>("rssv.method.mergeProgram");
-  auto nodePool         =  vars.get<Buffer >("rssv.method.nodePool");
-  auto shadowMask       =  vars.get<Texture>("shadowMask");
+  auto depth      = vars.get<GBuffer>("gBuffer")->depth;
+  auto shadowMask = vars.get<Texture>("shadowMask");
+  auto stencil    = vars.get<Texture>("rssv.method.stencil");
 
-  auto cfg              = *vars.get<Config >("rssv.method.config");
+  auto prg        =  vars.get<Program>("rssv.method.mergeProgram");
 
-  nodePool        ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  depth->bind(0);
+  depth     ->bind     (0);
   shadowMask->bindImage(1);
+  stencil   ->bindImage(2);
+  auto bridges = vars.get<Buffer >("rssv.method.bridges"                   );
+  prg->bindBuffer("Bridges",bridges);
   
   prg->use();
-  glDispatchCompute(cfg.clustersX,cfg.clustersY,1);
+  glDispatchCompute(1000,1,1);
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT|GL_COMMAND_BARRIER_BIT);
 
 }
