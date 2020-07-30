@@ -1,6 +1,6 @@
 #include <string>
 
-#if 0
+#if 1
 std::string const createShadowMapVertexShaderSource = R".(
 layout(location=0)in vec3 position;
 uniform float near = 0.1;
@@ -44,7 +44,7 @@ void main(){
 ).";
 #endif
 
-#if 1
+#if 0
 std::string const createShadowMapVertexShaderSource = R".(
 layout(location=0)in vec3 position;
 uniform vec4 lightPosition = vec4(0,0,0,1);
