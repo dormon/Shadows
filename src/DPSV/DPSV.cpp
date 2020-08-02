@@ -51,10 +51,9 @@ void DPSV::createNodeBuffer()
 
 	size_t const nodeSize = 4 * sizeof(float) + 4 * sizeof(uint32_t); //Node struct on the GPU
 	size_t const nofVertices = vars.get<RenderModel>("renderModel")->nofVertices;
-
-	vars.reCreate<Buffer>("dpsv.objects.nodeBuffer", 4 * (nofVertices + 1) * nodeSize);
-
 	NofTriangles = uint32_t(nofVertices) / 3;
+	//TODO - was from NofVertices long ago, no longer sure if OK
+	vars.reCreate<Buffer>("dpsv.objects.nodeBuffer", 4 * (NofTriangles + 1) * nodeSize);
 }
 
 void DPSV::createBuildShader()

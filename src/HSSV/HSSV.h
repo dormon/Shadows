@@ -29,4 +29,6 @@ protected:
 	AABB getSceneAabb() const;
 	void fixVolume(AABB& volume) const;
 
+	void buildTest();
+
 };

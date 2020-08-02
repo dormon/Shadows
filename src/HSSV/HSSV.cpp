@@ -3,6 +3,7 @@
 #include <CPU/CpuBuilder.h>
 #include <Defines.h>
 #include <OctreeSerializer.h>
+#include <HighResolutionTimer.h>
 
 #include <GSCaps.h>
 
@@ -13,6 +14,10 @@
 
 #include <CPU/CpuSidesDrawer.h>
 #include <GPU/GpuSidesDrawer.h>
+
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 
 HSSV::HSSV(vars::Vars& vars) : ShadowVolumes(vars)
 {
@@ -27,6 +32,13 @@ void HSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 {
 	resetMultiplicity();
 	createAdjacency(vars);
+
+	if (vars.getBool("hssv.args.buildTest"))
+	{
+		buildTest();
+		exit(0);
+	}
+
 	getOctree();
 	createSidesDrawer();
 
@@ -241,5 +253,43 @@ void HSSV::fixVolume(AABB& bbox) const
 		bbox.setMin(min - glm::vec3(0, 0, minSize));
 		bbox.setMax(max + glm::vec3(0, 0, minSize));
 	}
+}
+
+void HSSV::buildTest()
+{
+	const std::vector<float> sceneScales = { 1, 2, 4, 8, 16 };
+	const std::vector<uint32_t> octreeLevels = { 3, 4, 5 };
+
+	std::ofstream saveFile;
+	saveFile.open(std::string("buildTest_") + vars.get<Model>("model")->getName() + ".txt");
+
+	for (const auto depth : octreeLevels)
+	{
+		for (const auto scale : sceneScales)
+		{
+			std::cerr << "\nDepth " << depth << " scale " << scale << std::endl;
+			*(float*)(vars.get("hssv.args.sceneScale")) = scale;
+			*(u32*)(vars.get("hssv.args.octreeDepth")) = depth;
+			
+			AABB const volume = createOctreeVolume();
+			Octree* octree = vars.reCreate<Octree>("hssv.objects.octree", vars.getUint32("hssv.args.octreeDepth"), volume);
+
+			HighResolutionTimer t;
+			double buildTime = 0;
+			t.reset();
+			buildOctree();
+			buildTime = t.getElapsedTimeSeconds();
+
+			const size_t octreeSizeMB = octree->getOctreeSizeBytes() / 1024ull / 1024ull;
+
+			std::string str;
+			saveFile << std::scientific << depth << std::setw(15) << scale << std::setw(15) << buildTime << std::setw(10) << octreeSizeMB << "\n";
+			std::cerr << str;
+		}
+	}
+
+	std::cerr << "---END OF BUILD TEST---\n";
+
+	saveFile.close();
 }
 
