@@ -277,7 +277,16 @@ layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
 layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
 
+#if MEMORY_OPTIM == 1
+layout(std430,binding=5)buffer AABBPointer     {uint  aabbPointer     [];};
+#endif
+
 layout(binding=1)uniform sampler2DRect depthTexture;
+
+#if DISCARD_BACK_FACING == 1
+layout(binding=2)uniform sampler2D     normalTexture;
+uniform vec4 lightPosition;
+#endif
 
 uint getMorton(uvec2 coord,float depth){
   const uint tileBitsX     = uint(ceil(log2(float(TILE_X))));
@@ -311,6 +320,11 @@ void compute(uvec2 coord,uvec2 coord2){
   float depth = texelFetch(depthTexture,ivec2(coord)).x*2-1;
   uint morton = getMorton(coord,depth);
   if(depth >= 1.f)activeThread = 0;
+
+#if DISCARD_BACK_FACING == 1
+  activeThread &= uint(dot(lightPosition,texelFetch(normalTexture,ivec2(coord),0))>0);
+#endif
+
 #else
   float depth [2];
   uint  morton[2];
@@ -318,6 +332,14 @@ void compute(uvec2 coord,uvec2 coord2){
   depth [1] = texelFetch(depthTexture,ivec2(coord2)).x*2-1;
   morton[0] = getMorton(coord ,depth[0]);
   morton[1] = getMorton(coord2,depth[1]);
+  if(depth[0] >= 1.f)activeThread[0] = 0;
+  if(depth[1] >= 1.f)activeThread[1] = 0;
+
+#if DISCARD_BACK_FACING == 1
+  activeThread[0] &= uint(dot(lightPosition,texelFetch(normalTexture,ivec2(coord ),0))>0);
+  activeThread[1] &= uint(dot(lightPosition,texelFetch(normalTexture,ivec2(coord2),0))>0);
+#endif
+
 #endif
 
 #line 322
@@ -400,10 +422,24 @@ void compute(uvec2 coord,uvec2 coord2){
 
       reduce();
 
+#if MEMORY_OPTIM == 1
+      if(gl_LocalInvocationIndex==0){
+        uint w = atomicAdd(aabbPointer[0],1);
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPointer[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)]+node+1] = w;
+        aabbPool[w*6+0] = reductionArray[0];
+        aabbPool[w*6+1] = reductionArray[1];
+        aabbPool[w*6+2] = reductionArray[2];
+        aabbPool[w*6+3] = reductionArray[3];
+        aabbPool[w*6+4] = reductionArray[4];
+        aabbPool[w*6+5] = reductionArray[5];
+      }
+#else
       if(gl_LocalInvocationIndex < floatsPerAABB){
         uint node = (referenceMorton >> (warpBits*0u));
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
       }
+#endif
 
       notDone[0] ^= sameCluster[0];
       notDone[1] ^= sameCluster[1];
@@ -456,10 +492,24 @@ void compute(uvec2 coord,uvec2 coord2){
 
       reduce();
 
+#if MEMORY_OPTIM == 1
+      if(gl_LocalInvocationIndex==0){
+        uint w = atomicAdd(aabbPointer[0],1);
+        uint node = (referenceMorton >> (warpBits*0u));
+        aabbPointer[nodeLevelOffset[clamp(nofLevels-1u,0u,5u)]+node+1] = w;
+        aabbPool[w*6+0] = reductionArray[0];
+        aabbPool[w*6+1] = reductionArray[1];
+        aabbPool[w*6+2] = reductionArray[2];
+        aabbPool[w*6+3] = reductionArray[3];
+        aabbPool[w*6+4] = reductionArray[4];
+        aabbPool[w*6+5] = reductionArray[5];
+      }
+#else
       if(gl_LocalInvocationIndex < floatsPerAABB){
         uint node = (referenceMorton >> (warpBits*0u));
         aabbPool[aabbLevelOffsetInFloats[clamp(nofLevels-1u,0u,5u)]+node*floatsPerAABB+gl_LocalInvocationIndex] = reductionArray[gl_LocalInvocationIndex];
       }
+#endif
 
       notDone ^= sameCluster;
       counter++;

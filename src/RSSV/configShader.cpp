@@ -70,12 +70,49 @@ const uint bitTogether[3] = {
   uint(bitLength[2]-bitLength[1]),
 };
 
-const uint longestAxis  = clamp(uint(uint(bitLength[2] == yBits) + uint(bitLength[2] == zBits)*2u),0u,2u);
-const uint middleAxis   = clamp(uint(uint(bitLength[1] == yBits) + uint(bitLength[1] == zBits)*2u),0u,2u);
-const uint shortestAxis = clamp(uint(uint(bitLength[0] == yBits) + uint(bitLength[0] == zBits)*2u),0u,2u);
+const uint longestAxis  = 
+  bitLength[2]==zBits?2u:
+  bitLength[2]==yBits?1u:
+  0u;
 
-#define QUANTIZE_Z(z) clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
-#define CLUSTER_TO_Z(i) (-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)))
+const uint shortestAxis = 
+  bitLength[0]==xBits?0u:
+  bitLength[0]==yBits?1u:
+  2u;
+const uint middleAxis   = 
+  shortestAxis==0u?(longestAxis==1u?2u:1u):
+  (shortestAxis==1u?(longestAxis==0u?2u:0u):
+  (longestAxis==0u?1u:0u));
+
+const uint twoLongest[] = {
+  0==shortestAxis?1u:0u,
+  2==shortestAxis?1u:2u,
+};
+
+#define CPTSV_QUANTIZATION(z)   clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
+#define CPTSV_DEQUANTIZATION(i) (-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)))
+
+#if SCALED_QUANTIZATION == 1
+  const float maxZOfHierarchy = -CPTSV_DEQUANTIZATION(clustersZ);
+  
+  #ifdef FAR_IS_INFINITE
+    #define SCALED_QUANTIZATION_FAR 10000.f
+  #else
+    #define SCALED_QUANTIZATION_FAR FAR
+  #endif
+
+  const float z2ScaledZFactor = (maxZOfHierarchy-NEAR) / (SCALED_QUANTIZATION_FAR-NEAR);
+  const float scaledZ2ZFactor = (SCALED_QUANTIZATION_FAR-NEAR) / (maxZOfHierarchy-NEAR);
+
+  #define ORIGINAL_Z_TO_SCALED_Z(z) (((z)+NEAR)*z2ScaledZFactor-NEAR)
+  #define SCALED_Z_TO_ORIGINAL_Z(z) (((z)+NEAR)*scaledZ2ZFactor-NEAR)
+
+  #define QUANTIZE_Z(z)   CPTSV_QUANTIZATION(ORIGINAL_Z_TO_SCALED_Z(z))  
+  #define CLUSTER_TO_Z(i) SCALED_Z_TO_ORIGINAL_Z(CPTSV_DEQUANTIZATION(i))
+#else
+  #define QUANTIZE_Z(z)   CPTSV_QUANTIZATION(z)
+  #define CLUSTER_TO_Z(i) CPTSV_DEQUANTIZATION(i)
+#endif
 
 // | 2n/(R-L)  0          (R+L)/(R-L)  0          |   |x|
 // | 0         2n/(T-B)   (T+B)/(T-B)  0          | * |y|
@@ -100,115 +137,23 @@ const uint shortestAxis = clamp(uint(uint(bitLength[0] == yBits) + uint(bitLengt
   #define Z_TO_DEPTH(z) (((2.f*NEAR*FAR/(z))+FAR+NEAR)/(FAR-NEAR))
 #endif
 
-const uint twoLongest[] = {
-  middleAxis ,
-  longestAxis,
-};
 
-#define WHICH_BIT(b) uint(b<bitTogether[0]*3u?b%3u:b<bitTogether[0]*3u+bitTogether[1]*2u?twoLongest[b%2u]:b<allBits?longestAxis:noAxis)
-#define IS_BIT(b,a)  uint(WHICH_BIT(b) == a)
-#define SET_BIT(b,a) uint(IS_BIT(b,a) << b)
+#define GET_MASK(x) uint((x)==32u?0xffffffffu:uint(uint(1u<<(x))-1u))
 
-#line 730
 const uvec3 bitPosition = uvec3(
-  SET_BIT( 0u,0u)| 
-  SET_BIT( 1u,0u)| 
-  SET_BIT( 2u,0u)| 
-  SET_BIT( 3u,0u)| 
-  SET_BIT( 4u,0u)| 
-  SET_BIT( 5u,0u)| 
-  SET_BIT( 6u,0u)| 
-  SET_BIT( 7u,0u)| 
-  SET_BIT( 8u,0u)| 
-  SET_BIT( 9u,0u)| 
-  SET_BIT(10u,0u)| 
-  SET_BIT(11u,0u)| 
-  SET_BIT(12u,0u)| 
-  SET_BIT(13u,0u)| 
-  SET_BIT(14u,0u)| 
-  SET_BIT(15u,0u)| 
-  SET_BIT(16u,0u)| 
-  SET_BIT(17u,0u)| 
-  SET_BIT(18u,0u)| 
-  SET_BIT(19u,0u)| 
-  SET_BIT(20u,0u)| 
-  SET_BIT(21u,0u)| 
-  SET_BIT(22u,0u)| 
-  SET_BIT(23u,0u)| 
-  SET_BIT(24u,0u)| 
-  SET_BIT(25u,0u)| 
-  SET_BIT(26u,0u)| 
-  SET_BIT(27u,0u)| 
-  SET_BIT(28u,0u)| 
-  SET_BIT(29u,0u)| 
-  SET_BIT(30u,0u)| 
-  SET_BIT(31u,0u),
-#line 107
-  SET_BIT( 0u,1u)| 
-  SET_BIT( 1u,1u)| 
-  SET_BIT( 2u,1u)| 
-  SET_BIT( 3u,1u)| 
-  SET_BIT( 4u,1u)| 
-  SET_BIT( 5u,1u)| 
-  SET_BIT( 6u,1u)| 
-  SET_BIT( 7u,1u)| 
-  SET_BIT( 8u,1u)| 
-  SET_BIT( 9u,1u)| 
-  SET_BIT(10u,1u)| 
-  SET_BIT(11u,1u)| 
-  SET_BIT(12u,1u)| 
-  SET_BIT(13u,1u)| 
-  SET_BIT(14u,1u)| 
-  SET_BIT(15u,1u)| 
-  SET_BIT(16u,1u)| 
-  SET_BIT(17u,1u)| 
-  SET_BIT(18u,1u)| 
-  SET_BIT(19u,1u)| 
-  SET_BIT(20u,1u)| 
-  SET_BIT(21u,1u)| 
-  SET_BIT(22u,1u)| 
-  SET_BIT(23u,1u)| 
-  SET_BIT(24u,1u)| 
-  SET_BIT(25u,1u)| 
-  SET_BIT(26u,1u)| 
-  SET_BIT(27u,1u)| 
-  SET_BIT(28u,1u)| 
-  SET_BIT(29u,1u)| 
-  SET_BIT(30u,1u)| 
-  SET_BIT(31u,1u),
-  SET_BIT( 0u,2u)| 
-  SET_BIT( 1u,2u)| 
-  SET_BIT( 2u,2u)| 
-  SET_BIT( 3u,2u)| 
-  SET_BIT( 4u,2u)| 
-  SET_BIT( 5u,2u)| 
-  SET_BIT( 6u,2u)| 
-  SET_BIT( 7u,2u)| 
-  SET_BIT( 8u,2u)| 
-  SET_BIT( 9u,2u)| 
-  SET_BIT(10u,2u)| 
-  SET_BIT(11u,2u)| 
-  SET_BIT(12u,2u)| 
-  SET_BIT(13u,2u)| 
-  SET_BIT(14u,2u)| 
-  SET_BIT(15u,2u)| 
-  SET_BIT(16u,2u)| 
-  SET_BIT(17u,2u)| 
-  SET_BIT(18u,2u)| 
-  SET_BIT(19u,2u)| 
-  SET_BIT(20u,2u)| 
-  SET_BIT(21u,2u)| 
-  SET_BIT(22u,2u)| 
-  SET_BIT(23u,2u)| 
-  SET_BIT(24u,2u)| 
-  SET_BIT(25u,2u)| 
-  SET_BIT(26u,2u)| 
-  SET_BIT(27u,2u)| 
-  SET_BIT(28u,2u)| 
-  SET_BIT(29u,2u)| 
-  SET_BIT(30u,2u)| 
-  SET_BIT(31u,2u)
+  ((0x49249249u<<0u) & GET_MASK(bitTogether[0]*3u))|
+  (uint(shortestAxis != 0) * (((0x55555555u<<0u                     ) & GET_MASK(bitTogether[1]*2u)) << (bitTogether[0]*3u)))|
+  ((GET_MASK(bitTogether[2]) << (bitTogether[0]*3u + bitTogether[1]*2u))*uint(longestAxis == 0u)),
+
+  ((0x49249249u<<1u) & GET_MASK(bitTogether[0]*3u))|
+  (uint(shortestAxis != 1) * (((0x55555555u<<uint(shortestAxis != 0)) & GET_MASK(bitTogether[1]*2u)) << (bitTogether[0]*3u)))|
+  ((GET_MASK(bitTogether[2]) << (bitTogether[0]*3u + bitTogether[1]*2u))*uint(longestAxis == 1u)),
+
+  ((0x49249249u<<2u) & GET_MASK(bitTogether[0]*3u))|
+  (uint(shortestAxis != 2) * (((0x55555555u<<1u                     ) & GET_MASK(bitTogether[1]*2u)) << (bitTogether[0]*3u)))|
+  ((GET_MASK(bitTogether[2]) << (bitTogether[0]*3u + bitTogether[1]*2u))*uint(longestAxis == 2u))
 );
+
 #line 172
 const uvec3 levelTileBits[] = {
   bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-1,0))))-1u)),
@@ -248,19 +193,28 @@ const vec3 levelTileSizeClipSpace[] = {
 
 const uint warpMask        = uint(WARP - 1u);
 const uint floatsPerAABB   = 6u;
+const uint floatsPerBridge = 3u;
 
 const uint halfWarp        = WARP / 2u;
 const uint halfWarpMask    = uint(halfWarp - 1u);
 
 const uint nodesPerLevel[6] = {
-  1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)),
-  1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)),
+  (1u << uint(max(int(allBits) - int((nofLevels-1u)*warpBits),0)))*uint(nofLevels>=1u),
+  (1u << uint(max(int(allBits) - int((nofLevels-2u)*warpBits),0)))*uint(nofLevels>=2u),
+  (1u << uint(max(int(allBits) - int((nofLevels-3u)*warpBits),0)))*uint(nofLevels>=3u),
+  (1u << uint(max(int(allBits) - int((nofLevels-4u)*warpBits),0)))*uint(nofLevels>=4u),
+  (1u << uint(max(int(allBits) - int((nofLevels-5u)*warpBits),0)))*uint(nofLevels>=5u),
+  (1u << uint(max(int(allBits) - int((nofLevels-6u)*warpBits),0)))*uint(nofLevels>=6u),
 };
 #line 70
+
+const uint nofNodes = 
+  nodesPerLevel[0] + 
+  nodesPerLevel[1] + 
+  nodesPerLevel[2] + 
+  nodesPerLevel[3] + 
+  nodesPerLevel[4] + 
+  nodesPerLevel[5] ;
 
 const uint nodeLevelOffset[6] = {
   0,
@@ -272,13 +226,21 @@ const uint nodeLevelOffset[6] = {
 };
 
 const uint nodeLevelSizeInUints[6] = {
-  max(nodesPerLevel[0] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[1] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[2] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[3] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[4] >> warpBits,1u) * uintsPerWarp,
-  max(nodesPerLevel[5] >> warpBits,1u) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[0],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[1],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[2],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[3],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[4],WARP) * uintsPerWarp,
+  DIV_ROUND_UP(nodesPerLevel[5],WARP) * uintsPerWarp,
 };
+
+const uint nodeBufferSizeInUints = 
+  nodeLevelSizeInUints[0] + 
+  nodeLevelSizeInUints[1] + 
+  nodeLevelSizeInUints[2] + 
+  nodeLevelSizeInUints[3] + 
+  nodeLevelSizeInUints[4] + 
+  nodeLevelSizeInUints[5] ; 
 
 const uint nodeLevelOffsetInUints[6] = {
   0,
@@ -298,6 +260,36 @@ const uint aabbLevelSizeInFloats[6] = {
   nodesPerLevel[5] * floatsPerAABB,
 };
 
+const uint bridgeLevelSizeInFloats[6] = {
+  nodesPerLevel[0] * floatsPerBridge,
+  nodesPerLevel[1] * floatsPerBridge,
+  nodesPerLevel[2] * floatsPerBridge,
+  nodesPerLevel[3] * floatsPerBridge,
+  nodesPerLevel[4] * floatsPerBridge,
+  nodesPerLevel[5] * floatsPerBridge,
+};
+
+#if MEMORY_OPTIM == 1
+const uint aabbBufferSizeInFloats = clustersX * clustersY * floatsPerAABB * MEMORY_FACTOR;
+const uint bridgePoolSizeInFloats = clustersX * clustersY * floatsPerBridge * MEMORY_FACTOR;
+#else
+const uint aabbBufferSizeInFloats = 
+  aabbLevelSizeInFloats[0] + 
+  aabbLevelSizeInFloats[1] + 
+  aabbLevelSizeInFloats[2] + 
+  aabbLevelSizeInFloats[3] + 
+  aabbLevelSizeInFloats[4] + 
+  aabbLevelSizeInFloats[5] ;
+const uint bridgePoolSizeInFloats =
+  bridgeLevelSizeInFloats[0] + 
+  bridgeLevelSizeInFloats[1] + 
+  bridgeLevelSizeInFloats[2] + 
+  bridgeLevelSizeInFloats[3] + 
+  bridgeLevelSizeInFloats[4] + 
+  bridgeLevelSizeInFloats[5] ;
+
+#endif
+
 const uint aabbLevelOffsetInFloats[6] = {
   0,
   0 + aabbLevelSizeInFloats[0],
@@ -307,5 +299,15 @@ const uint aabbLevelOffsetInFloats[6] = {
   0 + aabbLevelSizeInFloats[0] + aabbLevelSizeInFloats[1] + aabbLevelSizeInFloats[2] + aabbLevelSizeInFloats[3] + aabbLevelSizeInFloats[4],
 };
 
+const uint bridgeLevelOffsetInFloats[6] = {
+  0,
+  0 + bridgeLevelSizeInFloats[0],
+  0 + bridgeLevelSizeInFloats[0] + bridgeLevelSizeInFloats[1],
+  0 + bridgeLevelSizeInFloats[0] + bridgeLevelSizeInFloats[1] + bridgeLevelSizeInFloats[2],
+  0 + bridgeLevelSizeInFloats[0] + bridgeLevelSizeInFloats[1] + bridgeLevelSizeInFloats[2] + bridgeLevelSizeInFloats[3],
+  0 + bridgeLevelSizeInFloats[0] + bridgeLevelSizeInFloats[1] + bridgeLevelSizeInFloats[2] + bridgeLevelSizeInFloats[3] + bridgeLevelSizeInFloats[4],
+};
+
+const uint aabbPointerBufferSizeInUints = nofNodes + 1;
 
 ).";

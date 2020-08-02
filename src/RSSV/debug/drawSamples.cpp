@@ -77,7 +77,6 @@ void drawSamples(vars::Vars&vars){
   createDrawSamplesProgram(vars);
 
   glEnable(GL_DEPTH_TEST);
-  ge::gl::glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
   auto prg  =  vars.get<Program    >("rssv.method.debug.drawSamplesProgram");
   auto vao  =  vars.get<VertexArray>("rssv.method.debug.vao");

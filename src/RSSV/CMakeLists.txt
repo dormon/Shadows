@@ -19,6 +19,8 @@ add_library(${PROJECT_NAME} STATIC
   buildHierarchy.h
   buildHierarchyShader.cpp
   buildHierarchyShader.h
+  reduceShader.cpp
+  reduceShader.h
   depthToZShader.cpp
   depthToZShader.h
   quantizeZShader.cpp
@@ -46,16 +48,40 @@ add_library(${PROJECT_NAME} STATIC
   merge.h
   mergeShader.cpp
   mergeShader.h
+
   extractSilhouettesShader.cpp
   extractSilhouettesShader.h
   extractSilhouettes.cpp
   extractSilhouettes.h
-  traverseSilhouettes.cpp
-  traverseSilhouettes.h
+
+  traverse.cpp
+  traverse.h
   traverseSilhouettesShader.cpp
   traverseSilhouettesShader.h
+  traverseTrianglesShader.cpp
+  traverseTrianglesShader.h
+  traverseShader.cpp
+  traverseShader.h
+
   collisionShader.cpp
   collisionShader.h
+  getConfigShader.cpp
+  getConfigShader.h
+  getEdgePlanesShader.cpp
+  getEdgePlanesShader.h
+  getAABBShader.cpp
+  getAABBShader.h
+  loadEdgeShader.cpp
+  loadEdgeShader.h
+
+  sharedMemoryShader.cpp
+  sharedMemoryShader.h
+
+  globalBarrierShader.cpp
+  globalBarrierShader.h
+
+  mergeMainShader.cpp
+  mergeMainShader.h
   )
 
 add_subdirectory(debug)

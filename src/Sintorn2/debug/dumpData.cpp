@@ -125,6 +125,16 @@ void dumpSF(vars::Vars&vars){
   buf->copy(*sf);
 }
 
+void dumpAABBPointer(vars::Vars&vars){
+  FUNCTION_CALLER();
+  auto memoryOptim = vars.getInt32("sintorn2.param.memoryOptim");
+  if(!memoryOptim)return;
+
+  auto toBackup = vars.get<Buffer>("sintorn2.method.aabbPointer");
+  auto buf = vars.reCreate<Buffer>("sintorn2.method.debug.dump.aabbPointer",toBackup->getSize());
+  buf->copy(*toBackup);
+}
+
 void dumpBasic(vars::Vars&vars){
   FUNCTION_CALLER();
   auto lp        = *vars.get<glm::vec4>("sintorn2.method.debug.lightPosition"   );
@@ -136,14 +146,17 @@ void dumpBasic(vars::Vars&vars){
 
   auto cfg       = *vars.get<Config>("sintorn2.method.config");
 
+  auto memoryOptim = vars.getInt32("sintorn2.param.memoryOptim");
 
-  vars.reCreate<glm::vec4 >("sintorn2.method.debug.dump.lightPosition"   ,lp   );
-  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.viewMatrix"      ,vm   );
-  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.projectionMatrix",pm   );
-  vars.reCreate<float     >("sintorn2.method.debug.dump.near"            ,nnear);
-  vars.reCreate<float     >("sintorn2.method.debug.dump.far"             ,ffar );
-  vars.reCreate<float     >("sintorn2.method.debug.dump.fovy"            ,fovy );
-  vars.reCreate<Config    >("sintorn2.method.debug.dump.config"          ,cfg  ); 
+
+  vars.reCreate<glm::vec4 >("sintorn2.method.debug.dump.lightPosition"   ,lp         );
+  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.viewMatrix"      ,vm         );
+  vars.reCreate<glm::mat4 >("sintorn2.method.debug.dump.projectionMatrix",pm         );
+  vars.reCreate<float     >("sintorn2.method.debug.dump.near"            ,nnear      );
+  vars.reCreate<float     >("sintorn2.method.debug.dump.far"             ,ffar       );
+  vars.reCreate<float     >("sintorn2.method.debug.dump.fovy"            ,fovy       );
+  vars.reCreate<Config    >("sintorn2.method.debug.dump.config"          ,cfg        ); 
+  vars.reCreate<int       >("sintorn2.method.debug.dump.memoryOptim"     ,memoryOptim);
 }
 
 void dumpTraverse(vars::Vars&vars){
@@ -328,8 +341,9 @@ void dumpData(vars::Vars&vars){
   buildHierarchy(vars);
   dumpNodePool(vars);
   dumpAABBPool(vars);
+  dumpAABBPointer(vars);
 
-  dumpTraverse(vars);
+  //dumpTraverse(vars);
 
 
   std::cerr << "dump" << std::endl;

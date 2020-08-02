@@ -24,12 +24,15 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   sintorn2::allocateHierarchy(vars);
   sintorn2::createBuildHierarchyProgram(vars);
   //exit(0);
-  auto depth            =  vars.get<GBuffer>("gBuffer")->depth;
+  auto gBuffer          = vars.get<GBuffer>("gBuffer");
+  auto depth            = gBuffer->depth;
   auto prg              =  vars.get<Program>("sintorn2.method.buildHierarchyProgram");
-  auto nodePool         =  vars.get<Buffer >("sintorn2.method.nodePool");
-  auto aabbPool         =  vars.get<Buffer >("sintorn2.method.aabbPool");
-  auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter");
-  auto activeNodes      =  vars.get<Buffer >("sintorn2.method.activeNodes");
+  auto nodePool         =  vars.get<Buffer >("sintorn2.method.nodePool"             );
+  auto aabbPool         =  vars.get<Buffer >("sintorn2.method.aabbPool"             );
+  auto levelNodeCounter =  vars.get<Buffer >("sintorn2.method.levelNodeCounter"     );
+  auto activeNodes      =  vars.get<Buffer >("sintorn2.method.activeNodes"          );
+  auto memoryOptim      =  vars.getBool     ("sintorn2.param.memoryOptim"           );
+  auto discardBackfacing =  vars.getBool    ("sintorn2.param.discardBackfacing"     );
 
   auto cfg              = *vars.get<Config >("sintorn2.method.config");
 
@@ -43,7 +46,20 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   
   depth->bind(1);
+
+  if(discardBackfacing){
+    auto normal              =  gBuffer->normal;
+    auto const lightPosition = vars.get<glm::vec4>("sintorn2.method.lightPosition"   );
+    normal->bind(2);
+    prg->set4fv("lightPosition",(float*)(lightPosition));
+  }
   
+  if(memoryOptim){
+    auto aabbPointer = vars.get<Buffer>("sintorn2.method.aabbPointer");
+    aabbPointer->bindBase(GL_SHADER_STORAGE_BUFFER,5);
+    ge::gl::glClearNamedBufferSubData(aabbPointer->getId(),GL_R32UI,0,sizeof(uint32_t),GL_RED_INTEGER,GL_UNSIGNED_INT,nullptr);
+  }
+
   prg->use();
   if(vars.addOrGetBool("sintorn2.method.perfCounters.buildHierarchy")){
     perf::printComputeShaderProf([&](){
@@ -90,6 +106,15 @@ void sintorn2::buildHierarchy(vars::Vars&vars){
   
 
   propagateAABB(vars);
+
+#define PRINT_NUMBER_OF_NODES 0
+
+#if PRINT_NUMBER_OF_NODES == 1
+  auto aabbPointer = vars.get<Buffer>("sintorn2.method.aabbPointer");
+  uint32_t nofAABB = 0;
+  aabbPointer->getData(&nofAABB,sizeof(nofAABB));
+  std::cerr << "nofAABB: " << nofAABB << " / " << cfg.clustersX*cfg.clustersY*vars.getUint32("sintorn2.param.memoryFactor") << std::endl;
+#endif
 
 
 #if 0

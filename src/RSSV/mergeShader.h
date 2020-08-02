@@ -3,5 +3,6 @@
 #include<iostream>
 
 namespace rssv{
-extern std::string const mergeShader;
+std::string const extern mergeShaderFWD;
+std::string const extern mergeShader   ;
 }

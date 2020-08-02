@@ -17,13 +17,78 @@ void createProjection(vars::Vars& vars) {
                                            near, far);
 }
 
+#include <fstream>
+
+void storeCamera(vars::Vars&vars){
+  if(!vars.getBool("args.camera.remember"))return;
+  std::string name = "storedCamera.txt";
+  auto&cam = *vars.get<basicCamera::FreeLookCamera>("cameraTransform");
+
+  auto pos = cam.getPosition();
+  auto a0 = cam.getAngle(0);
+  auto a1 = cam.getAngle(1);
+  auto a2 = cam.getAngle(2);
+
+  std::ofstream file (name);
+  if(!file.is_open()){
+    std::cerr << "cannot open camera file: " << name << std::endl;
+    return;
+  }
+
+  file << *(uint32_t*)&pos.x << std::endl;
+  file << *(uint32_t*)&pos.y << std::endl;
+  file << *(uint32_t*)&pos.z << std::endl;
+  file << *(uint32_t*)&a0 << std::endl;
+  file << *(uint32_t*)&a1 << std::endl;
+  file << *(uint32_t*)&a2 << std::endl;
+
+  file.close();
+
+}
+
+void loadCamera(vars::Vars&vars){
+  if(!vars.getBool("args.camera.remember"))return;
+  std::string name = "storedCamera.txt";
+  auto&cam = *vars.get<basicCamera::FreeLookCamera>("cameraTransform");
+
+  std::ifstream file (name);
+  if(!file.is_open()){
+    std::cerr << "cannot open camera file: " << name << std::endl;
+    return;
+  }
+  glm::vec3 pos;
+  uint32_t data[6];
+  file >> data[0];
+  file >> data[1];
+  file >> data[2];
+  file >> data[3];
+  file >> data[4];
+  file >> data[5];
+
+  pos.x = *(float*)(data+0);
+  pos.y = *(float*)(data+1);
+  pos.z = *(float*)(data+2);
+  float a0,a1,a2;
+  a0 = *(float*)(data+3);
+  a1 = *(float*)(data+4);
+  a2 = *(float*)(data+5);
+
+  cam.setPosition(pos);
+  cam.setAngle(0,a0);
+  cam.setAngle(1,a1);
+  cam.setAngle(2,a2);
+
+  file.close();
+}
+
 void createView(vars::Vars& vars) {
   auto const type = vars.getString("args.camera.type");
   if (type == "orbit")
     vars.add<basicCamera::OrbitCamera>("cameraTransform");
-  else if (type == "free")
+  else if (type == "free"){
     vars.add<basicCamera::FreeLookCamera>("cameraTransform");
-  else {
+    loadCamera(vars);
+  }else {
     std::cerr << "ERROR: --camera-type is incorrect" << std::endl;
     exit(0);
   }

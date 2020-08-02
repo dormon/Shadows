@@ -1,6 +1,9 @@
 #include <RSSV/shadowFrustaShader.h>
 
-std::string const rssv::shadowFrustaShader = R".(
+
+std::string const rssv::shadowFrusta::fwdShader = R".(
+void computeShadowFrustaJOB();
+
 #ifndef WARP
 #define WARP 64
 #endif//WARP
@@ -22,7 +25,7 @@ std::string const rssv::shadowFrustaShader = R".(
 #endif//SF_ALIGNMENT
 
 #ifndef BIAS
-#define BIAS 0.1f
+#define BIAS 1.0f
 #endif//BIAS
 
 #ifndef SF_INTERLEAVE
@@ -41,26 +44,44 @@ std::string const rssv::shadowFrustaShader = R".(
 #define MORE_PLANES 0
 #endif//MORE_PLANES
 
-#ifndef ENABLE_FFC
-#define ENABLE_FFC 0
-#endif//ENABLE_FFC
+#ifndef EXACT_TRIANGLE_AABB
+#define EXACT_TRIANGLE_AABB 0
+#endif//EXACT_TRIANGLE_AABB
 
-const uint planesPerSF = 4u + MORE_PLANES*3u;
+#if WGS > WARP
+
+#if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < 1
+#undef SHARED_MEMORY_SIZE
+#define SHARED_MEMORY_SIZE 1
+#endif
+
+#define shadowFrustaJobStartO 0
+#define shadowFrustaJobStart getShared1u(shadowFrustaJobStartO)
+
+#endif
+
+).";
+
+
+std::string const rssv::shadowFrusta::computeShader = R".(
+
+
+const uint planesPerSF = 4u + MORE_PLANES*3u + EXACT_TRIANGLE_AABB*3u;
 const uint floatsPerPlane = 4u;
-const uint floatsPerSF = planesPerSF * floatsPerPlane + uint(ENABLE_FFC);
+const uint floatsPerSF = planesPerSF * floatsPerPlane;
 
 #line 38
 
 const uint alignedNofTriangles = (uint(NOF_TRIANGLES / TRIANGLE_ALIGNMENT) + uint((NOF_TRIANGLES % TRIANGLE_ALIGNMENT) != 0u)) * TRIANGLE_ALIGNMENT;
 const uint alignedNofSF        = (uint(NOF_TRIANGLES /       SF_ALIGNMENT) + uint((NOF_TRIANGLES %       SF_ALIGNMENT) != 0u)) *       SF_ALIGNMENT;
 
-layout(local_size_x=WGS)in;
-
-layout(std430,binding=0)buffer Triangles   {float triangles   [];};
-layout(std430,binding=1)buffer ShadowFrusta{float shadowFrusta[];};
 
 uniform vec4 lightPosition                      ;
 uniform mat4 transposeInverseModelViewProjection;
+
+#if EXACT_TRIANGLE_AABB == 1
+uniform mat4 projView;
+#endif
 
 int greaterVec(vec3 a,vec3 b){
 	return int(dot(ivec3(sign(a-b)),ivec3(4,2,1)));
@@ -85,10 +106,7 @@ vec4 getPlane(vec3 A,vec3 B,vec3 C){
 	return vec4(n,-dot(n,A));
 }
 
-void main(){
-	uint gid=gl_GlobalInvocationID.x;
-  if(gid >= NOF_TRIANGLES)return;
-
+void computeShadowFrusta(uint gid){
   vec3 v0;
   vec3 v1;
   vec3 v2;
@@ -114,21 +132,14 @@ void main(){
   v2[1] = triangles[gid*9u+7u];
   v2[2] = triangles[gid*9u+8u];
 #endif
+  v0 += BIAS*normalize(v0*lightPosition.w-lightPosition.xyz);
+  v1 += BIAS*normalize(v1*lightPosition.w-lightPosition.xyz);
+  v2 += BIAS*normalize(v2*lightPosition.w-lightPosition.xyz);
 
-#if 0
-  vec4 e0 = vec4(v0,1);
-  vec4 e1 = vec4(v1,1);
-  vec4 e2 = vec4(v2,1);
-  vec4 e3 = vec4(lightPosition.xyz,transposeInverseModelViewProjection[0][1]);
-#else
 	vec4 e0 = getPlane(v0,v1,lightPosition);
 	vec4 e1 = getPlane(v1,v2,lightPosition);
 	vec4 e2 = getPlane(v2,v0,lightPosition);
-	vec4 e3 = getPlane(
-			v0 + BIAS*normalize(v0*lightPosition.w-lightPosition.xyz),
-			v1 + BIAS*normalize(v1*lightPosition.w-lightPosition.xyz),
-			v2 + BIAS*normalize(v2*lightPosition.w-lightPosition.xyz));
-
+	vec4 e3 = getPlane(v0,v1,v2);
 
 #if MORE_PLANES == 1
   vec4 f0;
@@ -157,6 +168,11 @@ void main(){
 		e3=-e3;
 	}
 	e3=transposeInverseModelViewProjection*e3;
+
+#if EXACT_TRIANGLE_AABB == 1
+  vec4 t0 = projView * vec4(v0,1);
+  vec4 t1 = projView * vec4(v1,1);
+  vec4 t2 = projView * vec4(v2,1);
 #endif
 
 
@@ -182,10 +198,6 @@ void main(){
   shadowFrusta[alignedNofSF*14u + gid] = e3[2];
   shadowFrusta[alignedNofSF*15u + gid] = e3[3];
 
-  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
-    shadowFrusta[alignedNofSF*16u + gid] = ffc;
-  #endif
-
   #if MORE_PLANES == 1
     shadowFrusta[alignedNofSF*16u + gid] = f0[0];
     shadowFrusta[alignedNofSF*17u + gid] = f0[1];
@@ -201,10 +213,43 @@ void main(){
     shadowFrusta[alignedNofSF*25u + gid] = f2[1];
     shadowFrusta[alignedNofSF*26u + gid] = f2[2];
     shadowFrusta[alignedNofSF*27u + gid] = f2[3];
-    #if ENABLE_FFC == 1
-      shadowFrusta[alignedNofSF*28u + gid] = ffc;
-    #endif
   #endif
+
+  #if EXACT_TRIANGLE_AABB == 1 && MORE_PLANES == 1
+    shadowFrusta[alignedNofSF*28u + gid] = t0[0];
+    shadowFrusta[alignedNofSF*29u + gid] = t0[1];
+    shadowFrusta[alignedNofSF*30u + gid] = t0[2];
+    shadowFrusta[alignedNofSF*31u + gid] = t0[3];
+
+    shadowFrusta[alignedNofSF*32u + gid] = t1[0];
+    shadowFrusta[alignedNofSF*33u + gid] = t1[1];
+    shadowFrusta[alignedNofSF*34u + gid] = t1[2];
+    shadowFrusta[alignedNofSF*35u + gid] = t1[3];
+
+    shadowFrusta[alignedNofSF*36u + gid] = t2[0];
+    shadowFrusta[alignedNofSF*37u + gid] = t2[1];
+    shadowFrusta[alignedNofSF*38u + gid] = t2[2];
+    shadowFrusta[alignedNofSF*39u + gid] = t2[3];
+  #endif
+
+  #if EXACT_TRIANGLE_AABB == 1 && MORE_PLANES == 0
+    shadowFrusta[alignedNofSF*16u + gid] = t0[0];
+    shadowFrusta[alignedNofSF*17u + gid] = t0[1];
+    shadowFrusta[alignedNofSF*18u + gid] = t0[2];
+    shadowFrusta[alignedNofSF*19u + gid] = t0[3];
+
+    shadowFrusta[alignedNofSF*20u + gid] = t1[0];
+    shadowFrusta[alignedNofSF*21u + gid] = t1[1];
+    shadowFrusta[alignedNofSF*22u + gid] = t1[2];
+    shadowFrusta[alignedNofSF*23u + gid] = t1[3];
+
+    shadowFrusta[alignedNofSF*24u + gid] = t2[0];
+    shadowFrusta[alignedNofSF*25u + gid] = t2[1];
+    shadowFrusta[alignedNofSF*26u + gid] = t2[2];
+    shadowFrusta[alignedNofSF*27u + gid] = t2[3];
+  #endif
+
+
 #else
   shadowFrusta[gid*floatsPerSF+ 0u] = e0[0];
   shadowFrusta[gid*floatsPerSF+ 1u] = e0[1];
@@ -223,10 +268,6 @@ void main(){
   shadowFrusta[gid*floatsPerSF+14u] = e3[2];
   shadowFrusta[gid*floatsPerSF+15u] = e3[3];
 
-  #if (ENABLE_FFC == 1) && (MORE_PLANES == 0)
-    shadowFrusta[gid*floatsPerSF+16u] = ffc;
-  #endif
-
   #if MORE_PLANES == 1
     shadowFrusta[gid*floatsPerSF+16u] = f0[0];
     shadowFrusta[gid*floatsPerSF+17u] = f0[1];
@@ -240,13 +281,94 @@ void main(){
     shadowFrusta[gid*floatsPerSF+25u] = f2[1];
     shadowFrusta[gid*floatsPerSF+26u] = f2[2];
     shadowFrusta[gid*floatsPerSF+27u] = f2[3];
-
-    #if ENABLE_FFC == 1
-      shadowFrusta[gid*floatsPerSF+28u] = ffc;
-    #endif
- 
   #endif
+
+  #if MORE_PLANES == 1 && EXACT_TRIANGLE_AABB == 1
+    shadowFrusta[gid*floatsPerSF+28u] = t0[0];
+    shadowFrusta[gid*floatsPerSF+29u] = t0[1];
+    shadowFrusta[gid*floatsPerSF+30u] = t0[2];
+    shadowFrusta[gid*floatsPerSF+31u] = t0[3];
+    shadowFrusta[gid*floatsPerSF+32u] = t1[0];
+    shadowFrusta[gid*floatsPerSF+33u] = t1[1];
+    shadowFrusta[gid*floatsPerSF+34u] = t1[2];
+    shadowFrusta[gid*floatsPerSF+35u] = t1[3];
+    shadowFrusta[gid*floatsPerSF+36u] = t2[0];
+    shadowFrusta[gid*floatsPerSF+37u] = t2[1];
+    shadowFrusta[gid*floatsPerSF+38u] = t2[2];
+    shadowFrusta[gid*floatsPerSF+39u] = t2[3];
+  #endif
+  
+  #if MORE_PLANES == 0 && EXACT_TRIANGLE_AABB == 1
+    shadowFrusta[gid*floatsPerSF+16u] = v0[0];
+    shadowFrusta[gid*floatsPerSF+17u] = v0[1];
+    shadowFrusta[gid*floatsPerSF+18u] = v0[2];
+    shadowFrusta[gid*floatsPerSF+19u] = v0[3];
+    shadowFrusta[gid*floatsPerSF+20u] = v1[0];
+    shadowFrusta[gid*floatsPerSF+21u] = v1[1];
+    shadowFrusta[gid*floatsPerSF+22u] = v1[2];
+    shadowFrusta[gid*floatsPerSF+23u] = v1[3];
+    shadowFrusta[gid*floatsPerSF+24u] = v2[0];
+    shadowFrusta[gid*floatsPerSF+25u] = v2[1];
+    shadowFrusta[gid*floatsPerSF+26u] = v2[2];
+    shadowFrusta[gid*floatsPerSF+27u] = v2[3];
+  #endif
+
 #endif
 }
 
+void computeShadowFrustaJOB(){
+#if USE_PERSISTENT_THREADS == 1
+  uint job;
+  for(;;){
+    if(gl_LocalInvocationIndex == 0)
+      job = atomicAdd(shadowFrustaJobCounter,gl_WorkGroupSize.x);
+
+#if WGS > WARP
+    if(gl_LocalInvocationIndex == 0)
+      toShared1u(shadowFrustaJobStartO,job);
+    //memoryBarrierShared();
+    barrier();
+    job = shadowFrustaJobStart;
+#else
+    job = readFirstInvocationARB(job);
+#endif
+
+    if(job+gl_LocalInvocationIndex >= NOF_TRIANGLES)break;
+
+    computeShadowFrusta(job+gl_LocalInvocationIndex);
+
+  }
+#else
+	uint gid=gl_GlobalInvocationID.x;
+  if(gid >= NOF_TRIANGLES)return;
+  computeShadowFrusta(gid);
+#endif
+}
+
+
+
+
+
 ).";
+
+
+std::string const rssv::shadowFrusta::mainShader = R".(
+layout(local_size_x=WGS)in;
+
+layout(std430,binding=0)buffer Triangles   {float triangles   [];};
+layout(std430,binding=1)buffer ShadowFrusta{float shadowFrusta[];};
+
+#if USE_PERSISTENT_THREADS == 1
+layout(std430,binding=2)buffer ShadowFrustaJobCounter  {uint  shadowFrustaJobCounter ;};
+#endif
+
+
+void main(){
+  computeShadowFrustaJOB();
+}
+).";
+
+
+
+
+

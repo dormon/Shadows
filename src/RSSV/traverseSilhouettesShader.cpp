@@ -1,320 +1,315 @@
 #include <RSSV/traverseSilhouettesShader.h>
 
-std::string const rssv::traverseSilhouettesShader = R".(
+std::string const rssv::traverseSilhouettesFWD = R".(
+void traverseSilhouetteJOB();
+#if COMPUTE_SILHOUETTE_PLANES == 1
 
-#ifndef WARP
-#define WARP 64
-#endif//WARP
-
-#ifndef NOF_TRIANGLES
-#define NOF_TRIANGLES 0u
-#endif//NOF_TRIANGLES
-
-#ifndef SF_ALIGNMENT
-#define SF_ALIGNMENT 128
-#endif//SF_ALIGNMENT
-
-#ifndef SF_INTERLEAVE
-#define SF_INTERLEAVE 0
-#endif//SF_INTERLEAVE
-
-#ifndef MORE_PLANES
-#define MORE_PLANES 0
-#endif//MORE_PLANES
-
-#ifndef ENABLE_FFC
-#define ENABLE_FFC 0
-#endif//ENABLE_FFC
-
-#ifndef NO_AABB
-#define NO_AABB 0
-#endif//NO_AABB
-
-layout(local_size_x=WARP)in;
-
-layout(std430,binding=0)buffer NodePool          {uint  nodePool         [];};
-layout(std430,binding=1)buffer AABBPool          {float aabbPool         [];};
-layout(std430,binding=2)buffer JobCounter        {uint  jobCounter       [];};
-layout(std430,binding=3)buffer EdgeBuffer        {float edgeBuffer       [];};
-layout(std430,binding=4)buffer MultBuffer        {uint  multBuffer       [];};
-layout(std430,binding=5)buffer SilhouetteCounter {uint  silhouetteCounter[];};
-layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
-
-layout(     binding=0)          uniform sampler2DRect depthTexture;
-layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
-layout(r32i,binding=2)          uniform iimage2D      stencil     ;
-
-uniform mat4 view;
-uniform mat4 proj;
-uniform vec4 lightPosition;
-
-#define USE_PLANES 1
-
-#define PARALLEL_LOAD 0
-
-shared int  edgeMult;
-
-#if USE_PLANES == 1
-uniform mat4 invTran;
-
-#if PARALLEL_LOAD == 1
-shared vec4 edgePlane[WARP];
-shared vec4 aPlane   [WARP];
-shared vec4 bPlane   [WARP];
-shared vec4 abPlane  [WARP];
-#else
-shared vec4 edgePlane;
-shared vec4 aPlane;
-shared vec4 bPlane;
-shared vec4 abPlane;
-#endif
+  #if COMPUTE_SILHOUETTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+    #if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < (6*4+1)
+      #undef SHARED_MEMORY_SIZE
+      #define SHARED_MEMORY_SIZE (6*4+1)
+    #endif
+  #else
+    #if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < (4*4+1)
+      #undef SHARED_MEMORY_SIZE
+      #define SHARED_MEMORY_SIZE (4*4+1)
+    #endif
+  #endif
 
 #else
-shared vec4 edgeA   ;
-shared vec4 edgeB   ;
-shared vec4 light   ;
+  #if !defined(SHARED_MEMORY_SIZE) || (SHARED_MEMORY_SIZE) < (6*4+1)
+    #undef SHARED_MEMORY_SIZE
+    #define SHARED_MEMORY_SIZE (6*4+1)
+  #endif
 #endif
 
-shared vec4 edgeAClipSpace;
-shared vec4 edgeBClipSpace;
-shared vec4 lightClipSpace;
+).";
 
-#line 52
+std::string const extern rssv::traverseSilhouettes = R".(
 
-vec4 getClipPlane(in vec4 a,in vec4 b,in vec4 c){
-  if(a.w==0){
-    if(b.w==0){
-      if(c.w==0){
-        return vec4(0,0,0,cross(b.xyz-a.xyz,c.xyz-a.xyz).z);
-      }else{
-        vec3 n = cross(a.xyz*c.w-c.xyz*a.w,b.xyz*c.w-c.xyz*b.w);
-        return vec4(n*c.w,-dot(n,c.xyz));
-      }
-    }else{
-      vec3 n = cross(c.xyz*b.w-b.xyz*c.w,a.xyz*b.w-b.xyz*a.w);
-      return vec4(n*b.w,-dot(n,b.xyz));
-    }
-  }else{
-    vec3 n = cross(b.xyz*a.w-a.xyz*b.w,c.xyz*a.w-a.xyz*c.w);
-    return vec4(n*a.w,-dot(n,a.xyz));
+#if COMPUTE_SILHOUETTE_PLANES == 1
+  #define edgePlaneO      (0*4)
+  #define aPlaneO         (1*4)
+  #define bPlaneO         (2*4)
+  #define abPlaneO        (3*4)
+  #define edgeAClipSpaceO (4*4)
+  #define edgeBClipSpaceO (5*4)
+  #if COMPUTE_SILHOUETTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+    #define edgeMultO       (6*4)
+  #else
+    #define edgeMultO       (4*4)
+  #endif
+#else
+  #define edgePlaneO      (0*4)
+  #define aPlaneO         (1*4)
+  #define bPlaneO         (2*4)
+  #define abPlaneO        (3*4)
+  #define edgeAClipSpaceO (4*4)
+  #define edgeBClipSpaceO (5*4)
+  #define edgeMultO       (6*4)
+#endif
+
+#define edgePlane      getShared4f(edgePlaneO     )
+#define aPlane         getShared4f(aPlaneO        )
+#define bPlane         getShared4f(bPlaneO        )
+#define abPlane        getShared4f(abPlaneO       )
+#define edgeAClipSpace getShared4f(edgeAClipSpaceO)
+#define edgeBClipSpace getShared4f(edgeBClipSpaceO)
+#define edgeMult       getShared1i(edgeMultO      )
+
+#if COMPUTE_SILHOUETTE_PLANES == 1
+void loadSilhouette(in uint job){
+  #if COMPUTE_SILHOUETTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+  const uint floatsPerSilhouette = 6*4+1;
+  #else
+  const uint floatsPerSilhouette = 4*4+1;
+  #endif
+
+  if(gl_LocalInvocationIndex < floatsPerSilhouette){
+    toShared1f(gl_LocalInvocationIndex,silhouettePlanes[job*floatsPerSilhouette+gl_LocalInvocationIndex]);
   }
-}
-
-
-#if PARALLEL_LOAD == 1
-void parallelLoad(uint job){
-  if(job+gl_LocalInvocationIndex >= silhouetteCounter[0])return;
-
-  uint res  = multBuffer[job+gl_LocalInvocationIndex];
-  uint edge = res & 0x1fffffffu;
-  int  mult = int(res) >> 29;
-
-  vec3 edgeA;
-  vec3 edgeB;
-  edgeA[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
-  edgeA[1] = edgeBuffer[edge+1*ALIGNED_NOF_EDGES];
-  edgeA[2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
-  edgeB[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
-  edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
-  edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
-  
-  vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
-  edgePlane[gl_LocalInvocationIndex] = invTran*vec4(n,-dot(n,edgeA));
-
-  vec3 an = normalize(cross(n,edgeA-lightPosition.xyz));
-  aPlane[gl_LocalInvocationIndex] = invTran*vec4(an,-dot(an,edgeA));
-
-  vec3 bn = normalize(cross(edgeB-lightPosition.xyz,n));
-  bPlane[gl_LocalInvocationIndex] = invTran*vec4(bn,-dot(bn,edgeB));
-
-  vec3 abn = normalize(cross(edgeB-edgeA,n));
-  abPlane[gl_LocalInvocationIndex] = invTran*vec4(abn,-dot(abn,edgeA));
+  memoryBarrierShared();
 }
 #else
-void loadSilhouette(uint job){
-  if(gl_LocalInvocationIndex == 0){ // TODO parallel load and precomputation in parallel in separated shader
+void loadSilhouette(in uint job){
+  if(gl_LocalInvocationIndex == 0){
     uint res  = multBuffer[job];
     uint edge = res & 0x1fffffffu;
     int  mult = int(res) >> 29;
 
-#if USE_PLANES == 1
     vec3 edgeA;
     vec3 edgeB;
-    edgeA[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
-    edgeA[1] = edgeBuffer[edge+1*ALIGNED_NOF_EDGES];
-    edgeA[2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
-    edgeB[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
-    edgeB[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
-    edgeB[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
-
-
-    edgeAClipSpace = proj*view*vec4(edgeA,1.f);
-    edgeBClipSpace = proj*view*vec4(edgeB,1.f);
-    lightClipSpace = proj*view*lightPosition  ;
-
-    //edgeAClipSpace /= abs(edgeAClipSpace.w);
-    //edgeBClipSpace /= abs(edgeBClipSpace.w);
-    //lightClipSpace /= abs(lightClipSpace.w);
-
-#if 1
-    edgePlane = getClipPlane(edgeAClipSpace,edgeBClipSpace,lightClipSpace);
-
-    vec3 an = normalize(cross(
-          edgePlane.xyz,
-          edgeAClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeAClipSpace.w));
-    aPlane = vec4(an*abs(edgeAClipSpace.w),-dot(an,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
-
-    vec3 bn = normalize(cross(
-          edgeBClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeBClipSpace.w,
-          edgePlane.xyz));
-    bPlane = vec4(bn*abs(edgeBClipSpace.w),-dot(bn,edgeBClipSpace.xyz)*sign(edgeBClipSpace.w));
-
-    vec3 abn = normalize(cross(
-          edgeBClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*edgeBClipSpace.w,
-          edgePlane.xyz));
-    abPlane = vec4(abn*abs(edgeAClipSpace.w),-dot(abn,edgeAClipSpace.xyz)*sign(edgeAClipSpace.w));
-
-
-    /*
-    vec3 n = normalize(cross(
-          edgeBClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*edgeBClipSpace.w,
-          lightClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*lightClipSpace.w));
-    edgePlane = vec4(n*edgeAClipSpace.w,-dot(n,edgeAClipSpace.xyz));
-    //edgePlane *= 1-2*float((edgeAClipSpace.w < 0 && edgeBClipSpace.w < 0) || (edgeAClipSpace.w < 0 && lightClipSpace.w < 0));
-
-    vec3 an = normalize(cross(
-          n,
-          edgeAClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeAClipSpace.w));
-    aPlane = vec4(an*edgeAClipSpace.w,-dot(an,edgeAClipSpace.xyz));
-    //aPlane *= 1-2*float((edgeAClipSpace.w < 0 && edgeBClipSpace.w < 0));
-
-    vec3 bn = normalize(cross(
-          edgeBClipSpace.xyz*lightClipSpace.w-lightClipSpace.xyz*edgeBClipSpace.w,
-          n));
-    bPlane = vec4(bn*edgeBClipSpace.w,-dot(bn,edgeBClipSpace.xyz));
-    //bPlane *= 1-2*float((edgeAClipSpace.w < 0 && edgeBClipSpace.w < 0) || (edgeAClipSpace.w < 0 && lightClipSpace.w < 0) || (edgeBClipSpace.w < 0 && lightClipSpace.w < 0));
-
-    vec3 abn = normalize(cross(
-          edgeBClipSpace.xyz*edgeAClipSpace.w-edgeAClipSpace.xyz*edgeBClipSpace.w,
-          n));
-    abPlane = vec4(abn*edgeAClipSpace.w,-dot(abn,edgeAClipSpace.xyz));
-    //abPlane *= 1-2*float((edgeAClipSpace.w < 0 && lightClipSpace.w < 0));
-    */
-#endif
-
-#if 0
-    mat4 invTran = transpose(inverse(proj*view));
+    loadEdge(edgeA,edgeB,edge);
 
     vec3 n = normalize(cross(edgeB-edgeA,lightPosition.xyz-edgeA));
-    edgePlane = invTran*vec4(n,-dot(n,edgeA));
+    toShared4f(edgePlaneO,invTran*vec4(n  ,-dot(n  ,edgeA)));
 
     vec3 an = normalize(cross(n,edgeA-lightPosition.xyz));
-    aPlane = invTran*vec4(an,-dot(an,edgeA));
+    toShared4f(aPlaneO   ,invTran*vec4(an ,-dot(an ,edgeA)));
 
     vec3 bn = normalize(cross(edgeB-lightPosition.xyz,n));
-    bPlane = invTran*vec4(bn,-dot(bn,edgeB));
+    toShared4f(bPlaneO   ,invTran*vec4(bn ,-dot(bn ,edgeB)));
 
     vec3 abn = normalize(cross(edgeB-edgeA,n));
-    abPlane = invTran*vec4(abn,-dot(abn,edgeA));
+    toShared4f(abPlaneO  ,invTran*vec4(abn,-dot(abn,edgeA)));
+
+#if COMPUTE_SILHOUETTE_BRIDGES == 1 || EXACT_SILHOUETTE_AABB == 1
+    toShared4f(edgeAClipSpaceO,projView*vec4(edgeA,1.f));
+    toShared4f(edgeBClipSpaceO,projView*vec4(edgeB,1.f));
 #endif
 
+#if STORE_EDGE_PLANES == 1
+    uint w = atomicAdd(debug[0],1);
 
-#else
-    vec4 point;
-    point[0] = edgeBuffer[edge+0*ALIGNED_NOF_EDGES];
-    point[1] = edgeBuffer[edge+1*ALIGNED_NOF_EDGES];
-    point[2] = edgeBuffer[edge+2*ALIGNED_NOF_EDGES];
-    point[3] = 1;
-    edgeA = proj*view*point;
-
-    point[0] = edgeBuffer[edge+3*ALIGNED_NOF_EDGES];
-    point[1] = edgeBuffer[edge+4*ALIGNED_NOF_EDGES];
-    point[2] = edgeBuffer[edge+5*ALIGNED_NOF_EDGES];
-    point[3] = 1;
-    edgeB = proj*view*point;
-    light = proj*view*lightPosition;
-
-    edgeAClipSpace = edgeA;
-    edgeBClipSpace = edgeB;
-    lightClipSpace = light;
+    #if DUMP_POINTS_NOT_PLANES == 1
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 0+i] = floatBitsToUint(edgeAClipSpace[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 4+i] = floatBitsToUint(edgeBClipSpace[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 8+i] = floatBitsToUint(clipLightPosition[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+12+i] = floatBitsToUint(clipLightPosition[i]);
+    #else
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 0+i] = floatBitsToUint(edgePlane[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 4+i] = floatBitsToUint(   aPlane[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+ 8+i] = floatBitsToUint(   bPlane[i]);
+    
+        for(int i=0;i<4;++i)
+          debug[1+w*16+12+i] = floatBitsToUint(  abPlane[i]);
+    #endif
 #endif
+    
 
-    edgeMult = mult;
-  
-
-
+    toShared1i(edgeMultO,mult);
   }
   memoryBarrierShared();
 }
-
 #endif
 
-//void lastLevel(uint node){
-//  uvec2 sampleCoord;
-//  vec4 clipCoord;
-//  bool inside;
-//  vec4 plane;
-//
-//
-//  sampleCoord = (demorton(node).xy<<uvec2(tileBitsX,tileBitsY)) + uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
-//
-//  clipCoord.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
-//  clipCoord.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
-//  clipCoord.w = 1.f;
-//
-//}
+int computeBridgeSilhouetteMultiplicity(in vec4 bridgeStart,in vec4 bridgeEnd){
+  // m n c 
+  // - - 0
+  // 0 - 1
+  // + - 1
+  // - 0 1
+  // 0 0 0
+  // + 0 0
+  // - + 1
+  // 0 + 0
+  // + + 0
+  //
+  // m<0 && n>=0 || m>=0 && n<0
+  // m<0 xor n<0
+  
+  int result = edgeMult;
+  float ss = dot(edgePlane,bridgeStart);
+  float es = dot(edgePlane,bridgeEnd  );
+  if((ss<0)==(es<0))return 0;
+  result *= 1-2*int(ss<0.f);
 
-#if STORE_TRAVERSE_STAT == 1
-layout(std430,binding = 7)buffer Debug{uint debug[];};
-#endif
+  vec4 samplePlane    = getClipPlaneSkala(bridgeStart,bridgeEnd,clipLightPosition);
+  ss = dot(samplePlane,edgeAClipSpace);
+  es = dot(samplePlane,edgeBClipSpace);
+  ss*=es;
+  if(ss>0.f)return 0;
+  result *= 1+int(ss<0.f);
 
-vec3 trivialRejectCorner3D(vec3 Normal){
-  return vec3((ivec3(sign(Normal))+1)>>1);
+  vec4 trianglePlane  = getClipPlaneSkala(bridgeStart,bridgeEnd,bridgeStart + (edgeBClipSpace-edgeAClipSpace));
+  trianglePlane *= sign(dot(trianglePlane,clipLightPosition));
+  if(dot(trianglePlane,edgeAClipSpace)<=0)return 0;
+
+  return result;
 }
 
-#if STORE_TRAVERSE_STAT == 1
-uint job = 0u;
+void lastLevelSilhouette(in uint node,in uint job){
+#if COMPUTE_LAST_LEVEL_SILHOUETTES == 1
+  uvec2 tileCoord   = demorton(node).xy<<uvec2(tileBitsX,tileBitsY);
+  uvec2 localCoord  = uvec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+  uvec2 sampleCoord = tileCoord + localCoord;
+
+  vec4 bridgeEnd;
+  bridgeEnd.z = texelFetch(depthTexture,ivec2(sampleCoord)).x*2-1;
+  bridgeEnd.xy = -1+2*((vec2(sampleCoord) + vec2(0.5)) / vec2(WINDOW_X,WINDOW_Y));
+  bridgeEnd.w = 1.f;
+  uint sampleMorton = getMorton(sampleCoord,bridgeEnd.z);
+  if(sampleMorton != node)return;
+
+
+  //uint www = node>>warpBits;
+  //if(www != 156201)return;
+  //if(job != 2)return;
+
+  //ivec2 loCo = ivec2(gl_LocalInvocationIndex&tileMaskX,gl_LocalInvocationIndex>>tileBitsX);
+  //ivec2 tiCo = ivec2(demorton(node).xy<<uvec2(tileBitsX,tileBitsY));
+
+  //imageAtomicAdd(stencil,tiCo+loCo,1);
+  //imageAtomicAdd(stencil,ivec2(sampleCoord),1);
+  //return;
+  ////if(www > 156201)return;
+  ////if(www < 156200)return;
+
+
+  vec4 bridgeStart = vec4(getAABBCenter(nofLevels-1,node),1.f);
+
+  int mult = computeBridgeSilhouetteMultiplicity(bridgeStart,bridgeEnd);
+
+  if(mult!=0)imageAtomicAdd(stencil,ivec2(sampleCoord),mult);
 #endif
+}
+
 
 #if WARP == 64
-#line 10000
 
-#define USE_SHARED_STACK 1
-
-#if USE_SHARED_STACK == 1
-shared uint64_t intersection[nofLevels];
+#if COMPUTE_SILHOUETTE_BRIDGES == 1 || COMPUTE_TRIANGLE_BRIDGES == 1
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+shared vec3     localBridgeEnd   [nofLevels][WARP];
+#endif
 #endif
 
-#if PARALLEL_LOAD == 1
-void traverse(uint jb){
+void debug_storeSilhouetteTraverseStatLastLevel(in uint job,in uint node,in int level){
+#if STORE_SILHOUETTE_TRAVERSE_STAT == 1
+  if(gl_LocalInvocationIndex==0){
+    uint w = atomicAdd(debug[0],1);
+    debug[1+w*4+0] = job;
+    debug[1+w*4+1] = node;
+    debug[1+w*4+2] = uint(level);
+    debug[1+w*4+3] = 0xff;
+  }
+#endif
+}
+
+void debug_storeSilhouetteTraverseStat(in uint job,in uint node,in int level,uint status){
+#if STORE_SILHOUETTE_TRAVERSE_STAT == 1
+  uint w = atomicAdd(debug[0],1);
+  debug[1+w*4+0] = job;
+  debug[1+w*4+1] = node*WARP + gl_LocalInvocationIndex;
+  debug[1+w*4+2] = uint(level);
+  debug[1+w*4+3] = status;
+#endif
+}
+
+void computeBridgeSilhouetteIntersection(in vec3 minCorner,in vec3 aabbSize,int level,uint node){
+#if COMPUTE_SILHOUETTE_BRIDGES == 1
+  vec4 bridgeStart;
+  vec4 bridgeEnd  ;
+  int  mult       ;
+
+
+  bridgeEnd = vec4(minCorner + aabbSize*.5f,1.f);
+
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+  localBridgeEnd[level][gl_LocalInvocationIndex] = vec3(bridgeEnd);
+#endif
+
+  if(level == 0){
+    bridgeStart = clipLightPosition;
+  }else{
+#if STORE_BRIDGES_IN_LOCAL_MEMORY == 1
+    bridgeStart = vec4(localBridgeEnd[level-1][node&warpMask],1);
 #else
-void traverse(){
+    bridgeStart = vec4(getAABBCenter(level-1,node),1);
 #endif
+  }
+
+  mult = computeBridgeSilhouetteMultiplicity(bridgeStart,bridgeEnd);
+  if(mult!=0)atomicAdd(bridges[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex],mult);
+#endif
+}
+#line 205
+uint computeAABBSilhouetteIntersection(in vec3 minCorner,in vec3 aabbSize){
+  vec3 tr;
+
+  tr = trivialRejectCorner3D(edgePlane.xyz);
+  if(dot(edgePlane,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return TRIVIAL_REJECT;
+
+  tr = 1.f-tr;
+  if(dot(edgePlane,vec4(minCorner + (tr)*(aabbSize),1.f))>0.f)return TRIVIAL_REJECT;
+
+  tr = trivialRejectCorner3D(aPlane.xyz);
+  if(dot(aPlane   ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return TRIVIAL_REJECT;
+
+  tr = trivialRejectCorner3D(bPlane.xyz);
+  if(dot(bPlane   ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return TRIVIAL_REJECT;
+
+  tr = trivialRejectCorner3D(abPlane.xyz);
+  if(dot(abPlane  ,vec4(minCorner + (tr)*(aabbSize),1.f))<0.f)return TRIVIAL_REJECT;
+
+  return INTERSECTS;
+}
+
+#if EXACT_SILHOUETTE_AABB == 1
+uint computeAABBSilhouetteIntersectionEXACT(in vec3 minCorner,in vec3 maxCorner){
+    if(doesLineInterectSubFrustum(edgeAClipSpace,edgeAClipSpace-clipLightPosition,minCorner,maxCorner))return INTERSECTS;
+    if(doesLineInterectSubFrustum(edgeBClipSpace,edgeBClipSpace-clipLightPosition,minCorner,maxCorner))return INTERSECTS;
+    if(doesSubFrustumDiagonalIntersectSilhouette(minCorner,maxCorner,edgeAClipSpace,edgeBClipSpace,clipLightPosition,edgePlane))return INTERSECTS;
+    if(doesLineInterectSubFrustum(edgeAClipSpace,edgeBClipSpace,minCorner,maxCorner))return INTERSECTS;
+    return TRIVIAL_REJECT;
+}
+#endif
+
+
+void traverseSilhouette(in uint job){
   int level = 0;
 
-#if USE_SHARED_STACK == 1
   uint64_t currentIntersection;
-#else
-  uint64_t intersection[nofLevels];
-#endif
 
   uint node = 0;
   while(level >= 0){
     if(level == int(nofLevels)){
 
-#if STORE_TRAVERSE_STAT == 1
-      if(gl_LocalInvocationIndex==0){
-        uint w = atomicAdd(debug[0],1);
-        debug[1+w*4+0] = job;
-        debug[1+w*4+1] = node;
-        debug[1+w*4+2] = uint(level);
-        debug[1+w*4+3] = 0xff;
-      }
-#endif
+      debug_storeSilhouetteTraverseStatLastLevel(job,node,level);
 
-#if 1
-      //lastLevel(node);
-#endif
+      lastLevelSilhouette(node,job);
+
       node >>= warpBits;
       level--;
     }else{
@@ -323,165 +318,57 @@ void traverse(){
 
         if(level >  int(nofLevels))return;
 
-#if NO_AABB == 1
-        vec3 minCorner;
-        vec3 aabbSize;
-        //*
-        uvec3 xyz = (demorton(((node<<warpBits)+gl_LocalInvocationIndex)<<(warpBits*(nofLevels-1-level))));
-
-        float startX = -1.f + xyz.x*levelTileSizeClipSpace[nofLevels-1].x;
-        float startY = -1.f + xyz.y*levelTileSizeClipSpace[nofLevels-1].y;
-        float endX   = min(startX + levelTileSizeClipSpace[level].x,1.f);
-        float endY   = min(startY + levelTileSizeClipSpace[level].y,1.f);
-        float startZ = Z_TO_DEPTH(CLUSTER_TO_Z(xyz.z                             ));
-        float endZ   = Z_TO_DEPTH(CLUSTER_TO_Z(xyz.z+(1u<<levelTileBits[level].z)));
-
-        minCorner[0] = startX;
-        minCorner[1] = startY;
-        minCorner[2] = startZ;
-
-        aabbSize[0] = (endX-startX);
-        aabbSize[1] = (endY-startY);
-        aabbSize[2] = (endZ-startZ);
-
-        // */
-#else
         vec3 minCorner;
         vec3 maxCorner;
-        #if USE_PLANES == 1
-                minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
-                maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
-                minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
-                maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
-                minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
-                maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
-        #else
-                minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
-                minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
-                minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
-                maxCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]             ;
-                maxCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]             ;
-                maxCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]             ;
-        #endif
-#endif
+        getAABB(minCorner,maxCorner,level,(node<<warpBits)+gl_LocalInvocationIndex);
 
-#if USE_PLANES == 1
-        vec3 tr;
-        bool planeTest;
 
-#if 1
-  #if PARALLEL_LOAD == 1
-          status = TRIVIAL_REJECT;
-          tr = trivialRejectCorner3D(edgePlane[jb].xyz);
-          if(dot(edgePlane[jb],vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-            if(dot(edgePlane[jb],vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f){
-              tr = trivialRejectCorner3D(aPlane[jb].xyz);
-              if(dot(aPlane[jb],vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-                tr = trivialRejectCorner3D(bPlane[jb].xyz);
-                if(dot(bPlane[jb],vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-                  tr = trivialRejectCorner3D(abPlane[jb].xyz);
-                  if(dot(abPlane[jb],vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f)
-                    status = INTERSECTS;
-                }
-              }
-            }
-          }
+#if EXACT_SILHOUETTE_AABB == 1
+  #if EXACT_SILHOUETTE_AABB_LEVEL < 0
+        status = computeAABBSilhouetteIntersectionEXACT(minCorner,maxCorner);
+        maxCorner -= minCorner;
   #else
-          status = TRIVIAL_REJECT;
-          tr = trivialRejectCorner3D(edgePlane.xyz);
-          if(dot(edgePlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-            if(dot(edgePlane,vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f){
-              tr = trivialRejectCorner3D(aPlane.xyz);
-              if(dot(aPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-                tr = trivialRejectCorner3D(bPlane.xyz);
-                if(dot(bPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f){
-                  tr = trivialRejectCorner3D(abPlane.xyz);
-                  if(dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f)
-                    status = INTERSECTS;
-                }
-                //else{
-                //  if(level+1 < nofLevels)
-                //    status = INTERSECTS;
-                //  else
-                //    status = TRIVIAL_ACCEPT;
-                //}
-              }
-              //else{
-              //  if(level+1 < nofLevels)
-              //    status = INTERSECTS;
-              //  else
-              //    status = TRIVIAL_ACCEPT;
-              //}
-            }
-            //else{
-            //  status = TRIVIAL_ACCEPT;
-            //}
-          }
+        if(level <= EXACT_SILHOUETTE_AABB_LEVEL){
+          status = computeAABBSilhouetteIntersectionEXACT(minCorner,maxCorner);
+          maxCorner -= minCorner;
+        }else{
+          maxCorner -= minCorner;
+          status = computeAABBSilhouetteIntersection(minCorner,maxCorner);
+        }
   #endif
-#endif
-
-#if 0
-        tr = trivialRejectCorner3D(edgePlane.xyz);
-        planeTest =              dot(edgePlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
-        planeTest = planeTest && dot(edgePlane,vec4(minCorner + (1.f-tr)*(maxCorner),1.f))<=0.f;
-        tr = trivialRejectCorner3D(aPlane.xyz);
-        planeTest = planeTest && dot(aPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
-        tr = trivialRejectCorner3D(bPlane.xyz);
-        planeTest = planeTest && dot(bPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
-        tr = trivialRejectCorner3D(abPlane.xyz);
-        planeTest = planeTest && dot(abPlane,vec4(minCorner + (    tr)*(maxCorner),1.f))>=0.f;
-
-        if(planeTest)
-          status = INTERSECTS;
-        else
-          status = TRIVIAL_REJECT;
-#endif
 #else
-        status = silhouetteStatus(edgeA,edgeB,light,minCorner,maxCorner);
+        maxCorner -= minCorner;
+        status = computeAABBSilhouetteIntersection(minCorner,maxCorner);
 #endif
 
+        if(level > 0)//TODO can we acually do this (shouldnt we compute it for 0. level as well?
+          computeBridgeSilhouetteIntersection(minCorner,maxCorner,level,node);
+
+        //if(level+1 == int(nofLevels)){
+        //  if(status == INTERSECTS)
+        //    status = TRIVIAL_ACCEPT;
+        //}
       }
 
-#if STORE_TRAVERSE_STAT == 1
-        uint w = atomicAdd(debug[0],1);
-        debug[1+w*4+0] = job;
-        debug[1+w*4+1] = node*WARP + gl_LocalInvocationIndex;
-        debug[1+w*4+2] = uint(level);
-        debug[1+w*4+3] = status;
-#endif
+      debug_storeSilhouetteTraverseStat(job,node,level,status);
 
-#if USE_SHARED_STACK == 1
       currentIntersection = ballotARB(status == INTERSECTS    );
       if(gl_LocalInvocationIndex==0)
         intersection[level] = currentIntersection;
-#else
-      intersection[level] = ballotARB(status == INTERSECTS    );
-#endif
 
     }
 
-#if USE_SHARED_STACK == 1
     while(level >= 0 && currentIntersection == 0ul){
       node >>= warpBits;
       level--;
       if(level < 0)break;
       currentIntersection = intersection[level];
     }
-#else
-    while(level >= 0 && intersection[level] == 0ul){
-      node >>= warpBits;
-      level--;
-    }
-#endif
 
     if(level < 0)break;
     if(level>=0){
 
-#if USE_SHARED_STACK == 1
       uint selectedBit = unpackUint2x32(currentIntersection)[0]!=0?findLSB(unpackUint2x32(currentIntersection)[0]):findLSB(unpackUint2x32(currentIntersection)[1])+32u;
-#else
-      uint selectedBit = unpackUint2x32(intersection[level])[0]!=0?findLSB(unpackUint2x32(intersection[level])[0]):findLSB(unpackUint2x32(intersection[level])[1])+32u;
-#endif
 
       node <<= warpBits   ;
       node  += selectedBit;
@@ -489,14 +376,9 @@ void traverse(){
       uint64_t mask = 1ul;
       mask <<= selectedBit;
 
-#if USE_SHARED_STACK == 1
       currentIntersection ^= mask;
       if(gl_LocalInvocationIndex==0)
         intersection[level] = currentIntersection;
-)." + std::string(R".(
-#else
-      intersection[level] ^= mask;
-#endif
 
       level++;
     }
@@ -505,99 +387,34 @@ void traverse(){
 
 #endif
 
-#line 36
-void main(){
-  #if STORE_TRAVERSE_STAT == 1
-  #else
-  uint job;
-  #endif
+//uniform int selectedEdge = -1;
+void traverseSilhouetteJOB(){
+#if PERFORM_TRAVERSE_SILHOUETTES == 1
+  uint job = 0u;
+  //silhouette loop
+  
+  //job = gl_WorkGroupID.x;
+  //if(job>6)return;
+  //if(job!=2)return;
+  //loadSilhouette(job);
+  //traverseSilhouette(job);
+
 
   for(;;){
-    if(gl_LocalInvocationIndex==0){
-#if PARALLEL_LOAD == 1
-      job = atomicAdd(jobCounter[0],WARP);
-#else
-      job = atomicAdd(jobCounter[0],1);
-#endif
-    }
+    if(gl_LocalInvocationIndex==0)
+      job = atomicAdd(silhouetteJobCounter,1);
 
     job = readFirstInvocationARB(job);
-#if PARALLEL_LOAD == 1
-    parallelLoad(job);
+    if(job >= nofSilhouettes)break;
 
-    if(job >= silhouetteCounter[0])return;traverse( 0);job++;
-    if(job >= silhouetteCounter[0])return;traverse( 1);job++;
-    if(job >= silhouetteCounter[0])return;traverse( 2);job++;
-    if(job >= silhouetteCounter[0])return;traverse( 3);job++;
-    if(job >= silhouetteCounter[0])return;traverse( 4);job++;
-    if(job >= silhouetteCounter[0])return;traverse( 5);job++;
-    if(job >= silhouetteCounter[0])return;traverse( 6);job++;
-    if(job >= silhouetteCounter[0])return;traverse( 7);job++;
-    if(job >= silhouetteCounter[0])return;traverse( 8);job++;
-    if(job >= silhouetteCounter[0])return;traverse( 9);job++;
-    if(job >= silhouetteCounter[0])return;traverse(10);job++;
-    if(job >= silhouetteCounter[0])return;traverse(11);job++;
-    if(job >= silhouetteCounter[0])return;traverse(12);job++;
-    if(job >= silhouetteCounter[0])return;traverse(13);job++;
-    if(job >= silhouetteCounter[0])return;traverse(14);job++;
-    if(job >= silhouetteCounter[0])return;traverse(15);job++;
-    if(job >= silhouetteCounter[0])return;traverse(16);job++;
-    if(job >= silhouetteCounter[0])return;traverse(17);job++;
-    if(job >= silhouetteCounter[0])return;traverse(18);job++;
-    if(job >= silhouetteCounter[0])return;traverse(19);job++;
-    if(job >= silhouetteCounter[0])return;traverse(20);job++;
-    if(job >= silhouetteCounter[0])return;traverse(21);job++;
-    if(job >= silhouetteCounter[0])return;traverse(22);job++;
-    if(job >= silhouetteCounter[0])return;traverse(23);job++;
-    if(job >= silhouetteCounter[0])return;traverse(24);job++;
-    if(job >= silhouetteCounter[0])return;traverse(25);job++;
-    if(job >= silhouetteCounter[0])return;traverse(26);job++;
-    if(job >= silhouetteCounter[0])return;traverse(27);job++;
-    if(job >= silhouetteCounter[0])return;traverse(28);job++;
-    if(job >= silhouetteCounter[0])return;traverse(29);job++;
-    if(job >= silhouetteCounter[0])return;traverse(30);job++;
-    if(job >= silhouetteCounter[0])return;traverse(31);job++;
-    if(job >= silhouetteCounter[0])return;traverse(32);job++;
-    if(job >= silhouetteCounter[0])return;traverse(33);job++;
-    if(job >= silhouetteCounter[0])return;traverse(34);job++;
-    if(job >= silhouetteCounter[0])return;traverse(35);job++;
-    if(job >= silhouetteCounter[0])return;traverse(36);job++;
-    if(job >= silhouetteCounter[0])return;traverse(37);job++;
-    if(job >= silhouetteCounter[0])return;traverse(38);job++;
-    if(job >= silhouetteCounter[0])return;traverse(39);job++;
-    if(job >= silhouetteCounter[0])return;traverse(40);job++;
-    if(job >= silhouetteCounter[0])return;traverse(41);job++;
-    if(job >= silhouetteCounter[0])return;traverse(42);job++;
-    if(job >= silhouetteCounter[0])return;traverse(43);job++;
-    if(job >= silhouetteCounter[0])return;traverse(44);job++;
-    if(job >= silhouetteCounter[0])return;traverse(45);job++;
-    if(job >= silhouetteCounter[0])return;traverse(46);job++;
-    if(job >= silhouetteCounter[0])return;traverse(47);job++;
-    if(job >= silhouetteCounter[0])return;traverse(48);job++;
-    if(job >= silhouetteCounter[0])return;traverse(49);job++;
-    if(job >= silhouetteCounter[0])return;traverse(50);job++;
-    if(job >= silhouetteCounter[0])return;traverse(51);job++;
-    if(job >= silhouetteCounter[0])return;traverse(52);job++;
-    if(job >= silhouetteCounter[0])return;traverse(53);job++;
-    if(job >= silhouetteCounter[0])return;traverse(54);job++;
-    if(job >= silhouetteCounter[0])return;traverse(55);job++;
-    if(job >= silhouetteCounter[0])return;traverse(56);job++;
-    if(job >= silhouetteCounter[0])return;traverse(57);job++;
-    if(job >= silhouetteCounter[0])return;traverse(58);job++;
-    if(job >= silhouetteCounter[0])return;traverse(59);job++;
-    if(job >= silhouetteCounter[0])return;traverse(60);job++;
-    if(job >= silhouetteCounter[0])return;traverse(61);job++;
-    if(job >= silhouetteCounter[0])return;traverse(62);job++;
-    if(job >= silhouetteCounter[0])return;traverse(63);job++;
-                                                   
-#else
-    if(job >= silhouetteCounter[0])return;
+    //if(selectedEdge>=0 && job != uint(selectedEdge))continue;
 
     loadSilhouette(job);
-
-    traverse();
-#endif
+    traverseSilhouette(job);
 
   }
+#endif
 }
-).");
+
+).";
+

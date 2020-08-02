@@ -41,6 +41,10 @@ layout(std430,binding=1)buffer AABBPool    {float aabbPool    [];};
 layout(std430,binding=2)buffer ShadowFrusta{float shadowFrusta[];};
 layout(std430,binding=3)buffer JobCounter  {uint  jobCounter  [];};
 
+#if MEMORY_OPTIM == 1
+layout(std430,binding=5)buffer AABBPointer {uint  aabbPointer [];};
+#endif
+
 layout(     binding=0)          uniform sampler2DRect depthTexture;
 layout(r32f,binding=1)writeonly uniform image2D       shadowMask  ;
 
@@ -85,6 +89,7 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   uint status = TRIVIAL_ACCEPT;
   vec4 plane;
   vec3 tr;
+  //if(minCorner.x != 1337)return TRIVIAL_REJECT;
 
   plane = vec4(shadowFrustaPlanes[0],shadowFrustaPlanes[1],shadowFrustaPlanes[2],shadowFrustaPlanes[3]);
   tr    = trivialRejectCorner3D(plane.xyz);
@@ -112,6 +117,10 @@ uint trivialRejectAccept(vec3 minCorner,vec3 size){
   if(dot(plane,vec4(minCorner + tr*size,1.f))<0.f)
     return TRIVIAL_REJECT;
   tr = vec3(1.f)-tr;
+#if TRIANGLE_INTERSECT == 1
+  if(dot(plane,vec4(minCorner + tr*size,1.f))>0.f)
+    return TRIVIAL_REJECT;
+#endif
   status &= 2u+uint(dot(vec4(minCorner + tr*size,1.f),plane)>0.f);
 
 #if MORE_PLANES == 1
@@ -222,7 +231,7 @@ void traverse(){
       }
 #endif
 
-#if 1
+#if COMPUTE_LAST_LEVEL == 1
       lastLevel(node);
 #endif
       node >>= warpBits;
@@ -234,12 +243,22 @@ void traverse(){
 
         vec3 minCorner;
         vec3 aabbSize;
+#if MEMORY_OPTIM == 1
+        uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
+        minCorner[0] = aabbPool[w*6u + 0u]             ;
+        minCorner[1] = aabbPool[w*6u + 2u]             ;
+        minCorner[2] = aabbPool[w*6u + 4u]             ;
+        aabbSize [0] = aabbPool[w*6u + 1u]-minCorner[0];
+        aabbSize [1] = aabbPool[w*6u + 3u]-minCorner[1];
+        aabbSize [2] = aabbPool[w*6u + 5u]-minCorner[2];
+#else
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
         minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
         aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
         aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
         aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+#endif
 
         status = trivialRejectAccept(minCorner,aabbSize);
       }
@@ -261,9 +280,9 @@ void traverse(){
       intersection[level] = unpackUint2x32(ballotARB(status == INTERSECTS    ))[0];
 #endif
 
-      uint     trA        = unpackUint2x32(ballotARB(status == TRIVIAL_ACCEPT))[0];
 
-#if 1
+#if USE_TA_OPTIM == 1
+      uint     trA        = unpackUint2x32(ballotARB(status == TRIVIAL_ACCEPT))[0];
       if(gl_LocalInvocationIndex == 0u){
         if(trA != 0u)
           atomicAnd(nodePool[nodeLevelOffsetInUints[level]+node],~trA);
@@ -348,7 +367,7 @@ void traverse(){
       }
 #endif
 
-#if 1
+#if COMPUTE_LAST_LEVEL == 1
       lastLevel(node);
 #endif
       node >>= warpBits;
@@ -382,12 +401,25 @@ void traverse(){
 
         // */
 #else
+
+
+#if MEMORY_OPTIM == 1
+        uint w = aabbPointer[nodeLevelOffset[level] + node*WARP + gl_LocalInvocationIndex + 1];
+        minCorner[0] = aabbPool[w*6u + 0u]             ;
+        minCorner[1] = aabbPool[w*6u + 2u]             ;
+        minCorner[2] = aabbPool[w*6u + 4u]             ;
+        aabbSize [0] = aabbPool[w*6u + 1u]-minCorner[0];
+        aabbSize [1] = aabbPool[w*6u + 3u]-minCorner[1];
+        aabbSize [2] = aabbPool[w*6u + 5u]-minCorner[2];
+#else
         minCorner[0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 0u]             ;
         minCorner[1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 2u]             ;
         minCorner[2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 4u]             ;
         aabbSize [0] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 1u]-minCorner[0];
         aabbSize [1] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 3u]-minCorner[1];
         aabbSize [2] = aabbPool[aabbLevelOffsetInFloats[level] + node*WARP*6u + gl_LocalInvocationIndex*6u + 5u]-minCorner[2];
+#endif
+
 #endif
 
 
@@ -438,9 +470,9 @@ void traverse(){
       intersection[level] = ballotARB(status == INTERSECTS    );
 #endif
 
-      uint64_t trA        = ballotARB(status == TRIVIAL_ACCEPT);
 
-#if 1
+#if USE_TA_OPTIM == 1
+      uint64_t trA        = ballotARB(status == TRIVIAL_ACCEPT);
       if(gl_LocalInvocationIndex == 0u){
         if(unpackUint2x32(trA)[0] != 0u)
           atomicAnd(nodePool[nodeLevelOffsetInUints[level]+node*uintsPerWarp+0],~unpackUint2x32(trA)[0]);
@@ -498,6 +530,7 @@ void traverse(){
 
 #line 36
 void main(){
+  //if(texelFetch(depthTexture,ivec2(0,0)).x != 1337)return;
   for(;;){
     if(gl_LocalInvocationIndex==0){
       job = atomicAdd(jobCounter[0],1);

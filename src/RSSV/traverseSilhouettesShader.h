@@ -3,5 +3,8 @@
 #include <iostream>
 
 namespace rssv{
-extern std::string const traverseSilhouettesShader;
+
+extern std::string const traverseSilhouettesFWD;
+extern std::string const traverseSilhouettes;
+
 }

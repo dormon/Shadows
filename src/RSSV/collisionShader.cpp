@@ -50,52 +50,22 @@ vec4 movePointToSubfrustum(
 // N<0: M/N >= t
 // N=0: stop when M>0
 
-bool doesLineInterectSubFrustum_(in vec4 A,in vec4 B,in vec3 minCorner,in vec3 maxCorner){// 0.0052
-  float tMin = 0.f;
-  float tMax = 1.f;
-  float M;
-  float N;
-
-  #define MINIMIZE()\
-  if(N > 0.f)tMin = max(tMin,M/N);\
-  if(N < 0.f)tMax = min(tMax,M/N);\
-  if(N == 0.f && M > 0.f)tMin = 2.f
-  
-  M = +A.w*minCorner[0]-A[0];
-  N = +B[0]-A[0]-(B.w-A.w)*minCorner[0];
-  MINIMIZE();
-  M = +A.w*minCorner[1]-A[1];
-  N = +B[1]-A[1]-(B.w-A.w)*minCorner[1];
-  MINIMIZE();
-  M = +A.w*minCorner[2]-A[2];
-  N = +B[2]-A[2]-(B.w-A.w)*minCorner[2];
-  MINIMIZE();
-
-  M = -A.w*maxCorner[0]+A[0];
-  N = -B[0]+A[0]+(B.w-A.w)*maxCorner[0];
-  MINIMIZE();
-  M = -A.w*maxCorner[1]+A[1];
-  N = -B[1]+A[1]+(B.w-A.w)*maxCorner[1];
-  MINIMIZE();
-  M = -A.w*maxCorner[2]+A[2];
-  N = -B[2]+A[2]+(B.w-A.w)*maxCorner[2];
-  MINIMIZE();
-  
-  #undef MINIMIZE
-  return tMin <= tMax;
-}
-
-bool doesLineInterectSubFrustum(in vec4 A,in vec4 B,in vec3 minCorner,in vec3 maxCorner){// 0.0040
+bool doesLineInterectSubFrustum(in vec4 A,in vec4 B,in vec3 minCorner,in vec3 maxCorner){
   float tt[2] = {0.f,1.f};
   float M;
   float N;
   uint doMin;
 
+  //#define MINIMIZE()\
+  //M/=N;\
+  //doMin = uint(N<0.f);\
+  //N=(tt[doMin]-M)*(-1.f+2.f*doMin);\
+  //tt[doMin] = float(N<0)*tt[doMin] + float(N>=0)*M
+
   #define MINIMIZE()\
-  M/=N;\
-  doMin = uint(N<0.f);\
-  N=(tt[doMin]-M)*(-1.f+2.f*doMin);\
-  tt[doMin] = float(N<0)*tt[doMin] + float(N>=0)*M
+  if(N == 0.f && M >= 0.f)return false;\
+  if(N > 0.f)tt[0] = max(tt[0],M/N);\
+  if(N < 0.f)tt[1] = min(tt[1],M/N)
   
   M = +A.w*minCorner[0]-A[0];
   N = +B[0]-A[0]-(B.w-A.w)*minCorner[0];
@@ -119,6 +89,147 @@ bool doesLineInterectSubFrustum(in vec4 A,in vec4 B,in vec3 minCorner,in vec3 ma
   
 #undef MINIMIZE
   return tt[0] <= tt[1];
+}
+
+bool doesSubFrustumDiagonalIntersectSilhouette(in vec3 minCorner,in vec3 maxCorner,in vec4 A,in vec4 B,in vec4 L,in vec4 plane){
+  if(sign(plane.x)*sign(plane.z) < 0){
+    float z = minCorner.x;
+    minCorner.x = maxCorner.x;
+    maxCorner.x = z;
+  }
+  if(sign(plane.y)*sign(plane.z) < 0){
+    float z = minCorner.y;
+    minCorner.y = maxCorner.y;
+    maxCorner.y = z;
+  }
+
+  float s = -dot(plane,vec4(minCorner,1))/dot(maxCorner-minCorner,plane.xyz);
+  if(s<0)return false;
+  if(s>1)return false;
+
+  vec3 D = minCorner+s*(maxCorner-minCorner);
+
+  // X(t,l)                    = A+t(B-A)-lL
+  // Di*X(t,l)w                = X(t,l)i
+  // Di(Aw+t(Bw-Aw)-lLw)       = Ai+t(Bi-Ai)-lLi
+  // DiAw + tDi(Bw-Aw) - lDiLw = Ai + t(Bi-Ai) - lLi
+  // DiAw-Ai = t[(Bi-Ai)-Di(Bw-Aw)] + l[DiLw-Li]
+  //
+  // DxAw-Ax = t[(Bx-Ax)-Dx(Bw-Aw)] + l[DxLw-Lx] 
+  // DyAw-Ay = t[(By-Ay)-Dy(Bw-Aw)] + l[DyLw-Ly] 
+  //
+  // w = tu + lv
+  // z = tx + ly
+
+  float u = (B.x-A.x)-(B.w-A.w)*D.x;
+  float v = -L.x+L.w*D.x;
+  float w = -A.x+D.x*A.w;
+
+  float x = (B.y-A.y)-(B.w-A.w)*D.y;
+  float y = -L.y+L.w*D.y;
+  float z = -A.y+D.y*A.w;
+
+  float divisor  = u*y - x*v;
+  float dividend = w*y - z*v;
+
+  if(divisor == 0.f)return false;
+  float t = dividend/divisor;
+  if(t < 0.f || t > 1.f)return false;
+  if(v == 0.f)return false;
+  float l = (w-t*u)/v;
+  if(l < 0.f || l > 1.f)return false;
+
+  return true;
+}
+
+bool doesSubFrustumDiagonalIntersectTriangle(in vec3 minCorner,in vec3 maxCorner,in vec4 A,in vec4 B,in vec4 C,in vec4 plane){
+  if(sign(plane.x)*sign(plane.z) < 0){
+    float z = minCorner.x;
+    minCorner.x = maxCorner.x;
+    maxCorner.x = z;
+  }
+  if(sign(plane.y)*sign(plane.z) < 0){
+    float z = minCorner.y;
+    minCorner.y = maxCorner.y;
+    maxCorner.y = z;
+  }
+
+  float s = -dot(plane,vec4(minCorner,1))/dot(maxCorner-minCorner,plane.xyz);
+  if(s<0)return false;
+  if(s>1)return false;
+
+  vec3 D = minCorner+s*(maxCorner-minCorner);
+
+  // X(t,l)                         = At+Bl+C(1-t-l)
+  // X(t,l)                         = At+Bl+C-tC-lC
+  // X(t,l)                         = C+t(A-C)+l(B-C)
+  //
+  // Di*X(t,l)w                     = X(t,l)i
+  // Di(Cw+t(Aw-Cw)+l(Bw-Cw))       = Ci+t(Ai-Ci)+l(Bi-Ci)
+  // DiCw + tDi(Aw-Cw) + lDi(Bw-Cw) = Ci + t(Ai-Ci) + l(Bi-Ci)
+  // DiCw-Ci                        = t[(Ai-Ci)-Di(Aw-Cw)] + l[(Bi-Ci)-Di(Bw-Cw)]
+  //
+  // DxCw-Cx                        = t[(Ax-Cx)-Dx(Aw-Cw)] + l[(Bx-Cx)-Dx(Bw-Cw)]
+  // DyCw-Cy                        = t[(Ay-Cy)-Dy(Aw-Cw)] + l[(By-Cy)-Dy(Bw-Cw)]
+  //
+  // w = tu + lv
+  // z = tx + ly
+
+  float w = D.x*C.w-C.x;
+  float u = (A.x-C.x)-D.x*(A.w-C.w);
+  float v = (B.x-C.x)-D.x*(B.w-C.w);
+
+  float z = D.y*C.w-C.y;
+  float x = (A.y-C.y)-D.y*(A.w-C.w);
+  float y = (B.y-C.y)-D.y*(B.w-C.w);
+
+  float divisor  = u*y - x*v;
+  float dividend = w*y - z*v;
+
+  if(divisor == 0.f)return false;
+  float t = dividend/divisor;
+  if(t < 0.f || t > 1.f)return false;
+  if(v == 0.f)return false;
+  float l = (w-t*u)/v;
+  if(l < 0.f || l > 1.f)return false;
+  if(t+l>1)return false;
+
+  return true;
+}
+
+int doesLineIntersectTriangle(in vec4 m,in vec4 n,in vec4 a,in vec4 b,in vec4 c,in vec4 l){
+  vec4 tt = getClipPlaneSkala(a,b,c);
+  float flip = sign(dot(tt,l));
+  tt *= flip;
+  float tm = dot(tt,m);
+  float tn = dot(tt,n);
+
+  //tm tn c
+  // -  - 0
+  // 0  - +
+  // +  - +
+  // -  0 -
+  // 0  0 0
+  // +  0 0
+  // -  + -
+  // 0  + 0
+  // +  + 0
+  // (m>=0&&n>=0)||(m<0&&n<0)
+  if((tm<0) == (tn<0))return 0;
+  int res = int(sign(tm));
+
+  flip *= sign(dot(tt,m-n));
+
+  vec4 ab = getClipPlaneSkala(m,n,m + (b-a)) * flip;
+  if(dot(ab,a)<0)return 0; 
+
+  vec4 bc = getClipPlaneSkala(m,n,m + (c-b)) * flip;
+  if(dot(bc,b)<0)return 0; 
+
+  vec4 ca = getClipPlaneSkala(m,n,m + (a-c)) * flip;
+  if(dot(ca,c)<0)return 0; 
+
+  return res;
 }
 
 
@@ -244,5 +355,6 @@ int sampleCollision(
 
   return 1-int(sign(dot(samplePlane,aa)*dot(samplePlane,bb)));
 }
+
 
 ).";

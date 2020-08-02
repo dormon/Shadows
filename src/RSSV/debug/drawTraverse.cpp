@@ -14,7 +14,7 @@
 #include <RSSV/debug/drawNodePool.h>
 
 #include <RSSV/mortonShader.h>
-#include <RSSV/configShader.h>
+#include <RSSV/getConfigShader.h>
 #include <RSSV/config.h>
 
 
@@ -27,20 +27,11 @@ void prepareDrawTraverse(vars::Vars&vars){
   FUNCTION_PROLOGUE("rssv.method.debug"
       "wavefrontSize"                        ,
       "rssv.method.debug.dump.config"    ,
-      "rssv.method.debug.dump.near"      ,
-      "rssv.method.debug.dump.far"       ,
-      "rssv.method.debug.dump.fovy"      ,
       "rssv.method.debug.wireframe"      ,
       );
 
   auto const cfg            = *vars.get<Config>        ("rssv.method.debug.dump.config"    );
-  auto const nnear          =  vars.getFloat           ("rssv.method.debug.dump.near"      );
-  auto const ffar           =  vars.getFloat           ("rssv.method.debug.dump.far"       );
-  auto const fovy           =  vars.getFloat           ("rssv.method.debug.dump.fovy"      );
   auto const wireframe      =  vars.getBool            ("rssv.method.debug.wireframe"      );
-
-  auto const wavefrontSize  =  vars.getSizeT           ("wavefrontSize"                        );
-
 
   std::string const vsSrc = R".(
   #version 450
@@ -130,15 +121,18 @@ out vec3 gNormal;
 
 flat in uint vId[];
 
-layout(binding=0)buffer NodePool    {uint  nodePool    [];};
-layout(binding=1)buffer AABBPool    {float aabbPool    [];};
-layout(binding=2)buffer TraverseData{uint  traverseData[];};
+layout(binding=0,std430)buffer NodePool    {uint  nodePool    [];};
+layout(binding=1,std430)buffer AABBPool    {float aabbPool    [];};
+layout(binding=2,std430)buffer TraverseData{uint  traverseData[];};
+layout(binding=3,std430)buffer AABBPointer {uint  aabbPointer [];};
 
 uniform mat4 view;
 uniform mat4 proj;
 
 uniform mat4 nodeView;
 uniform mat4 nodeProj;
+
+uniform int memoryOptim = 0;
 
 #line 122
 uniform uint levelToDraw = 0;
@@ -170,12 +164,22 @@ void main(){
   uint bit  = gId & warpMask;
   uint node = gId >> warpBits;
 
-  mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+0];
-  mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+1];
-  mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+2];
-  mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+3];
-  mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+4];
-  mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+5];
+  if(memoryOptim == 1){
+    uint w = aabbPointer[nodeLevelOffset[clamp(levelToDraw,0u,5u)]+gId+1];
+    mminX = aabbPool[w*floatsPerAABB+0];
+    mmaxX = aabbPool[w*floatsPerAABB+1];
+    mminY = aabbPool[w*floatsPerAABB+2];
+    mmaxY = aabbPool[w*floatsPerAABB+3];
+    mminZ = aabbPool[w*floatsPerAABB+4];
+    mmaxZ = aabbPool[w*floatsPerAABB+5];
+  }else{
+    mminX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+0];
+    mmaxX = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+1];
+    mminY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+2];
+    mmaxY = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+3];
+    mminZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+4];
+    mmaxZ = aabbPool[aabbLevelOffsetInFloats[clamp(levelToDraw,0u,5u)]+gId*floatsPerAABB+5];
+  }
 
   startX = -1.f + xyz.x*levelTileSizeClipSpace[nofLevels-1].x;
   startY = -1.f + xyz.y*levelTileSizeClipSpace[nofLevels-1].y;
@@ -284,18 +288,8 @@ void main(){
   auto vs = make_shared<Shader>(GL_VERTEX_SHADER,vsSrc);
   auto gs = make_shared<Shader>(GL_GEOMETRY_SHADER,
       "#version 450\n",
-      ge::gl::Shader::define("WARP"      ,(uint32_t)wavefrontSize),
-      ge::gl::Shader::define("WINDOW_X"  ,(uint32_t)cfg.windowX  ),
-      ge::gl::Shader::define("WINDOW_Y"  ,(uint32_t)cfg.windowY  ),
-      ge::gl::Shader::define("MIN_Z_BITS",(uint32_t)cfg.minZBits ),
-      ge::gl::Shader::define("NEAR"      ,nnear                  ),
-      glm::isinf(ffar)?ge::gl::Shader::define("FAR_IS_INFINITE"):ge::gl::Shader::define("FAR",ffar),
-      ge::gl::Shader::define("FOVY"      ,fovy                   ),
-      ge::gl::Shader::define("TILE_X"    ,cfg.tileX              ),
-      ge::gl::Shader::define("TILE_Y"    ,cfg.tileY              ),
+      rssv::getDebugConfigShader(vars),
       ge::gl::Shader::define("WIREFRAME",(int)wireframe),
-
-      rssv::configShader,
       rssv::mortonShader,
       rssv::demortonShader,
       gsSrc);
@@ -314,29 +308,26 @@ void main(){
 }
 
 void drawTraverse(vars::Vars&vars){
+  FUNCTION_CALLER();
   prepareDrawTraverse(vars);
 
   auto const cfg               = *vars.get<Config>        ("rssv.method.debug.dump.config"           );
 
   auto const nodeView          = *vars.get<glm::mat4>     ("rssv.method.debug.dump.viewMatrix"       );
   auto const nodeProj          = *vars.get<glm::mat4>     ("rssv.method.debug.dump.projectionMatrix" );
-  auto const nodePool          =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"         );
-  auto const aabbPool          =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"         );
 
-  auto const view           = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"           );
-  auto const proj           = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"     );
-  auto const taToDraw       =  vars.getUint32          ("rssv.method.debug.taToDraw"             );
-  auto const trToDraw       =  vars.getUint32          ("rssv.method.debug.trToDraw"             );
-  auto const inToDraw       =  vars.getUint32          ("rssv.method.debug.inToDraw"             );
-  auto const drawTightAABB  =  vars.getBool            ("rssv.method.debug.drawTightAABB"        );
+  auto const view              = *vars.get<glm::mat4>     ("rssv.method.debug.viewMatrix"            );
+  auto const proj              = *vars.get<glm::mat4>     ("rssv.method.debug.projectionMatrix"      );
+  auto const taToDraw          =  vars.getUint32          ("rssv.method.debug.taToDraw"              );
+  auto const trToDraw          =  vars.getUint32          ("rssv.method.debug.trToDraw"              );
+  auto const inToDraw          =  vars.getUint32          ("rssv.method.debug.inToDraw"              );
+  auto const drawTightAABB     =  vars.getBool            ("rssv.method.debug.drawTightAABB"         );
 
   auto vao = vars.get<VertexArray>("rssv.method.debug.vao");
 
   auto prg = vars.get<Program>("rssv.method.debug.drawTraverseProgram");
 
   vao->bind();
-  nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
   prg->use();
   prg
     ->setMatrix4fv("nodeView"   ,glm::value_ptr(nodeView))
@@ -345,6 +336,15 @@ void drawTraverse(vars::Vars&vars){
     ->setMatrix4fv("proj"       ,glm::value_ptr(proj    ))
     ->set1ui      ("drawTightAABB",(uint32_t)drawTightAABB)
     ;
+
+  auto const nodePool          =  vars.get<Buffer>        ("rssv.method.debug.dump.nodePool"         );
+  auto const aabbPool          =  vars.get<Buffer>        ("rssv.method.debug.dump.aabbPool"         );
+  nodePool->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+  aabbPool->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+  if(cfg.memoryOptim){
+    prg->bindBuffer("AABBPointer",vars.get<Buffer>("rssv.method.debug.dump.aabbPointer"));
+    prg->set1i("memoryOptim",cfg.memoryOptim);
+  }
 
   auto dibo = vars.get<Buffer>("rssv.method.debug.traverseData");
   dibo->bind(GL_DRAW_INDIRECT_BUFFER);

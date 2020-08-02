@@ -9,6 +9,8 @@ add_library(${PROJECT_NAME} OBJECT
   drawDebug.h
   dumpData.cpp
   dumpData.h
+  dumpSamples.cpp
+  dumpSamples.h
   drawSamples.cpp
   drawSamples.h
   drawNodePool.cpp
@@ -21,6 +23,14 @@ add_library(${PROJECT_NAME} OBJECT
   drawEdges.h
   drawSilhouettes.cpp
   drawSilhouettes.h
+  drawBridges.cpp
+  drawBridges.h
+  drawEdgePlanes.cpp
+  drawEdgePlanes.h
+  drawSVSides.cpp
+  drawSVSides.h
+  drawStencil.cpp
+  drawStencil.h
   )
 
 target_include_directories(${PROJECT_NAME} PUBLIC .. ../..)

@@ -53,17 +53,29 @@ inline std::vector<uint32_t>getOffsets(std::vector<uint32_t>const&sizes){
 class Config{
   public:
     Config(
-        uint32_t wavefrontSize = 64u    ,
-        uint32_t winX          = 512u   ,
-        uint32_t winY          = 512u   ,
-        uint32_t tX            = 8u     ,
-        uint32_t tY            = 8u     ,
-        uint32_t minZ          = 9u     ){
+        uint32_t wavefrontSize   = 64u      ,
+        uint32_t winX            = 512u     ,
+        uint32_t winY            = 512u     ,
+        uint32_t minZ            = 9u       ,
+        bool     memOptim        = false    ,
+        uint32_t memFactor       = 10       ,
+        bool     useBridgeBuffer = false    ,
+        float    nn              = 0.1f     ,
+        float    ff              = 1000.f   ,
+        float    fo              = 3.149256f,
+        bool     scaledQ         = false    ){
       windowX                 = winX;
       windowY                 = winY;
-      tileX                   = tX;
-      tileY                   = tY;
       minZBits                = minZ;
+      memoryOptim             = memOptim;
+      memoryFactor            = memFactor;
+      useBridgePool           = useBridgeBuffer;
+      nnear                   = nn;
+      ffar                    = ff;
+      fovy                    = fo;
+      scaledQuantization      = scaledQ;
+
+
       warpBits                = uint32_t(requiredBits(wavefrontSize));
       clustersX               = divRoundUp(windowX,tileX);
       clustersY               = divRoundUp(windowY,tileY);
@@ -76,36 +88,59 @@ class Config{
       uintsPerWarp            = wavefrontSize / (sizeof(uint32_t)*8);
       nofNodesPerLevel        = computeNofNodesPerLevel(allBits,warpBits);
       nodeLevelSizeInUints    = computeNodeLevelSizeInUints(nofNodesPerLevel,wavefrontSize,uintsPerWarp);
-      nodesSize               = sum(nodeLevelSizeInUints) * sizeof(uint32_t);
+      
+      nodeBufferSize          = sum(nodeLevelSizeInUints) * sizeof(uint32_t);
       nodeLevelOffsetInUints  = getOffsets(nodeLevelSizeInUints);
       nofNodes                = sum(nofNodesPerLevel);
-      aabbsSize               = nofNodes * floatsPerAABB * sizeof(float);
+
+      if(memoryOptim)
+        aabbBufferSize = clustersX * clustersY * memoryFactor * floatsPerAABB * sizeof(float);
+      else
+        aabbBufferSize = nofNodes * floatsPerAABB * sizeof(float);
+
+      if(memoryOptim)
+        bridgePoolSize = clustersX * clustersY * memoryFactor * floatsPerBridge * sizeof(float);
+      else
+        bridgePoolSize = nofNodes * floatsPerBridge * sizeof(float);
+
       aabbLevelSizeInFloats   = mul(nofNodesPerLevel,floatsPerAABB);
       aabbLevelOffsetInFloats = getOffsets(aabbLevelSizeInFloats);
       nodeLevelOffset         = getOffsets(nofNodesPerLevel);
+
+      aabbPointerBufferSize   = (nofNodes + 1) * sizeof(uint32_t);
+
+      nodeBufferOffsetInHierarchy        = 0                                           ;
+      aabbBufferOffsetInHierarchy        = nodeBufferOffsetInHierarchy + nodeBufferSize;
+      aabbPointerBufferOffsetInHierarchy = aabbBufferOffsetInHierarchy + aabbBufferSize;
+      bridgePoolOffsetInHierarchy        = aabbPointerBufferOffsetInHierarchy + aabbPointerBufferSize;
+
     }
     void print(){
 #define PRINT(x) std::cerr << #x << ": " << x << std::endl
-      PRINT(windowX     );
-      PRINT(windowY     );
-      PRINT(tileX       );
-      PRINT(tileY       );
-      PRINT(minZBits    );
-      PRINT(warpBits    );
-      PRINT(clustersX   );
-      PRINT(clustersY   );
-      PRINT(xBits       );
-      PRINT(yBits       );
-      PRINT(zBits       );
-      PRINT(clustersZ   );
-      PRINT(allBits     );
-      PRINT(nofLevels   );
-      PRINT(uintsPerWarp);
-      PRINT(nodesSize   );
-      PRINT(aabbsSize   );
-      PRINT(nofNodes    );
-
-      PRINT(floatsPerAABB);
+      PRINT(windowX           );
+      PRINT(windowY           );
+      PRINT(nnear             );
+      PRINT(ffar              );
+      PRINT(fovy              );
+      PRINT(scaledQuantization);
+      PRINT(tileX             );
+      PRINT(tileY             );
+      PRINT(minZBits          );
+      PRINT(warpBits          );
+      PRINT(clustersX         );
+      PRINT(clustersY         );
+      PRINT(xBits             );
+      PRINT(yBits             );
+      PRINT(zBits             );
+      PRINT(clustersZ         );
+      PRINT(allBits           );
+      PRINT(nofLevels         );
+      PRINT(uintsPerWarp      );
+      PRINT(nodeBufferSize    );
+      PRINT(aabbBufferSize    );
+      PRINT(nofNodes          );
+      PRINT(floatsPerAABB     );
+      PRINT(floatsPerBridge   );
 #undef PRINT
 #define PRINT(x) std::cerr << #x << ":" << std::endl;\
   for(auto const&a:x)\
@@ -119,25 +154,43 @@ class Config{
 #undef PRINT
 
     }
-    uint32_t windowX     ;
-    uint32_t windowY     ;
-    uint32_t tileX       ;
-    uint32_t tileY       ;
-    uint32_t minZBits    ;
-    uint32_t warpBits    ;
-    uint32_t clustersX   ;
-    uint32_t clustersY   ;
-    uint32_t xBits       ;
-    uint32_t yBits       ;
-    uint32_t zBits       ;
-    uint32_t clustersZ   ;
-    uint32_t allBits     ;
-    uint32_t nofLevels   ;
-    uint32_t uintsPerWarp;
-    uint32_t nodesSize   ;
-    uint32_t aabbsSize   ;
-    uint32_t nofNodes    ;
-    uint32_t const floatsPerAABB = 6;
+    uint32_t windowX                           ;
+    uint32_t windowY                           ;
+    uint32_t minZBits                          ;
+    bool     memoryOptim                       ;
+    uint32_t memoryFactor                      ;
+    bool     useBridgePool                     ;
+    uint32_t warpBits                          ;
+    float    nnear                             ;
+    float    ffar                              ;
+    float    fovy                              ;
+    bool     scaledQuantization                ;
+
+    uint32_t clustersX                         ;
+    uint32_t clustersY                         ;
+    uint32_t xBits                             ;
+    uint32_t yBits                             ;
+    uint32_t zBits                             ;
+    uint32_t clustersZ                         ;
+    uint32_t allBits                           ;
+    uint32_t nofLevels                         ;
+    uint32_t uintsPerWarp                      ;
+
+    uint32_t nodeBufferSize                    ;
+    uint32_t aabbBufferSize                    ;
+    uint32_t aabbPointerBufferSize             ;
+    uint32_t bridgePoolSize                  ;
+
+    uint32_t nodeBufferOffsetInHierarchy       ;
+    uint32_t aabbBufferOffsetInHierarchy       ;
+    uint32_t aabbPointerBufferOffsetInHierarchy;
+    uint32_t bridgePoolOffsetInHierarchy     ;
+
+    uint32_t nofNodes             ;
+    uint32_t const tileX           = 8u;
+    uint32_t const tileY           = 8u;
+    uint32_t const floatsPerAABB   = 6 ;
+    uint32_t const floatsPerBridge = 3 ;
     std::vector<uint32_t>nofNodesPerLevel        ;
     std::vector<uint32_t>nodeLevelOffset         ;
     std::vector<uint32_t>nodeLevelSizeInUints    ;

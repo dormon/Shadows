@@ -130,6 +130,7 @@ R".(
   layout(location=0)out uvec4 fColor;
   layout(location=1)out vec4  fPosition;
   layout(location=2)out vec4  fNormal; 
+  layout(location=3)out uint  fTriangleID;
 
   in vec3 vPosition;
   in vec3 vNormal;
@@ -147,6 +148,7 @@ R".(
 
   void main(){
 
+    //fTriangleID = vID;
     vec3  diffuseColor   = hue(vID*3.14159254f);//vec3(0.5,0.5,0.5);
     vec3  specularColor  = vec3(1);
     vec3  normal         = vNormal;

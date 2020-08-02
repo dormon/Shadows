@@ -70,9 +70,24 @@ const uint bitTogether[3] = {
   uint(bitLength[2]-bitLength[1]),
 };
 
-const uint longestAxis  = clamp(uint(uint(bitLength[2] == yBits) + uint(bitLength[2] == zBits)*2u),0u,2u);
-const uint middleAxis   = clamp(uint(uint(bitLength[1] == yBits) + uint(bitLength[1] == zBits)*2u),0u,2u);
-const uint shortestAxis = clamp(uint(uint(bitLength[0] == yBits) + uint(bitLength[0] == zBits)*2u),0u,2u);
+const uint longestAxis  = 
+  bitLength[2]==zBits?2u:
+  bitLength[2]==yBits?1u:
+  0u;
+
+const uint shortestAxis = 
+  bitLength[0]==xBits?0u:
+  bitLength[0]==yBits?1u:
+  2u;
+const uint middleAxis   = 
+  shortestAxis==0u?(longestAxis==1u?2u:1u):
+  (shortestAxis==1u?(longestAxis==0u?2u:0u):
+  (longestAxis==0u?1u:0u));
+
+const uint twoLongest[] = {
+  0==shortestAxis?1u:0u,
+  2==shortestAxis?1u:2u,
+};
 
 #define QUANTIZE_Z(z) clamp(uint(log(-z/NEAR) / log(1.f+2.f*tan(FOVY/2.f)/clustersY)),0u,clustersZ-1u)
 #define CLUSTER_TO_Z(i) (-NEAR * exp((i)*log(1.f + 2.f*tan(FOVY/2.f)/clustersY)))
@@ -86,115 +101,22 @@ const uint shortestAxis = clamp(uint(uint(bitLength[0] == yBits) + uint(bitLengt
   #define Z_TO_DEPTH(z) (((2.f*NEAR*FAR/z)+FAR+NEAR)/(FAR-NEAR))
 #endif
 
-const uint twoLongest[] = {
-  middleAxis ,
-  longestAxis,
-};
+#define GET_MASK(x) uint((x)==32u?0xffffffffu:uint(uint(1u<<(x))-1u))
 
-#define WHICH_BIT(b) uint(b<bitTogether[0]*3u?b%3u:b<bitTogether[0]*3u+bitTogether[1]*2u?twoLongest[b%2u]:b<allBits?longestAxis:noAxis)
-#define IS_BIT(b,a)  uint(WHICH_BIT(b) == a)
-#define SET_BIT(b,a) uint(IS_BIT(b,a) << b)
-
-#line 730
 const uvec3 bitPosition = uvec3(
-  SET_BIT( 0u,0u)| 
-  SET_BIT( 1u,0u)| 
-  SET_BIT( 2u,0u)| 
-  SET_BIT( 3u,0u)| 
-  SET_BIT( 4u,0u)| 
-  SET_BIT( 5u,0u)| 
-  SET_BIT( 6u,0u)| 
-  SET_BIT( 7u,0u)| 
-  SET_BIT( 8u,0u)| 
-  SET_BIT( 9u,0u)| 
-  SET_BIT(10u,0u)| 
-  SET_BIT(11u,0u)| 
-  SET_BIT(12u,0u)| 
-  SET_BIT(13u,0u)| 
-  SET_BIT(14u,0u)| 
-  SET_BIT(15u,0u)| 
-  SET_BIT(16u,0u)| 
-  SET_BIT(17u,0u)| 
-  SET_BIT(18u,0u)| 
-  SET_BIT(19u,0u)| 
-  SET_BIT(20u,0u)| 
-  SET_BIT(21u,0u)| 
-  SET_BIT(22u,0u)| 
-  SET_BIT(23u,0u)| 
-  SET_BIT(24u,0u)| 
-  SET_BIT(25u,0u)| 
-  SET_BIT(26u,0u)| 
-  SET_BIT(27u,0u)| 
-  SET_BIT(28u,0u)| 
-  SET_BIT(29u,0u)| 
-  SET_BIT(30u,0u)| 
-  SET_BIT(31u,0u),
-#line 107
-  SET_BIT( 0u,1u)| 
-  SET_BIT( 1u,1u)| 
-  SET_BIT( 2u,1u)| 
-  SET_BIT( 3u,1u)| 
-  SET_BIT( 4u,1u)| 
-  SET_BIT( 5u,1u)| 
-  SET_BIT( 6u,1u)| 
-  SET_BIT( 7u,1u)| 
-  SET_BIT( 8u,1u)| 
-  SET_BIT( 9u,1u)| 
-  SET_BIT(10u,1u)| 
-  SET_BIT(11u,1u)| 
-  SET_BIT(12u,1u)| 
-  SET_BIT(13u,1u)| 
-  SET_BIT(14u,1u)| 
-  SET_BIT(15u,1u)| 
-  SET_BIT(16u,1u)| 
-  SET_BIT(17u,1u)| 
-  SET_BIT(18u,1u)| 
-  SET_BIT(19u,1u)| 
-  SET_BIT(20u,1u)| 
-  SET_BIT(21u,1u)| 
-  SET_BIT(22u,1u)| 
-  SET_BIT(23u,1u)| 
-  SET_BIT(24u,1u)| 
-  SET_BIT(25u,1u)| 
-  SET_BIT(26u,1u)| 
-  SET_BIT(27u,1u)| 
-  SET_BIT(28u,1u)| 
-  SET_BIT(29u,1u)| 
-  SET_BIT(30u,1u)| 
-  SET_BIT(31u,1u),
-  SET_BIT( 0u,2u)| 
-  SET_BIT( 1u,2u)| 
-  SET_BIT( 2u,2u)| 
-  SET_BIT( 3u,2u)| 
-  SET_BIT( 4u,2u)| 
-  SET_BIT( 5u,2u)| 
-  SET_BIT( 6u,2u)| 
-  SET_BIT( 7u,2u)| 
-  SET_BIT( 8u,2u)| 
-  SET_BIT( 9u,2u)| 
-  SET_BIT(10u,2u)| 
-  SET_BIT(11u,2u)| 
-  SET_BIT(12u,2u)| 
-  SET_BIT(13u,2u)| 
-  SET_BIT(14u,2u)| 
-  SET_BIT(15u,2u)| 
-  SET_BIT(16u,2u)| 
-  SET_BIT(17u,2u)| 
-  SET_BIT(18u,2u)| 
-  SET_BIT(19u,2u)| 
-  SET_BIT(20u,2u)| 
-  SET_BIT(21u,2u)| 
-  SET_BIT(22u,2u)| 
-  SET_BIT(23u,2u)| 
-  SET_BIT(24u,2u)| 
-  SET_BIT(25u,2u)| 
-  SET_BIT(26u,2u)| 
-  SET_BIT(27u,2u)| 
-  SET_BIT(28u,2u)| 
-  SET_BIT(29u,2u)| 
-  SET_BIT(30u,2u)| 
-  SET_BIT(31u,2u)
+  ((0x49249249u<<0u) & GET_MASK(bitTogether[0]*3u))|
+  (uint(shortestAxis != 0) * (((0x55555555u<<0u                     ) & GET_MASK(bitTogether[1]*2u)) << (bitTogether[0]*3u)))|
+  ((GET_MASK(bitTogether[2]) << (bitTogether[0]*3u + bitTogether[1]*2u))*uint(longestAxis == 0u)),
+
+  ((0x49249249u<<1u) & GET_MASK(bitTogether[0]*3u))|
+  (uint(shortestAxis != 1) * (((0x55555555u<<uint(shortestAxis != 0)) & GET_MASK(bitTogether[1]*2u)) << (bitTogether[0]*3u)))|
+  ((GET_MASK(bitTogether[2]) << (bitTogether[0]*3u + bitTogether[1]*2u))*uint(longestAxis == 1u)),
+
+  ((0x49249249u<<2u) & GET_MASK(bitTogether[0]*3u))|
+  (uint(shortestAxis != 2) * (((0x55555555u<<1u                     ) & GET_MASK(bitTogether[1]*2u)) << (bitTogether[0]*3u)))|
+  ((GET_MASK(bitTogether[2]) << (bitTogether[0]*3u + bitTogether[1]*2u))*uint(longestAxis == 2u))
 );
+
 #line 172
 const uvec3 levelTileBits[] = {
   bitCount(bitPosition&((1u<<(warpBits*uint(max(int(nofLevels)-1,0))))-1u)),

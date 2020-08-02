@@ -3,5 +3,5 @@
 #include <Vars/Fwd.h>
 
 namespace rssv{
-void traverseSilhouettes(vars::Vars&vars);
+void traverse(vars::Vars&vars);
 }

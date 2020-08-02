@@ -6,26 +6,6 @@ std::string const rssv::propagateAABBShader = R".(
 #define WARP 64
 #endif//WARP
 
-#ifndef WINDOW_X
-#define WINDOW_X 512
-#endif//WINDOW_X
-
-#ifndef WINDOW_Y
-#define WINDOW_Y 512
-#endif//WINDOW_Y
-
-#ifndef TILE_X
-#define TILE_X 8
-#endif//TILE_X
-
-#ifndef TILE_Y
-#define TILE_Y 8
-#endif//TILE_Y
-
-#ifndef MIN_Z_BITS
-#define MIN_Z_BITS 9
-#endif//MIN_Z_BITS
-
 #ifndef NOF_WARPS
 #define NOF_WARPS 4
 #endif//NOF_WARPS
@@ -41,10 +21,21 @@ std::string const rssv::propagateAABBShader = R".(
 
 layout(local_size_x=WARP,local_size_y=NOF_WARPS)in;
 
-layout(std430,binding=0)buffer NodePool        {uint  nodePool        [];};
-layout(std430,binding=1)buffer AABBPool        {float aabbPool        [];};
+layout(std430,binding=0)buffer NodePool{
+  uint  nodePool[nodeBufferSizeInUints ];
+  float aabbPool[aabbBufferSizeInFloats];
+  #if MEMORY_OPTIM == 1
+  uint  aabbPointer[aabbPointerBufferSizeInUints];
+  #endif
+  #if USE_BRIDGE_POOL == 1
+  float  bridgePool[bridgePoolSizeInFloats];
+  #endif
+};
+
 layout(std430,binding=3)buffer LevelNodeCounter{uint  levelNodeCounter[];};
 layout(std430,binding=4)buffer ActiveNodes     {uint  activeNodes     [];};
+layout(std430,binding=6)buffer Bridges           { int  bridges          [];};
+
 
 layout(std430,binding=7)buffer DebugBuffer{uint debugBuffer[];};
 
@@ -206,6 +197,17 @@ void main(){
     uint64_t activeThreads = ballotARB(isActive != 0);
     uint selectedBit       = findLSB(unpackUint2x32(activeThreads)[0]);
 
+#if MEMORY_OPTIM == 1
+    if(isActive != 0){
+      uint w = aabbPointer[nodeLevelOffset[destLevel+1]+node*WARP+uint(THREAD_IN_WARP)+1u];
+      reductionArray[WARP_OFFSET+WARP*0u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+0u];
+      reductionArray[WARP_OFFSET+WARP*1u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+1u];
+      reductionArray[WARP_OFFSET+WARP*2u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+2u];
+      reductionArray[WARP_OFFSET+WARP*3u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+3u];
+      reductionArray[WARP_OFFSET+WARP*4u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+4u];
+      reductionArray[WARP_OFFSET+WARP*5u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+5u];
+    }
+#else
     if(isActive != 0){
       reductionArray[WARP_OFFSET+WARP*0u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+0u];
       reductionArray[WARP_OFFSET+WARP*1u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+1u];
@@ -214,6 +216,8 @@ void main(){
       reductionArray[WARP_OFFSET+WARP*4u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+4u];
       reductionArray[WARP_OFFSET+WARP*5u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+5u];
     }
+#endif
+
     memoryBarrierShared();
 
     if(isActive == 0){
@@ -228,8 +232,23 @@ void main(){
 
     reduce();
 
+#if MEMORY_OPTIM == 1
+    if(THREAD_IN_WARP==0){
+      uint w = atomicAdd(aabbPointer[0],1);
+      aabbPointer[nodeLevelOffset[destLevel]+node+1] = w;
+      aabbPool[w*6+0] = reductionArray[WARP_OFFSET+0];
+      aabbPool[w*6+1] = reductionArray[WARP_OFFSET+1];
+      aabbPool[w*6+2] = reductionArray[WARP_OFFSET+2];
+      aabbPool[w*6+3] = reductionArray[WARP_OFFSET+3];
+      aabbPool[w*6+4] = reductionArray[WARP_OFFSET+4];
+      aabbPool[w*6+5] = reductionArray[WARP_OFFSET+5];
+    }
+#else
     if(THREAD_IN_WARP < floatsPerAABB)
       aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+THREAD_IN_WARP] = reductionArray[WARP_OFFSET+THREAD_IN_WARP];
+#endif
+    if(THREAD_IN_WARP == 0)
+      bridges[nodeLevelOffset[destLevel] + node] = 0;
 
     nodeUint ^= 1u << bit;
 
@@ -288,9 +307,21 @@ void main(){
 
     uint isActive = uint(nodePool[nodeLevelOffsetInUints[destLevel+1u]+node*uintsPerWarp + uint(THREAD_IN_WARP>31)] & uint(1u<<(uint(THREAD_IN_WARP)&0x1fu)));
 
+
     uint64_t activeThreads = ballotARB(isActive != 0);
     uint selectedBit       = unpackUint2x32(activeThreads)[0]!=0u?findLSB(unpackUint2x32(activeThreads)[0]):findLSB(unpackUint2x32(activeThreads)[1])+32u;
 
+#if MEMORY_OPTIM == 1
+    if(isActive != 0){
+      uint w = aabbPointer[nodeLevelOffset[destLevel+1]+node*WARP+uint(THREAD_IN_WARP)+1u];
+      reductionArray[WARP_OFFSET+WARP*0u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+0u];
+      reductionArray[WARP_OFFSET+WARP*1u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+1u];
+      reductionArray[WARP_OFFSET+WARP*2u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+2u];
+      reductionArray[WARP_OFFSET+WARP*3u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+3u];
+      reductionArray[WARP_OFFSET+WARP*4u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+4u];
+      reductionArray[WARP_OFFSET+WARP*5u+uint(THREAD_IN_WARP)] = aabbPool[w*floatsPerAABB+5u];
+    }
+#else
     if(isActive != 0){
       reductionArray[WARP_OFFSET+WARP*0u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+0u];
       reductionArray[WARP_OFFSET+WARP*1u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+1u];
@@ -299,6 +330,7 @@ void main(){
       reductionArray[WARP_OFFSET+WARP*4u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+4u];
       reductionArray[WARP_OFFSET+WARP*5u+uint(THREAD_IN_WARP)] = aabbPool[aabbLevelOffsetInFloats[destLevel+1]+node*WARP*floatsPerAABB+uint(THREAD_IN_WARP)*floatsPerAABB+5u];
     }
+#endif
 
     if(isActive == 0){
       reductionArray[WARP_OFFSET+WARP*0u+uint(THREAD_IN_WARP)] = reductionArray[WARP_OFFSET+WARP*0u+selectedBit];
@@ -311,8 +343,35 @@ void main(){
 
     reduce();
 
+#if MEMORY_OPTIM == 1
+    if(THREAD_IN_WARP==0){
+      uint w = atomicAdd(aabbPointer[0],1);
+      aabbPointer[nodeLevelOffset[destLevel]+node+1] = w;
+      aabbPool[w*6+0] = reductionArray[WARP_OFFSET+0];
+      aabbPool[w*6+1] = reductionArray[WARP_OFFSET+1];
+      aabbPool[w*6+2] = reductionArray[WARP_OFFSET+2];
+      aabbPool[w*6+3] = reductionArray[WARP_OFFSET+3];
+      aabbPool[w*6+4] = reductionArray[WARP_OFFSET+4];
+      aabbPool[w*6+5] = reductionArray[WARP_OFFSET+5];
+#if USE_BRIDGE_POOL == 1
+      bridgePool[w*floatsPerBridge+0] = (reductionArray[WARP_OFFSET+0] + reductionArray[WARP_OFFSET+1])*.5f;
+      bridgePool[w*floatsPerBridge+1] = (reductionArray[WARP_OFFSET+2] + reductionArray[WARP_OFFSET+3])*.5f;
+      bridgePool[w*floatsPerBridge+2] = (reductionArray[WARP_OFFSET+4] + reductionArray[WARP_OFFSET+5])*.5f;
+#endif
+    }
+#else
     if(THREAD_IN_WARP < floatsPerAABB)
       aabbPool[aabbLevelOffsetInFloats[destLevel]+node*floatsPerAABB+THREAD_IN_WARP] = reductionArray[WARP_OFFSET+THREAD_IN_WARP];
+
+#if USE_BRIDGE_POOL == 1
+    if(THREAD_IN_WARP < floatsPerBridge)
+      bridgePool[bridgeLevelOffsetInFloats[destLevel]+node*floatsPerBridge+THREAD_IN_WARP] = (reductionArray[WARP_OFFSET+THREAD_IN_WARP*2+0] + reductionArray[WARP_OFFSET+THREAD_IN_WARP*2+1])*0.5f;
+#endif
+
+#endif
+    if(THREAD_IN_WARP == 0)
+      bridges[nodeLevelOffset[destLevel] + node] = 0;
+
 
     nodeUint ^= 1u << bit;
 
@@ -325,6 +384,7 @@ void main(){
 
     uint bit  = (activeNodeUint>>1u)& warpMask;
     uint node = (activeNodeUint>>1u)>>warpBits;
+
 
     if(destLevel > 0){
       uint mm = atomicOr(nodePool[nodeLevelOffsetInUints[destLevel-1]+node*uintsPerWarp+uint(bit>31u)],1u<<(bit&0x1fu));

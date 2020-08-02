@@ -49,6 +49,7 @@ class Shadows : public simple3DApp::Application {
   vars::Vars vars;
 
   virtual void                init() override;
+  virtual void                deinit() override;
   void                        initWavefrontSize();
   virtual void                mouseMove(SDL_Event const& event) override;
   std::map<SDL_Keycode, bool> keyDown;
@@ -74,6 +75,10 @@ void Shadows::init() {
 
   initMethods(vars);
   parseArguments(vars);
+
+  if(vars.getBool("notResizable")){
+    SDL_SetWindowResizable(window->getWindow(),SDL_FALSE);
+  }
 
   if(vars.getBool("getModelStats")){
     getModelStats(vars);
@@ -111,6 +116,10 @@ void Shadows::init() {
 
   vars.add<DrawPrimitive>("drawPrimitive",windowSize);
 
+}
+
+void Shadows::deinit(){
+  storeCamera(vars);
 }
 
 
@@ -180,7 +189,7 @@ void Shadows::draw() {
   auto time = timer.elapsedFromStart();
   auto&t = vars.addOrGetFloat("frameTime");
   auto&fps = vars.addOrGetFloat("fps");
-  t = time;
+  t = time*1000;
   fps = 1.f/time;
 }
 

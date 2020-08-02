@@ -2,6 +2,8 @@
 
 #include <iostream>
 
-namespace rssv{
-extern std::string const shadowFrustaShader;
+namespace rssv::shadowFrusta{
+std::string const extern fwdShader    ;
+std::string const extern computeShader;
+std::string const extern mainShader   ;
 }

@@ -19,13 +19,13 @@ void rssv::propagateAABB(vars::Vars&vars){
   auto prg = vars.get<Program>("rssv.method.propagateAABBProgram");
 
   auto const cfg        = *vars.get<Config>("rssv.method.config");
-  auto nodePool         =  vars.get<Buffer >("rssv.method.nodePool");
-  auto aabbPool         =  vars.get<Buffer >("rssv.method.aabbPool");
   auto levelNodeCounter =  vars.get<Buffer >("rssv.method.levelNodeCounter");
   auto activeNodes      =  vars.get<Buffer >("rssv.method.activeNodes");
 
-  nodePool        ->bindBase(GL_SHADER_STORAGE_BUFFER,0);
-  aabbPool        ->bindBase(GL_SHADER_STORAGE_BUFFER,1);
+
+  auto hierarchy = vars.get<Buffer>("rssv.method.hierarchy");
+  hierarchy->bindBase(GL_SHADER_STORAGE_BUFFER,0);
+
   activeNodes     ->bindBase(GL_SHADER_STORAGE_BUFFER,4);
   levelNodeCounter->bind    (GL_DISPATCH_INDIRECT_BUFFER);
   levelNodeCounter->bindBase(GL_SHADER_STORAGE_BUFFER,3);
@@ -39,6 +39,8 @@ void rssv::propagateAABB(vars::Vars&vars){
   debugBuffer->bindBase(GL_SHADER_STORAGE_BUFFER,7);
 #endif
 
+  auto bridges                     = vars.get<Buffer >("rssv.method.bridges"                   );
+  bridges          ->bindBase(GL_SHADER_STORAGE_BUFFER,6);
 
   for(int32_t level=cfg.nofLevels-2;level>=0;--level){
     prg->set1ui("destLevel",level);
