@@ -46,8 +46,8 @@ void TSSV::drawSides(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix
 void TSSV::drawCaps(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, glm::mat4 const& projectionMatrix)
 {
 	createCapsDrawer();
-
-	vars.get<GSCaps>("tssv.capsDrawer")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
+	 
+	vars.get<GSCaps>("tssv.objects.capsDrawer")->drawCaps(lightPosition, viewMatrix, projectionMatrix);
 }
 
 void TSSV::createVertexBuffer()
