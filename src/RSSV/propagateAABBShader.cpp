@@ -342,7 +342,7 @@ void main(){
     }
 
     reduce();
-
+)." + std::string(R".(
 #if MEMORY_OPTIM == 1
     if(THREAD_IN_WARP==0){
       uint w = atomicAdd(aabbPointer[0],1);
@@ -398,4 +398,4 @@ void main(){
 #endif
 }
 
-).";
+).");
