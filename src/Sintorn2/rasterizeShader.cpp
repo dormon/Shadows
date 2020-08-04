@@ -527,7 +527,7 @@ void traverse(){
 }
 
 #endif
-
+)." + std::string(R".(
 #line 36
 void main(){
   //if(texelFetch(depthTexture,ivec2(0,0)).x != 1337)return;
@@ -551,4 +551,4 @@ void main(){
   }
 }
 
-).";
+).");
