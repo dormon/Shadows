@@ -100,7 +100,9 @@ void CubeShadowMapping::fillShadowMap(glm::vec4 const&lightPosition){
   createShadowMapProgram(vars);
 
   glEnable(GL_POLYGON_OFFSET_FILL);
-  glPolygonOffset(2.5,10);
+  auto const factor      = vars.getFloat ("csm.param.factor"     );
+  auto const units       = vars.getFloat ("csm.param.units"      );
+  glPolygonOffset(factor,units);
   auto const resolution = vars.getUint32("csm.param.resolution");
   auto const near       = vars.getFloat ("csm.param.near"      );
   auto const far        = vars.getFloat ("csm.param.far"       );
