@@ -16,7 +16,10 @@ std::string OctreeSerializer::GenerateFileName(SerializerData const& data) const
 
 bool OctreeSerializer::loadFromFile(Octree* octree, SerializerData const& data)
 {
-	FILE* input = fopen(GenerateFileName(data).c_str(), "rb");
+	std::string const octreeFile = GenerateFileName(data);
+	std::cout << "Opening stored octree " << octreeFile << std::endl;
+
+	FILE* input = fopen(octreeFile.c_str(), "rb");
 	if (!input)
 	{
 		return false;
