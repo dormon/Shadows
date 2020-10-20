@@ -67,3 +67,20 @@ void ShadowMethod::drawDebug(glm::vec4 const& ,
 {
 
 }
+
+bool ShadowMethod::IsConservativeRasterizationSupported() const
+{
+	int NumberOfExtensions;
+	glGetIntegerv(GL_NUM_EXTENSIONS, &NumberOfExtensions);
+	for (int i = 0; i < NumberOfExtensions; i++)
+	{
+		const char* ccc = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
+
+		if (strcmp(ccc, "GL_NV_conservative_raster") == 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}

@@ -48,4 +48,7 @@ class ShadowMethod : public ge::gl::Context {
                          glm::mat4 const& projectionMatrix);
 
     vars::Vars&vars;
+
+protected:
+	bool IsConservativeRasterizationSupported() const;
 };
