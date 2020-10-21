@@ -19,7 +19,7 @@ std::string FtsShaderGen::GetZbufferFillProgramString()
 std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetZbufferFillCS(uint32_t wgSize)
 {
 	
-	std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\FTS_FillShader.glsl");
+	std::ifstream t1("C:\\Users\\Jofo\\Desktop\\FTS_FillShader.glsl");
 	std::string program((std::istreambuf_iterator<char>(t1)), std::istreambuf_iterator<char>());
 	//*/
 

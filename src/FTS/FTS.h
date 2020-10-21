@@ -17,6 +17,7 @@ public:
 
 private:
 	
+	void CreateSampler();
 	void CreateTextures();
 	void CreateHeadTex();
 	void CreateLinkedListTex();

@@ -22,17 +22,16 @@ constexpr const char* nearParamName = "fts.args.nearZ";
 constexpr const char* farParamName = "fts.args.farZ";
 constexpr const char* fovyParamName = "fts.args.fovY";
 
-
 constexpr const char* listTexName  = "fts.objects.listTex";
 constexpr const char* headTexName  = "fts.objects.headTex";
 constexpr const char* mutexTexName = "fts.objects.mutexTex";
 
+constexpr const char* samplerName = "fts.objects.posSampler";
+
 constexpr const char* fillProgramName = "fts.objects.fillProgram";
 
-constexpr const size_t headBufferItemSize = 2 * sizeof(uint32_t);
-
-constexpr const GLuint listTexFormat = GL_R32UI;
-constexpr const GLuint headTexFormat = GL_R32UI;
+constexpr const GLuint listTexFormat =  GL_R32I;
+constexpr const GLuint headTexFormat =  GL_R32I;
 constexpr const GLuint mutexTexFormat = GL_R32UI;
 
 
@@ -42,6 +41,7 @@ FTS::FTS(vars::Vars& vars) : ShadowMethod(vars)
 
 	CreateShadowMaskVao();
 	CompileShaders();
+	CreateSampler();
 }
 
 FTS::~FTS()
@@ -61,6 +61,13 @@ void FTS::CreateTextures()
 	CreateHeadTex();
 	CreateLinkedListTex();
 	CreateMutexTex();
+}
+
+void FTS::CreateSampler()
+{
+	Sampler* sampler = vars.reCreate<Sampler>(samplerName);
+	sampler->setMinFilter(GL_NEAREST);
+	sampler->setMagFilter(GL_NEAREST);
 }
 
 void FTS::CreateHeadTex()
@@ -90,14 +97,15 @@ void FTS::CreateMutexTex()
 void FTS::ClearTextures()
 {
 	int const clearVal = -1;
-	vars.get<Texture>(listTexName)->clear(listTexFormat, GL_RED, GL_INT, &clearVal);
-	vars.get<Texture>(headTexName)->clear(headTexFormat, GL_RED, GL_INT, &clearVal);
-	vars.get<Texture>(mutexTexName)->clear(mutexTexFormat, GL_RED, GL_INT, &clearVal);
+	unsigned int const mutexClearVal = 0;
+	vars.get<Texture>(listTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
+	vars.get<Texture>(headTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
+	vars.get<Texture>(mutexTexName)->clear(0, GL_RED_INTEGER, GL_UNSIGNED_INT, &mutexClearVal);
 }
 
 void FTS::CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint32_t resY)
 {
-	vars.reCreate<Texture>(name, GL_TEXTURE_2D, format, 1, resX, resY);
+	auto t = vars.reCreate<Texture>(name, GL_TEXTURE_2D, format, 1, resX, resY);
 }
 
 void FTS::CompileShaders()
@@ -124,13 +132,11 @@ void FTS::CreateIzb(glm::mat4 const& vp)
 	program->use();
 
 	glm::mat4 const lightVP = CreateLightProjMatrix() * CreateLightViewMatrix();
-	glm::mat4 const invVP = glm::inverse(vp);
 	glm::uvec2 const screenRes = *vars.get<glm::uvec2>("windowSize");
 
 	uint32_t const res = vars.getUint32(resolutionParamName);
 	glm::uvec2 const lightRes = glm::uvec2(res, res);
 
-	program->setMatrix4fv("invCamVP", glm::value_ptr(invVP));
 	program->setMatrix4fv("lightVP", glm::value_ptr(lightVP));
 	program->set2uiv("screenResolution", glm::value_ptr(screenRes));
 	program->set2uiv("lightResolution", glm::value_ptr(lightRes));
@@ -138,6 +144,9 @@ void FTS::CreateIzb(glm::mat4 const& vp)
 	headTex->bindImage(0, 0, headTexFormat, GL_READ_WRITE);
 	listTex->bindImage(1, 0, listTexFormat, GL_READ_WRITE);
 	mutexTex->bindImage(2, 0, mutexTexFormat, GL_READ_WRITE);
+
+	vars.get<GBuffer>("gBuffer")->position->bind(0);
+	vars.get<Sampler>(samplerName)->bind(0);
 
 	uint32_t const nofWgs = GetNofWgsFill();
 
