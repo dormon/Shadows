@@ -15,7 +15,6 @@
 using namespace ge;
 using namespace gl;
 
-
 constexpr const char* wgsizeParamName = "fts.args.wgSize";
 constexpr const char* resolutionParamName = "fts.args.resolution";
 constexpr const char* nearParamName = "fts.args.nearZ";
@@ -32,7 +31,6 @@ constexpr const char* fillProgramName = "fts.objects.fillProgram";
 
 constexpr const GLuint listTexFormat =  GL_R32I;
 constexpr const GLuint headTexFormat =  GL_R32I;
-constexpr const GLuint mutexTexFormat = GL_R32UI;
 
 
 FTS::FTS(vars::Vars& vars) : ShadowMethod(vars)
@@ -60,7 +58,6 @@ void FTS::CreateTextures()
 {
 	CreateHeadTex();
 	CreateLinkedListTex();
-	CreateMutexTex();
 }
 
 void FTS::CreateSampler()
@@ -86,21 +83,11 @@ void FTS::CreateLinkedListTex()
 	CreateTexture2D(listTexName, listTexFormat, windowSize.x, windowSize.y);
 }
 
-void FTS::CreateMutexTex()
-{
-	FUNCTION_PROLOGUE("fts.objects", resolutionParamName, "renderModel");
-
-	uint32_t const res = vars.getUint32(resolutionParamName);
-	CreateTexture2D(mutexTexName, mutexTexFormat, res, res);
-}
-
 void FTS::ClearTextures()
 {
 	int const clearVal = -1;
-	unsigned int const mutexClearVal = 0;
 	vars.get<Texture>(listTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
 	vars.get<Texture>(headTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
-	vars.get<Texture>(mutexTexName)->clear(0, GL_RED_INTEGER, GL_UNSIGNED_INT, &mutexClearVal);
 }
 
 void FTS::CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint32_t resY)
@@ -122,10 +109,9 @@ void FTS::CreateIzb(glm::mat4 const& vp)
 	glGetError();
 
 	Program* program = vars.get<Program>(fillProgramName);
-	
+
 	Texture* headTex  = vars.get<Texture>(headTexName);
 	Texture* listTex  = vars.get<Texture>(listTexName);
-	Texture* mutexTex = vars.get<Texture>(mutexTexName);
 
 	assert(program != nullptr);
 
@@ -143,7 +129,6 @@ void FTS::CreateIzb(glm::mat4 const& vp)
 
 	headTex->bindImage(0, 0, headTexFormat, GL_READ_WRITE);
 	listTex->bindImage(1, 0, listTexFormat, GL_READ_WRITE);
-	mutexTex->bindImage(2, 0, mutexTexFormat, GL_READ_WRITE);
 
 	vars.get<GBuffer>("gBuffer")->position->bind(0);
 	vars.get<Sampler>(samplerName)->bind(0);
@@ -152,11 +137,11 @@ void FTS::CreateIzb(glm::mat4 const& vp)
 
 	glDispatchCompute(nofWgs, 1, 1);
 
-	glFinish();
-
+	vars.get<GBuffer>("gBuffer")->position->unbind(0);
+	
 	headTex->unbind(0);
 	listTex->unbind(1);
-	mutexTex->unbind(2);
+
 	assert(glGetError() == GL_NO_ERROR);
 }
 

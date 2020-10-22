@@ -22,7 +22,5 @@ public:
 	std::shared_ptr<ge::gl::Shader> GetZbufferFillCS(uint32_t wgSize);
 
 private:
-
-	std::string GetZbufferFillProgramString();
 	
 };

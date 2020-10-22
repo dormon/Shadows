@@ -21,7 +21,6 @@ private:
 	void CreateTextures();
 	void CreateHeadTex();
 	void CreateLinkedListTex();
-	void CreateMutexTex();
 	void ClearTextures();
 	void CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint32_t resY);
 
