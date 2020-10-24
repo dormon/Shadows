@@ -25,9 +25,14 @@ constexpr const char* listTexName  = "fts.objects.listTex";
 constexpr const char* headTexName  = "fts.objects.headTex";
 constexpr const char* mutexTexName = "fts.objects.mutexTex";
 
-constexpr const char* samplerName = "fts.objects.posSampler";
+constexpr const char* pointSamplerName = "fts.objects.pointSampler";
 
 constexpr const char* fillProgramName = "fts.objects.fillProgram";
+constexpr const char* shadowMaskProgrammName = "fts.objects.shadowMaskProgram";
+
+constexpr const char* fboName = "fts.objects.fboName";
+constexpr const char* depthTexName = "fts.objects.depthTex";
+constexpr const char* vaoName = "fts.objects.vao";
 
 constexpr const GLuint listTexFormat =  GL_R32I;
 constexpr const GLuint headTexFormat =  GL_R32I;
@@ -37,21 +42,12 @@ FTS::FTS(vars::Vars& vars) : ShadowMethod(vars)
 {
 	IsValid = IsConservativeRasterizationSupported();
 
-	CreateShadowMaskVao();
-	CompileShaders();
 	CreateSampler();
 }
 
 FTS::~FTS()
 {
 	vars.erase("fts.objects");
-}
-
-void FTS::CreateShadowMaskVao()
-{
-	if (!IsValid) return;
-
-	vars.reCreate<VertexArray>("fts.objects.shadowMaskVao");
 }
 
 void FTS::CreateTextures()
@@ -62,7 +58,7 @@ void FTS::CreateTextures()
 
 void FTS::CreateSampler()
 {
-	Sampler* sampler = vars.reCreate<Sampler>(samplerName);
+	Sampler* sampler = vars.reCreate<Sampler>(pointSamplerName);
 	sampler->setMinFilter(GL_NEAREST);
 	sampler->setMagFilter(GL_NEAREST);
 }
@@ -71,15 +67,15 @@ void FTS::CreateHeadTex()
 {
 	FUNCTION_PROLOGUE("fts.objects", resolutionParamName, "renderModel");
 
-	uint32_t const res = vars.getUint32(resolutionParamName);
-	CreateTexture2D(headTexName, headTexFormat, res, res);
+	glm::uvec2 const lightRes = GetLightResolution();
+	CreateTexture2D(headTexName, headTexFormat, lightRes.x, lightRes.y);
 }
 
 void FTS::CreateLinkedListTex()
 {
 	FUNCTION_PROLOGUE("fts.objects", "windowSize", "renderModel");
 
-	glm::uvec2 const windowSize = *vars.get<glm::uvec2>("windowSize");
+	glm::uvec2 const windowSize = GetWindowSize();
 	CreateTexture2D(listTexName, listTexFormat, windowSize.x, windowSize.y);
 }
 
@@ -88,6 +84,9 @@ void FTS::ClearTextures()
 	int const clearVal = -1;
 	vars.get<Texture>(listTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
 	vars.get<Texture>(headTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
+
+	float const val = 1.f;
+	vars.get<Texture>("shadowMask")->clear(0, GL_RED, GL_FLOAT, &val);
 }
 
 void FTS::CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint32_t resY)
@@ -97,6 +96,12 @@ void FTS::CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint
 
 void FTS::CompileShaders()
 {
+	CreateFillProgram();
+	CreateShadowMaskProgram();
+}
+
+void FTS::CreateFillProgram()
+{
 	FUNCTION_PROLOGUE("fts.objects", wgsizeParamName);
 	FtsShaderGen gen;
 
@@ -104,9 +109,17 @@ void FTS::CompileShaders()
 	vars.reCreate<Program>(fillProgramName, gen.GetZbufferFillCS(wgSize));
 }
 
-void FTS::CreateIzb(glm::mat4 const& vp)
+void FTS::CreateShadowMaskProgram()
 {
-	glGetError();
+	FUNCTION_PROLOGUE("fts.objects");
+
+	FtsShaderGen gen;
+	vars.reCreate<Program>(shadowMaskProgrammName, gen.GetShadowMaskVS(), gen.GetShadowMaskGS(), gen.GetShadowMaskFS());
+}
+
+void FTS::CreateIzb(glm::mat4 const& vp, glm::mat4 const& lightVP)
+{
+	assert(glGetError() == GL_NO_ERROR);
 
 	Program* program = vars.get<Program>(fillProgramName);
 
@@ -117,11 +130,8 @@ void FTS::CreateIzb(glm::mat4 const& vp)
 
 	program->use();
 
-	glm::mat4 const lightVP = CreateLightProjMatrix() * CreateLightViewMatrix();
-	glm::uvec2 const screenRes = *vars.get<glm::uvec2>("windowSize");
-
-	uint32_t const res = vars.getUint32(resolutionParamName);
-	glm::uvec2 const lightRes = glm::uvec2(res, res);
+	glm::uvec2 const screenRes = GetWindowSize();
+	glm::uvec2 const lightRes = GetLightResolution();
 
 	program->setMatrix4fv("lightVP", glm::value_ptr(lightVP));
 	program->set2uiv("screenResolution", glm::value_ptr(screenRes));
@@ -131,7 +141,7 @@ void FTS::CreateIzb(glm::mat4 const& vp)
 	listTex->bindImage(1, 0, listTexFormat, GL_READ_WRITE);
 
 	vars.get<GBuffer>("gBuffer")->position->bind(0);
-	vars.get<Sampler>(samplerName)->bind(0);
+	vars.get<Sampler>(pointSamplerName)->bind(0);
 
 	uint32_t const nofWgs = GetNofWgsFill();
 
@@ -166,19 +176,122 @@ glm::mat4 FTS::CreateLightProjMatrix() const
 uint32_t FTS::GetNofWgsFill() const
 {
 	uint32_t wgSize = vars.getUint32(wgsizeParamName);
-	glm::uvec2 const r = *vars.get<glm::uvec2>("windowSize");
+	glm::uvec2 const r = GetWindowSize();
 	uint32_t const nofPixels = r.x * r.y;
 
 	return (nofPixels / wgSize) + 1;
+}
+
+//-----------------Shadow Mask-------------------
+
+void FTS::CreateShadowMaskVao()
+{
+	FUNCTION_PROLOGUE("fts.objects", "renderModel");
+
+	VertexArray* vao = vars.reCreate<VertexArray>(vaoName);
+	vao->addAttrib(vars.get<RenderModel>("renderModel")->vertices, 0, 3, GL_FLOAT);
+}
+
+void FTS::CreateShadowMaskFbo()
+{
+	FUNCTION_PROLOGUE("fts.objects", "shadowMask");
+
+	Framebuffer* fbo = vars.reCreate<Framebuffer>(fboName);
+
+	glm::uvec2 const res = GetLightResolution();
+	Texture* depthTex = vars.reCreate<Texture>(depthTexName, GL_TEXTURE_RECTANGLE, GL_DEPTH24_STENCIL8, 1, res.x, res.y);
+
+	fbo->attachTexture(GL_DEPTH_ATTACHMENT, vars.get<Texture>(depthTexName));
+}
+
+void FTS::CreateShadowMask(glm::mat4 const& lightVP)
+{
+	assert(glGetError() == GL_NO_ERROR);
+	
+	glm::uvec2 const screenRes = GetWindowSize();
+	glm::vec3 const lightPos = glm::vec3(*vars.get<glm::vec4>("lightPosition"));
+	glm::uvec2 const lightRes = GetLightResolution();
+
+	Framebuffer* fbo = vars.get<Framebuffer>(fboName);
+
+	fbo->bind();
+	glViewport(0, 0, lightRes.x, lightRes.y);
+	{
+		//TODO - presunut kvoli depth optimalizacii
+		glClear(GL_DEPTH_BUFFER_BIT);
+	}
+
+	Texture* headTex = vars.get<Texture>(headTexName);
+	Texture* listTex = vars.get<Texture>(listTexName);
+	std::shared_ptr<Texture> posTex = vars.get<GBuffer>("gBuffer")->position;
+	Texture* shadowMask = vars.get<Texture>("shadowMask");
+
+	VertexArray* vao = vars.get<VertexArray>(vaoName);
+
+	Program* prog = vars.get<Program>(shadowMaskProgrammName);
+	prog->setMatrix4fv("lightVP", glm::value_ptr(lightVP));
+	prog->set3fv("lightPos", glm::value_ptr(lightPos));
+	prog->set1f("bias", vars.getFloat("fts.args.traversalBias"));
+	prog->set2uiv("screenResolution", glm::value_ptr(screenRes));
+	prog->use();
+
+	headTex->bind(0);
+	listTex->bind(1);
+	posTex->bind(2);
+	shadowMask->bindImage(0);
+
+	vao->bind();
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
+	glDrawArrays(GL_TRIANGLES, 0, vars.get<RenderModel>("renderModel")->nofVertices);
+
+	headTex->unbind(0);
+	listTex->unbind(1);
+	posTex->unbind(2);
+	shadowMask->unbind(0);
+
+	vao->unbind();
+	fbo->unbind();
+
+	glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glViewport(0, 0, screenRes.x, screenRes.y);
+
+	assert(glGetError() == GL_NO_ERROR);
+}
+
+glm::uvec2 FTS::GetWindowSize() const
+{
+	return *vars.get<glm::uvec2>("windowSize");
+}
+
+glm::uvec2 FTS::GetLightResolution() const
+{
+	uint32_t const res = vars.getUint32(resolutionParamName);
+	return glm::uvec2(res, res);
 }
 
 void FTS::create(glm::vec4 const& lightPosition,
 	glm::mat4 const& viewMatrix,
 	glm::mat4 const& projectionMatrix)
 {
-	CreateTextures();
+	if(!IsValid)
+	{
+		return;
+	}
+
+	CreateShadowMaskVao();
+	CreateShadowMaskFbo();
 	CompileShaders();
+	CreateTextures();
 
 	ClearTextures();
-	CreateIzb(projectionMatrix * viewMatrix);
+
+	glm::mat4 const lightVP = CreateLightProjMatrix() * CreateLightViewMatrix();
+	glm::mat4 const vp = projectionMatrix * viewMatrix;
+
+	CreateIzb(vp, lightVP);
+
+	CreateShadowMask(lightVP);
 }

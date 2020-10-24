@@ -21,6 +21,10 @@ public:
 
 	std::shared_ptr<ge::gl::Shader> GetZbufferFillCS(uint32_t wgSize);
 
+	std::shared_ptr<ge::gl::Shader> GetShadowMaskVS();
+	std::shared_ptr<ge::gl::Shader> GetShadowMaskGS();
+	std::shared_ptr<ge::gl::Shader> GetShadowMaskFS();
+
 private:
 	
 };

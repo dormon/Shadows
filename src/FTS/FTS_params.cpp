@@ -8,4 +8,5 @@ void loadFtsParams(vars::Vars& vars, std::shared_ptr<argumentViewer::ArgumentVie
 	vars.addFloat("fts.args.nearZ")       = arg->getf32("--fts-nearZ", 0.1f, "Near clipping plane");
 	vars.addFloat("fts.args.farZ")        = arg->getf32("--fts-farZ", 1000.f, "Far cliping plane");
 	vars.addFloat("fts.args.fovY")        = arg->getf32("--fts-fovY", 1.5707963267948966f, "FovY");
+	vars.addFloat("fts.args.traversalBias") = arg->getf32("--fts-bias", 0.001f, "Bias when creating shadow frusta");
 }
