@@ -281,6 +281,8 @@ void FTS::create(glm::vec4 const& lightPosition,
 		return;
 	}
 
+	ifExistStamp("");
+
 	CreateShadowMaskVao();
 	CreateShadowMaskFbo();
 	CompileShaders();
@@ -291,7 +293,13 @@ void FTS::create(glm::vec4 const& lightPosition,
 	glm::mat4 const lightVP = CreateLightProjMatrix() * CreateLightViewMatrix();
 	glm::mat4 const vp = projectionMatrix * viewMatrix;
 
+	ifExistStamp("ftsSetup");
+
 	CreateIzb(vp, lightVP);
 
+	ifExistStamp("ftsCreate");
+
 	CreateShadowMask(lightVP);
+
+	ifExistStamp("ftsTraverse");
 }
