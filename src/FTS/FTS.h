@@ -18,20 +18,28 @@ public:
 private:
 	
 	void CreateSampler();
+
 	void CreateTextures();
 	void CreateHeadTex();
 	void CreateLinkedListTex();
-	void ClearTextures();
+	void CreateCounterTex();
+	void CreateMaxDepthTex();
 	void CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint32_t resY);
 
+	void ClearTextures();
+
 	void CompileShaders();
-	void CreateFillProgram();
+	void CreateIzbFillProgram();
+	void CreateZbufferFillProgram();
 	void CreateShadowMaskProgram();
 
 	void CreateIzb(glm::mat4 const& vp, glm::mat4 const& lightVP);
 	glm::mat4 CreateLightViewMatrix() const;
 	glm::mat4 CreateLightProjMatrix() const;
 	uint32_t GetNofWgsFill() const;
+
+	void InitShadowMaskZBuffer();
+	void CreateDummyVao();
 
 	void CreateShadowMask(glm::mat4 const& lightVP);
 	void CreateShadowMaskVao();

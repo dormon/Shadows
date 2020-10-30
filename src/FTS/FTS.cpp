@@ -24,25 +24,31 @@ constexpr const char* fovyParamName = "fts.args.fovY";
 constexpr const char* listTexName  = "fts.objects.listTex";
 constexpr const char* headTexName  = "fts.objects.headTex";
 constexpr const char* mutexTexName = "fts.objects.mutexTex";
+constexpr const char* counterTexName = "fts.objects.counterTex";
+constexpr const char* maxDepthTexName = "fts.objects.maxDepthTex";
 
 constexpr const char* pointSamplerName = "fts.objects.pointSampler";
 
 constexpr const char* fillProgramName = "fts.objects.fillProgram";
+constexpr const char* zbufferProgramName = "fts.objects.zbufferProgram";
 constexpr const char* shadowMaskProgrammName = "fts.objects.shadowMaskProgram";
 
 constexpr const char* fboName = "fts.objects.fboName";
 constexpr const char* depthTexName = "fts.objects.depthTex";
-constexpr const char* vaoName = "fts.objects.vao";
+constexpr const char* shadowMaskVaoName = "fts.objects.shadowMaskVao";
+constexpr const char* dummyVaoName = "fts.objects.dummyVao";
 
 constexpr const GLuint listTexFormat =  GL_R32I;
 constexpr const GLuint headTexFormat =  GL_R32I;
-
+constexpr const GLuint counterTexFormat = GL_R32UI;
+constexpr const GLuint maxDepthTexFormat = GL_R32F;
 
 FTS::FTS(vars::Vars& vars) : ShadowMethod(vars)
 {
 	IsValid = IsConservativeRasterizationSupported();
 
 	CreateSampler();
+	CreateDummyVao();
 }
 
 FTS::~FTS()
@@ -54,6 +60,8 @@ void FTS::CreateTextures()
 {
 	CreateHeadTex();
 	CreateLinkedListTex();
+	CreateCounterTex();
+	CreateMaxDepthTex();
 }
 
 void FTS::CreateSampler()
@@ -79,14 +87,37 @@ void FTS::CreateLinkedListTex()
 	CreateTexture2D(listTexName, listTexFormat, windowSize.x, windowSize.y);
 }
 
+void FTS::CreateCounterTex()
+{
+	FUNCTION_PROLOGUE("fts.objects", resolutionParamName, "renderModel");
+
+	glm::uvec2 const lightRes = GetLightResolution();
+	CreateTexture2D(counterTexName, counterTexFormat, lightRes.x, lightRes.y);
+}
+
+void FTS::CreateMaxDepthTex()
+{
+	FUNCTION_PROLOGUE("fts.objects", resolutionParamName, "renderModel");
+
+	glm::uvec2 const lightRes = GetLightResolution();
+	CreateTexture2D(maxDepthTexName, maxDepthTexFormat, lightRes.x, lightRes.y);
+}
+
 void FTS::ClearTextures()
 {
+	assert(glGetError() == GL_NO_ERROR);
+
 	int const clearVal = -1;
 	vars.get<Texture>(listTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
 	vars.get<Texture>(headTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
 
 	float const val = 1.f;
 	vars.get<Texture>("shadowMask")->clear(0, GL_RED, GL_FLOAT, &val);
+
+	vars.get<Texture>(counterTexName)->clear(0, GL_RED_INTEGER, GL_INT);
+	vars.get<Texture>(maxDepthTexName)->clear(0, GL_RED, GL_FLOAT);
+
+	assert(glGetError() == GL_NO_ERROR);
 }
 
 void FTS::CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint32_t resY)
@@ -96,17 +127,26 @@ void FTS::CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint
 
 void FTS::CompileShaders()
 {
-	CreateFillProgram();
+	CreateIzbFillProgram();
+	CreateZbufferFillProgram();
 	CreateShadowMaskProgram();
 }
 
-void FTS::CreateFillProgram()
+void FTS::CreateIzbFillProgram()
 {
 	FUNCTION_PROLOGUE("fts.objects", wgsizeParamName);
 	FtsShaderGen gen;
 
 	uint32_t const wgSize = vars.getUint32(wgsizeParamName);
-	vars.reCreate<Program>(fillProgramName, gen.GetZbufferFillCS(wgSize));
+	vars.reCreate<Program>(fillProgramName, gen.GetIzbFillCS(wgSize));
+}
+
+void FTS::CreateZbufferFillProgram()
+{
+	FUNCTION_PROLOGUE("fts.objects");
+
+	FtsShaderGen gen;
+	vars.reCreate<Program>(zbufferProgramName, gen.GetZBufferFillVS(), gen.GetZBufferFillFS());
 }
 
 void FTS::CreateShadowMaskProgram()
@@ -125,6 +165,8 @@ void FTS::CreateIzb(glm::mat4 const& vp, glm::mat4 const& lightVP)
 
 	Texture* headTex  = vars.get<Texture>(headTexName);
 	Texture* listTex  = vars.get<Texture>(listTexName);
+	Texture* counterTex = vars.get<Texture>(counterTexName);
+	Texture* maxDepthTex = vars.get<Texture>(maxDepthTexName);
 
 	assert(program != nullptr);
 
@@ -132,25 +174,32 @@ void FTS::CreateIzb(glm::mat4 const& vp, glm::mat4 const& lightVP)
 
 	glm::uvec2 const screenRes = GetWindowSize();
 	glm::uvec2 const lightRes = GetLightResolution();
+	glm::vec3 const lightPos = glm::vec3(*vars.get<glm::vec4>("lightPosition"));
 
 	program->setMatrix4fv("lightVP", glm::value_ptr(lightVP));
 	program->set2uiv("screenResolution", glm::value_ptr(screenRes));
 	program->set2uiv("lightResolution", glm::value_ptr(lightRes));
+	program->set3fv("lightPos", glm::value_ptr(lightPos));
 
 	headTex->bindImage(0, 0, headTexFormat, GL_READ_WRITE);
 	listTex->bindImage(1, 0, listTexFormat, GL_READ_WRITE);
+	counterTex->bindImage(2, 0, counterTexFormat, GL_WRITE_ONLY);
+	maxDepthTex->bindImage(3, 0, maxDepthTexFormat, GL_READ_WRITE);
 
 	vars.get<GBuffer>("gBuffer")->position->bind(0);
-	vars.get<Sampler>(pointSamplerName)->bind(0);
+	vars.get<GBuffer>("gBuffer")->normal->bind(1);
 
 	uint32_t const nofWgs = GetNofWgsFill();
 
 	glDispatchCompute(nofWgs, 1, 1);
 
 	vars.get<GBuffer>("gBuffer")->position->unbind(0);
-	
+	vars.get<GBuffer>("gBuffer")->normal->unbind(1);
+
 	headTex->unbind(0);
 	listTex->unbind(1);
+	counterTex->unbind(2);
+	maxDepthTex->unbind(3);
 
 	assert(glGetError() == GL_NO_ERROR);
 }
@@ -182,13 +231,50 @@ uint32_t FTS::GetNofWgsFill() const
 	return (nofPixels / wgSize) + 1;
 }
 
+//-----------------Early Z optimization----------
+
+void FTS::CreateDummyVao()
+{
+	vars.reCreate<VertexArray>(dummyVaoName);
+}
+
+void FTS::InitShadowMaskZBuffer()
+{
+	assert(glGetError() == GL_NO_ERROR);
+	
+	glm::uvec2 const lightRes = GetLightResolution();
+
+	Framebuffer* fbo = vars.get<Framebuffer>(fboName);
+	Program* program = vars.get<Program>(zbufferProgramName);
+	Texture* maxDepthTex = vars.get<Texture>(maxDepthTexName);
+	VertexArray* dummyVao = vars.get<VertexArray>(dummyVaoName);
+
+	fbo->bind();
+	glViewport(0, 0, lightRes.x, lightRes.y);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	program->use();
+	maxDepthTex->bind(0);
+
+	dummyVao->bind();
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	
+	maxDepthTex->unbind(0);
+	dummyVao->unbind();
+	fbo->unbind();
+
+	assert(glGetError() == GL_NO_ERROR);
+}
+
+
 //-----------------Shadow Mask-------------------
 
 void FTS::CreateShadowMaskVao()
 {
 	FUNCTION_PROLOGUE("fts.objects", "renderModel");
 
-	VertexArray* vao = vars.reCreate<VertexArray>(vaoName);
+	VertexArray* vao = vars.reCreate<VertexArray>(shadowMaskVaoName);
 	vao->addAttrib(vars.get<RenderModel>("renderModel")->vertices, 0, 3, GL_FLOAT);
 }
 
@@ -216,17 +302,13 @@ void FTS::CreateShadowMask(glm::mat4 const& lightVP)
 
 	fbo->bind();
 	glViewport(0, 0, lightRes.x, lightRes.y);
-	{
-		//TODO - presunut kvoli depth optimalizacii
-		glClear(GL_DEPTH_BUFFER_BIT);
-	}
 
 	Texture* headTex = vars.get<Texture>(headTexName);
 	Texture* listTex = vars.get<Texture>(listTexName);
 	std::shared_ptr<Texture> posTex = vars.get<GBuffer>("gBuffer")->position;
 	Texture* shadowMask = vars.get<Texture>("shadowMask");
 
-	VertexArray* vao = vars.get<VertexArray>(vaoName);
+	VertexArray* vao = vars.get<VertexArray>(shadowMaskVaoName);
 
 	Program* prog = vars.get<Program>(shadowMaskProgrammName);
 	prog->setMatrix4fv("lightVP", glm::value_ptr(lightVP));
@@ -235,11 +317,12 @@ void FTS::CreateShadowMask(glm::mat4 const& lightVP)
 	prog->set2uiv("screenResolution", glm::value_ptr(screenRes));
 	prog->use();
 
-	headTex->bind(0);
-	listTex->bind(1);
-	posTex->bind(2);
-	shadowMask->bindImage(0);
+	headTex->bindImage(0);
+	listTex->bindImage(1);
+	shadowMask->bindImage(2);
 
+	posTex->bind(0);
+	
 	vao->bind();
 
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -248,8 +331,9 @@ void FTS::CreateShadowMask(glm::mat4 const& lightVP)
 
 	headTex->unbind(0);
 	listTex->unbind(1);
-	posTex->unbind(2);
-	shadowMask->unbind(0);
+	shadowMask->unbind(2);
+
+	posTex->unbind(0);
 
 	vao->unbind();
 	fbo->unbind();
@@ -293,13 +377,18 @@ void FTS::create(glm::vec4 const& lightPosition,
 	glm::mat4 const lightVP = CreateLightProjMatrix() * CreateLightViewMatrix();
 	glm::mat4 const vp = projectionMatrix * viewMatrix;
 
-	ifExistStamp("ftsSetup");
+	//ifExistStamp("ftsSetup");
 
 	CreateIzb(vp, lightVP);
 
-	ifExistStamp("ftsCreate");
+	//ifExistStamp("ftsCreate");
+
+	InitShadowMaskZBuffer();
+
+	//ifExistStamp("ftsZFill");
 
 	CreateShadowMask(lightVP);
 
-	ifExistStamp("ftsTraverse");
+	//ifExistStamp("ftsTraverse");
+	ifExistStamp("fts");
 }

@@ -9,20 +9,26 @@
 using namespace ge;
 using namespace gl;
 
+
+// IZB Fill
 std::string fillCsSource = R".(
 
 #define HEAD_POINTER_INVALID (-1)
 
-layout(local_size_x = WG_SIZE) in;
+layout(local_size_x = 128) in;
 
-layout (binding = 0, r32i)  uniform coherent iimage2D head;
-layout (binding = 1, r32i)  uniform coherent iimage2D list;
+layout (binding = 0, r32i) uniform coherent iimage2D head;
+layout (binding = 1, r32i) uniform coherent iimage2D list;
+layout (binding = 2, r32ui) uniform coherent uimage2D counter;
+layout (binding = 3, r32ui) uniform coherent uimage2D maxDepth;
 
 uniform uvec2 screenResolution;
 uniform uvec2 lightResolution;
 uniform mat4  lightVP;
+uniform vec3 lightPos;
 
-uniform sampler2D posTexture;
+layout(binding=0) uniform sampler2D posTexture;
+layout(binding=1) uniform sampler2D normalTexture;
 
 void main()
 {
@@ -36,8 +42,12 @@ void main()
 	
 	//Read the position sample
 	vec4 worldFragPos = texelFetch(posTexture, coords, 0);
+	vec3 worldNormal = texelFetch(normalTexture, coords, 0).xyz;
 	
-	if(worldFragPos.w == 0.f)
+	const float NdL = dot(worldNormal, normalize(lightPos - worldFragPos.xyz));
+	
+	// Early N dot L reject - this fragment is shadowed by lighting implicitly
+	if(worldFragPos.w == 0.f || NdL < 0)
 	{
 		return;
 	}
@@ -55,10 +65,11 @@ void main()
 		
 		//... to light space coords
 		const ivec2 lightSpaceCoords = ivec2(lightFragPos.xy* lightResolution);
-		
 		const int pos = int(coords.x + screenResolution.x * coords.y);
 
 		const int previousHead = imageAtomicExchange(head, lightSpaceCoords, pos);
+		imageAtomicMax(maxDepth, lightSpaceCoords, floatBitsToUint(lightFragPos.z));
+		imageAtomicAdd(counter, lightSpaceCoords, 1u);
 		memoryBarrier();
 
 		//Store previous ptr to current head
@@ -67,6 +78,31 @@ void main()
 }
 ).";
 
+//ZBuffer optimization
+const char* vsZFill = R".(
+#version 450 core
+
+void main()
+{
+	gl_Position = vec4(-1+2*(gl_VertexID/2),-1+2*(gl_VertexID%2),0,1);
+}
+).";
+
+const char* fsZFill = R".(
+#version 450 core
+
+layout(binding=0) uniform sampler2D maxDepth;
+
+void main()
+{
+	const ivec2 coords = ivec2(gl_FragCoord.xy);
+	float depth = texelFetch(maxDepth, coords, 0).x;
+
+	gl_FragDepth = depth;
+}
+).";
+
+// Shadow mask
 const char* vsShadowMask = R".(
 #version 450 core
 
@@ -161,11 +197,11 @@ void main()
 const char* fsShadowMask = R".(
 #version 450 core
 
-layout(binding=0) uniform isampler2D head; //in light space
-layout(binding=1) uniform isampler2D list; //in scren space
-layout(binding=2) uniform sampler2D  positions; //in screen space
+layout(binding=0, r32i) uniform iimage2D head; //in light space
+layout(binding=1, r32i) uniform iimage2D list; //in scren space
+layout(binding=2, r32f) uniform writeonly image2D shadowMask; //in screen space
 
-layout (binding = 0, r32f) uniform writeonly image2D shadowMask; //in screen space
+layout(binding=0) uniform sampler2D  positions; //in screen space
 
 in flat vec4 plane0;
 in flat vec4 plane1;
@@ -183,39 +219,66 @@ void main()
 {
 	//Acquire head
 	const ivec2 lighSpaceCoords = ivec2(gl_FragCoord.xy);
-    int currentFragPos = texelFetch(head, lighSpaceCoords, 0).x;
-	
+    int currentFragPos = imageLoad(head, lighSpaceCoords).x;//texelFetch(head, lighSpaceCoords, 0).x;
+	int previousFragPos = -1;
+	ivec2 previousScreenCoords = ivec2(-1, -1);	
+
 	while(currentFragPos >=0)
 	{
 		const ivec2 screenSpaceCoords = ivec2(currentFragPos % screenResolution.x, currentFragPos / screenResolution.x);
 		const vec3 pos = texelFetch(positions, screenSpaceCoords, 0).xyz;
 		const bool isInsideFrustum = isPointInside(vec4(pos, 1), plane0, plane1, plane2, plane3);
+		
+		const int nextFragPos = imageLoad(list, screenSpaceCoords).x;//texelFetch(list, screenSpaceCoords, 0).x;
 
         if(isInsideFrustum)
         {
             imageStore(shadowMask, screenSpaceCoords, vec4(0.f, 0, 0, 1));
+
+			//Optimization - remove the node from the list
+			//Store nextPtr to parent
+			if(previousFragPos < 0)
+			{
+				imageStore(head, lighSpaceCoords, ivec4(nextFragPos, 0, 0, 0));
+			}
+			else
+			{
+				imageStore(list, previousScreenCoords, ivec4(nextFragPos, 0, 0, 0));
+			}
         }
 		
 		//Get next pos
-		currentFragPos = texelFetch(list, screenSpaceCoords, 0).x;
+		previousFragPos = currentFragPos;
+		previousScreenCoords = screenSpaceCoords;
+		currentFragPos = nextFragPos;
 	}
 }
 ).";
 
-std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetZbufferFillCS(uint32_t wgSize)
+std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetIzbFillCS(uint32_t wgSize)
 {
 	/*
-	std::ifstream t1("C:\\Users\\Jofo\\Desktop\\FTS_FillShader.glsl");
+	std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\FTS_FillShader.glsl");
 	std::string program((std::istreambuf_iterator<char>(t1)), std::istreambuf_iterator<char>());
 	return std::make_shared<Shader>(GL_COMPUTE_SHADER, program);
 	//*/
 
-
+	
 	return std::make_shared<Shader>(GL_COMPUTE_SHADER, 
 		"#version 450 core\n",
 		Shader::define("WG_SIZE", wgSize),
 		fillCsSource);
 	//*/
+}
+
+std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetZBufferFillVS()
+{
+	return std::make_shared<Shader>(GL_VERTEX_SHADER, vsZFill);
+}
+
+std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetZBufferFillFS()
+{
+	return std::make_shared<Shader>(GL_FRAGMENT_SHADER, fsZFill);
 }
 
 std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetShadowMaskVS()

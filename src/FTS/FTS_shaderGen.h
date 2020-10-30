@@ -19,7 +19,10 @@ class FtsShaderGen
 {
 public:
 
-	std::shared_ptr<ge::gl::Shader> GetZbufferFillCS(uint32_t wgSize);
+	std::shared_ptr<ge::gl::Shader> GetIzbFillCS(uint32_t wgSize);
+
+	std::shared_ptr<ge::gl::Shader> GetZBufferFillVS();
+	std::shared_ptr<ge::gl::Shader> GetZBufferFillFS();
 
 	std::shared_ptr<ge::gl::Shader> GetShadowMaskVS();
 	std::shared_ptr<ge::gl::Shader> GetShadowMaskGS();
