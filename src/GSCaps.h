@@ -6,7 +6,7 @@
 
 #include <glm/glm.hpp>
 
-#include <Vars/Vars.h>
+#include <Vars/Fwd.h>
 
 class Adjacency;
 

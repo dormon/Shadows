@@ -1,5 +1,7 @@
 #include <OFTS.h>
 
+#include <Vars/Vars.h>
+
 OFTS::~OFTS()
 {
 	vars.erase("ofts.objects");

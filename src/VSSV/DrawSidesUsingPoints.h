@@ -2,7 +2,7 @@
 
 #include <VSSV/DrawSides.h>
 #include <geGL/geGL.h>
-#include <Vars/Vars.h>
+#include <Vars/Fwd.h>
 
 class Adjacency;
 class DrawSidesUsingPoints: public DrawSides{

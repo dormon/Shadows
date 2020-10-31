@@ -2,7 +2,7 @@
 
 #include<ShadowMethod.h>
 
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 
 class RayTracing: public ShadowMethod{
   public:

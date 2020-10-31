@@ -4,6 +4,8 @@
 #include<Model.h>
 #include<Barrier.h>
 
+#include <Vars/Vars.h>
+
 using namespace std;
 using namespace ge::gl;
 

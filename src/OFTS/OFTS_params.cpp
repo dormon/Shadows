@@ -1,5 +1,6 @@
 #include <OFTS_params.h>
 #include <ArgumentViewer/ArgumentViewer.h>
+#include <Vars/Vars.h>
 
 void loadOftsParams(vars::Vars& vars, std::shared_ptr<argumentViewer::ArgumentViewer>const& arg)
 {

@@ -151,7 +151,7 @@ void drawSVSides(vars::Vars&vars){
   ge::gl::glEnable(GL_BLEND);
   ge::gl::glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
-  glDrawArrays(GL_POINTS,0,nofEdges);
+  glDrawArrays(GL_POINTS,0, GLsizei(nofEdges));
   ge::gl::glDisable(GL_BLEND);
   ge::gl::glDisable(GL_DEPTH_TEST);
 

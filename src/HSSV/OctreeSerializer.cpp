@@ -7,6 +7,9 @@
 #include <sstream>
 #include <functional>
 
+//"fopen might be unsafe" warning
+#pragma warning(disable : 4996)
+
 std::string OctreeSerializer::GenerateFileName(SerializerData const& data) const
 {
 	size_t const hashedParams = HashParams(data);

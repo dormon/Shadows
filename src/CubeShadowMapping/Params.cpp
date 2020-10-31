@@ -1,6 +1,6 @@
 #include<CubeShadowMapping/Params.h>
-
 #include<ArgumentViewer/ArgumentViewer.h>
+#include <Vars/Vars.h>
 
 void loadCubeShadowMappingParams(
     vars::Vars&vars,

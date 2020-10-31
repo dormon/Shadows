@@ -1,6 +1,7 @@
 #include <VSSV/DrawSides.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <geGL/StaticCalls.h>
+#include <Vars/Vars.h>
 
 using namespace ge::gl;
 using namespace glm;

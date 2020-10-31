@@ -3,7 +3,7 @@
 #include<cstdint>
 #include<memory>
 #include<ArgumentViewer/Fwd.h>
-#include<Vars/Vars.h>
+#include <Vars/Fwd.h>
 
 void loadSintornParams(
     vars::Vars&vars,

@@ -1,5 +1,6 @@
 #include<VSSV/Params.h>
 #include<ArgumentViewer/ArgumentViewer.h>
+#include <Vars/Vars.h>
 
 void loadVSSVParams(
     vars::Vars &vars,

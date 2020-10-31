@@ -1,13 +1,11 @@
 #pragma once
 
-#pragma once
-
 #include<geGL/geGL.h>
 #include<glm/glm.hpp>
 #include<ShadowVolumes.h>
 #include<Model.h>
 #include<TimeStamp.h>
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 
 struct CSSVSOEParams{
   size_t computeSidesWGS = 64   ;

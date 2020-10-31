@@ -1,8 +1,9 @@
-#include<VSSV/DrawCaps.h>
-#include<geGL/StaticCalls.h>
+#include <VSSV/DrawCaps.h>
+#include <geGL/StaticCalls.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <FastAdjacency.h>
 #include <Simplex.h>
+#include <Vars/Vars.h>
 
 using namespace ge::gl;
 using namespace std;

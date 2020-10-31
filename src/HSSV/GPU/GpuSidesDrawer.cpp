@@ -3,6 +3,7 @@
 #include <Octree.h>
 #include <AdjacencyWrapper.h>
 #include <MathOps.h>
+#include <Vars/Vars.h>
 
 #include <FastAdjacency.h>
 #include <FunctionPrologue.h>

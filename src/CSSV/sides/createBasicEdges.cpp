@@ -15,7 +15,7 @@ void cssv::sides::createBasicEdges(vars::Vars&vars){
   for(size_t e=0;e<adj->getNofEdges();++e){
     for(int i=0;i<3;++i)
       dst[e*(nV*4)+0*4+i] = verts[adj->getEdgeVertexA(e)+i];
-    dst[e*(nV*4)+0*4+3] = adj->getNofOpposite(e);
+    dst[e*(nV*4)+0*4+3] = float(adj->getNofOpposite(e));
 
     for(int i=0;i<3;++i)
       dst[e*(nV*4)+1*4+i] = verts[adj->getEdgeVertexB(e)+i];
@@ -27,7 +27,7 @@ void cssv::sides::createBasicEdges(vars::Vars&vars){
       dst[e*(nV*4)+(2+o)*4+3] = 1;
     }
 
-    for(uint32_t o=adj->getNofOpposite(e);o<adj->getMaxMultiplicity();++o){
+    for(uint32_t o=uint32_t(adj->getNofOpposite(e));o<adj->getMaxMultiplicity();++o){
       for(int i=0;i<4;++i)
         dst[e*(nV*4)+(2+o)*4+i] = 0;
     }

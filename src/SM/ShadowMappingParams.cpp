@@ -1,6 +1,6 @@
 #include<CubeShadowMapping/Params.h>
-
 #include<ArgumentViewer/ArgumentViewer.h>
+#include<Vars/Vars.h>
 
 void loadShadowMappingParams( vars::Vars& vars, std::shared_ptr<argumentViewer::ArgumentViewer>const& arg) 
 {

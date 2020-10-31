@@ -2,8 +2,8 @@
 #include <BasicCamera/OrbitCamera.h>
 #include <BasicCamera/PerspectiveCamera.h>
 #include <CameraParam.h>
-
-#include<Barrier.h>
+#include <Vars/Vars.h>
+#include <Barrier.h>
 
 void createProjection(vars::Vars& vars) {
   if(notChanged(vars,"all",__FUNCTION__,{"args.camera.fovy","args.camera.near","args.camera.far","windowSize"}))return;

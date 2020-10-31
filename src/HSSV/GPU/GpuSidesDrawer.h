@@ -6,7 +6,7 @@
 #include <geGL/Program.h>
 #include <geGL/VertexArray.h>
 
-#include<Vars/Vars.h>
+#include <Vars/Fwd.h>
 
 class Adjacency;
 struct SidesGenShaderParams;

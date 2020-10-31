@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Vars/Vars.h>
+#include <Vars/Fwd.h>
 
 namespace rssv{
 void computeConfig(vars::Vars&vars);

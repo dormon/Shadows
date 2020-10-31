@@ -1,4 +1,6 @@
-#include<ShadowMethod.h>
+#include <ShadowMethod.h>
+#include <Vars/Vars.h>
+#include <TimeStamp.h>
 
 ShadowMethod::ShadowMethod(vars::Vars&vars):vars(vars){}
 

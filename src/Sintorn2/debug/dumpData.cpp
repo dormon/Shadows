@@ -294,7 +294,7 @@ void dumpTraverse(vars::Vars&vars){
   };
 
   auto const pushOne = [&](uint32_t l,std::map<uint32_t,std::vector<uint32_t>>const&w){
-    if(w.count(l))pushDIP(w.at(l).size());
+    if(w.count(l))pushDIP(uint32_t(w.at(l).size()));
     else          pushEmpty();
   };
 

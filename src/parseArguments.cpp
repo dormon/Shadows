@@ -38,7 +38,7 @@ void parseArguments(vars::Vars&vars){
   loadTSSVParams                (vars,arg);
   loadShadowMappingParams       (vars,arg);
   loadDpmParams                 (vars,arg);
-  loadOftsParams                (vars,arg);
+  loadOdpmParams                (vars,arg);
   loadDpsvParams                (vars,arg);
   loadHssvParams                (vars,arg);
   sintorn2::loadParams          (vars,arg);

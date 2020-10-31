@@ -1,6 +1,6 @@
 #pragma once
 
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 #include<geGL/geGL.h>
 #include<glm/glm.hpp>
 

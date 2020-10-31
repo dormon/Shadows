@@ -1,5 +1,5 @@
 #include <VSSV/DrawSidesUsingAllPlanes.h>
-
+#include <Vars/Vars.h>
 #include <geGL/StaticCalls.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <FastAdjacency.h>

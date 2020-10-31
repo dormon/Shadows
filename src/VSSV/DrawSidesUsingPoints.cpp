@@ -3,6 +3,7 @@
 #include <Simplex.h>
 #include <FastAdjacency.h>
 #include <geGL/StaticCalls.h>
+#include <Vars/Vars.h>
 
 using namespace ge::gl;
 using namespace glm;

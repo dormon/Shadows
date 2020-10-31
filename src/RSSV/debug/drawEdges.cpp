@@ -114,7 +114,7 @@ void drawEdges(vars::Vars&vars){
     ->setMatrix4fv("proj"         ,glm::value_ptr(proj    ))
     ;
 
-  glDrawArrays(GL_POINTS,0,nofEdges);
+  glDrawArrays(GL_POINTS,0, GLsizei(nofEdges));
 
   vao->unbind();
 

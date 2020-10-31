@@ -1,5 +1,7 @@
 #include <Barrier.h>
 #include <Vars/Resource.h>
+#include <Vars/Vars.h>
+
 #include <stdexcept>
 
 using namespace std;
