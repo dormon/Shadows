@@ -17,36 +17,46 @@ public:
 
 private:
 	
-	void CreateSampler();
-
 	void CreateTextures();
+	void CreateHeatMap();
 	void CreateHeadTex();
 	void CreateLinkedListTex();
-	void CreateCounterTex();
 	void CreateMaxDepthTex();
 	void CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint32_t resY);
 
 	void ClearTextures();
 
+	void CreateBuffers();
+	void CreateMatrixBuffer();
+
 	void CompileShaders();
+	void CreateHeatmapProgram();
+	void CreateMatrixProgram();
 	void CreateIzbFillProgram();
 	void CreateZbufferFillProgram();
 	void CreateShadowMaskProgram();
 
-	void CreateIzb(glm::mat4 const& vp, glm::mat4 const& lightVP);
-	glm::mat4 CreateLightViewMatrix() const;
-	glm::mat4 CreateLightProjMatrix() const;
+	void ComputeHeatMap(glm::mat4 const& lightVP);
+
+	void ComputeViewProjectionMatrix();
+	glm::vec4 GetLightFrustumNearParams() const;
+
+	void ComputeIzb(glm::mat4 const& vp, glm::mat4 const& lightV);
+
 	uint32_t GetNofWgsFill() const;
 
 	void InitShadowMaskZBuffer();
 	void CreateDummyVao();
 
-	void CreateShadowMask(glm::mat4 const& lightVP);
+	void FillShadowMask(glm::mat4 const& lightV);
 	void CreateShadowMaskVao();
 	void CreateShadowMaskFbo();
 
 	glm::uvec2 GetWindowSize() const;
 	glm::uvec2 GetLightResolution() const;
+
+	glm::mat4 CreateLightViewMatrix() const;
+	glm::mat4 CreateLightProjMatrix() const;
 
 private:
 

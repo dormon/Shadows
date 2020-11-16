@@ -19,6 +19,10 @@ class FtsShaderGen
 {
 public:
 
+	std::shared_ptr<ge::gl::Shader> GetHeatmapCS(uint32_t wgSize);
+
+	std::shared_ptr<ge::gl::Shader> GetMatrixCS();
+
 	std::shared_ptr<ge::gl::Shader> GetIzbFillCS(uint32_t wgSize);
 
 	std::shared_ptr<ge::gl::Shader> GetZBufferFillVS();
