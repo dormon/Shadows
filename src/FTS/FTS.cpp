@@ -194,6 +194,7 @@ void FTS::ComputeHeatMap(glm::mat4 const& lightVP)
 
 	Program* program = vars.get<Program>(heatmapProgramName);
 	Texture* heatMap = vars.get<Texture>(heatmapTexName);
+	Texture* shadowMask = vars.get<Texture>("shadowMask");
 
 	glm::uvec2 const screenRes = GetWindowSize();
 	glm::uvec2 const lightRes = GetLightResolution();
@@ -207,12 +208,14 @@ void FTS::ComputeHeatMap(glm::mat4 const& lightVP)
 	program->set2uiv("lightResolution", glm::value_ptr(lightRes));
 
 	heatMap->bindImage(0);
+	shadowMask->bindImage(1);
 	vars.get<GBuffer>("gBuffer")->position->bind(0);
 	vars.get<GBuffer>("gBuffer")->normal->bind(1);
 
 	glDispatchCompute(nofWgs, 1, 1);
 	
 	heatMap->unbind(0);
+	shadowMask->unbind(1);
 	vars.get<GBuffer>("gBuffer")->position->unbind(0);
 	vars.get<GBuffer>("gBuffer")->normal->unbind(1);
 

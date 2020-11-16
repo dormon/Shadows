@@ -14,6 +14,7 @@ std::string const heatmapShaderSource = R".(
 layout(local_size_x = WG_SIZE) in;
 
 layout(binding = 0, r32ui) uniform coherent uimage2D heatMap;
+layout(binding = 1, r32f)  uniform writeonly image2D shadowMask;
 
 layout(binding=0) uniform sampler2D posTexture;
 layout(binding=1) uniform sampler2D normalTexture;
@@ -54,7 +55,7 @@ void main()
 	// If inside light frustum, add the fragment to the list
 	const float w = lightProjPos.w;
 	const bool isInsideFrustum = lightProjPos.x <= w && lightProjPos.x >= -w && lightProjPos.y <= w && lightProjPos.y >=-w && lightProjPos.z <= w && lightProjPos.z >= -w;
-	hasValidSample = hasValidSample && isInsideFrustum;
+	const bool isValidVisible = hasValidSample && isInsideFrustum;
 	
 	//... to texture space
 	lightProjPos /= w;
@@ -64,9 +65,14 @@ void main()
 	const ivec2 lightSpaceCoords = ivec2(lightProjPos.xy * lightResolution);
 	
 	//Add to heat map if valid
-	if(hasValidSample)
+	if(isValidVisible)
     {
 		imageAtomicAdd(heatMap, lightSpaceCoords, 1u);
+	}
+	
+	if(hasValidSample && (!isInsideFrustum))
+	{
+		imageStore(shadowMask, coords, vec4(0));
 	}
 }
 ).";
