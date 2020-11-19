@@ -14,7 +14,10 @@ std::string const heatmapShaderSource = R".(
 layout(local_size_x = WG_SIZE) in;
 
 layout(binding = 0, r32ui) uniform coherent uimage2D heatMap;
+
+#ifdef SHADOW_OUTSIDE_FRUSTUM
 layout(binding = 1, r32f)  uniform writeonly image2D shadowMask;
+#endif
 
 layout(binding=0) uniform sampler2D posTexture;
 layout(binding=1) uniform sampler2D normalTexture;
@@ -69,11 +72,12 @@ void main()
     {
 		imageAtomicAdd(heatMap, lightSpaceCoords, 1u);
 	}
-	
+#ifdef SHADOW_OUTSIDE_FRUSTUM
 	if(hasValidSample && (!isInsideFrustum))
 	{
 		imageStore(shadowMask, coords, vec4(0));
 	}
+#endif
 }
 ).";
 
@@ -528,7 +532,7 @@ void main()
 }
 ).";
 
-std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetHeatmapCS(uint32_t wgSize)
+std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetHeatmapCS(uint32_t wgSize, bool isOmnidirectional)
 {
 	/*
 	std::ifstream t1("C:\\Users\\ikobrtek\\Desktop\\FTS_HeatmapShader.glsl");
@@ -540,6 +544,7 @@ std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetHeatmapCS(uint32_t wgSize)
 	return std::make_shared<Shader>(GL_COMPUTE_SHADER,
 		"#version 450 core\n",
 		Shader::define("WG_SIZE", wgSize),
+		isOmnidirectional ? "" : Shader::define("SHADOW_OUTSIDE_FRUSTUM"),
 		heatmapShaderSource
 		);
 	//*/

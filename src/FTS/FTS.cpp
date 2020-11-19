@@ -50,9 +50,7 @@ constexpr const GLuint maxDepthTexFormat = GL_R32F;
 
 FTS::FTS(vars::Vars& vars) : ShadowMethod(vars)
 {
-	IsValid = IsConservativeRasterizationSupported();
-
-	CreateDummyVao();
+	isValid = IsConservativeRasterizationSupported();
 }
 
 FTS::~FTS()
@@ -109,15 +107,18 @@ void FTS::ClearTextures()
 	vars.get<Texture>(listTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
 	vars.get<Texture>(headTexName)->clear( 0, GL_RED_INTEGER, GL_INT, &clearVal);
 
-	//1
-	float const val = 1.f;
-	vars.get<Texture>("shadowMask")->clear(0, GL_RED, GL_FLOAT, &val);
 	//0
 	vars.get<Texture>(maxDepthTexName)->clear(0, GL_RED, GL_FLOAT);
 
 	vars.get<Texture>(heatmapTexName)->clear(0, GL_RED_INTEGER, GL_INT);
 
 	assert(glGetError() == GL_NO_ERROR);
+}
+
+void FTS::ClearShadowMask()
+{
+	float const val = 1.f;
+	vars.get<Texture>("shadowMask")->clear(0, GL_RED, GL_FLOAT, &val);
 }
 
 void FTS::CreateBuffers()
@@ -142,22 +143,22 @@ void FTS::CreateTexture2DArray(char const* name, uint32_t format, uint32_t resX,
 	vars.reCreate<Texture>(name, GL_TEXTURE_2D_ARRAY, format, 1, resX, resY, depth);
 }
 
-void FTS::CompileShaders()
+void FTS::CompileShaders(bool isOmnidirectional)
 {
-	CreateHeatmapProgram();
+	CreateHeatmapProgram(isOmnidirectional);
 	CreateMatrixProgram();
 	CreateIzbFillProgram();
 	CreateZbufferFillProgram();
 	CreateShadowMaskProgram();
 }
 
-void FTS::CreateHeatmapProgram()
+void FTS::CreateHeatmapProgram(bool isOmnidirectional)
 {
 	FUNCTION_PROLOGUE("fts.objects", wgsizeParamName);
 	FtsShaderGen gen;
 
 	uint32_t const wgSize = vars.getUint32(wgsizeParamName);
-	vars.reCreate<Program>(heatmapProgramName, gen.GetHeatmapCS(wgSize));
+	vars.reCreate<Program>(heatmapProgramName, gen.GetHeatmapCS(wgSize, isOmnidirectional));
 }
 
 void FTS::CreateMatrixProgram()
@@ -356,6 +357,7 @@ uint32_t FTS::GetNofWgsFill() const
 
 void FTS::CreateDummyVao()
 {
+	FUNCTION_PROLOGUE("fts.objects", "renderModel");
 	vars.reCreate<VertexArray>(dummyVaoName);
 }
 
@@ -502,13 +504,14 @@ void FTS::create(glm::vec4 const& lightPosition,
 	glm::mat4 const& viewMatrix,
 	glm::mat4 const& projectionMatrix)
 {
-	if(!IsValid)
+	if(!IsValid())
 	{
 		return;
 	}
 
 	ifExistStamp("");
 
+	CreateDummyVao();
 	CreateShadowMaskVao();
 	CreateShadowMaskFbo();
 	CompileShaders();
@@ -516,6 +519,7 @@ void FTS::create(glm::vec4 const& lightPosition,
 	CreateBuffers();
 
 	ClearTextures();
+	ClearShadowMask();
 
 	glm::mat4 const lightV = CreateLightViewMatrix();
 	glm::mat4 const lightP = CreateLightProjMatrix();

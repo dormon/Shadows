@@ -19,7 +19,7 @@ class FtsShaderGen
 {
 public:
 
-	std::shared_ptr<ge::gl::Shader> GetHeatmapCS(uint32_t wgSize);
+	std::shared_ptr<ge::gl::Shader> GetHeatmapCS(uint32_t wgSize, bool isOmnidirectional = false);
 
 	std::shared_ptr<ge::gl::Shader> GetMatrixCS();
 

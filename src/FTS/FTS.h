@@ -15,8 +15,9 @@ public:
 		glm::mat4 const& viewMatrix,
 		glm::mat4 const& projectionMatrix) override;
 
-private:
-	
+protected:
+	bool IsValid() const { return isValid; }
+
 	void CreateTextures();
 	void CreateHeatMap();
 	void CreateHeadTex();
@@ -27,12 +28,13 @@ private:
 	void CreateTexture2DArray(char const* name, uint32_t format, uint32_t resX, uint32_t resY, uint32_t depth);
 
 	void ClearTextures();
+	void ClearShadowMask();
 
 	void CreateBuffers();
 	void CreateMatrixBuffer();
 
-	void CompileShaders();
-	void CreateHeatmapProgram();
+	void CompileShaders(bool isOmnidirectional = false);
+	void CreateHeatmapProgram(bool isOmnidirectional);
 	void CreateMatrixProgram();
 	void CreateIzbFillProgram();
 	void CreateZbufferFillProgram();
@@ -63,5 +65,5 @@ private:
 
 private:
 
-	bool IsValid = false;
+	bool isValid = false;
 };
