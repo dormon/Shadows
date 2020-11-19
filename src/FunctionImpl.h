@@ -6,6 +6,7 @@
 #include<array>
 #include<map>
 #include<array>
+#include<memory>
 
 struct UniquePinData{
   size_t cardinality = 0;

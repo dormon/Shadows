@@ -1,6 +1,7 @@
 #include <ShadowMethod.h>
 #include <Vars/Vars.h>
 #include <TimeStamp.h>
+#include <cstring>
 
 ShadowMethod::ShadowMethod(vars::Vars&vars):vars(vars){}
 
@@ -78,7 +79,7 @@ bool ShadowMethod::IsConservativeRasterizationSupported() const
 	{
 		const char* ccc = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
 
-		if (strcmp(ccc, "GL_NV_conservative_raster") == 0)
+		if (std::strcmp(ccc, "GL_NV_conservative_raster") == 0)
 		{
 			return true;
 		}
