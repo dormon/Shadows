@@ -1,6 +1,7 @@
 #include<Sintorn/Param.h>
 #include<ArgumentViewer/ArgumentViewer.h>
 #include<Vars/Caller.h>
+#include<Vars/Vars.h>
 
 void loadSintornParams(
     vars::Vars&vars,

@@ -2,7 +2,7 @@
 
 #include<memory>
 #include<ArgumentViewer/Fwd.h>
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 
 namespace cssv{
 

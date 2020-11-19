@@ -255,20 +255,3 @@ void OmnidirDpm::preprocessFrusta()
 	vars.get<RenderModel>("renderModel")->vertices->unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	vars.get<Buffer>("odpm.frusta")->unbindBase(GL_SHADER_STORAGE_BUFFER, 1);
 }
-
-bool OmnidirDpm::IsConservativeRasterizationSupported() const
-{
-	int NumberOfExtensions;
-	glGetIntegerv(GL_NUM_EXTENSIONS, &NumberOfExtensions);
-	for (int i = 0; i < NumberOfExtensions; i++)
-	{
-		const char* ccc = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
-
-		if (strcmp(ccc, "GL_NV_conservative_raster") == 0)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}

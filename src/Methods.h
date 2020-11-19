@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <map>
-#include <Vars/Vars.h>
+#include <Vars/Fwd.h>
 
 class Methods{
   public:

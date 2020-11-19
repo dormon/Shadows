@@ -1,7 +1,7 @@
 #pragma once
 
 #include<SDL2CPP/MainLoop.h>
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 
 void moveCameraWSAD(
     vars::Vars&vars,

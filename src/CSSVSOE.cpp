@@ -1,7 +1,7 @@
 #include<CSSVSOE.h>
 #include<FastAdjacency.h>
 #include<util.h>
-
+#include<Vars/Vars.h>
 
 struct DrawArraysIndirectCommand{
   uint32_t nofVertices  = 0;

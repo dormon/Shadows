@@ -35,6 +35,9 @@ THE SOFTWARE.
 #ifndef NANORT_H_
 #define NANORT_H_
 
+//Bullshit about some C++17 allocator deprecation in VS2019
+#pragma warning(disable : 4996)
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -62,7 +65,6 @@ THE SOFTWARE.
 // Some constants
 #define kNANORT_MIN_PRIMITIVES_FOR_PARALLEL_BUILD (1024 * 8)
 #define kNANORT_SHALLOW_DEPTH (4)  // will create 2**N subtrees
-
 #ifdef NANORT_USE_CPP11_FEATURE
 // Assume C++11 compiler has thread support.
 // In some situation(e.g. embedded system, JIT compilation), thread feature

@@ -1,4 +1,5 @@
 #include <loadTestParams.h>
+#include <Vars/Vars.h>
 
 void loadTestParams(vars::Vars&vars,std::shared_ptr<argumentViewer::ArgumentViewer>const&arg){
   vars.addString("test.name"                ) = arg->gets  ("--test"                     ,""           ,"name of test - fly or empty"                                    );

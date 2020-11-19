@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Vars/Vars.h>
+#include <Vars/Fwd.h>
 
 void mergeStencil(vars::Vars&vars);
 void allocateHierarchicalStencil(vars::Vars&vars);

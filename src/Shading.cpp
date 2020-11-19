@@ -1,5 +1,6 @@
 #include<Shading.h>
 #include<Deferred.h>
+#include <Vars/Vars.h>
 
 Shading::Shading(vars::Vars const&vars):vars(vars){
   assert(this!=nullptr);

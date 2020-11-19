@@ -31,7 +31,7 @@
 #include <createGeometryBuffer.h>
 #include <saveGBufferAsPointCloud.h>
 #include <drawPointCloud.h>
-
+#include <TimeStamp.h>
 #include <imguiVars/imguiVars.h>
 #include <imguiVars/addVarsLimits.h>
 

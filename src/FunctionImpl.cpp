@@ -1,5 +1,7 @@
 #include<FunctionImpl.h>
 #include<Vars/Resource.h>
+#include <Vars/Vars.h>
+
 #include<sstream>
 
 FunctionImpl::FunctionImpl(

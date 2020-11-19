@@ -4,7 +4,7 @@
 #include<ShadowMethod.h>
 #include<Model.h>
 
-#include<Vars/Vars.h>
+#include <Vars/Fwd.h>
 
 class Sintorn: public ShadowMethod{
   public:

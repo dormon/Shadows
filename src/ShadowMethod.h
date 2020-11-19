@@ -1,14 +1,11 @@
 #pragma once
 
+#include <Vars/Fwd.h>
+
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_access.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include <geGL/geGL.h>
 
-#include <TimeStamp.h>
-#include <Vars/Vars.h>
 
 size_t const componentsPerVertex2D = 2;
 size_t const componentsPerVertex3D = 3;
@@ -48,4 +45,7 @@ class ShadowMethod : public ge::gl::Context {
                          glm::mat4 const& projectionMatrix);
 
     vars::Vars&vars;
+
+protected:
+	bool IsConservativeRasterizationSupported() const;
 };

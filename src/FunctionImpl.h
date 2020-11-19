@@ -1,7 +1,7 @@
 #pragma once
 
 #include<iostream>
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 #include<vector>
 #include<array>
 #include<map>

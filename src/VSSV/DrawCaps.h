@@ -2,7 +2,7 @@
 
 #include<glm/glm.hpp>
 #include<geGL/geGL.h>
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 
 class Adjacency;
 class DrawCaps{

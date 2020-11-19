@@ -15,7 +15,6 @@ public:
         glm::mat4 const& projectionMatrix) override;
 
 protected:
-	bool IsConservativeRasterizationSupported() const;
 
 	void createBuffers();
 	void createTriangleBuffer();

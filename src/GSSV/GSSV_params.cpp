@@ -1,5 +1,6 @@
 #include <GSSV_params.h>
 #include <ArgumentViewer/ArgumentViewer.h>
+#include <Vars/Vars.h>
 
 void loadGSSVParams(vars::Vars& vars, std::shared_ptr<argumentViewer::ArgumentViewer>const& args)
 {

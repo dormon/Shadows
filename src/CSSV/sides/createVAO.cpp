@@ -45,7 +45,7 @@ void cssv::sides::createVAO(vars::Vars&vars){
     for(size_t e=0;e<adj->getNofEdges();++e)edges[e+3*anofE] = vert[adj->getEdgeVertexB(e)+0];
     for(size_t e=0;e<adj->getNofEdges();++e)edges[e+4*anofE] = vert[adj->getEdgeVertexB(e)+1];
     for(size_t e=0;e<adj->getNofEdges();++e)edges[e+5*anofE] = vert[adj->getEdgeVertexB(e)+2];
-    vars.reCreate<uint32_t>("cssv.method.alignedNofEdges",anofE);
+    vars.reCreate<uint32_t>("cssv.method.alignedNofEdges",uint32_t(anofE));
     
     vars.reCreate<Buffer>("cssv.method.edgeBuffer",edges);
   }

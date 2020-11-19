@@ -1,5 +1,6 @@
 #include <CSSV/Param.h>
 #include <ArgumentViewer/ArgumentViewer.h>
+#include <Vars/Vars.h>
 
 void cssv::loadParams(
     vars::Vars&vars,

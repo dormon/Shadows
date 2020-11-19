@@ -10,7 +10,7 @@
 #include<sstream>
 #include<Methods.h>
 #include<Vars/Caller.h>
-
+#include<Vars/Vars.h>
 
 
 void moveCameraWSAD(

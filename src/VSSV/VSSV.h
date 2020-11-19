@@ -5,7 +5,7 @@
 #include<Model.h>
 #include<TimeStamp.h>
 
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 #include<VSSV/DrawCaps.h>
 #include<VSSV/DrawSides.h>
 

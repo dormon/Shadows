@@ -5,6 +5,7 @@
 #include<VSSV/DrawSidesUsingPlanes.h>
 #include<VSSV/DrawSidesUsingAllPlanes.h>
 #include<Vars/Caller.h>
+#include<Vars/Vars.h>
 
 VSSV::VSSV(vars::Vars&vars):
   ShadowVolumes(vars       )

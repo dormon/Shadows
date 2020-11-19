@@ -7,6 +7,8 @@
 #include<Deferred.h>
 #include<Model.h>
 
+#include <Vars/Vars.h>
+
 using namespace ge::gl;
 using namespace std;
 

@@ -6,7 +6,7 @@
 #include<glm/gtc/matrix_access.hpp>
 
 #include<geGL/geGL.h>
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 
 class Shading: ge::gl::Context{
   public:

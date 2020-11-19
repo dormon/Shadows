@@ -1,15 +1,14 @@
 #include <OdpmParams.h>
 #include <ArgumentViewer/ArgumentViewer.h>
+#include <Vars/Vars.h>
 
-void loadOftsParams(vars::Vars& vars, std::shared_ptr<argumentViewer::ArgumentViewer>const& arg)
+void loadOdpmParams(vars::Vars& vars, std::shared_ptr<argumentViewer::ArgumentViewer>const& arg)
 {
-	vars.addUint32("odpm.args.resolution") = arg->getu32("--dpm-resolution", 512, "FTS irregular z-buffer resolution");
-	vars.addUint32("odpm.args.depth") = arg->getu32("--dpm-depth", 10, "FTS irregular depth buffer max nof elements per texel");
-	vars.addFloat("odpm.args.fovy") = arg->getf32("--dpm-fovy", 1.5707963267948966f, "FTS fovy");
-	vars.addFloat("odpm.args.near") = arg->getf32("--dpm-near", 0.1f, "FTS near plane position");
-	vars.addFloat("odpm.args.far") = arg->getf32("--dpm-far", 1000.f, "FTS far plane position");
-	vars.addFloat("odpm.args.bias") = arg->getf32("--dpm-bias", 0.0000008f, "FTS bias when raytracing");
-	vars.addBool("odpm.args.useFrusta") = arg->isPresent("--odpm-useFrusta", "Uses frustum test instead of raytracing");
-	vars.addUint32("odpm.args.wgSize") = arg->getu32("--odpm-wgSize", 256, "OFTS frustum compute shader workgroup size");
+	vars.addUint32("odpm.args.wgSize")     = arg->getu32("--odpm-wgSize", 128, "ODPM Compute shader WG Size");
+	vars.addUint32("odpm.args.resolution") = arg->getu32("--odpm-resolution", 512, "ODPM irregular z-buffer resolution");
+	vars.addUint32("odpm.args.depth")      = arg->getu32("--odpm-depth", 10, "ODPM irregular depth buffer max nof elements per texel");
+	vars.addFloat("odpm.args.near")        = arg->getf32("--odpm-near", 0.1f, "ODPM near plane position");
+	vars.addFloat("odpm.args.far")         = arg->getf32("--odpm-far", 1000.f, "ODPM far plane position");
+	vars.addBool("odpm.args.useFrusta")    = arg->isPresent("--odpm-useFrusta", "Use frustum test instead of ray tracing");
+	vars.addFloat("odpm.args.bias")        = arg->getf32("--odpm-bias", 0.0000008f, "ODPM bias when raytracing");
 }
-

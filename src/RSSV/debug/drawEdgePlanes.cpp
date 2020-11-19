@@ -202,7 +202,7 @@ void drawEdgePlanes(vars::Vars&vars){
 
   prg->set1i("selectedEdge",vars.addOrGetInt32("rssv.param.selectedEdge",-1));
 
-  glDrawArrays(GL_POINTS,0,nofEdges);
+  glDrawArrays(GL_POINTS,0, GLsizei(nofEdges));
 
   vao->unbind();
 

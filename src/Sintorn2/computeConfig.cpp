@@ -24,5 +24,5 @@ void sintorn2::computeConfig(vars::Vars&vars){
   auto const tileX         =  vars.getUint32("sintorn2.param.tileX");
   auto const tileY         =  vars.getUint32("sintorn2.param.tileY");
 
-  vars.reCreate<Config>("sintorn2.method.config",wavefrontSize,windowSize.x,windowSize.y,tileX,tileY,minZBits);
+  vars.reCreate<Config>("sintorn2.method.config", uint32_t(wavefrontSize),windowSize.x,windowSize.y,tileX,tileY,minZBits);
 }

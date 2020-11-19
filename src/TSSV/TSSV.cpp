@@ -8,6 +8,8 @@
 #include <FunctionPrologue.h>
 #include <createAdjacency.h>
 
+#include <glm/gtc/type_ptr.hpp>
+
 using namespace ge::gl;
 
 TSSV::TSSV(vars::Vars& vars) : ShadowVolumes(vars)

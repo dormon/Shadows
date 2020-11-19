@@ -3,7 +3,7 @@
 #include <ArgumentViewer/ArgumentViewer.h>
 #include <BasicCamera/Camera.h>
 #include <SDL2CPP/MainLoop.h>
-#include <Vars/Vars.h>
+#include <Vars/Fwd.h>
 #include <glm/glm.hpp>
 
 

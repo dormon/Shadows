@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Vars/Vars.h>
+#include <Vars/Fwd.h>
 
 namespace sintorn2{
 void computeConfig(vars::Vars&vars);

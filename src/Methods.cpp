@@ -1,4 +1,6 @@
 #include <Methods.h>
+#include <Vars/Vars.h>
+
 #include <cassert>
 
 size_t Methods::addMethodName(std::string const&name){

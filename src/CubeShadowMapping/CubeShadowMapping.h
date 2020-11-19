@@ -3,7 +3,7 @@
 #include<geGL/geGL.h>
 #include<ShadowMethod.h>
 
-#include<Vars/Vars.h>
+#include<Vars/Fwd.h>
 
 class CubeShadowMapping: public ShadowMethod{
   public:

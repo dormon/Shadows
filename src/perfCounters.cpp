@@ -15,7 +15,7 @@ std::vector<GLuint>getGroupIDs(){
   GLint numGroups = 0;
   glGetPerfMonitorGroupsAMD(&numGroups,0,nullptr);
   std::vector<GLuint>res(numGroups);
-  glGetPerfMonitorGroupsAMD(nullptr, res.size(),res.data());
+  glGetPerfMonitorGroupsAMD(nullptr, GLsizei(res.size()),res.data());
   return res;
 }
 
@@ -34,7 +34,7 @@ std::vector<GLuint>getCounterIDs(GLuint g,GLint&maxActiveCounters){
   GLint numCounters = 0;
   glGetPerfMonitorCountersAMD(g,&numCounters,nullptr,0,nullptr);
   std::vector<GLuint>res(numCounters);
-  glGetPerfMonitorCountersAMD(g,&numCounters,&maxActiveCounters,res.size(),res.data());
+  glGetPerfMonitorCountersAMD(g,&numCounters,&maxActiveCounters, GLsizei(res.size()),res.data());
   return res;
 }
 
@@ -149,7 +149,7 @@ class Monitor{
       //for(auto const&c:cs)
       //  std::cerr << "  " << c;
       //std::cerr << std::endl;
-      glSelectPerfMonitorCountersAMD(*handle,GL_TRUE,g,cs.size(),cs.data());
+      glSelectPerfMonitorCountersAMD(*handle,GL_TRUE,g, GLsizei(cs.size()),cs.data());
       //exit(0);
     }
     void enable(std::string const&grpName,std::vector<uint32_t>const&ct){
@@ -159,7 +159,7 @@ class Monitor{
         if(grp.name == grpName)
           g = grp.id;
       }
-      glSelectPerfMonitorCountersAMD(*handle,GL_TRUE,g,ct.size(),(GLuint*)ct.data());
+      glSelectPerfMonitorCountersAMD(*handle,GL_TRUE,g, GLsizei(ct.size()),(GLuint*)ct.data());
     }
     void measure(std::function<void()>const&fce){
       glBeginPerfMonitorAMD(*handle);

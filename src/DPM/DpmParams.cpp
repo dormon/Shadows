@@ -1,5 +1,6 @@
 #include <DpmParams.h>
 #include <ArgumentViewer/ArgumentViewer.h>
+#include <Vars/Vars.h>
 
 void loadDpmParams(vars::Vars& vars, std::shared_ptr<argumentViewer::ArgumentViewer>const& arg)
 {

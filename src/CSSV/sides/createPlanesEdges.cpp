@@ -4,6 +4,8 @@
 #include <FastAdjacency.h>
 #include <ShadowMethod.h>
 
+#include <glm/gtc/type_ptr.hpp>
+
 void cssv::sides::createPlanesEdges(vars::Vars&vars){
   //FUNCTION_PROLOGUE("cssv.method","adjacency");
 
