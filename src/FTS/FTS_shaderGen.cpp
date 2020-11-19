@@ -20,7 +20,7 @@ layout(binding=0) uniform sampler2D posTexture;
 layout(binding=1) uniform sampler2D normalTexture;
 
 uniform uvec2 screenResolution;
-uniform uvec2 lightResolution;
+uniform uvec2 heatmapResolution;
 uniform vec3  lightPos;
 uniform mat4  lightVP;
 
@@ -62,7 +62,7 @@ void main()
 	lightProjPos.xyz = 0.5f * lightProjPos.xyz + 0.5f;
 	
 	//... to light space coords
-	const ivec2 lightSpaceCoords = ivec2(lightProjPos.xy * lightResolution);
+	const ivec2 lightSpaceCoords = ivec2(lightProjPos.xy * heatmapResolution);
 	
 	//Add to heat map if valid
 	if(isValidVisible)
@@ -84,7 +84,15 @@ layout(local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0, r32ui) uniform readonly uimage2D heatMap;
 
-layout(std430, binding = 0) restrict writeonly buffer _proj{ mat4 projMatrix[1]; };
+layout(std430, binding = 0) restrict writeonly buffer _proj
+{ 
+	mat4 projMatrix[2];
+	uint nofMatrices;
+};
+
+uniform uvec2 heatmapResolution;
+uniform vec4 frustumParams;
+uniform uint treshold;
 
 struct S_MinMax
 {
@@ -92,21 +100,18 @@ struct S_MinMax
 	uvec2 maxVal;
 };
 
-shared S_MinMax shExtents;
+shared S_MinMax shExtents[2];
+shared uint     shUseReprojection;
 
-uniform uvec2 lightResolution;
-uniform vec4 frustumParams;
-
-
-mat4 GetProjectionMatrix()
+mat4 GetProjectionMatrix(in uint index)
 {
-	const float dw = frustumParams.x / float(lightResolution.x);
-	const float dh = frustumParams.y / float(lightResolution.y);
+	const float dw = frustumParams.x / float(heatmapResolution.x);
+	const float dh = frustumParams.y / float(heatmapResolution.y);
 	
-	const uint minX = shExtents.minVal.x;
-	const uint minY = shExtents.minVal.y;
-	const uint maxX = shExtents.maxVal.x;
-	const uint maxY = shExtents.maxVal.y;
+	const uint minX = shExtents[index].minVal.x;
+	const uint minY = shExtents[index].minVal.y;
+	const uint maxX = shExtents[index].maxVal.x;
+	const uint maxY = shExtents[index].maxVal.y;
 	
 	const vec2 minPoint = vec2(-0.5f*frustumParams.xy) + vec2(dw, dh) * vec2(minX, minY);
 	const vec2 maxPoint = vec2(-0.5f*frustumParams.xy) + vec2(dw, dh) * vec2(maxX+1, maxY+1);
@@ -133,18 +138,20 @@ void main()
 	
 	if(gid==0)
 	{
-		shExtents.minVal = lightResolution - uvec2(1, 1);
-		shExtents.maxVal = uvec2(0, 0);
+		shExtents[0].minVal = shExtents[1].minVal = heatmapResolution - uvec2(1, 1);
+		shExtents[0].maxVal = shExtents[1].maxVal = uvec2(0, 0);
+		shUseReprojection = 0;
 	}
 	
-	const uvec2 blockSize = lightResolution / 32;
+	const uvec2 blockSize = heatmapResolution / 32;
 	
 	const uvec2 start = gl_GlobalInvocationID.xy * blockSize;
 	const uvec2 end = start + blockSize;
 	
-	S_MinMax minMax;
-	minMax.minVal = uvec2(lightResolution - uvec2(1, 1));
-	minMax.maxVal = uvec2(0, 0);
+	S_MinMax minMax[2];
+	minMax[0].minVal = minMax[1].minVal = uvec2(heatmapResolution - uvec2(1, 1));
+	minMax[0].maxVal = minMax[1].maxVal = uvec2(0, 0);
+	uint useReprojection = 0;
 	
 	for(uint x = start.x; x < end.x; ++x)
 	{
@@ -153,25 +160,62 @@ void main()
 			const uint len = imageLoad(heatMap, ivec2(x, y)).x;
 			if(len > 0)
 			{
-				minMax.minVal = min(minMax.minVal, uvec2(x, y));
-				minMax.maxVal = max(minMax.maxVal, uvec2(x, y));
+				minMax[0].minVal = min(minMax[0].minVal, uvec2(x, y));
+				minMax[0].maxVal = max(minMax[0].maxVal, uvec2(x, y));
+			}
+			
+			if(len >= treshold)
+			{
+				useReprojection = 1;
+				minMax[1].minVal = min(minMax[1].minVal, uvec2(x, y));
+				minMax[1].maxVal = max(minMax[1].maxVal, uvec2(x, y));
 			}
 		}
 	}
 	
 	memoryBarrier();
 	
-	atomicMin(shExtents.minVal.x, minMax.minVal.x);
-	atomicMin(shExtents.minVal.y, minMax.minVal.y);
-	atomicMax(shExtents.maxVal.x, minMax.maxVal.x);
-	atomicMax(shExtents.maxVal.y, minMax.maxVal.y);
+	atomicMin(shExtents[0].minVal.x, minMax[0].minVal.x);
+	atomicMin(shExtents[0].minVal.y, minMax[0].minVal.y);
+	atomicMax(shExtents[0].maxVal.x, minMax[0].maxVal.x);
+	atomicMax(shExtents[0].maxVal.y, minMax[0].maxVal.y);
+	
+	atomicMin(shExtents[1].minVal.x, minMax[1].minVal.x);
+	atomicMin(shExtents[1].minVal.y, minMax[1].minVal.y);
+	atomicMax(shExtents[1].maxVal.x, minMax[1].maxVal.x);
+	atomicMax(shExtents[1].maxVal.y, minMax[1].maxVal.y);
+	
+	if(useReprojection!=0)
+	{
+		atomicExchange(shUseReprojection, 1);
+	}
 	
 	memoryBarrier();
 	
-	//Compute matrix
+	//Compute matrices
 	if(gid==0)
 	{
-		projMatrix[0] = GetProjectionMatrix();
+		/*
+		if(shUseReprojection==1)
+		{
+			//Compare area of the two regions
+			//If not large enough - don't bother
+			//Hint from the original author
+			//NOTE - produces low FPS in some situations (reprojection needed but rejected)
+			const uvec2 dim = shExtents[0].maxVal - shExtents[0].minVal;
+			const uvec2 dimReproject = shExtents[1].maxVal - shExtents[1].minVal;
+			const float projectedSizeRatio = float(dimReproject.x * dimReproject.y) / float(dim.x * dim.y);
+			
+			if(projectedSizeRatio < 0.1f)
+			{
+				shUseReprojection = 0;
+			}
+		}
+		//*/
+		
+		projMatrix[0] = GetProjectionMatrix(0);
+		projMatrix[1] = GetProjectionMatrix(1);
+		nofMatrices   = shUseReprojection + 1;
 	}
 }
 ).";
@@ -183,13 +227,14 @@ std::string fillCsSource = R".(
 
 layout(local_size_x = WG_SIZE) in;
 
-layout (binding = 0, r32i) uniform coherent iimage2D head;
-layout (binding = 1, r32i) uniform coherent iimage2D list;
-layout (binding = 2, r32ui) uniform coherent uimage2D maxDepth;
+layout (binding = 0, r32i)  uniform coherent iimage2DArray head;
+layout (binding = 1, r32i)  uniform coherent iimage2D list;
+layout (binding = 2, r32ui) uniform coherent uimage2DArray maxDepth;
 
 layout(std140, binding = 0) uniform matData
 {
-	mat4 lightP;
+	mat4 lightP[2];
+	uint nofMatrices;
 };
 
 uniform uvec2 screenResolution;
@@ -199,6 +244,12 @@ uniform mat4 lightV;
 
 layout(binding=0) uniform sampler2D posTexture;
 layout(binding=1) uniform sampler2D normalTexture;
+
+bool isInFrustum(vec4 lightFragPos)
+{
+	const float w = lightFragPos.w;
+	return (lightFragPos.x <= w && lightFragPos.x >= -w && lightFragPos.y <= w && lightFragPos.y >=-w && lightFragPos.z <= w && lightFragPos.z >= -w);
+}
 
 void main()
 {
@@ -223,24 +274,30 @@ void main()
 	}
 	
 	//Project to light-space
-	mat4 lightVP = lightP * lightV;
-	vec4 lightFragPos = lightVP * worldFragPos;
+	const mat4 lightVP0 = lightP[0] * lightV;
+	const vec4 lightFragPos0 = lightVP0 * worldFragPos;
 	
-	// If inside light frustum, add the fragment to the list
-	const float w = lightFragPos.w;
-	if(lightFragPos.x <= w && lightFragPos.x >= -w && lightFragPos.y <= w && lightFragPos.y >=-w && lightFragPos.z <= w && lightFragPos.z >= -w)
+	const mat4 lightVP1 = lightP[1] * lightV;
+	const vec4 lightFragPos1 = lightVP1 * worldFragPos; 
+	
+	const bool isIn0 = isInFrustum(lightFragPos0);
+	const bool isIn1 = isInFrustum(lightFragPos1) && nofMatrices==2;
+	
+	vec4 lightFragPos = isIn1 ? lightFragPos1 : lightFragPos0;
+	int arrayIndex = int(isIn1);
+	
+	if(isIn0) //generally, inside light's frustum
     {
 		//... to texture space
 	    lightFragPos /= lightFragPos.w;
 		lightFragPos.xyz = 0.5f * lightFragPos.xyz + 0.5f;
 		
 		//... to light space coords
-		const ivec2 lightSpaceCoords = ivec2(lightFragPos.xy * lightResolution);
+		const ivec3 lightSpaceCoords = ivec3(lightFragPos.xy * lightResolution, arrayIndex);
 		const int pos = int(coords.x + screenResolution.x * coords.y);
 
 		const int previousHead = imageAtomicExchange(head, lightSpaceCoords, pos);
 		imageAtomicMax(maxDepth, lightSpaceCoords, floatBitsToUint(lightFragPos.z));
-		//imageAtomicAdd(counter, lightSpaceCoords, 1u);
 		memoryBarrier();
 
 		//Store previous ptr to current head
@@ -259,14 +316,47 @@ void main()
 }
 ).";
 
-const char* fsZFill = R".(
+const char* gsZFill = R".(
 #version 450 core
 
-layout(binding=0) uniform sampler2D maxDepth;
+layout(triangles) in;
+layout(triangle_strip, max_vertices=6) out;
+
+layout(std140, binding = 0) uniform matData
+{
+	mat4 lightP[2];
+	uint nofMatrices;
+};
 
 void main()
 {
-	const ivec2 coords = ivec2(gl_FragCoord.xy);
+	for(int i=0; i<nofMatrices; i++)
+	{
+		gl_Layer = i;
+		gl_Position = gl_in[0].gl_Position; 
+		EmitVertex();
+
+		gl_Layer = i;
+		gl_Position = gl_in[1].gl_Position; 
+		EmitVertex();
+
+		gl_Layer = i;
+		gl_Position = gl_in[2].gl_Position; 
+		EmitVertex();
+
+		EndPrimitive();
+	}
+}
+).";
+
+const char* fsZFill = R".(
+#version 450 core
+
+layout(binding=0) uniform sampler2DArray maxDepth;
+
+void main()
+{
+	const ivec3 coords = ivec3(gl_FragCoord.xy, gl_Layer);
 	float depth = texelFetch(maxDepth, coords, 0).x;
 
 	gl_FragDepth = depth;
@@ -289,7 +379,7 @@ const char* gsShadowMask = R".(
 #version 450 core
 
 layout(triangles) in;
-layout(triangle_strip, max_vertices=3) out;
+layout(triangle_strip, max_vertices=6) out;
 
 uniform vec3 lightPos;
 uniform float bias = 0.001f;
@@ -297,7 +387,8 @@ uniform mat4 lightV;
 
 layout(std140, binding = 0) uniform matData
 {
-	mat4 lightP;
+	mat4 lightP[2];
+	uint nofMatrices;
 };
 
 out flat vec4 plane0;
@@ -346,7 +437,6 @@ void main()
         v1 + bias*normalize(v1-lightPos.xyz),
         v2 + bias*normalize(v2-lightPos.xyz));
 	
-	const mat4 lightVP = lightP * lightV;
 	
 	if(dot(e3, vec4(lightPos, 1))<0)
     {
@@ -355,27 +445,32 @@ void main()
 		e2 *= -1;
 		e3 *= -1;
 	}
-
-	//Output vertices
-	for(int i=0; i<3; i++)
-	{
-		plane0 = e0;
-		plane1 = e1;
-		plane2 = e2;
-		plane3 = e3;
-		
-		gl_Position = lightVP * gl_in[i].gl_Position;
-		EmitVertex();
-	}
 	
-	EndPrimitive();
+	for(int m = 0; m < nofMatrices; ++m)
+	{
+		const mat4 lightVP = lightP[m] * lightV;
+		//Output vertices
+		for(int i=0; i<3; i++)
+		{
+			plane0 = e0;
+			plane1 = e1;
+			plane2 = e2;
+			plane3 = e3;
+				
+			gl_Layer = m;
+			gl_Position = lightVP * gl_in[i].gl_Position;
+			EmitVertex();
+		}
+	
+		EndPrimitive();
+	}
 }
 ).";
 
 const char* fsShadowMask = R".(
 #version 450 core
 
-layout(binding=0, r32i) uniform iimage2D head; //in light space
+layout(binding=0, r32i) uniform iimage2DArray head; //in light space
 layout(binding=1, r32i) uniform iimage2D list; //in screen space
 layout(binding=2, r32f) uniform writeonly image2D shadowMask; //in screen space
 
@@ -396,7 +491,7 @@ bool isPointInside(vec4 v, vec4 p1, vec4 p2, vec4 p3, vec4 p4)
 void main()
 {
 	//Acquire head
-	const ivec2 lighSpaceCoords = ivec2(gl_FragCoord.xy);
+	const ivec3 lighSpaceCoords = ivec3(gl_FragCoord.xy, gl_Layer);
     int currentFragPos = imageLoad(head, lighSpaceCoords).x;//texelFetch(head, lighSpaceCoords, 0).x;
 	int previousFragPos = -1;
 	ivec2 previousScreenCoords = ivec2(-1, -1);	
@@ -470,7 +565,7 @@ std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetIzbFillCS(uint32_t wgSize)
 	return std::make_shared<Shader>(GL_COMPUTE_SHADER, program);
 	//*/
 
-	
+
 	return std::make_shared<Shader>(GL_COMPUTE_SHADER, 
 		"#version 450 core\n",
 		Shader::define("WG_SIZE", wgSize),
@@ -481,6 +576,11 @@ std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetIzbFillCS(uint32_t wgSize)
 std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetZBufferFillVS()
 {
 	return std::make_shared<Shader>(GL_VERTEX_SHADER, vsZFill);
+}
+
+std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetZBufferFillGS()
+{
+	return std::make_shared<Shader>(GL_GEOMETRY_SHADER, gsZFill);
 }
 
 std::shared_ptr<ge::gl::Shader> FtsShaderGen::GetZBufferFillFS()

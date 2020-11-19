@@ -22,7 +22,9 @@ private:
 	void CreateHeadTex();
 	void CreateLinkedListTex();
 	void CreateMaxDepthTex();
+	
 	void CreateTexture2D(char const* name, uint32_t format, uint32_t resX, uint32_t resY);
+	void CreateTexture2DArray(char const* name, uint32_t format, uint32_t resX, uint32_t resY, uint32_t depth);
 
 	void ClearTextures();
 
@@ -54,6 +56,7 @@ private:
 
 	glm::uvec2 GetWindowSize() const;
 	glm::uvec2 GetLightResolution() const;
+	glm::uvec2 GetHeatmapResolution() const;
 
 	glm::mat4 CreateLightViewMatrix() const;
 	glm::mat4 CreateLightProjMatrix() const;
