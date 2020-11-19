@@ -523,7 +523,6 @@ void FTS::create(glm::vec4 const& lightPosition,
 	glm::mat4 const vp = projectionMatrix * viewMatrix;
 
 	//ifExistStamp("ftsSetup");
-	//glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	ComputeHeatMap(lightVP);
 
