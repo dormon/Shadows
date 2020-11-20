@@ -5,6 +5,8 @@ add_library(OFTS STATIC
 	OFTS.cpp
 	OFTS_params.h
 	OFTS_params.cpp
+	OFTS_shaderGen.h
+	OFTS_shaderGen.cpp
 	Frustum.h
 	Frustum.cpp
 	Plane.h

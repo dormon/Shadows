@@ -11,10 +11,10 @@ namespace ge
 	}
 }
 
-class FtsShaderGen
+
+class OftsShaderGen
 {
 public:
-
 	std::shared_ptr<ge::gl::Shader> GetHeatmapCS(uint32_t wgSize);
 
 	std::shared_ptr<ge::gl::Shader> GetMatrixCS();
@@ -28,7 +28,4 @@ public:
 	std::shared_ptr<ge::gl::Shader> GetShadowMaskVS();
 	std::shared_ptr<ge::gl::Shader> GetShadowMaskGS();
 	std::shared_ptr<ge::gl::Shader> GetShadowMaskFS();
-
-private:
-	
 };
