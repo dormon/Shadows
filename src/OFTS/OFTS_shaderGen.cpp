@@ -248,11 +248,6 @@ layout(packed, binding = 0) uniform matData
 	uint nofMatrices[6];
 };
 
-layout(std430, binding = 3) restrict writeonly buffer _tmp
-{
-	float tmp[];
-};
-
 uniform uvec2 screenResolution;
 uniform uvec2 lightResolution;
 uniform vec3 lightPos;

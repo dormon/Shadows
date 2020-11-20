@@ -462,7 +462,7 @@ void OFTS::ComputeIzb()
 
 	vars.get<GBuffer>("gBuffer")->position->bind(0);
 	vars.get<GBuffer>("gBuffer")->normal->bind(1);
-	vars.get<Buffer>("xtmp")->bindBase(GL_SHADER_STORAGE_BUFFER, 3);
+	//vars.get<Buffer>("xtmp")->bindBase(GL_SHADER_STORAGE_BUFFER, 3);
 
 	matrixBuffer->bindBase(GL_UNIFORM_BUFFER, 0);
 
@@ -479,7 +479,7 @@ void OFTS::ComputeIzb()
 
 	matrixBuffer->unbindBase(GL_UNIFORM_BUFFER, 0);
 
-	vars.get<Buffer>("xtmp")->unbindBase(GL_SHADER_STORAGE_BUFFER, 3);
+	//vars.get<Buffer>("xtmp")->unbindBase(GL_SHADER_STORAGE_BUFFER, 3);
 	assert(glGetError() == GL_NO_ERROR);
 }
 
