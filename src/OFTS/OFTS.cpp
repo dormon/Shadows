@@ -272,7 +272,7 @@ void OFTS::ClearTextures()
 	vars.get<Texture>(maxDepthTexName)->clear(0, GL_RED, GL_FLOAT);
 	vars.get<Texture>(heatmapTexName)->clear(0, GL_RED_INTEGER, GL_INT);
 
-	vars.get<Buffer>("xtmp")->clear(GL_R32F, GL_RED, GL_FLOAT);
+	//vars.get<Buffer>("xtmp")->clear(GL_R32F, GL_RED, GL_FLOAT);
 
 	assert(glGetError() == GL_NO_ERROR);
 }
@@ -286,7 +286,7 @@ void OFTS::ClearShadowMask()
 void OFTS::CreateBuffers()
 {
 	CreateMatrixBuffer();
-	vars.reCreate<Buffer>("xtmp", 20 * sizeof(float));
+	//vars.reCreate<Buffer>("xtmp", 20 * sizeof(float));
 }
 
 void OFTS::CreateMatrixBuffer()
