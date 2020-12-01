@@ -222,6 +222,11 @@ void Shadows::key(SDL_Event const& event, bool DOWN) {
   {
 	  updateLightPosViewUpFromCamera(vars);
   }
+
+  if (DOWN && event.key.keysym.sym == SDLK_u)
+  {
+      *vars.get<bool>("showShadowMask") = !(*vars.get<bool>("showShadowMask"));
+  }
 }
 
 void Shadows::resize(uint32_t x,uint32_t y){

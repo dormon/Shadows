@@ -664,17 +664,24 @@ void OFTS::create(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, g
 	
 	ComputeHeatMap(mask);
 	
+	ifExistStamp("heatMap");
+
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	ComputeViewProjectionMatrices(mask);
 	
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_UNIFORM_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	ifExistStamp("matrices");
 
 	ComputeIzb();
 	
+	ifExistStamp("izb");
+
 	InitShadowMaskZBuffer();
 	
+	ifExistStamp("zbuffer");
+
 	FillShadowMask();
 	
-	ifExistStamp("ofts");
+	ifExistStamp("traversal");
 }
