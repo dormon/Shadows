@@ -24,6 +24,7 @@ constexpr const char* farParamName = "fts.args.farZ";
 constexpr const char* fovyParamName = "fts.args.fovY";
 constexpr const char* listTresholdParamName = "fts.args.longListTreshold";
 constexpr const char* heatmapResParamName = "fts.args.heatmapRes";
+constexpr const char* biasParamName = "fts.args.traversalBias";
 
 constexpr const char* listTexName  = "fts.objects.listTex";
 constexpr const char* headTexName  = "fts.objects.headTex";
@@ -143,22 +144,22 @@ void FTS::CreateTexture2DArray(char const* name, uint32_t format, uint32_t resX,
 	vars.reCreate<Texture>(name, GL_TEXTURE_2D_ARRAY, format, 1, resX, resY, depth);
 }
 
-void FTS::CompileShaders(bool isOmnidirectional)
+void FTS::CompileShaders()
 {
-	CreateHeatmapProgram(isOmnidirectional);
+	CreateHeatmapProgram();
 	CreateMatrixProgram();
 	CreateIzbFillProgram();
 	CreateZbufferFillProgram();
 	CreateShadowMaskProgram();
 }
 
-void FTS::CreateHeatmapProgram(bool isOmnidirectional)
+void FTS::CreateHeatmapProgram()
 {
 	FUNCTION_PROLOGUE("fts.objects", wgsizeParamName);
 	FtsShaderGen gen;
 
 	uint32_t const wgSize = vars.getUint32(wgsizeParamName);
-	vars.reCreate<Program>(heatmapProgramName, gen.GetHeatmapCS(wgSize, isOmnidirectional));
+	vars.reCreate<Program>(heatmapProgramName, gen.GetHeatmapCS(wgSize));
 }
 
 void FTS::CreateMatrixProgram()
@@ -444,7 +445,7 @@ void FTS::FillShadowMask(glm::mat4 const& lightV)
 
 	Program* prog = vars.get<Program>(shadowMaskProgrammName);
 	prog->set3fv("lightPos", glm::value_ptr(lightPos));
-	prog->set1f("bias", vars.getFloat("fts.args.traversalBias"));
+	prog->set1f("bias", vars.getFloat(biasParamName));
 	prog->set2uiv("screenResolution", glm::value_ptr(screenRes));
 	prog->setMatrix4fv("lightV", glm::value_ptr(lightV));
 	prog->use();

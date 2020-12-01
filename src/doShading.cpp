@@ -15,6 +15,6 @@ void doShading(vars::Vars&vars){
   auto const viewMatrix                 = cameraTransform->getView();
   auto const viewSpaceToWorldSpace      = glm::inverse(viewMatrix);
   auto       cameraPositionInWorldSpace = glm::vec3( viewSpaceToWorldSpace * cameraPositionInViewSpace);
-  shading->draw(lightPosition,cameraPositionInWorldSpace,*vars.get<bool>("useShadows"));
+  shading->draw(lightPosition,cameraPositionInWorldSpace,*vars.get<bool>("useShadows"), vars.getBool("showShadowMask"));
 }
 

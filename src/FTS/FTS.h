@@ -33,8 +33,8 @@ protected:
 	void CreateBuffers();
 	void CreateMatrixBuffer();
 
-	void CompileShaders(bool isOmnidirectional = false);
-	void CreateHeatmapProgram(bool isOmnidirectional);
+	void CompileShaders();
+	void CreateHeatmapProgram();
 	void CreateMatrixProgram();
 	void CreateIzbFillProgram();
 	void CreateZbufferFillProgram();

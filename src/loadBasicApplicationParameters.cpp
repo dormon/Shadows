@@ -18,6 +18,7 @@ void loadBasicApplicationParameters(vars::Vars&vars,std::shared_ptr<argumentView
 
   vars.addString        ("modelName"      ) = args->gets("--model", "/media/windata/ft/prace/models/2tri/2tri.3ds","model file name");
   vars.addBool          ("useShadows"     ) = !args->isPresent("--no-shadows", "turns off shadows");
+  vars.addBool			("showShadowMask") = args->isPresent("--show-shadowMask", "visualize shadow mask");
   vars.addBool          ("verbose"        ) = args->isPresent("--verbose", "toggle verbose mode");
 
   vars.addString        ("methodName"     ) = args->gets("--method", "","name of shadow method: "+getMethodNameList(vars));

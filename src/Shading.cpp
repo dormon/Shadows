@@ -28,6 +28,7 @@ uniform vec3 Ld = vec3(1);//light diffuse color
 uniform vec3 Ls = vec3(1);//light specular color
 uniform vec3 bgColor = vec3(0.8, 0.7, 1);
 uniform bool useShadows = false;
+uniform bool showShadowMask = false;
 
 void main(){
   vec3 sum=vec3(0);
@@ -68,7 +69,14 @@ void main(){
   sum+=Kd*Ld*diffuseFactor;
   sum+=Ks*Ls*specularFactor;
 
-  fColor=vec4(sum,1);//output color
+  if(showShadowMask)
+  {
+    fColor=vec4(shadowCoef, shadowCoef, shadowCoef, 1);//output shadow
+  }
+  else
+  {
+    fColor=vec4(sum,1);//output color
+  }
 }).";
   this->_program = std::make_shared<ge::gl::Program>(
       std::make_shared<ge::gl::Shader>(GL_VERTEX_SHADER,vertSrc),
@@ -80,7 +88,8 @@ Shading::~Shading(){
 
 }
 
-void Shading::draw(glm::vec4 const&lightPosition,glm::vec3 const&cameraPosition,bool useShadows){
+void Shading::draw(glm::vec4 const&lightPosition,glm::vec3 const&cameraPosition,bool useShadows, bool showShadowMask)
+{
   vars.get<GBuffer>("gBuffer")->color->bind(0);
   vars.get<GBuffer>("gBuffer")->position->bind(1);
   vars.get<GBuffer>("gBuffer")->normal->bind(2);
@@ -89,6 +98,7 @@ void Shading::draw(glm::vec4 const&lightPosition,glm::vec3 const&cameraPosition,
   this->_program->set4fv("lightPosition",glm::value_ptr(lightPosition));
   this->_program->set3fv("cameraPosition",glm::value_ptr(cameraPosition));
   this->_program->set1i("useShadows",useShadows);
+  this->_program->set1i("showShadowMask", showShadowMask);
   this->_vao->bind();
   glDrawArrays(GL_TRIANGLE_STRIP,0,4);
   this->_vao->unbind();
