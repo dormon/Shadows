@@ -2,6 +2,7 @@
 
 #include <Vars/Fwd.h>
 #include <vector>
+#include <memory>
 
 class FunctionImpl;
 class Function{

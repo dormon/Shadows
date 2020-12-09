@@ -3,6 +3,8 @@
 #include<Vars/Fwd.h>
 #include<map>
 #include<vector>
+#include<memory>
+#include<string>
 
 class Barrier{
   public:

@@ -10,7 +10,7 @@
 #include <Model.h>
 #include <Deferred.h>
 
-#include <BasicCamera/FreelookCamera.h>
+#include <BasicCamera/FreeLookCamera.h>
 #include <ifExistStamp.h>
 #include <FunctionPrologue.h>
 
@@ -102,7 +102,7 @@ Frustum OFTS::GetCameraFrustum(glm::mat4 const& viewMatrix) const
 	float const fovy = vars.getFloat("args.camera.fovy");
 	float const near = vars.getFloat("args.camera.near");
 	float far = vars.getFloat("args.camera.far");
-	far = isinf(far) != 0 ? 50000.f : far;
+	far = glm::isinf(far) != 0 ? 50000.f : far;
 	
 	glm::vec2 const windowSize = glm::vec2(*vars.get<glm::uvec2>("windowSize"));
 	const float aspectRatio = windowSize.x / windowSize.y;
@@ -685,3 +685,4 @@ void OFTS::create(glm::vec4 const& lightPosition, glm::mat4 const& viewMatrix, g
 	
 	ifExistStamp("traversal");
 }
+
