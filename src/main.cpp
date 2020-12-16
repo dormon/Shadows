@@ -87,6 +87,7 @@ void Shadows::init() {
 
   auto windowSize = *vars.get<glm::uvec2>("windowSize");
   window->setSize(windowSize.x, windowSize.y);
+  SDL_SetWindowPosition(window->getWindow(), 0, 30);
 
   ge::gl::glEnable(GL_DEPTH_TEST);
   ge::gl::glDepthFunc(GL_LEQUAL);
