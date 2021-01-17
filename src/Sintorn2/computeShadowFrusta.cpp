@@ -116,14 +116,16 @@ void sintorn2::computeShadowFrusta(vars::Vars&vars){
   createShadowFrustaProgram(vars);
   //exit(1);
 
-  auto triangles           =  vars.get<Buffer>   ("sintorn2.method.triangles"          );
-  auto sf                  =  vars.get<Buffer>   ("sintorn2.method.shadowFrusta"       );
-  auto const nofTriangles  =  vars.getUint32     ("sintorn2.method.nofTriangles"       );
-  auto const lightPosition = *vars.get<glm::vec4>("sintorn2.method.lightPosition"      );
-  auto const viewMatrix    = *vars.get<glm::mat4>("sintorn2.method.viewMatrix"         );
-  auto const projMatrix    = *vars.get<glm::mat4>("sintorn2.method.projectionMatrix"   );
-  auto const sfWGS         =  vars.getUint32     ("sintorn2.param.sfWGS"               );
-  auto       prg           =  vars.get<Program>  ("sintorn2.method.shadowFrustaProgram");
+  auto triangles                            =  vars.get<Buffer>   ("sintorn2.method.triangles"                     );
+  auto sf                                   =  vars.get<Buffer>   ("sintorn2.method.shadowFrusta"                  );
+  auto const nofTriangles                   =  vars.getUint32     ("sintorn2.method.nofTriangles"                  );
+  auto const lightPosition                  = *vars.get<glm::vec4>("sintorn2.method.lightPosition"                 );
+  auto const lightTriangleDistanceThreshold =  vars.getFloat      ("sintorn2.param.lightTriangleDistanceThreshold" );
+  auto const viewMatrix                     = *vars.get<glm::mat4>("sintorn2.method.viewMatrix"                    );
+  auto const projMatrix                     = *vars.get<glm::mat4>("sintorn2.method.projectionMatrix"              );
+  auto const sfWGS                          =  vars.getUint32     ("sintorn2.param.sfWGS"                          );
+  auto const morePlanes                     =  vars.getBool       ("sintorn2.param.morePlanes"                     );
+  auto       prg                            =  vars.get<Program>  ("sintorn2.method.shadowFrustaProgram"           );
 
   auto const mvp = projMatrix * viewMatrix;
 
@@ -136,6 +138,9 @@ void sintorn2::computeShadowFrusta(vars::Vars&vars){
     ->set4fv      ("lightPosition"                      ,glm::value_ptr(lightPosition)                    )
     ->setMatrix4fv("transposeInverseModelViewProjection",glm::value_ptr(glm::inverse(glm::transpose(mvp))))
     ->use();
+
+  if(morePlanes)
+    prg->set1f       ("lightTriangleDistanceThreshold"     ,lightTriangleDistanceThreshold                   );
 
   if(vars.addOrGetBool("sintorn2.method.perfCounters.shadowFrusta")){
     if(vars.addOrGetBool("sintorn2.method.perfCounters.oneCounter")){

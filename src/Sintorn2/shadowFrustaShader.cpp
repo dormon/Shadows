@@ -61,6 +61,7 @@ layout(std430,binding=1)buffer ShadowFrusta{float shadowFrusta[];};
 
 uniform vec4 lightPosition                      ;
 uniform mat4 transposeInverseModelViewProjection;
+uniform float lightTriangleDistanceThreshold = 500.f;
 
 int greaterVec(vec3 a,vec3 b){
 	return int(dot(ivec3(sign(a-b)),ivec3(4,2,1)));
@@ -129,6 +130,13 @@ void main(){
 			v1 + BIAS*normalize(v1*lightPosition.w-lightPosition.xyz),
 			v2 + BIAS*normalize(v2*lightPosition.w-lightPosition.xyz));
 
+  vec4 testPlaneForLightParallelTriangles;
+  testPlaneForLightParallelTriangles.xyz = normalize(cross(v1-v0,v2-v0));
+  testPlaneForLightParallelTriangles.w   = -dot(testPlaneForLightParallelTriangles.xyz,v0);
+
+  float lightTriangleDistance = dot(testPlaneForLightParallelTriangles,lightPosition);
+  bool discardMorePlanes = abs(lightTriangleDistance)<lightTriangleDistanceThreshold;
+  discardMorePlanes = discardMorePlanes || isnan(lightTriangleDistance) || isinf(lightTriangleDistance);
 
 #if MORE_PLANES == 1
   vec4 f0;
@@ -146,6 +154,11 @@ void main(){
   f0 = transposeInverseModelViewProjection*f0;
   f1 = transposeInverseModelViewProjection*f1;
   f2 = transposeInverseModelViewProjection*f2;
+  if(discardMorePlanes){
+    f0 = transposeInverseModelViewProjection*vec4(+1,0,0,1e8);
+    f1 = transposeInverseModelViewProjection*vec4(+1,0,0,1e8);
+    f1 = transposeInverseModelViewProjection*vec4(+1,0,0,1e8);
+  }
 #endif
 
 	float ffc = 1.f;
