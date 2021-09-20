@@ -19,6 +19,7 @@
 #include <MTSV/MTSV.h>
 #include <FTS/FTS.h>
 #include <OFTS/OFTS.h>
+#include <DPSM/DPSM.h>
 
 void initMethods(vars::Vars&vars){
   auto methods = vars.add<Methods>("methods");
@@ -39,5 +40,6 @@ void initMethods(vars::Vars&vars){
   methods->add<HSSV                       >("hssv"             );
   methods->add<MTSV                       >("mtsv"             );
   methods->add<FTS                        >("fts"              );
-  methods->add<OFTS                       >("ofts");
+  methods->add<OFTS                       >("ofts"             );
+  methods->add<DPSM                       >("dpsm"             );
 }

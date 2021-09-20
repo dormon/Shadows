@@ -19,6 +19,7 @@
 #include <Sintorn2/param.h>
 #include <MTSV/MTSV_params.h>
 #include <FTS/FTS_params.h>
+#include <DPSM/DPSM_params.h>
 
 void parseArguments(vars::Vars&vars){
   auto argc = vars.getUint32("argc");
@@ -43,6 +44,7 @@ void parseArguments(vars::Vars&vars){
   sintorn2::loadParams          (vars,arg);
   loadMtsvParams                (vars,arg);
   loadFtsParams                 (vars,arg);
+  loadDpsmParams                (vars, arg);
 
   vars.addSizeT("cssvsoe.computeSidesWGS") = arg->getu32(
       "--cssvsoe-WGS", 64, "compute silhouette shadow volumes work group size");

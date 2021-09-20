@@ -149,7 +149,17 @@ R".(
   void main(){
 
     //fTriangleID = vID;
-    vec3  diffuseColor   = hue(vID*3.14159254f);//vec3(0.5,0.5,0.5);
+    vec3 colors[6] = vec3[6](
+        vec3(1, 0, 0), 
+        vec3(0, 1, 0),
+        vec3(0, 0, 1),
+        vec3(1, 1, 0),
+        vec3(0, 1, 1),
+        vec3(1, 0, 1)
+    );
+
+
+    vec3  diffuseColor   = colors[(vID /3) % 6];
     vec3  specularColor  = vec3(1);
     vec3  normal         = normalize(gl_FrontFacing ? vNormal : -vNormal);
     float specularFactor = 1;
