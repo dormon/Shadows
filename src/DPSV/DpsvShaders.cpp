@@ -17,6 +17,7 @@ std::string const fsPrologue = R".(
 #version 430
 
 layout( binding = 0) uniform sampler2D positionTex;
+layout( binding = 1) uniform sampler2D normalTex;
 
 layout(location=0) out float fColor;
 
@@ -46,8 +47,12 @@ vec4 getFragmentPosition()
 // return true if a fragment exists, otherwise false (no projected geometry)
 bool fragmentExists( in vec4 frag )
 {
-	return frag.w != 0;
-	//return true;
+	const ivec2 tcoord = ivec2(gl_FragCoord.xy);
+	const vec3 normal = normalize(texelFetch(normalTex,tcoord,0).xyz);
+	const vec3 lightDir = normalize(lightPosition.xyz - frag.xyz);
+    float ndl = dot(normal, lightDir);
+	
+	return (frag.w != 0 && ndl > 0);
 }
 
 void main()

@@ -89,7 +89,7 @@ void DPSV::createShadowMaskVao()
 void DPSV::clearAuxBuffer()
 {
 	Buffer* buffer = vars.get<Buffer>("dpsv.objects.auxBuffer");
-	
+
 	glm::uvec4 const data = glm::uvec4(0, 4, 0, 0);
 	buffer->setData(glm::value_ptr(data));
 }
@@ -103,19 +103,19 @@ void DPSV::setWindowViewport()
 void DPSV::buildTopTree(glm::vec4 const& lightPosition)
 {
 	clearAuxBuffer();
-	
+
 	Program* program = vars.get<Program>("dpsv.objects.buildCS");
 	program->use();
 	program->set4fv("lightPosition", glm::value_ptr(lightPosition));
 	program->set1ui("nofTriangles", NofTriangles);
 	program->set1f("bias", vars.getFloat("dpsv.args.bias"));
-	
+
 	vars.get<RenderModel>("renderModel")->vertices->bindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	vars.get<Buffer>("dpsv.objects.nodeBuffer")->bindBase(GL_SHADER_STORAGE_BUFFER, 1);
 	vars.get<Buffer>("dpsv.objects.auxBuffer")->bindBase(GL_SHADER_STORAGE_BUFFER, 2);
 
 	glDispatchCompute(vars.getUint32("dpsv.args.numWg"), 1, 1);
-	
+
 	vars.get<RenderModel>("renderModel")->vertices->unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	vars.get<Buffer>("dpsv.objects.nodeBuffer")->unbindBase(GL_SHADER_STORAGE_BUFFER, 1);
 	vars.get<Buffer>("dpsv.objects.auxBuffer")->unbindBase(GL_SHADER_STORAGE_BUFFER, 2);
@@ -132,8 +132,9 @@ void DPSV::createShadowMask(glm::vec4 const& lightPosition)
 	Program* program = selectTraversalProgram();
 	program->use();
 	program->set4fv("lightPosition", glm::value_ptr(lightPosition));
-	
+
 	vars.get<GBuffer>("gBuffer")->position->bind(0);
+	vars.get<GBuffer>("gBuffer")->normal->bind(1);
 
 	vars.get<Buffer>("dpsv.objects.nodeBuffer")->bindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	vars.get<Buffer>("dpsv.objects.auxBuffer")->bindBase(GL_SHADER_STORAGE_BUFFER, 1);
@@ -143,6 +144,9 @@ void DPSV::createShadowMask(glm::vec4 const& lightPosition)
 	vars.get<Buffer>("dpsv.objects.nodeBuffer")->unbindBase(GL_SHADER_STORAGE_BUFFER, 0);
 	vars.get<Buffer>("dpsv.objects.auxBuffer")->unbindBase(GL_SHADER_STORAGE_BUFFER, 1);
 
+	vars.get<GBuffer>("gBuffer")->position->unbind(0);
+	vars.get<GBuffer>("gBuffer")->normal->unbind(1);
+
 	vars.get<VertexArray>("dpsv.objects.VAO")->unbind();
 	vars.get<Framebuffer>("dpsv.objects.FBO")->unbind();
 }
@@ -151,7 +155,7 @@ ge::gl::Program* DPSV::selectTraversalProgram() const
 {
 	uint32_t const alg = vars.getUint32("dpsv.args.algVersion");
 
-	switch(alg)
+	switch (alg)
 	{
 	case 1:
 		return vars.get<Program>("dpsv.objects.traverseStackless");
