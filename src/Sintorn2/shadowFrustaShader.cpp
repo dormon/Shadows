@@ -155,6 +155,9 @@ void main(){
   f1 = transposeInverseModelViewProjection*f1;
   f2 = transposeInverseModelViewProjection*f2;
   if(discardMorePlanes){
+    //vec4 a=f0;
+    //f0 = f1;
+    //f1 = a;
     f0 = transposeInverseModelViewProjection*vec4(+1,0,0,1e8);
     f1 = transposeInverseModelViewProjection*vec4(+1,0,0,1e8);
     f1 = transposeInverseModelViewProjection*vec4(+1,0,0,1e8);

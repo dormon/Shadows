@@ -15,7 +15,7 @@
 #include <DPM/DpmParams.h>
 #include <ODPM/OdpmParams.h>
 #include <DPSV/DpsvParams.h>
-#include <HSSV/HssvParams.h>
+//#include <HSSV/HssvParams.h>
 #include <Sintorn2/param.h>
 #include <MTSV/MTSV_params.h>
 #include <FTS/FTS_params.h>
@@ -40,7 +40,7 @@ void parseArguments(vars::Vars&vars){
   loadDpmParams                 (vars,arg);
   loadOdpmParams                (vars,arg);
   loadDpsvParams                (vars,arg);
-  loadHssvParams                (vars,arg);
+  //loadHssvParams                (vars,arg);
   sintorn2::loadParams          (vars,arg);
   loadMtsvParams                (vars,arg);
   loadFtsParams                 (vars,arg);

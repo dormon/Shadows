@@ -15,7 +15,7 @@
 #include <DPM/DeepPrimitiveMap.h>
 #include <ODPM/OmnidirDPM.h>
 #include <DPSV/DPSV.h>
-#include <HSSV/HSSV.h>
+//#include <HSSV/HSSV.h>
 #include <MTSV/MTSV.h>
 #include <FTS/FTS.h>
 #include <OFTS/OFTS.h>
@@ -37,7 +37,7 @@ void initMethods(vars::Vars&vars){
   methods->add<DeepPrimitiveMap	          >("dpm"              );
   methods->add<OmnidirDpm                 >("odpm"             );
   methods->add<DPSV                       >("dpsv"             );
-  methods->add<HSSV                       >("hssv"             );
+  //methods->add<HSSV                       >("hssv"             );
   methods->add<MTSV                       >("mtsv"             );
   methods->add<FTS                        >("fts"              );
   methods->add<OFTS                       >("ofts"             );
